@@ -21,7 +21,8 @@ internal static class ConsoleReportWriter
         WriteLanguage(writer, "C#", report.CSharp.FileCount, report.CSharp.Lines, report.CSharp.Characters);
         writer.WriteLine(
             $"  Ownership: Production {Format(report.CSharp.ProductionFileCount)}, " +
-            $"Tests {Format(report.CSharp.TestFileCount)}, Tooling {Format(report.CSharp.ToolingFileCount)}");
+            $"Tests {Format(report.CSharp.TestFileCount)}, Tooling {Format(report.CSharp.ToolingFileCount)}, " +
+            $"Experimental {Format(report.CSharp.ExperimentalFileCount)}");
         WriteLanguage(writer, "XAML", report.Xaml.FileCount, report.Xaml.Lines, report.Xaml.Characters);
         WriteLanguage(writer, "Markdown", report.Markdown.FileCount, report.Markdown.Lines, report.Markdown.Characters);
 
@@ -36,6 +37,7 @@ internal static class ConsoleReportWriter
         WriteLargest(writer, "Largest production C#", report.LargestFiles.ProductionCSharp);
         WriteLargest(writer, "Largest test C#", report.LargestFiles.TestCSharp);
         WriteLargest(writer, "Largest tooling C#", report.LargestFiles.ToolingCSharp);
+        WriteLargest(writer, "Largest experimental C#", report.LargestFiles.ExperimentalCSharp);
         WriteLargest(writer, "Largest XAML", report.LargestFiles.Xaml);
         WriteLargest(writer, "Largest Markdown", report.LargestFiles.Markdown);
 
@@ -148,6 +150,7 @@ internal static class MarkdownReportWriter
         writer.WriteLine($"| Production | {report.CSharp.ProductionFileCount} |");
         writer.WriteLine($"| Tests | {report.CSharp.TestFileCount} |");
         writer.WriteLine($"| Tooling | {report.CSharp.ToolingFileCount} |");
+        writer.WriteLine($"| Experimental | {report.CSharp.ExperimentalFileCount} |");
 
         writer.WriteLine();
         writer.WriteLine("## Projects");
@@ -165,6 +168,7 @@ internal static class MarkdownReportWriter
         WriteLargestSection(writer, "Production C#", report.LargestFiles.ProductionCSharp);
         WriteLargestSection(writer, "Test C#", report.LargestFiles.TestCSharp);
         WriteLargestSection(writer, "Tooling C#", report.LargestFiles.ToolingCSharp);
+        WriteLargestSection(writer, "Experimental C#", report.LargestFiles.ExperimentalCSharp);
         WriteLargestSection(writer, "XAML", report.LargestFiles.Xaml);
         WriteLargestSection(writer, "Markdown", report.LargestFiles.Markdown);
 

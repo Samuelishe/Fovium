@@ -2,12 +2,12 @@
 
 Role: Technical contract and research agenda for photographic viewport rendering.
 Read when: Working on renderer choice, Fit/100%, zoom, pan, DPI, pixel alignment, resize, or display sampling.
-Authoritative for: Physical/logical pixel semantics, viewport-state direction, cursor anchoring, and bounded R0 rendering probe requirements.
-Not authoritative for: Final renderer selection, image decode policy, ICC implementation, or product-level input bindings.
+Authoritative for: Physical/logical pixel semantics, viewport-state direction, cursor anchoring, and the accepted initial rendering foundation.
+Not authoritative for: Final lifetime renderer choice, image decode policy, ICC implementation, or product-level input bindings.
 
 ## Quality premise
 
-Rendering quality is more important than feature count. Avalonia's standard `<Image>` path is not automatically accepted as the production photographic renderer. A custom `Control`, Avalonia `DrawingContext`, Skia/SkiaSharp access, a dedicated viewport renderer, and prepared display representations are candidates to measure, not conclusions.
+Rendering quality is more important than feature count. R0 accepted Avalonia as the UI/window host and a small direct-Skia custom draw adapter as the initial photographic path. Avalonia `DrawingContext.DrawImage` remains a useful comparison path but is not the primary renderer: its public interpolation choices are coarser and its bitmap boundary does not expose enough source semantics. The direct bridge currently uses Avalonia's public but `[Unstable]` Skia lease and must remain isolated and replaceable.
 
 ## Pixel semantics
 
@@ -15,7 +15,7 @@ Avalonia layout is expressed in logical pixels/DIP. Photographic **100%** means:
 
 > One oriented source image pixel maps approximately to one physical display pixel.
 
-Therefore `ScaleTransform = 1.0` or one source pixel per DIP is not sufficient proof of 100%. The renderer must account for effective `RenderScaling` and physical output behavior. R0 must validate Windows scaling at 100%, 125%, 150%, and 200%; HiDPI and per-monitor transitions; representative Linux scaling; Retina behavior when macOS runtime access exists; and physical pixel alignment.
+Therefore `ScaleTransform = 1.0` or one source pixel per DIP is not sufficient proof of 100%. The accepted model uses `PhysicalScale = physical pixels / oriented source pixels` and `DipScale = PhysicalScale / RenderScaling`; 100% sets `PhysicalScale = 1.0`. Pure tests cover 1.00, 1.25, 1.50, and 2.00. Runtime R0 evidence is limited to a Windows `RenderScaling = 1.00` display, so fractional-DPI and cross-platform runtime acceptance remain required.
 
 Moving a window between monitors must trigger correct scale and, eventually, destination-color reevaluation without corrupting the user's source-space point of interest.
 
@@ -35,21 +35,12 @@ Resize, fullscreen changes, and DPI transitions must define whether they preserv
 
 ## Sampling and alignment
 
-The display path may need different sampling for downscale, modest upscale, exact 100%, interactive zoom, and prepared representations. R0 should compare quality, latency, sharpness, edge behavior, alpha handling, and pixel alignment. Popularity of a library is not acceptance evidence.
+The display path may need different sampling for downscale, modest upscale, exact 100%, interactive zoom, and prepared representations. R0 compared explicit candidates for quality, edge behavior, alpha, and pixel alignment; later changes still require evidence rather than library popularity.
 
-At exact 100%, avoid unintended blur from fractional physical-pixel placement. At other scales, choose sampling that favors photographic quality while keeping interactive zoom and pan responsive. No final resampling algorithm is selected yet.
+At exact integer physical scales, align the image origin in backing-pixel space; R0 showed a crisp one-pixel pattern at 100% on the available display. Do not apply rounding indiscriminately at every fractional zoom.
 
-## R0 bounded probe
+The initial direct-Skia policy is nearest for exact-pixel inspection and linear plus linear mipmaps for general Fit/downscale and interaction. Mitchell and Catmull–Rom remain available research choices; R0 did not justify a separate settled representation or two-stage renderer.
 
-R0 should produce evidence and a decision record, not a prototype that silently becomes architecture. At minimum it must:
+## Retained R0 evidence
 
-- render representative photographs through plausible Avalonia/Skia paths;
-- demonstrate Fit, physical-pixel 100%, pointer-anchored zoom, pan, resize, and fullscreen behavior;
-- record effective logical-to-physical conversion and inspect pixel alignment across the available DPI matrix;
-- exercise window movement between differently scaled monitors where hardware permits;
-- preserve oriented dimensions and source color-profile data across the decode/render boundary;
-- compare at least one high-quality downscale path and the exact-100% path;
-- measure first display, interaction latency, allocations, and native-resource lifetime sufficiently to reject unsafe choices;
-- identify what could and could not be validated on the available operating systems and displays.
-
-Color goals and unknowns are owned by [`COLOR-MANAGEMENT.md`](COLOR-MANAGEMENT.md). R0 scope is directional in [`ROADMAP.md`](ROADMAP.md).
+The disposable probe, exact comparisons, measured observations, and limitations are recorded in [`experiments/R0-RENDERING-PROBE.md`](experiments/R0-RENDERING-PROBE.md). That report is evidence, not a production architecture owner. Color goals and unknowns remain owned by [`COLOR-MANAGEMENT.md`](COLOR-MANAGEMENT.md).

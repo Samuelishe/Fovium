@@ -12,7 +12,8 @@ internal sealed record CSharpStatistics(
     long Characters,
     int ProductionFileCount,
     int TestFileCount,
-    int ToolingFileCount);
+    int ToolingFileCount,
+    int ExperimentalFileCount);
 
 internal sealed record ProjectItem(string Name, string Path);
 
@@ -29,6 +30,7 @@ internal sealed record LargestFileGroups(
     IReadOnlyList<FileStatistics> ProductionCSharp,
     IReadOnlyList<FileStatistics> TestCSharp,
     IReadOnlyList<FileStatistics> ToolingCSharp,
+    IReadOnlyList<FileStatistics> ExperimentalCSharp,
     IReadOnlyList<FileStatistics> Xaml,
     IReadOnlyList<FileStatistics> Markdown);
 
@@ -106,7 +108,8 @@ internal static class ProjectStatsCollector
                 csharp.Sum(file => file.Characters),
                 csharp.Count(file => file.CSharpOwnership == CSharpOwnership.Production),
                 testCSharp.Length,
-                csharp.Count(file => file.CSharpOwnership == CSharpOwnership.Tooling)),
+                csharp.Count(file => file.CSharpOwnership == CSharpOwnership.Tooling),
+                csharp.Count(file => file.CSharpOwnership == CSharpOwnership.Experimental)),
             ToLanguageStatistics(xaml),
             ToLanguageStatistics(markdown),
             new ProjectInventory(solutions, projects),
@@ -118,6 +121,7 @@ internal static class ProjectStatsCollector
                 Largest(csharp.Where(file => file.CSharpOwnership == CSharpOwnership.Production), top),
                 Largest(testCSharp, top),
                 Largest(csharp.Where(file => file.CSharpOwnership == CSharpOwnership.Tooling), top),
+                Largest(csharp.Where(file => file.CSharpOwnership == CSharpOwnership.Experimental), top),
                 Largest(xaml, top),
                 Largest(markdown, top)),
             folderDensity,

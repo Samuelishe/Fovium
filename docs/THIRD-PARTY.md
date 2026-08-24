@@ -7,38 +7,42 @@ Not authoritative for: Final technical choices still under evaluation, subsystem
 
 ## Introduced
 
-REPO-R1 introduces only test infrastructure dependencies. Exact direct package versions are authoritative in [`Fovium.Tests.csproj`](../Fovium.Tests/Fovium.Tests.csproj); restore has verified this combination on .NET 10. No imaging, rendering, UI, or color dependency is introduced.
+Exact direct versions are authoritative in the linked project manifests. REPO-R1 introduced the test packages; R0 introduced only the Avalonia/Skia packages needed by the disposable RenderProbe. Restore verified the combined graph on .NET 10.
 
 | Name | Author / organization | License | Purpose | Official source | Version | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | Microsoft.NET.Test.Sdk | Microsoft | MIT | MSBuild targets and test host integration | [NuGet](https://www.nuget.org/packages/Microsoft.NET.Test.Sdk/18.9.0) | `18.9.0` | Direct test-project reference; VSTest platform |
 | xunit | xUnit.net project | Apache-2.0 | Test framework, assertions, and analyzers | [NuGet](https://www.nuget.org/packages/xunit/2.9.3) | `2.9.3` | Direct test-project reference; xUnit v2 |
 | xunit.runner.visualstudio | xUnit.net project | Apache-2.0 | VSTest discovery and execution adapter | [NuGet](https://www.nuget.org/packages/xunit.runner.visualstudio/4.0.0) | `4.0.0` | Direct private test asset; supports xUnit v2 |
+| Avalonia | AvaloniaUI | MIT | Core UI/control APIs for the RenderProbe | [NuGet](https://www.nuget.org/packages/Avalonia/12.1.1) | `12.1.1` | Direct RenderProbe reference; introduced R0 |
+| Avalonia.Desktop | AvaloniaUI | MIT | Windows/Linux/macOS desktop platform bundle | [NuGet](https://www.nuget.org/packages/Avalonia.Desktop/12.1.1) | `12.1.1` | Direct RenderProbe reference; introduces platform/native runtime assets transitively; R0 |
+| Avalonia.Skia | AvaloniaUI | MIT | Avalonia Skia renderer and direct-canvas lease | [NuGet](https://www.nuget.org/packages/Avalonia.Skia/12.1.1) | `12.1.1` | Direct RenderProbe reference; requires SkiaSharp `>= 3.119.4`; R0 |
+| Avalonia.Themes.Fluent | AvaloniaUI | MIT | Basic diagnostic-control styling | [NuGet](https://www.nuget.org/packages/Avalonia.Themes.Fluent/12.1.1) | `12.1.1` | Direct RenderProbe reference only; not Fovium product styling; R0 |
+| SkiaSharp | Microsoft / SkiaSharp contributors | MIT | Controlled `SKCodec` decode, test-pattern generation, and explicit photographic sampling | [NuGet](https://www.nuget.org/packages/SkiaSharp/3.119.4) | `3.119.4` | Direct RenderProbe reference pinned to Avalonia.Skia's coherent graph; independent latest 4.x was intentionally not mixed; R0 |
 
 No separate coverage collector is introduced. Transitive package resolution remains NuGet/MSBuild data rather than a manually duplicated version ledger here.
 
 ## Planned / under evaluation
 
-The following are candidates, not installed dependencies or promises:
+The following are evaluated candidates, not installed dependencies or promises. Stable versions were checked from official release/package metadata on 2026-08-24; they are research snapshots, not version pins.
 
-| Candidate | Possible purpose | Validation needed |
-| --- | --- | --- |
-| C# / .NET 10 | Application language/runtime direction | SDK/runtime/platform availability and packaging |
-| Avalonia | Cross-platform desktop UI direction | Windowing, input, DPI, multi-monitor, and renderer integration |
-| Avalonia bitmap pipeline | Baseline image display candidate | Photographic quality, scaling, color-data preservation, performance |
-| Skia / SkiaSharp | Rendering and color-space candidate | Pixel semantics, sampling, native lifetime, packaging |
-| ImageSharp | Managed image/metadata/ICC candidate | Format behavior, precision, performance, licensing |
-| Magick.NET / ImageMagick | Broad format candidate | Decode quality, resource policy, native footprint, licensing |
-| NetVips / libvips | Efficient imaging/large-image candidate | Platform deployment, access patterns, color behavior |
-| LittleCMS | ICC transform candidate | Monitor integration, formats, lifetime, throughput |
-| libheif / libavif | Specialized codec candidates | Platform binaries, licensing, metadata/color fidelity |
-| Other specialized/native codecs | Format-specific fallback | Need, maintenance, packaging, and common-contract fit |
+| Candidate | Checked stable / license | Platforms and capabilities | Complexity and Fovium fit |
+| --- | --- | --- | --- |
+| C# / .NET | .NET 10 GA / MIT | Cross-platform managed runtime | Introduced as the repository runtime; packaging still needs platform validation |
+| Avalonia bitmap pipeline | Avalonia `12.1.1` / MIT | Cross-platform basic JPEG/PNG bitmap decode and explicit coarse interpolation | Introduced for R0 comparison; insufficient source-profile/orientation visibility for the primary decoder |
+| SixLabors.ImageSharp | `4.1.1` / Six Labors Split License 1.0 | Fully managed, cross-platform common formats, metadata/ICC access, many resamplers | Attractive metadata/profile candidate; license obligations and photographic decode behavior require review |
+| Magick.NET-Q8-AnyCPU / ImageMagick | `14.16.0` / Apache-2.0 wrapper/package | Broad cross-platform formats, profiles, transforms, filters/resampling | Approximately 95 MB AnyCPU package and substantial native surface; plausible broad-format backend, not an initial default |
+| NetVips / libvips | NetVips `3.2.0` MIT; libvips `8.18.5` LGPL-2.1 | Cross-platform demand-driven imaging, broad formats, ICC through native stack, shrink/tile-friendly processing | Strong future huge-image candidate; native deployment and project-owned lifetime/error mapping need proof |
+| Little CMS | `lcms2.19.1` / MIT | Native cross-platform ICC v2/v4 color transforms | Strong final-color candidate; .NET interop, monitor-profile discovery, transform caching, and alpha/precision policy remain open |
+| libheif | `1.23.1` / LGPL-3.0 library (wrappers/examples differ) | Native HEIF/HEIC/AVIF decode, metadata/color/HDR structures, plugin codec choices | High native packaging/codec-license complexity; evaluate only for required formats |
+| libavif | `1.4.2` / BSD-2-Clause | Native AVIF decode/encode, alpha, high bit depths and color metadata | Narrower than libheif but still requires codec/native binaries and a .NET binding decision |
+| Other specialized/native codecs | No version selected | Format-specific coverage such as JPEG XL, JPEG 2000, OpenEXR, PSD previews, or RAW previews | Add only behind project-owned imaging contracts when a concrete format demands it |
 
 Consult the affected technical owner before choosing a candidate: rendering in [`RENDERING.md`](RENDERING.md), imaging in [`IMAGING-PIPELINE.md`](IMAGING-PIPELINE.md), and color in [`COLOR-MANAGEMENT.md`](COLOR-MANAGEMENT.md).
 
 ## Assets / borrowed material
 
-No external images, icons, fonts, logos, generated image dumps, or test-image corpora are introduced in REPO-R1. Future shipped or test assets must follow [`resources/README.md`](../resources/README.md) and record name, author/source, license, purpose, official source, modifications, and introduced stage here before commit.
+No external images, icons, fonts, logos, generated image dumps, or test-image corpora are introduced through R0. RenderProbe patterns are deterministic code-generated runtime input and are not stored assets. Local JPEG/PNG smoke inputs were never copied into the repository. Future shipped or test assets must follow [`resources/README.md`](../resources/README.md) and record name, author/source, license, purpose, official source, modifications, and introduced stage here before commit.
 
 ## Repository services and actions
 

@@ -18,6 +18,7 @@ Not authoritative for: The subjects summarized by linked documents.
 | [`CODING-GUIDELINES.md`](CODING-GUIDELINES.md) | C# implementation and testing conventions | Writing or reviewing production code |
 | [`TEST-EXECUTION.md`](TEST-EXECUTION.md) | Local/CI test commands and evidence boundaries | Running, filtering, or interpreting tests |
 | [`PROJECT-STATS.md`](PROJECT-STATS.md) | Repository diagnostics usage, exclusions, metrics, and limits | Running or changing ProjectStats |
+| [`experiments/R0-RENDERING-PROBE.md`](experiments/R0-RENDERING-PROBE.md) | R0 setup, observations, comparisons, limitations, and recommendation | Implementing from or re-evaluating R0 evidence |
 | [`ROADMAP.md`](ROADMAP.md) | Directional stages and future work | Planning or scoping a stage |
 | [`DECISIONS-LOG.md`](DECISIONS-LOG.md) | Durable decisions already established | Checking or recording why a direction is binding |
 | [`KNOWN-PROBLEMS.md`](KNOWN-PROBLEMS.md) | Open risks and unresolved technical questions | Investigating uncertainty or planning validation |

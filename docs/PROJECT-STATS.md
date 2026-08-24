@@ -34,7 +34,7 @@ Reparse-point files/directories are recorded as skipped and not followed. Indivi
 
 - General counts cover successfully scanned files; text counts cover recognized repository text formats.
 - Extension groups are lexical file-extension groups.
-- C# files are classified as Production, Tests, or Tooling by stable repository path ownership, not syntax or assembly analysis.
+- C# files are classified as Production, Tests, Tooling, or Experimental by stable repository path ownership, not syntax or assembly analysis. C# below repository-root `experiments/` is Experimental and is separately counted/ranked rather than inflating Production.
 - XAML means `.xaml` files. A future Avalonia `.axaml` policy should be added deliberately when application code exists.
 - `[Fact]` and `[Theory]` counts are approximate lexical counts in test-owned C# files, not authoritative test discovery.
 - Largest-file lists use character count, then ordinal repository-relative path for ties.

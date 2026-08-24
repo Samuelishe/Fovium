@@ -34,18 +34,19 @@ See the canonical [UX contract](docs/UX-CONTRACT.md), [rendering contract](docs/
 
 ## Current status
 
-Fovium is currently in the repository and technical-foundation stage. No runnable photo viewer exists yet. Repository diagnostics, automated tests, and cross-platform CI configuration are present; hosted CI has not yet been proven by a GitHub run.
+The bounded **R0 rendering/DPI/decoder/color-foundation investigation is complete**. Its disposable RenderProbe accepted an initial Avalonia/direct-Skia/SKCodec direction, but no production photo viewer exists yet. Repository diagnostics, automated tests, and cross-platform CI configuration are present; this local stage does not claim a hosted CI run.
 
-The next technical stage is the bounded **R0 rendering/DPI/decoder/color-foundation probe**. The canonical current handoff is [PROJECT-STATE.md](docs/PROJECT-STATE.md).
+The next stage is the first production **R1 Core Viewer vertical slice**. The canonical current handoff is [PROJECT-STATE.md](docs/PROJECT-STATE.md); bounded R0 evidence is retained in the [experiment report](docs/experiments/R0-RENDERING-PROBE.md).
 
 ## Technology direction
 
 - C# and .NET 10;
-- Avalonia as the planned cross-platform UI direction;
-- a Skia-based rendering direction subject to R0 validation;
+- Avalonia 12.1.1 as the accepted initial cross-platform UI host;
+- an isolated direct-Skia photographic path with SkiaSharp 3.119.4;
+- controlled SKCodec probing/decoding as the initial JPEG/PNG foundation;
 - xUnit for current repository-tool tests.
 
-Avalonia, Skia, and imaging/color packages have not been introduced yet.
+Full monitor-aware ICC, broad codec coverage, and huge/tiled image handling remain future work.
 
 ## Repository structure
 
@@ -55,10 +56,11 @@ Avalonia, Skia, and imaging/color packages have not been introduced yet.
 | `eng/` | Small repository verification wrappers |
 | `resources/` | Tracked asset root governed by provenance policy |
 | `Fovium.Tools.ProjectStats/` | BCL-only repository diagnostics CLI |
-| `Fovium.Tests/` | Automated tests; currently focused on ProjectStats |
+| `Fovium.Tests/` | Automated tests for repository tooling and render-independent R0 logic |
+| `experiments/Fovium.RenderProbe/` | Disposable R0 rendering/imaging evidence executable; not the viewer |
 | `.github/workflows/ci.yml` | Windows, Linux, and macOS restore/build/test workflow |
 
-There is intentionally no Fovium application project yet.
+There is intentionally no production Fovium application project yet.
 
 ## Development / verification
 

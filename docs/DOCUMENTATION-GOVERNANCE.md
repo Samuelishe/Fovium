@@ -23,6 +23,7 @@ Each durable subject has one owner. Other documents may summarize and link but m
 | C# implementation practice | [`CODING-GUIDELINES.md`](CODING-GUIDELINES.md) |
 | Test commands and execution evidence | [`TEST-EXECUTION.md`](TEST-EXECUTION.md) |
 | ProjectStats behavior and metric semantics | [`PROJECT-STATS.md`](PROJECT-STATS.md) |
+| R0 retained experimental evidence | [`experiments/R0-RENDERING-PROBE.md`](experiments/R0-RENDERING-PROBE.md) |
 | Future stage direction | [`ROADMAP.md`](ROADMAP.md) |
 | Accepted durable decisions | [`DECISIONS-LOG.md`](DECISIONS-LOG.md) |
 | Open unresolved risks | [`KNOWN-PROBLEMS.md`](KNOWN-PROBLEMS.md) |
@@ -43,6 +44,7 @@ Every nontrivial task starts with root `AGENTS.md` and `PROJECT-STATE.md`, then 
 - Update `THIRD-PARTY.md` whenever an external component is introduced, upgraded with changed obligations, replaced, or removed.
 - Update `PROJECT-STATS.md` with scanner, exclusion, output, or metric-semantics changes; generated report totals remain outside durable documentation.
 - Update `TEST-EXECUTION.md` when the test platform, framework, supported commands, or CI test contract changes.
+- Add or update a bounded experiment report when technical evidence must remain reviewable; promote only supported conclusions into the domain owner and decision log.
 - Update `AGENTS.md` only for repository-wide operational rules or routing—not to store domain detail.
 
 Dynamic branch, HEAD, status, generated measurements such as `project-stats.md/json`, build logs, and transient investigation notes belong to Git or ignored task artifacts, not `PROJECT-STATE.md`.

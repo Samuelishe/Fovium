@@ -27,10 +27,16 @@ Run only the current ProjectStats tests when iterating on repository tooling:
 dotnet test Fovium.Tests/Fovium.Tests.csproj --filter "FullyQualifiedName~Fovium.Tests.ProjectStats"
 ```
 
+Run only render-independent R0 logic tests:
+
+```powershell
+dotnet test Fovium.Tests/Fovium.Tests.csproj --filter "FullyQualifiedName~Fovium.Tests.RenderProbe"
+```
+
 ## Scope
 
-Focused tests are preferred during implementation; run the full solution before handoff when shared tooling or project configuration changes. The current suite uses xUnit and covers repository tooling because no Fovium application exists yet.
+Focused tests are preferred during implementation; run the full solution before handoff when shared tooling or project configuration changes. The current xUnit suite covers repository tooling plus R0 viewport, orientation, decode-cost, and malformed-input logic. No production Fovium application exists yet.
 
-Future viewport math and other pure behavior should receive automated tests. UI interaction, rendering quality, DPI, pixel alignment, color, native lifetime, and platform behavior will also require bounded integration, visual, and manual smoke evidence; passing unit tests cannot prove those properties.
+UI interaction, rendering quality, runtime DPI, pixel alignment, color, native lifetime, and platform behavior require bounded integration, visual, and manual smoke evidence; passing pure tests cannot prove those properties.
 
 CI restores, builds, and tests on Windows, Linux, and macOS. The workflow's presence is not evidence of a hosted passing run, and repository-tool portability does not yet prove a future Avalonia viewer runs correctly on those systems.

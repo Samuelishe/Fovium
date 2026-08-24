@@ -9,7 +9,7 @@ Not authoritative for: Exact future classes, final renderer/library selection, i
 
 Begin with one production assembly when implementation starts. Add projects only when an evidenced build, deployment, test, or dependency boundary requires them. Do not pre-create enterprise Clean Architecture layers.
 
-Repository tooling and its tests are separate from this future production shape. `Fovium.Tools.ProjectStats` depends only on the BCL, has no reference to future Fovium runtime code, and remains a diagnostic CLI rather than an application subsystem. `Fovium.Tests` may reference tooling now and production assemblies later; production assemblies must never depend on the test or repository-tool projects.
+Repository tooling and experiments are separate from this future production shape. `Fovium.Tools.ProjectStats` depends only on the BCL and remains diagnostic CLI code. `experiments/Fovium.RenderProbe` is disposable evidence, not a production layer or class-name source. `Fovium.Tests` may reference tooling, experiments, and production assemblies; production assemblies must never depend on them.
 
 Logical responsibilities remain distinct even if physically colocated:
 
@@ -38,7 +38,9 @@ Dependencies should point toward small project-owned contracts and pure models o
 
 ## Imaging extensibility
 
-Multiple decoder backends may coexist behind a project-owned probe/decode contract. Adding a codec backend must not require rewriting navigation, viewport math, cache policy, or rendering. This is backend extensibility, not a user plugin system. Exact contracts wait for R0 evidence; see [`IMAGING-PIPELINE.md`](IMAGING-PIPELINE.md).
+Multiple decoder backends may coexist behind a project-owned probe/decode contract. Adding a codec backend must not require rewriting navigation, viewport math, cache policy, or rendering. This is backend extensibility, not a user plugin system. R0 supports beginning with SKCodec behind such a boundary, but exact production contracts should emerge from the R1 vertical slice rather than copying experiment types.
+
+R0 also supports an isolated direct-Skia drawing adapter. Skia types must not leak into navigation or render-independent viewport math, and Avalonia's unstable lease must be confined to the platform/render edge.
 
 ## Source and display representations
 

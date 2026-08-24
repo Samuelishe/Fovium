@@ -9,6 +9,7 @@ internal enum CSharpOwnership
     Production,
     Tests,
     Tooling,
+    Experimental,
 }
 
 internal sealed record ScannedFile(
@@ -267,6 +268,12 @@ internal sealed class FileScanner
     private static CSharpOwnership ClassifyCSharp(string relativePath)
     {
         var segments = relativePath.Split('/');
+        if (segments.Length > 0 &&
+            segments[0].Equals("experiments", StringComparison.OrdinalIgnoreCase))
+        {
+            return CSharpOwnership.Experimental;
+        }
+
         if (segments.Any(segment =>
                 segment.Equals("Fovium.Tests", StringComparison.OrdinalIgnoreCase) ||
                 segment.EndsWith(".Tests", StringComparison.OrdinalIgnoreCase)))

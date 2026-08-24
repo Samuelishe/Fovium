@@ -40,6 +40,7 @@ Do not load every document by default. If documents conflict, follow the owner n
 | C# implementation | [`docs/CODING-GUIDELINES.md`](docs/CODING-GUIDELINES.md) + affected area owner |
 | Tests or test execution | [`docs/TEST-EXECUTION.md`](docs/TEST-EXECUTION.md) + [`docs/CODING-GUIDELINES.md`](docs/CODING-GUIDELINES.md) |
 | ProjectStats diagnostics | [`docs/PROJECT-STATS.md`](docs/PROJECT-STATS.md) |
+| R0 rendering/decoder evidence | [`docs/experiments/R0-RENDERING-PROBE.md`](docs/experiments/R0-RENDERING-PROBE.md) + affected technical owner |
 | Planning | [`docs/ROADMAP.md`](docs/ROADMAP.md) |
 | External dependency | [`docs/THIRD-PARTY.md`](docs/THIRD-PARTY.md) + affected technical owner |
 | Documentation change | [`docs/DOCUMENTATION-GOVERNANCE.md`](docs/DOCUMENTATION-GOVERNANCE.md) |
@@ -55,7 +56,7 @@ Do not load every document by default. If documents conflict, follow the owner n
 - Guard large-image work by estimated decoded resource cost, not encoded file size alone.
 - Allow multiple codec backends behind project-owned contracts, but do not design a plugin system.
 - Keep navigation, probing/decoding, rendering, viewport math, color, cache, metadata, settings, platform integration, and UI interaction logically separated without enterprise ceremony.
-- Repository tooling and its tests remain independent of future runtime code. Do not introduce production application code before the bounded R0 investigation establishes the initial rendering and imaging direction.
+- Repository tooling and experiments remain outside production runtime code. R0 established an initial Avalonia/direct-Skia/SKCodec direction; production work must use the canonical decisions and must not copy the probe UI or treat experiment types as final architecture.
 
 ## Verification and handoff
 

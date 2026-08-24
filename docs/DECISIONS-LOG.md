@@ -21,7 +21,7 @@ The photograph is the primary UI. Persistent toolbars, navigation affordances, f
 
 ## D-003 — Avalonia direction requires renderer validation
 
-Status: Accepted in DOCS-R1.
+Status: Accepted in DOCS-R1; fulfilled by D-012 and D-013 in R0.
 
 Avalonia is the current cross-platform framework direction, but its standard image path is not presumed sufficient. R0 must validate candidate Avalonia/Skia rendering paths for quality, DPI semantics, performance, and resource behavior before a final renderer decision.
 
@@ -72,3 +72,33 @@ Source-controlled shipped and test assets live under `resources/`. Externally so
 Status: Accepted in REPO-R1.
 
 ProjectStats describes repository structure only. It does not benchmark, inventory, or score developer hardware, and no hardware benchmark is part of repository-foundation tooling.
+
+## D-012 — Avalonia is the initial desktop host
+
+Status: Accepted in R0.
+
+Avalonia 12.1.1 provided the required Windows windowing, input, custom-control, file-picker, runtime scaling notification, and Skia integration foundation in the bounded probe. It is accepted for the initial production vertical slice; Linux/macOS runtime correctness remains a validation obligation rather than an R0 claim.
+
+## D-013 — Initial photographic renderer uses an isolated direct-Skia adapter
+
+Status: Accepted in R0.
+
+The initial photographic path uses explicit SkiaSharp sampling through a narrow Avalonia custom-draw adapter. Avalonia DrawingContext remains a diagnostic baseline, not the primary renderer. Avalonia marks the required Skia lease unstable, so this integration must remain isolated and replaceable.
+
+## D-014 — Viewport state uses oriented coordinates and physical scale
+
+Status: Accepted in R0.
+
+Render-independent viewport state is expressed in oriented source coordinates, logical viewport geometry, active `RenderScaling`, and physical scale. `DipScale = PhysicalScale / RenderScaling`; photographic 100% sets physical scale to 1.0. Avalonia transform objects are not application state.
+
+## D-015 — Initial JPEG/PNG foundation uses controlled SKCodec probing and decode
+
+Status: Accepted in R0.
+
+SKCodec supplies the initial bounded JPEG/PNG header/orientation/decode path. Production code will place it behind project-owned results, retain encoded source data until profile extraction is resolved, and must not treat the experiment's classes as final contracts. Broader formats may use other backends later.
+
+## D-016 — Initial sampling uses one rendering path
+
+Status: Accepted in R0.
+
+Use nearest sampling for exact integer-pixel inspection and linear plus linear mipmaps for general Fit/downscale and interaction. R0 did not establish a visible/performance need for separate interactive and settled representations; cubic policies remain open to later evidence.

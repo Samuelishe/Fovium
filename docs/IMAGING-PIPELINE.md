@@ -17,7 +17,7 @@ The intended flow is:
 6. Extract optional metadata without coupling it to correct display.
 7. Prepare a display representation through the rendering/color path.
 
-The exact types and library boundaries are deliberately deferred to R0.
+R0 accepted controlled Skia `SKCodec` probing/decoding as the initial JPEG/PNG foundation. It exposes dimensions, encoded origin, format, frame count, normalized color-space state, and reduced-decode dimensions before full decode. A project-owned production result must still own these facts; the experiment's concrete types are not the production contract.
 
 ## Header probe and decode plan
 
@@ -38,7 +38,7 @@ Approximate cost should include dimensions, bytes per pixel or channel layout, f
 
 ## Orientation and metadata boundary
 
-Orientation is part of baseline display correctness. Downstream dimensions, viewport math, and 100% semantics refer to the **oriented** source image. The pipeline must apply or carry the orientation exactly once and make that choice unambiguous.
+Orientation is part of baseline display correctness. Downstream dimensions, viewport math, and 100% semantics refer to the **oriented** source image. The pipeline must apply or carry the orientation exactly once and make that choice unambiguous. R0 modeled and tested all eight EXIF orientations and kept encoded dimensions distinct from oriented dimensions.
 
 EXIF, XMP, IPTC, and other descriptive metadata are useful but optional to ordinary display. Their extraction may be lazy and independently fallible. Metadata parsing must not block navigation unnecessarily. Source ICC/profile data is not optional UI metadata: it must survive to the color boundary even before the full color pipeline exists.
 
@@ -54,7 +54,7 @@ During directory navigation, unsupported, corrupt, truncated, policy-rejected, o
 
 For direct open, the future UI should retain a stable Stage and show a quiet, actionable message instead of an out-of-memory crash or a sequence of modal dialogs. Tiled or region decoding may extend the safe envelope later; it is not assumed for the initial viewer.
 
-Limits come from current available resources, actual representations, concurrent work, and product caps. Permanent numeric caps are not selected in DOCS-R1. Scheduling and cache policy belong to [`PERFORMANCE.md`](PERFORMANCE.md).
+Limits come from current available resources, actual representations, concurrent work, and product caps. R0 used a 512 MiB two-BGRA-copy safety guard only to protect the experiment; it is not a permanent limit. Scheduling and cache policy belong to [`PERFORMANCE.md`](PERFORMANCE.md).
 
 ## Format-support philosophy
 
