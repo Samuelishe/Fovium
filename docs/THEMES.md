@@ -54,4 +54,4 @@ Error
 
 Exact colors, contrast values, platform chrome treatment, and theme resource mechanics wait for implementation evidence. Fovium should remain visually quiet and purpose-built rather than becoming a generic framework-theme demonstration.
 
-R1 fixes the application UI to Dark and uses Avalonia Fluent for its small context-menu/error surface. There is no selector or final semantic palette yet. The viewer Stage is explicitly Black and remains independent of these resources; Light remains a contracted future option.
+R1 fixes the application UI to Dark and uses Avalonia Fluent for its small context-menu/error surface. There is no selector or final semantic palette yet. R3 implements every Stage mode as a separate persisted photographic preference; Neutral `#505050`, Ambient treatment, and matte `#202020` do not derive from Dark theme resources. Light remains a contracted future option.

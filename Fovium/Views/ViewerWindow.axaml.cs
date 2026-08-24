@@ -12,6 +12,7 @@ using Fovium.Localization;
 using Fovium.Navigation;
 using Fovium.Rendering;
 using Fovium.Settings;
+using Fovium.Stage;
 using Fovium.Viewer;
 using ViewerNavigationDirection = Fovium.Navigation.NavigationDirection;
 
@@ -25,6 +26,7 @@ internal sealed partial class ViewerWindow : Window
     private readonly ViewerSession<DecodedImage> _session;
     private readonly Localizer _localizer;
     private readonly SettingsService _settings;
+    private readonly AmbientStageCoordinator _stageCoordinator;
     private readonly IReadOnlyList<string> _startupPaths;
     private readonly CancellationTokenSource _lifetimeCancellation = new();
     private readonly DispatcherTimer _cursorTimer;
@@ -33,6 +35,7 @@ internal sealed partial class ViewerWindow : Window
     private readonly ContextMenu _contextMenu;
     private readonly MenuItem _previousMenuItem;
     private readonly MenuItem _nextMenuItem;
+    private readonly IReadOnlyDictionary<StageMode, MenuItem> _stageMenuItems;
     private bool _contextMenuOpen;
     private bool _closed;
     private bool _shutdownCompleted;
@@ -52,6 +55,10 @@ internal sealed partial class ViewerWindow : Window
         _localizer = localizer;
         _settings = settings;
         _startupPaths = startupPaths;
+        _stageCoordinator = new AmbientStageCoordinator(
+            new AmbientImageRepository(session),
+            new AmbientStagePreparer(),
+            settings.Current.StageMode);
 
         InitializeComponent();
         _previousMenuItem = CreateMenuItem(
@@ -60,12 +67,15 @@ internal sealed partial class ViewerWindow : Window
         _nextMenuItem = CreateMenuItem(
             UiStrings.MenuNext,
             async () => await NavigateAsync(ViewerNavigationDirection.Next));
+        _stageMenuItems = CreateStageMenuItems();
         _contextMenu = CreateContextMenu();
         PhotoViewport.ContextMenu = _contextMenu;
 
         _cursorTimer = new DispatcherTimer { Interval = CursorHideDelay };
         _cursorTimer.Tick += OnCursorTimerTick;
         PhotoViewport.PointerActivity += OnPointerActivity;
+        _stageCoordinator.PresentationChanged += OnStagePresentationChanged;
+        _settings.SettingsChanged += OnSettingsChanged;
         Opened += OnOpened;
         Closing += OnClosing;
         Closed += OnClosed;
@@ -79,6 +89,7 @@ internal sealed partial class ViewerWindow : Window
             PhotoViewport.Focus();
             RestartCursorTimer();
             await _settings.InitializeAsync(_lifetimeCancellation.Token);
+            ApplyStageMode(_settings.Current.StageMode);
             if (_startupPaths.Count == 0)
             {
                 var selected = await PickFilesAsync();
@@ -125,6 +136,7 @@ internal sealed partial class ViewerWindow : Window
         try
         {
             await _settings.FlushAsync();
+            await _stageCoordinator.DisposeAsync();
             await _session.DisposeAsync();
         }
         finally
@@ -139,6 +151,8 @@ internal sealed partial class ViewerWindow : Window
         _lifetimeCancellation.Dispose();
         _visibleCursor.Dispose();
         _hiddenCursor.Dispose();
+        _settings.SettingsChanged -= OnSettingsChanged;
+        _stageCoordinator.PresentationChanged -= OnStagePresentationChanged;
     }
 
     private async void OnWindowKeyDown(object? sender, KeyEventArgs e)
@@ -213,6 +227,12 @@ internal sealed partial class ViewerWindow : Window
                     return Task.CompletedTask;
                 }),
                 new Separator(),
+                new MenuItem
+                {
+                    Header = _localizer[UiStrings.MenuStage],
+                    ItemsSource = _stageMenuItems.Values,
+                },
+                new Separator(),
                 CreateMenuItem(UiStrings.MenuFullscreen, () =>
                 {
                     ToggleFullscreen();
@@ -238,6 +258,10 @@ internal sealed partial class ViewerWindow : Window
             _cursorTimer.Stop();
             _previousMenuItem.IsEnabled = _session.CanNavigate(ViewerNavigationDirection.Previous);
             _nextMenuItem.IsEnabled = _session.CanNavigate(ViewerNavigationDirection.Next);
+            foreach (var (mode, item) in _stageMenuItems)
+            {
+                item.IsChecked = _settings.Current.StageMode == mode;
+            }
         };
         menu.Closing += (_, _) =>
         {
@@ -245,6 +269,38 @@ internal sealed partial class ViewerWindow : Window
             RestartCursorTimer();
         };
         return menu;
+    }
+
+    private IReadOnlyDictionary<StageMode, MenuItem> CreateStageMenuItems()
+    {
+        var labels = new Dictionary<StageMode, string>
+        {
+            [StageMode.Black] = UiStrings.StageBlack,
+            [StageMode.Neutral] = UiStrings.StageNeutral,
+            [StageMode.Ambient] = UiStrings.StageAmbient,
+            [StageMode.AmbientMatte] = UiStrings.StageAmbientMatte,
+        };
+        return labels.ToDictionary(
+            pair => pair.Key,
+            pair =>
+            {
+                var item = new MenuItem
+                {
+                    Header = _localizer[pair.Value],
+                    ToggleType = MenuItemToggleType.Radio,
+                };
+                item.Click += async (_, _) =>
+                {
+                    try
+                    {
+                        await _settings.SetStageModeAsync(pair.Key, _lifetimeCancellation.Token);
+                    }
+                    catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
+                    {
+                    }
+                };
+                return item;
+            });
     }
 
     private MenuItem CreateMenuItem(string key, Func<Task> action)
@@ -349,7 +405,11 @@ internal sealed partial class ViewerWindow : Window
         if (result.Status == SelectionStatus.Published && result.Image is not null)
         {
             ErrorSurface.IsVisible = false;
+            var path = result.Path
+                ?? throw new InvalidOperationException("Published selection has no source path.");
+            var identity = result.Image.Value.Identity;
             PhotoViewport.SetImage(result.Image, transfer);
+            _stageCoordinator.SelectImage(path, identity);
             return;
         }
 
@@ -360,6 +420,7 @@ internal sealed partial class ViewerWindow : Window
         }
 
         PhotoViewport.ClearImage();
+        _stageCoordinator.ClearImage();
         ErrorText.Text = LocalizeError(result.Error.Kind);
         ErrorSurface.IsVisible = true;
     }
@@ -383,6 +444,7 @@ internal sealed partial class ViewerWindow : Window
         }
 
         PhotoViewport.ClearImage();
+        _stageCoordinator.ClearImage();
         ErrorText.Text = _localizer[UiStrings.ErrorDecodeFailed];
         ErrorSurface.IsVisible = true;
     }
@@ -405,6 +467,51 @@ internal sealed partial class ViewerWindow : Window
             RestartCursorTimer();
         };
         window.Show(this);
+    }
+
+    private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            ApplyStageMode(e.Settings.StageMode);
+        }
+        else
+        {
+            Dispatcher.UIThread.Post(() => ApplyStageMode(e.Settings.StageMode));
+        }
+    }
+
+    private void ApplyStageMode(StageMode mode)
+    {
+        if (_closed)
+        {
+            return;
+        }
+
+        _stageCoordinator.SetMode(mode);
+    }
+
+    private void OnStagePresentationChanged(object? sender, EventArgs e)
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            ApplyStagePresentation();
+        }
+        else
+        {
+            Dispatcher.UIThread.Post(ApplyStagePresentation);
+        }
+    }
+
+    private void ApplyStagePresentation()
+    {
+        if (_closed)
+        {
+            return;
+        }
+
+        using var presentation = _stageCoordinator.AcquirePresentation();
+        PhotoViewport.SetStage(presentation.Mode, presentation.TakeAmbient());
     }
 
     private static bool IsRecoverableBoundaryException(Exception exception) =>

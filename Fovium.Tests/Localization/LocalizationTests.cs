@@ -67,4 +67,24 @@ public sealed class LocalizationTests
         Assert.Equal(keep, localizer[UiStrings.SettingsKeepCurrentScale]);
         Assert.Equal(fit, localizer[UiStrings.SettingsFitEachImage]);
     }
+
+    [Theory]
+    [InlineData("en-US", "Stage", "Black", "Neutral", "Ambient", "Ambient + Matte")]
+    [InlineData("ru-RU", "Фон", "Чёрный", "Нейтральный", "Ambient", "Ambient + паспарту")]
+    public void StageCatalogsContainEveryMode(
+        string cultureName,
+        string section,
+        string black,
+        string neutral,
+        string ambient,
+        string ambientMatte)
+    {
+        var localizer = Localizer.Create(CultureInfo.GetCultureInfo(cultureName));
+
+        Assert.Equal(section, localizer[UiStrings.SettingsStage]);
+        Assert.Equal(black, localizer[UiStrings.StageBlack]);
+        Assert.Equal(neutral, localizer[UiStrings.StageNeutral]);
+        Assert.Equal(ambient, localizer[UiStrings.StageAmbient]);
+        Assert.Equal(ambientMatte, localizer[UiStrings.StageAmbientMatte]);
+    }
 }

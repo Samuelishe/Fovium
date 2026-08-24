@@ -4,6 +4,7 @@ using Avalonia.Platform;
 using Avalonia.Rendering.SceneGraph;
 using Avalonia.Skia;
 using Fovium.Imaging;
+using Fovium.Stage;
 using SkiaSharp;
 
 namespace Fovium.Rendering;
@@ -13,10 +14,13 @@ namespace Fovium.Rendering;
 internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
 {
     private DecodedImage.RenderLease? _imageLease;
+    private DecodedImage.AmbientLease? _ambientLease;
     private readonly PixelSize _encodedSize;
     private readonly ExifOrientation _orientation;
     private readonly RectD _destination;
     private readonly bool _exactPixelSampling;
+    private readonly StageMode _stageMode;
+    private readonly double _renderScaling;
 
     public SkiaPhotoDrawOperation(
         Rect bounds,
@@ -24,7 +28,10 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
         PixelSize encodedSize,
         ExifOrientation orientation,
         RectD destination,
-        bool exactPixelSampling)
+        bool exactPixelSampling,
+        StageMode stageMode,
+        double renderScaling,
+        DecodedImage.AmbientLease? ambientLease)
     {
         Bounds = bounds;
         _imageLease = imageLease;
@@ -32,6 +39,9 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
         _orientation = orientation;
         _destination = destination;
         _exactPixelSampling = exactPixelSampling;
+        _stageMode = stageMode;
+        _renderScaling = renderScaling;
+        _ambientLease = ambientLease;
     }
 
     public Rect Bounds { get; }
@@ -54,6 +64,15 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
 
         using var canvasLease = feature.Lease();
         var canvas = canvasLease.SkCanvas;
+        var ambientLease = _ambientLease;
+        SkiaStageRenderer.Draw(
+            canvas,
+            new RectD(Bounds.X, Bounds.Y, Bounds.Width, Bounds.Height),
+            _destination,
+            _renderScaling,
+            _stageMode,
+            ambientLease?.Image,
+            ambientLease?.Size);
         var affine = OrientationAffine.Create(_encodedSize, _orientation);
         var orientedSize = OrientationTransform.GetOrientedSize(_encodedSize, _orientation);
         var scaleX = _destination.Width / orientedSize.Width;
@@ -87,5 +106,10 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
 
     public bool Equals(ICustomDrawOperation? other) => false;
 
-    public void Dispose() => Interlocked.Exchange(ref _imageLease, null)?.Dispose();
+    public void Dispose()
+    {
+        Interlocked.Exchange(ref _imageLease, null)?.Dispose();
+        Interlocked.Exchange(ref _ambientLease, null)?.Dispose();
+    }
+
 }

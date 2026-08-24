@@ -1,4 +1,5 @@
 using Fovium.Settings;
+using Fovium.Stage;
 
 namespace Fovium.Tests.Settings;
 
@@ -10,10 +11,11 @@ public sealed class JsonSettingsStoreTests : IDisposable
         Guid.NewGuid().ToString("N"));
 
     [Fact]
-    public void DefaultsUseSchemaVersionOneAndKeepCurrentScale()
+    public void DefaultsUseSchemaVersionOneKeepCurrentScaleAndBlackStage()
     {
         Assert.Equal(1, FoviumSettings.Default.SchemaVersion);
         Assert.Equal(ImageChangeViewPolicy.KeepCurrentScale, FoviumSettings.Default.ImageChangeViewPolicy);
+        Assert.Equal(StageMode.Black, FoviumSettings.Default.StageMode);
     }
 
     [Fact]
@@ -32,12 +34,30 @@ public sealed class JsonSettingsStoreTests : IDisposable
         var expected = FoviumSettings.Default with
         {
             ImageChangeViewPolicy = ImageChangeViewPolicy.FitEachImage,
+            StageMode = StageMode.AmbientMatte,
         };
 
         await store.SaveAsync(expected, CancellationToken.None);
         var result = await store.LoadAsync(CancellationToken.None);
 
         Assert.Equal(expected, result.Settings);
+        Assert.Null(result.Diagnostic);
+    }
+
+    [Fact]
+    public async Task ExistingR2SettingsWithoutStageLoadAsBlack()
+    {
+        Directory.CreateDirectory(_directory);
+        await File.WriteAllTextAsync(
+            Path.Combine(_directory, "settings.json"),
+            """
+            { "schemaVersion": 1, "imageChangeViewPolicy": "FitEachImage" }
+            """);
+
+        var result = await CreateStore().LoadAsync(CancellationToken.None);
+
+        Assert.Equal(ImageChangeViewPolicy.FitEachImage, result.Settings.ImageChangeViewPolicy);
+        Assert.Equal(StageMode.Black, result.Settings.StageMode);
         Assert.Null(result.Diagnostic);
     }
 
@@ -60,12 +80,13 @@ public sealed class JsonSettingsStoreTests : IDisposable
         await File.WriteAllTextAsync(
             Path.Combine(_directory, "settings.json"),
             """
-            { "schemaVersion": 1, "imageChangeViewPolicy": "FitEachImage", "futureValue": 42 }
+            { "schemaVersion": 1, "imageChangeViewPolicy": "FitEachImage", "stageMode": "Ambient", "futureValue": 42 }
             """);
 
         var result = await CreateStore().LoadAsync(CancellationToken.None);
 
         Assert.Equal(ImageChangeViewPolicy.FitEachImage, result.Settings.ImageChangeViewPolicy);
+        Assert.Equal(StageMode.Ambient, result.Settings.StageMode);
         Assert.Null(result.Diagnostic);
     }
 

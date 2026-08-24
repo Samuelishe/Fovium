@@ -19,9 +19,10 @@ Fovium displays its version as:
 0.0.0.0003
 0.0.0.0004
 0.0.0.0005
+0.0.0.0006
 ```
 
-CLR assembly and file-version fields are numeric and do not preserve meaningful leading zeros. Their equivalent values may therefore be `0.0.0.1` through `0.0.0.5`. The human-facing informational version preserves the four-digit BUILD.
+CLR assembly and file-version fields are numeric and do not preserve meaningful leading zeros. Their equivalent values may therefore be `0.0.0.1` through `0.0.0.6`. The human-facing informational version preserves the four-digit BUILD.
 
 ## Component semantics
 
@@ -60,17 +61,18 @@ The displayed checkpoint is not a substitute for a Git commit, tag, or branch. G
 | `0.0.0.0003` | CONTRACTS-R1 | Versioning, Settings, localization, themes, and platform-integration contracts established |
 | `0.0.0.0004` | R1 | First runnable production Core Viewer vertical slice |
 | `0.0.0.0005` | R2 | Persistent view policy, minimal Settings foundation, and navigation/lifetime hardening |
+| `0.0.0.0006` | R3 | Persisted Black, Neutral, Ambient, and Ambient + Matte photographic Stage modes |
 
-The current accepted project checkpoint is `0.0.0.0005`. Current implementation state remains owned by [`PROJECT-STATE.md`](PROJECT-STATE.md).
+The current accepted project checkpoint is `0.0.0.0006`. Current implementation state remains owned by [`PROJECT-STATE.md`](PROJECT-STATE.md).
 
 ## Future code and packaging source
 
 The root `Directory.Build.props` is the canonical source for the current components and formatted display identity. It supplies the production `Fovium` assembly with:
 
 ```text
-InformationalVersion = 0.0.0.0005
-AssemblyVersion      = 0.0.0.5
-FileVersion          = 0.0.0.5
+InformationalVersion = 0.0.0.0006
+AssemblyVersion      = 0.0.0.6
+FileVersion          = 0.0.0.6
 ```
 
 From that source:

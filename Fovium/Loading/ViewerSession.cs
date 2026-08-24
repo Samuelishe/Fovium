@@ -34,6 +34,12 @@ internal readonly record struct ViewerSessionMetrics(
     long CacheRetainedBytes,
     int CacheItemCount);
 
+internal sealed record CachedResourceLease<T>(string Path, SharedResourceLease<T> Resource) : IDisposable
+    where T : class, IRetainedResource
+{
+    public void Dispose() => Resource.Dispose();
+}
+
 internal sealed class ViewerSession<T> : IAsyncDisposable
     where T : class, IRetainedResource
 {
@@ -91,6 +97,52 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
         lock (_sync)
         {
             return _sequence?.CanMoveFrom(_requestedIndex, direction) == true;
+        }
+    }
+
+    public bool TryAcquireCached(string path, out SharedResourceLease<T>? lease) =>
+        _cache.TryAcquire(path, out lease);
+
+    public bool RefreshCachedCost(string path, T expectedValue) =>
+        _cache.RefreshCost(path, expectedValue);
+
+    public Task WaitForAdjacentPreloadAsync(CancellationToken cancellationToken)
+    {
+        Task preload;
+        lock (_sync)
+        {
+            preload = _preloadTask;
+        }
+
+        return preload.WaitAsync(cancellationToken);
+    }
+
+    public IReadOnlyList<CachedResourceLease<T>> AcquireCachedAdjacent()
+    {
+        lock (_sync)
+        {
+            ThrowIfDisposed();
+            if (_sequence is null)
+            {
+                return [];
+            }
+
+            List<CachedResourceLease<T>> result = [];
+            foreach (var index in new[] { _currentIndex - 1, _currentIndex + 1 })
+            {
+                if (index < 0 || index >= _sequence.Paths.Count)
+                {
+                    continue;
+                }
+
+                var path = _sequence.Paths[index];
+                if (_cache.TryAcquire(path, out var lease))
+                {
+                    result.Add(new CachedResourceLease<T>(path, lease!));
+                }
+            }
+
+            return result;
         }
     }
 

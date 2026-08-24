@@ -26,7 +26,7 @@ Zero-UI is intentional: normal viewing removes persistent chrome rather than sur
 - seamless previous/next navigation through viable images in the current directory;
 - cursor-anchored zoom, exact panning, and photographic 100% based on physical display pixels;
 - photographer-oriented inspection, including future **Peek 100%** and **Blink Compare**;
-- a deliberate presentation **Stage**, from a black baseline to future ambient modes;
+- a deliberate photographic **Stage** with Black, Neutral, Ambient, and Ambient + Matte modes;
 - color-management foundations and broader image-format support over time;
 - no database, import workflow, or plugin platform.
 
@@ -34,9 +34,9 @@ See the canonical [UX contract](docs/UX-CONTRACT.md), [rendering contract](docs/
 
 ## Current status
 
-The current project checkpoint is **`0.0.0.0005`**. R2 retains the runnable JPEG/PNG Core Viewer and adds a persistent image-change view policy, a minimal dark Settings/About surface, and navigation/cache/lifetime hardening backed by local stress.
+The current project checkpoint is **`0.0.0.0006`**. R3 adds persisted Black, Neutral, Ambient, and Ambient + Matte presentation modes to the runnable JPEG/PNG Core Viewer while retaining the R2 viewing and navigation contracts.
 
-This remains an early vertical slice, not a release claim. Full monitor-aware ICC, broad codecs, broader Settings, metadata, platform associations, and later photographer features are not implemented. The expected next stage is **R3 Stage**. The canonical handoff is [PROJECT-STATE.md](docs/PROJECT-STATE.md); bounded R0 evidence remains in the [experiment report](docs/experiments/R0-RENDERING-PROBE.md).
+This remains an early vertical slice, not a release claim. Full monitor-aware ICC, broad codecs, broader Settings, metadata, platform associations, and later photographer features are not implemented. The expected next stage is **R4 Peek 100% / Blink Compare**. The canonical handoff is [PROJECT-STATE.md](docs/PROJECT-STATE.md); bounded R0 evidence remains in the [experiment report](docs/experiments/R0-RENDERING-PROBE.md).
 
 English/Russian catalogs and the Dark secondary-UI baseline are implemented; language/theme selection remains future work. See [VERSIONING.md](docs/VERSIONING.md) and the [documentation index](docs/INDEX.md) for the canonical owners.
 

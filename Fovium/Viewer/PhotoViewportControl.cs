@@ -6,6 +6,7 @@ using Avalonia.VisualTree;
 using Fovium.Imaging;
 using Fovium.Loading;
 using Fovium.Rendering;
+using Fovium.Stage;
 
 namespace Fovium.Viewer;
 
@@ -13,9 +14,11 @@ internal sealed class PhotoViewportControl : Control
 {
     private readonly ViewportModel _viewport = new();
     private SharedResourceLease<DecodedImage>? _image;
+    private DecodedImage.AmbientLease? _ambient;
     private Point? _lastDragPoint;
     private TopLevel? _topLevel;
     private double _wheelAccumulator;
+    private StageMode _stageMode;
 
     public PhotoViewportControl()
     {
@@ -36,19 +39,40 @@ internal sealed class PhotoViewportControl : Control
     {
         ArgumentNullException.ThrowIfNull(image);
         var previous = _image;
+        var previousAmbient = _ambient;
+        _ambient = null;
         _image = image;
         _viewport.SetImage(image.Value.Descriptor.OrientedSize, transfer);
         InvalidateVisual();
         previous?.Dispose();
+        previousAmbient?.Dispose();
         RaiseViewStateChanged();
+    }
+
+    public void SetStage(StageMode mode, DecodedImage.AmbientLease? ambient)
+    {
+        if (!mode.RequiresAmbient())
+        {
+            ambient?.Dispose();
+            ambient = null;
+        }
+
+        var previous = _ambient;
+        _stageMode = mode;
+        _ambient = ambient;
+        InvalidateVisual();
+        previous?.Dispose();
     }
 
     public void ClearImage()
     {
         var previous = _image;
+        var previousAmbient = _ambient;
         _image = null;
+        _ambient = null;
         InvalidateVisual();
         previous?.Dispose();
+        previousAmbient?.Dispose();
     }
 
     public void Fit()
@@ -77,7 +101,13 @@ internal sealed class PhotoViewportControl : Control
     public override void Render(DrawingContext context)
     {
         base.Render(context);
-        context.FillRectangle(Brushes.Black, new Rect(Bounds.Size));
+        IBrush fallback = _stageMode == StageMode.Neutral
+            ? new SolidColorBrush(Color.FromRgb(
+                StageDefaults.NeutralColor.Red,
+                StageDefaults.NeutralColor.Green,
+                StageDefaults.NeutralColor.Blue))
+            : Brushes.Black;
+        context.FillRectangle(fallback, new Rect(Bounds.Size));
         var cachedLease = _image;
         if (cachedLease is null)
         {
@@ -85,9 +115,11 @@ internal sealed class PhotoViewportControl : Control
         }
 
         DecodedImage.RenderLease? renderLease = null;
+        DecodedImage.AmbientLease? ambientLease = null;
         try
         {
             renderLease = cachedLease.Value.AcquireRenderLease();
+            ambientLease = _ambient?.Acquire();
             var descriptor = cachedLease.Value.Descriptor;
             context.Custom(new SkiaPhotoDrawOperation(
                 new Rect(Bounds.Size),
@@ -95,12 +127,17 @@ internal sealed class PhotoViewportControl : Control
                 descriptor.EncodedSize,
                 descriptor.Orientation,
                 GetDestination(),
-                _viewport.UsesExactPixelSampling));
+                _viewport.UsesExactPixelSampling,
+                _stageMode,
+                _viewport.RenderScaling,
+                ambientLease));
             renderLease = null;
+            ambientLease = null;
         }
         finally
         {
             renderLease?.Dispose();
+            ambientLease?.Dispose();
         }
     }
 

@@ -2,12 +2,21 @@ using System.Diagnostics;
 
 namespace Fovium.Settings;
 
+using Fovium.Stage;
+
+internal sealed class SettingsChangedEventArgs(FoviumSettings settings) : EventArgs
+{
+    public FoviumSettings Settings { get; } = settings;
+}
+
 internal sealed class SettingsService(ISettingsStore store)
 {
     private readonly object _stateSync = new();
     private readonly SemaphoreSlim _persistenceGate = new(1, 1);
     private FoviumSettings _current = FoviumSettings.Default;
     private SettingsDiagnostic? _lastDiagnostic;
+
+    public event EventHandler<SettingsChangedEventArgs>? SettingsChanged;
 
     public FoviumSettings Current
     {
@@ -41,6 +50,7 @@ internal sealed class SettingsService(ISettingsStore store)
         }
 
         TraceDiagnostic(result.Diagnostic);
+        SettingsChanged?.Invoke(this, new SettingsChangedEventArgs(result.Settings));
     }
 
     public Task SetImageChangeViewPolicyAsync(
@@ -59,7 +69,28 @@ internal sealed class SettingsService(ISettingsStore store)
             _current = snapshot;
         }
 
-        return PersistAsync(snapshot, cancellationToken);
+        SettingsChanged?.Invoke(this, new SettingsChangedEventArgs(snapshot));
+        return PersistAsync(cancellationToken);
+    }
+
+    public Task SetStageModeAsync(
+        StageMode mode,
+        CancellationToken cancellationToken = default)
+    {
+        FoviumSettings snapshot;
+        lock (_stateSync)
+        {
+            if (_current.StageMode == mode)
+            {
+                return Task.CompletedTask;
+            }
+
+            snapshot = _current with { StageMode = mode };
+            _current = snapshot;
+        }
+
+        SettingsChanged?.Invoke(this, new SettingsChangedEventArgs(snapshot));
+        return PersistAsync(cancellationToken);
     }
 
     public async Task FlushAsync(CancellationToken cancellationToken = default)
@@ -68,14 +99,14 @@ internal sealed class SettingsService(ISettingsStore store)
         _persistenceGate.Release();
     }
 
-    private async Task PersistAsync(FoviumSettings settings, CancellationToken cancellationToken)
+    private async Task PersistAsync(CancellationToken cancellationToken)
     {
         await _persistenceGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             try
             {
-                await store.SaveAsync(settings, cancellationToken).ConfigureAwait(false);
+                await store.SaveAsync(Current, cancellationToken).ConfigureAwait(false);
                 lock (_stateSync)
                 {
                     _lastDiagnostic = null;

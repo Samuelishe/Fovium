@@ -33,6 +33,7 @@ Use ordinary composition and explicit ownership. Do not use a Service Locator, m
 - The UI/coordinator requests work and publishes the newest valid result; it does not decode JPEGs or perform ICC transforms itself.
 - Platform-specific implementations sit behind narrow boundaries at the edge. Platform details must not leak throughout application code.
 - Settings storage owns typed persisted preferences; the viewer coordinator resolves image-change policy into a `ViewTransfer`. Renderer and viewport math never query settings.
+- Stage policy and asynchronous Ambient preparation are coordinated above rendering. The renderer receives resolved Stage state and geometry; it does not read settings, schedule background work, or modify viewport state.
 
 Dependencies should point toward small project-owned contracts and pure models only where substitution, resource ownership, or test isolation creates a real need. Do not add interfaces speculatively.
 
@@ -40,7 +41,7 @@ Dependencies should point toward small project-owned contracts and pure models o
 
 Multiple decoder backends may coexist behind a project-owned probe/decode contract. Adding a codec backend must not require rewriting navigation, viewport math, cache policy, or rendering. This is backend extensibility, not a user plugin system. R1 uses a narrow project-owned asynchronous loader contract with controlled SKCodec JPEG/PNG probing and decode; navigation and loading depend on typed results rather than SKCodec details.
 
-The production direct-Skia adapter is confined to `SkiaPhotoDrawOperation`. Skia types do not leak into navigation or render-independent viewport math, and Avalonia's unstable lease remains at the platform/render edge.
+The production direct-Skia adapter is confined to `SkiaPhotoDrawOperation`. Stage composition uses a focused Skia stage renderer called by that adapter; Skia types do not leak into navigation or render-independent viewport math, and Avalonia's unstable lease remains at the platform/render edge.
 
 ## Source and display representations
 
@@ -52,4 +53,4 @@ Keeping these concepts distinct allows later monitor-aware transforms, alternati
 
 ## Concurrency and lifetime
 
-Long-running operations receive cancellation and an explicit session/generation identity. Reference-counted cache/display/render leases let eviction or replacement release ownership while a retained Avalonia draw operation keeps its native `SKImage` alive. R2 additionally tracks all foreground and speculative session work: window shutdown cancels it, asynchronously waits for completion, then disposes cache ownership. New-sequence cache release also moves native owner disposal off the UI thread. Latest-wins publication and resource budgets are specified in [`PERFORMANCE.md`](PERFORMANCE.md); coding rules are in [`CODING-GUIDELINES.md`](CODING-GUIDELINES.md).
+Long-running operations receive cancellation and an explicit session/generation identity. Reference-counted cache/display/render leases let eviction or replacement release ownership while a retained Avalonia draw operation keeps native photo and optional Ambient `SKImage` instances alive. R3 attaches the optional prepared Ambient to the owning decoded image and refreshes that entry's cost in the same byte-budget LRU; eviction, new-sequence clear, stale completion, and shutdown therefore share deterministic ownership. Latest-wins publication and resource budgets are specified in [`PERFORMANCE.md`](PERFORMANCE.md); coding rules are in [`CODING-GUIDELINES.md`](CODING-GUIDELINES.md).

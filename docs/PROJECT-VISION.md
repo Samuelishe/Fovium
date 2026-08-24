@@ -27,14 +27,14 @@ Settings may be sophisticated because they are explicitly opened and remain abse
 
 ## Stage
 
-The presentation space around the photograph is the **Stage**, not leftover window background. Planned modes are:
+The presentation space around the photograph is the **Stage**, not leftover window background. R3 implements:
 
 - **Black**: the baseline.
 - **Neutral**: a controlled neutral alternative.
 - **Ambient**: derived from the photograph, cover-filled, strongly blurred, darkened, and moderately desaturated so it never competes with the original.
 - **Ambient + Matte**: Ambient plus a neutral visual boundary around the photograph.
 
-Stage processing must not alter the photograph. Stage implementation is deferred; access is expected through the context menu and Settings.
+Stage processing does not alter the photograph or viewport state. Ambient is a bounded, strongly simplified derivative of the full oriented photograph and remains stable during zoom/pan; Ambient + Matte adds separation behind the resolved photograph bounds without shrinking them. The persisted choice is available through the context menu and Settings.
 
 ## Photographer-specific direction
 

@@ -4,7 +4,14 @@ internal sealed class ByteBudgetCache<TKey, TValue> : IDisposable
     where TKey : notnull
     where TValue : class, IRetainedResource
 {
-    private sealed record Entry(SharedResource<TValue> Resource, long Cost, LinkedListNode<TKey> Node);
+    private sealed class Entry(SharedResource<TValue> resource, long cost, LinkedListNode<TKey> node)
+    {
+        public SharedResource<TValue> Resource { get; } = resource;
+
+        public long Cost { get; set; } = cost;
+
+        public LinkedListNode<TKey> Node { get; } = node;
+    }
 
     private readonly object _sync = new();
     private readonly Dictionary<TKey, Entry> _entries;
@@ -135,6 +142,50 @@ internal sealed class ByteBudgetCache<TKey, TValue> : IDisposable
                 Touch(entry);
             }
         }
+    }
+
+    public bool RefreshCost(TKey key, TValue expectedValue)
+    {
+        ArgumentNullException.ThrowIfNull(expectedValue);
+        List<SharedResource<TValue>> releases = [];
+        var accepted = false;
+        lock (_sync)
+        {
+            ThrowIfDisposed();
+            if (!_entries.TryGetValue(key, out var entry) ||
+                !entry.Resource.TryGetValue(out var current) ||
+                !ReferenceEquals(current, expectedValue))
+            {
+                return false;
+            }
+
+            var previousCost = entry.Cost;
+            var currentCost = expectedValue.RetainedBytes;
+            if (currentCost <= 0 || currentCost > BudgetBytes)
+            {
+                return false;
+            }
+
+            entry.Cost = currentCost;
+            _retainedBytes = checked(_retainedBytes - previousCost + currentCost);
+            EvictToBudget(key, releases);
+            if (_retainedBytes <= BudgetBytes)
+            {
+                accepted = true;
+            }
+            else
+            {
+                entry.Cost = previousCost;
+                _retainedBytes = checked(_retainedBytes - currentCost + previousCost);
+            }
+        }
+
+        foreach (var release in releases)
+        {
+            release.ReleaseOwner();
+        }
+
+        return accepted;
     }
 
     public void Clear()

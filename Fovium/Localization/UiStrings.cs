@@ -9,10 +9,17 @@ internal static class UiStrings
     public const string MenuActualSize = "menu.actualSize";
     public const string MenuFullscreen = "menu.fullscreen";
     public const string MenuSettings = "menu.settings";
+    public const string MenuStage = "menu.stage";
     public const string MenuClose = "menu.close";
     public const string SettingsTitle = "settings.title";
     public const string SettingsViewing = "settings.viewing";
     public const string SettingsAbout = "settings.about";
+    public const string SettingsStage = "settings.stage";
+    public const string SettingsStageMode = "settings.stageMode";
+    public const string StageBlack = "stage.black";
+    public const string StageNeutral = "stage.neutral";
+    public const string StageAmbient = "stage.ambient";
+    public const string StageAmbientMatte = "stage.ambientMatte";
     public const string SettingsScaleOnImageChange = "settings.scaleOnImageChange";
     public const string SettingsKeepCurrentScale = "settings.keepCurrentScale";
     public const string SettingsFitEachImage = "settings.fitEachImage";

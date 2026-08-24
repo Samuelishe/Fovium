@@ -162,3 +162,21 @@ Cache, displayed image, and retained Avalonia custom draw operations hold explic
 Status: Accepted in R2.
 
 Fovium defaults to **Keep current scale**: semantic Fit remains Fit, while 100% or manual views preserve physical scale and normalized point of interest across image changes. A deliberately reduced scale is not raised to Fit merely because the next image could fill more space. This behavior was discovered as useful during R1 manual use, supports sequence inspection and future Blink Compare, and never changes source pixels. Users may choose **Fit each image** instead; every new sequence still begins in Fit.
+
+## D-027 — Black remains the default photographic Stage
+
+Status: Accepted in R3.
+
+Stage is a persisted presentation preference independent from application theme and viewport state. Black remains the immediate zero-cost default; Neutral uses the explicit non-calibrated presentation value `#505050`. Neither changes photograph pixels or sampling.
+
+## D-028 — Ambient is a bounded optional derivative
+
+Status: Accepted in R3.
+
+Ambient is prepared asynchronously from the full oriented decoded photograph at a bounded `384 px` long edge, not from viewport zoom/pan. Photograph publication and adjacent decode outrank it; failure or stale work leaves a Black fallback. The optional native resource is attached to its decoded image and charged to the existing byte-budget cache rather than retained in an unlimited second cache.
+
+## D-029 — Ambient + Matte preserves photograph geometry
+
+Status: Accepted in R3.
+
+Ambient and Ambient + Matte share one prepared Ambient representation. Matte is drawn behind the already-resolved photograph bounds at `24` physical pixels with a stable `#202020` neutral and no default shadow; it may clip at viewport edges and never shrinks or moves the photograph. Exact aesthetic constants remain refinable from later visual evidence.

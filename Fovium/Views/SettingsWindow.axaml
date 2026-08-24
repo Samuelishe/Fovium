@@ -14,6 +14,15 @@
         <RadioButton x:Name="FitEachImageOption" GroupName="ImageChangeViewPolicy" />
       </StackPanel>
     </TabItem>
+    <TabItem x:Name="StageTab">
+      <StackPanel Margin="12,18" Spacing="14">
+        <TextBlock x:Name="StageHeading" FontSize="18" FontWeight="SemiBold" />
+        <RadioButton x:Name="BlackStageOption" GroupName="StageMode" />
+        <RadioButton x:Name="NeutralStageOption" GroupName="StageMode" />
+        <RadioButton x:Name="AmbientStageOption" GroupName="StageMode" />
+        <RadioButton x:Name="AmbientMatteStageOption" GroupName="StageMode" />
+      </StackPanel>
+    </TabItem>
     <TabItem x:Name="AboutTab">
       <StackPanel Margin="12,22" Spacing="10">
         <TextBlock Text="Fovium" FontSize="26" FontWeight="SemiBold" />

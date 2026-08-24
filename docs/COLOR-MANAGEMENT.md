@@ -37,6 +37,8 @@ R0 introduced SkiaSharp for the experiment. `SKCodec.Info.ColorSpace` preserves 
 
 R1 retains the original encoded bytes and records whether SKCodec reported assumed sRGB, normalized sRGB, or normalized non-sRGB. Decode creates a premultiplied BGRA representation using the recognized Skia color space when available and assumes sRGB for untagged input. This is the inherited probe policy, not final color management; it does not claim monitor-aware conversion, wide-gamut correctness, raw ICC preservation, or invalid-profile correctness.
 
+R3 derives Ambient from that same currently accepted decoded/display representation into an sRGB premultiplied BGRA presentation surface. It leaves encoded bytes, source profile state, and the original photographic `SKImage` untouched. Ambient colors, Neutral, and matte are presentation defaults only: they do not establish monitor ICC, wide-gamut, or calibrated-gray correctness, and the derivation boundary remains replaceable with the future destination-aware path.
+
 LittleCMS, native platform color APIs, ImageSharp ICC facilities, and other suitable libraries remain research candidates. No final ICC engine or destination-monitor integration is selected.
 
 The initial runnable viewer is SDR-first and retains encoded source data so a future profile extractor/transform path is not blocked by the R1 decoded bitmap boundary. HDR output is future work; current boundaries must avoid presenting R1's 8-bit BGRA display representation as the only possible source representation.

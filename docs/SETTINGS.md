@@ -45,7 +45,7 @@ A future zoom-step control may present a Fine-to-Coarse slider. It adjusts the s
 
 ### Stage
 
-Owns Black, Neutral, Ambient, and Ambient + Matte choices plus later justified Ambient/Matte controls. Stage is photographic presentation and is independent from the application UI theme; see [`PROJECT-VISION.md`](PROJECT-VISION.md) and [`THEMES.md`](THEMES.md).
+R3 implements Black (default), Neutral, Ambient, and Ambient + Matte as one typed, autosaved preference. Existing schema-v1 documents without the additive field resolve to Black without migration. Settings and the context menu observe the same state owner and apply changes immediately without Save/Apply. No blur, darkness, saturation, or matte-width sliders are exposed. Stage is photographic presentation and is independent from the application UI theme; see [`PROJECT-VISION.md`](PROJECT-VISION.md) and [`THEMES.md`](THEMES.md).
 
 ### Appearance
 
@@ -93,4 +93,4 @@ Reset all settings
 
 Reset all restores a known default state and removes obsolete stored values rather than retaining hidden legacy configuration. A reset operation should be recoverable where practical and must not remove user photographs or unrelated platform data.
 
-R2 materializes only meaningful `Viewing` and `About` sections. It does not create empty future tabs, Save/Apply buttons, a language selector, theme selection, reset UI, or Performance controls.
+R3 materializes only meaningful `Viewing`, `Stage`, and `About` sections. It does not create empty future tabs, Save/Apply buttons, a language selector, theme selection, reset UI, customization sliders, or Performance controls.

@@ -41,6 +41,10 @@ At exact integer physical scales, align the image origin in backing-pixel space;
 
 R1 uses nearest plus physical backing-pixel origin alignment at exact integer physical scales. General Fit, fractional zoom, downscale, and interaction use linear filtering with linear mipmaps; fractional origins are not unconditionally rounded. There is one renderer for interactive and settled states because R0 did not justify a second representation.
 
+R3 keeps that photograph path unchanged and composes explicit layers in this order: Stage background, optional matte, original photograph, then ordinary temporary/error UI outside the photographic draw operation. Stage mode is not an input to photograph sampling. Matte geometry inflates behind the already-resolved photograph bounds and clips to the viewport; it never changes the photograph destination.
+
+Ambient cover geometry is calculated from a reusable oriented `384 px` long-edge representation and the current viewport. The representation is strongly blurred (`18 px` sigma at preparation resolution), desaturated to `0.55`, and darkened to `0.45`; its viewport cover crop is recomputed cheaply on resize without re-decoding or regeneration. Neutral is the non-calibrated sRGB presentation value `#505050`. Matte is `24` physical pixels converted through `RenderScaling`, uses `#202020`, and has no shadow in R3. These are centralized R3 defaults subject to later visual evidence, not colorimetric standards.
+
 The production viewport remains independent of Avalonia and Skia. Fit is capped at physical 100%, wheel zoom uses discrete `1.14` steps around the cursor, and internal physical-scale bounds are `0.01` through `64` as transform-safety limits rather than user-facing policy. Double-click from Fit enters physical 100% around the clicked source point; any non-Fit state returns to Fit. Navigation transfers physical zoom and normalized point of interest, while Fit remains Fit.
 
 ## Retained R0 evidence

@@ -1,4 +1,5 @@
 using Fovium.Settings;
+using Fovium.Stage;
 
 namespace Fovium.Tests.Settings;
 
@@ -44,6 +45,22 @@ public sealed class SettingsServiceTests
         store.Complete();
         await Task.WhenAll(change, flush);
         Assert.Equal(ImageChangeViewPolicy.FitEachImage, store.Saved?.ImageChangeViewPolicy);
+    }
+
+    [Fact]
+    public async Task StageChangePersistsWithoutChangingViewPolicyAndPublishesSharedState()
+    {
+        var store = new RecordingSettingsStore();
+        var service = new SettingsService(store);
+        FoviumSettings? published = null;
+        service.SettingsChanged += (_, e) => published = e.Settings;
+
+        await service.SetStageModeAsync(StageMode.AmbientMatte);
+
+        Assert.Equal(StageMode.AmbientMatte, service.Current.StageMode);
+        Assert.Equal(ImageChangeViewPolicy.KeepCurrentScale, service.Current.ImageChangeViewPolicy);
+        Assert.Equal(service.Current, published);
+        Assert.Equal(service.Current, store.Saved);
     }
 
     private sealed class RecordingSettingsStore(bool failSave = false) : ISettingsStore

@@ -50,7 +50,7 @@ A future split between basic photo information and advanced metadata is acceptab
 
 A complete metadata viewer is acceptable when explicitly opened; it must not reserve permanent viewport space.
 
-Stage mode selection should later be available from both the context menu and Settings. Stage definitions belong to [`PROJECT-VISION.md`](PROJECT-VISION.md).
+Stage mode selection is available from both the context menu and Settings. Black remains default; Neutral, Ambient, and Ambient + Matte apply immediately without changing Fit, physical scale, pan, or point of interest. Ambient remains fixed to the full photograph rather than following viewport zoom/pan. Stage definitions belong to [`PROJECT-VISION.md`](PROJECT-VISION.md).
 
 ## Settings principles
 

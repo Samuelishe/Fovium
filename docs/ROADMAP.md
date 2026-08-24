@@ -33,7 +33,7 @@ Accepted outcome: preserve physical scale/point of interest by default with a Fi
 
 ## R3 — Stage
 
-Implement and validate Black, Neutral, Ambient, and Ambient + Matte presentation modes without changing the original photograph or compromising responsiveness.
+Accepted outcome: persisted Black, Neutral, Ambient, and Ambient + Matte presentation modes with bounded oriented derivation, shared cache ownership, synchronized Settings/context-menu access, and unchanged photograph/viewport behavior.
 
 ## R4 — Peek 100% / Blink Compare
 

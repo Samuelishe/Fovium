@@ -36,6 +36,23 @@ internal sealed class SharedResource<T> where T : class, IDisposable
 
     public void ReleaseOwner() => Release();
 
+    public bool References(T value)
+    {
+        lock (_sync)
+        {
+            return ReferenceEquals(_value, value);
+        }
+    }
+
+    public bool TryGetValue(out T? value)
+    {
+        lock (_sync)
+        {
+            value = _value;
+            return value is not null;
+        }
+    }
+
     internal void Release()
     {
         T? dispose = null;

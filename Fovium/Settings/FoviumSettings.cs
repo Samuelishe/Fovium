@@ -1,5 +1,7 @@
 namespace Fovium.Settings;
 
+using Fovium.Stage;
+
 internal enum ImageChangeViewPolicy
 {
     KeepCurrentScale,
@@ -14,6 +16,8 @@ internal sealed record FoviumSettings
 
     public ImageChangeViewPolicy ImageChangeViewPolicy { get; init; } =
         ImageChangeViewPolicy.KeepCurrentScale;
+
+    public StageMode StageMode { get; init; } = StageMode.Black;
 
     public static FoviumSettings Default { get; } = new();
 }
