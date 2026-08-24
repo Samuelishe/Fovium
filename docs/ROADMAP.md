@@ -19,7 +19,11 @@ Establish repository hygiene, a public README, asset provenance policy, BCL-only
 
 Bounded investigation of rendering quality, DPI and physical-pixel 100%, viewport behavior, decoder boundaries, source/profile preservation, and color-foundation feasibility. Produce evidence and decisions before establishing the production stack.
 
-## R1 — Core runnable viewer
+## CONTRACTS-R1 — Product-shell contracts
+
+Establish canonical versioning, Settings, localization, themes, external activation, file-association, and thumbnail-integration contracts before production viewer implementation. This is documentation direction, not implemented application capability.
+
+## R1 — First production Core Viewer
 
 Create the smallest coherent viewer that opens supported images and implements the validated baseline viewport, input, and same-directory previous/next navigation path without pretending broader codec or color completion.
 
@@ -35,15 +39,17 @@ Implement and validate Black, Neutral, Ambient, and Ambient + Matte presentation
 
 Build photographer inspection actions on the shared viewport and navigation models, preserving view state and point of interest where intended.
 
-## R5 — Metadata / context menu / settings polish
+## R5 — Settings / metadata / context-menu polish
 
 Add unobtrusive metadata access, coherent context menus, settings, performance policy controls, and requested temporary diagnostics without persistent viewport chrome.
 
-## Later
+## Later / separate platform milestones
 
+- file association and Open With integration;
+- platform packaging;
+- platform thumbnail providers where they add value;
 - broader codec coverage and specialized/native backends;
 - full monitor ICC and multi-monitor color validation;
 - huge-image tiled or region strategies;
 - macOS runtime validation;
-- packaging, distribution, and platform integration polish;
 - HDR research when the SDR pipeline is trustworthy.

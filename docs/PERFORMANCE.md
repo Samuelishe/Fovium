@@ -31,6 +31,8 @@ Use a bounded cache with explicit cost accounting and eviction. Costs should inc
 
 Automatic policy is computed at runtime from actually available resources, current pressure, concurrent work, and conservative product caps. It does not run a one-time CPU/GPU benchmark or maintain a hardware-model database. Planned choices may include Automatic, fixed budgets such as 256 MB through 2 GB, and Custom, but values remain product/UI directions rather than permanent limits.
 
+This document owns the policy; [`SETTINGS.md`](SETTINGS.md) owns where future user-facing Automatic/manual choices appear and how those preferences persist.
+
 Large-image decode policy follows the same model: probe first, estimate peak working cost, include safety margin and concurrent allocations, then admit, defer, downsample, tile in the future, or reject. R0's checked 512 MiB guard estimates its two simultaneous BGRA copies and protects only the disposable probe; it is not a universal product cutoff.
 
 ## Diagnostics

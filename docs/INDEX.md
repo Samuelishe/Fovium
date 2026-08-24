@@ -19,6 +19,11 @@ Not authoritative for: The subjects summarized by linked documents.
 | [`TEST-EXECUTION.md`](TEST-EXECUTION.md) | Local/CI test commands and evidence boundaries | Running, filtering, or interpreting tests |
 | [`PROJECT-STATS.md`](PROJECT-STATS.md) | Repository diagnostics usage, exclusions, metrics, and limits | Running or changing ProjectStats |
 | [`experiments/R0-RENDERING-PROBE.md`](experiments/R0-RENDERING-PROBE.md) | R0 setup, observations, comparisons, limitations, and recommendation | Implementing from or re-evaluating R0 evidence |
+| [`VERSIONING.md`](VERSIONING.md) | Display/numeric version semantics, checkpoint increments, and version metadata direction | Changing a project checkpoint or exposing a version |
+| [`SETTINGS.md`](SETTINGS.md) | Settings sections, preference ownership, persistence, migration, and reset policy | Designing settings or stored preferences |
+| [`LOCALIZATION.md`](LOCALIZATION.md) | Supported locales, locale resolution, fallback, and translation boundaries | Adding or changing localized UI text |
+| [`THEMES.md`](THEMES.md) | Dark/light application themes, semantic roles, and separation from Stage | Styling application UI or theme behavior |
+| [`PLATFORM-INTEGRATION.md`](PLATFORM-INTEGRATION.md) | External activation, file associations, document icons, thumbnails, and packaging boundaries | Integrating with operating-system file workflows |
 | [`ROADMAP.md`](ROADMAP.md) | Directional stages and future work | Planning or scoping a stage |
 | [`DECISIONS-LOG.md`](DECISIONS-LOG.md) | Durable decisions already established | Checking or recording why a direction is binding |
 | [`KNOWN-PROBLEMS.md`](KNOWN-PROBLEMS.md) | Open risks and unresolved technical questions | Investigating uncertainty or planning validation |

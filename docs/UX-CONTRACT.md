@@ -52,4 +52,8 @@ Stage mode selection should later be available from both the context menu and Se
 
 ## Future settings principles
 
-Settings expose durable preferences, not ordinary navigation. They should use plain choices with sensible automatic defaults, avoid expert jargon where a product concept exists, and never force a settings surface into the normal viewport. Performance-setting policy belongs to [`PERFORMANCE.md`](PERFORMANCE.md).
+Settings expose durable preferences, not ordinary navigation. They may be powerful when explicitly opened, but must never force a settings surface into the normal viewport. They should use plain choices with sensible automatic defaults and avoid expert jargon where a product concept exists. Section ownership, persistence, and reset behavior belong to [`SETTINGS.md`](SETTINGS.md); performance policy belongs to [`PERFORMANCE.md`](PERFORMANCE.md).
+
+Dark/Light application theme affects controls and secondary UI, never the photograph or Stage. The separation is owned by [`THEMES.md`](THEMES.md).
+
+External single- and multiple-file activation enters the same viewing experience, but its sequence construction and platform behavior belong to [`PLATFORM-INTEGRATION.md`](PLATFORM-INTEGRATION.md). In particular, an ordered explicit multi-file selection is a defined input rather than an implicit directory merge.

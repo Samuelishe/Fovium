@@ -9,6 +9,8 @@ Not authoritative for: Final technical choices still under evaluation, subsystem
 
 Exact direct versions are authoritative in the linked project manifests. REPO-R1 introduced the test packages; R0 introduced only the Avalonia/Skia packages needed by the disposable RenderProbe. Restore verified the combined graph on .NET 10.
 
+CONTRACTS-R1 introduces no package, service, action, or external asset.
+
 | Name | Author / organization | License | Purpose | Official source | Version | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | Microsoft.NET.Test.Sdk | Microsoft | MIT | MSBuild targets and test host integration | [NuGet](https://www.nuget.org/packages/Microsoft.NET.Test.Sdk/18.9.0) | `18.9.0` | Direct test-project reference; VSTest platform |
@@ -42,7 +44,7 @@ Consult the affected technical owner before choosing a candidate: rendering in [
 
 ## Assets / borrowed material
 
-No external images, icons, fonts, logos, generated image dumps, or test-image corpora are introduced through R0. RenderProbe patterns are deterministic code-generated runtime input and are not stored assets. Local JPEG/PNG smoke inputs were never copied into the repository. Future shipped or test assets must follow [`resources/README.md`](../resources/README.md) and record name, author/source, license, purpose, official source, modifications, and introduced stage here before commit.
+No external images, icons, fonts, logos, generated image dumps, or test-image corpora are introduced through CONTRACTS-R1. RenderProbe patterns are deterministic code-generated runtime input and are not stored assets. Local JPEG/PNG smoke inputs were never copied into the repository. Future shipped or test assets must follow [`resources/README.md`](../resources/README.md) and record name, author/source, license, purpose, official source, modifications, and introduced stage here before commit.
 
 ## Repository services and actions
 

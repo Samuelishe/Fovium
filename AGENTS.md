@@ -41,6 +41,11 @@ Do not load every document by default. If documents conflict, follow the owner n
 | Tests or test execution | [`docs/TEST-EXECUTION.md`](docs/TEST-EXECUTION.md) + [`docs/CODING-GUIDELINES.md`](docs/CODING-GUIDELINES.md) |
 | ProjectStats diagnostics | [`docs/PROJECT-STATS.md`](docs/PROJECT-STATS.md) |
 | R0 rendering/decoder evidence | [`docs/experiments/R0-RENDERING-PROBE.md`](docs/experiments/R0-RENDERING-PROBE.md) + affected technical owner |
+| Settings or preference persistence | [`docs/SETTINGS.md`](docs/SETTINGS.md) |
+| Localization or language | [`docs/LOCALIZATION.md`](docs/LOCALIZATION.md) |
+| UI theme or UI chrome visual roles | [`docs/THEMES.md`](docs/THEMES.md) + relevant UX owner |
+| Version or About version display | [`docs/VERSIONING.md`](docs/VERSIONING.md) |
+| File activation, associations, thumbnails, or packaging integration | [`docs/PLATFORM-INTEGRATION.md`](docs/PLATFORM-INTEGRATION.md) + relevant imaging owner |
 | Planning | [`docs/ROADMAP.md`](docs/ROADMAP.md) |
 | External dependency | [`docs/THIRD-PARTY.md`](docs/THIRD-PARTY.md) + affected technical owner |
 | Documentation change | [`docs/DOCUMENTATION-GOVERNANCE.md`](docs/DOCUMENTATION-GOVERNANCE.md) |

@@ -23,6 +23,8 @@ The normal viewing state is the photograph with nearly all application chrome ab
 
 Rare actions belong in a context menu, keyboard shortcuts, Settings, or temporary overlays requested by the user. Observable interaction details belong to [`UX-CONTRACT.md`](UX-CONTRACT.md).
 
+Settings may be sophisticated because they are explicitly opened and remain absent during viewing; their structure is owned by [`SETTINGS.md`](SETTINGS.md). Application UI theme affects controls and secondary surfaces, not the photograph or its Stage; [`THEMES.md`](THEMES.md) owns that separation.
+
 ## Stage
 
 The presentation space around the photograph is the **Stage**, not leftover window background. Planned modes are:

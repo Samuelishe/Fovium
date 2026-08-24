@@ -7,11 +7,13 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-DOCS-R1, REPO-R1, and the bounded R0 rendering/imaging probe are complete locally. R0 accepted Avalonia as the initial desktop host, a physical-scale viewport model, and an isolated direct-Skia/SKCodec foundation. Retained evidence is in [`experiments/R0-RENDERING-PROBE.md`](experiments/R0-RENDERING-PROBE.md). No GitHub-hosted CI run is claimed by this local stage.
+CONTRACTS-R1 is complete. The project checkpoint version is `0.0.0.0003`; its semantics and accepted checkpoint history are owned by [`VERSIONING.md`](VERSIONING.md).
+
+DOCS-R1, REPO-R1, and the bounded R0 rendering/imaging probe remain complete. R0 accepted Avalonia as the initial desktop host, a physical-scale viewport model, and an isolated direct-Skia/SKCodec foundation. Retained evidence is in [`experiments/R0-RENDERING-PROBE.md`](experiments/R0-RENDERING-PROBE.md). CONTRACTS-R1 establishes documentation contracts only; Settings, localization, themes, and platform integration are not implemented. No GitHub-hosted CI run is claimed by this local stage.
 
 ## Current focus
 
-Plan R1 as the first production Core Viewer vertical slice using the bounded R0 decisions without importing the probe UI as product architecture.
+R1 — first production Core Viewer vertical slice, using the bounded R0 decisions and product-shell contracts without importing the probe UI as product architecture.
 
 ## Implemented application functionality
 

@@ -102,3 +102,39 @@ SKCodec supplies the initial bounded JPEG/PNG header/orientation/decode path. Pr
 Status: Accepted in R0.
 
 Use nearest sampling for exact integer-pixel inspection and linear plus linear mipmaps for general Fit/downscale and interaction. R0 did not establish a visible/performance need for separate interactive and settled representations; cubic policies remain open to later evidence.
+
+## D-017 — Pre-release versions identify accepted checkpoints
+
+Status: Accepted in CONTRACTS-R1.
+
+Fovium's pre-release checkpoint line uses display versions `0.0.0.xxxx`. BUILD advances once per accepted coherent checkpoint—not per compile or failed attempt—and resets to `0000` after an explicit MAJOR, MINOR, or PATCH change. CONTRACTS-R1 establishes `0.0.0.0003`; CLR/file metadata may represent it numerically as `0.0.0.3`.
+
+## D-018 — Application theme and photographic Stage are independent
+
+Status: Accepted in CONTRACTS-R1.
+
+Dark/Light controls application UI surfaces. Black/Neutral/Ambient/Ambient + Matte controls the photographic Stage. Changing either setting must not silently change the other or alter source pixels.
+
+## D-019 — Initial localization is English and Russian with English fallback
+
+Status: Accepted in CONTRACTS-R1.
+
+Fovium begins with `en` and `ru`, uses a matching supported OS locale until the user selects one, and falls back through English to a visible key plus diagnostic warning. Key-based external catalogs must allow additional locales without application redesign.
+
+## D-020 — Multiple-file activation defaults to the explicit selection
+
+Status: Accepted in CONTRACTS-R1.
+
+When the operating system supplies multiple files, Fovium will by default browse only that ordered explicit sequence, including selections spanning directories. An Advanced setting may instead browse the directory containing the first supplied file; no implicit merge mode is defined.
+
+## D-021 — File associations remain under operating-system/user control
+
+Status: Accepted in CONTRACTS-R1.
+
+Fovium may register supported types and participate in Open With, but it must never silently seize default associations. Any Settings shortcut hands control to the platform's association UI rather than bypassing its ownership model.
+
+## D-022 — Thumbnail integration is isolated from the viewer UI
+
+Status: Accepted in CONTRACTS-R1.
+
+A future platform thumbnail provider may reuse bounded imaging capabilities but must not launch or depend on the full viewer UI. Existing good system providers remain preferred; when no thumbnail can be generated, the platform-registered Fovium image/document icon is the fallback rather than a fabricated thumbnail.

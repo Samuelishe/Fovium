@@ -34,9 +34,11 @@ See the canonical [UX contract](docs/UX-CONTRACT.md), [rendering contract](docs/
 
 ## Current status
 
-The bounded **R0 rendering/DPI/decoder/color-foundation investigation is complete**. Its disposable RenderProbe accepted an initial Avalonia/direct-Skia/SKCodec direction, but no production photo viewer exists yet. Repository diagnostics, automated tests, and cross-platform CI configuration are present; this local stage does not claim a hosted CI run.
+The current project checkpoint is **`0.0.0.0003`**. The bounded R0 rendering/DPI/decoder/color-foundation investigation is complete, and CONTRACTS-R1 has established versioning and product-shell contracts. Its disposable RenderProbe accepted an initial Avalonia/direct-Skia/SKCodec direction, but no production photo viewer exists yet. Repository diagnostics, automated tests, and cross-platform CI configuration are present; this local stage does not claim a hosted CI run.
 
 The next stage is the first production **R1 Core Viewer vertical slice**. The canonical current handoff is [PROJECT-STATE.md](docs/PROJECT-STATE.md); bounded R0 evidence is retained in the [experiment report](docs/experiments/R0-RENDERING-PROBE.md).
+
+The initial shell direction includes English/Russian localization and independent Dark/Light application themes; these are contracts, not implemented features. See [VERSIONING.md](docs/VERSIONING.md) and the [documentation index](docs/INDEX.md) for the canonical owners.
 
 ## Technology direction
 
