@@ -1,0 +1,49 @@
+# Roadmap
+
+Role: Directional sequence of project stages.
+Read when: Planning scope, choosing the next bounded outcome, or deciding whether work belongs now or later.
+Authoritative for: Future stage direction and ordering.
+Not authoritative for: Current progress, durable decisions, exact dates, or a permanent numbering guarantee.
+
+Stage numbering is a planning aid and may evolve when evidence changes scope. Each stage should update [`PROJECT-STATE.md`](PROJECT-STATE.md), record durable decisions in [`DECISIONS-LOG.md`](DECISIONS-LOG.md), and leave unresolved risks in [`KNOWN-PROBLEMS.md`](KNOWN-PROBLEMS.md).
+
+## DOCS-R1 — Repository documentation / Codex context foundation
+
+Establish compact authoritative documents, selective context routing, repository safety instructions, and a read-only baseline helper. Do not create production application code.
+
+## REPO-R1 — Repository foundation
+
+Establish repository hygiene, a public README, asset provenance policy, BCL-only ProjectStats diagnostics, meaningful tests for repository tooling, and Windows/Linux/macOS restore-build-test CI. Keep generated reports untracked and create no viewer application.
+
+## R0 — Rendering and imaging foundation probe
+
+Bounded investigation of rendering quality, DPI and physical-pixel 100%, viewport behavior, decoder boundaries, source/profile preservation, and color-foundation feasibility. Produce evidence and decisions before establishing the production stack.
+
+## R1 — Core runnable viewer
+
+Create the smallest coherent viewer that opens supported images and implements the validated baseline viewport, input, and same-directory previous/next navigation path without pretending broader codec or color completion.
+
+## R2 — Navigation, cache, and performance polish as needed
+
+Measure and refine adjacent-image preparation, latest-wins loading, bounded caching, failure skipping, and navigation responsiveness as evidence requires. Navigation already exists as a core path by this stage; R2 hardens it rather than introducing it as an optional feature.
+
+## R3 — Stage
+
+Implement and validate Black, Neutral, Ambient, and Ambient + Matte presentation modes without changing the original photograph or compromising responsiveness.
+
+## R4 — Peek 100% / Blink Compare
+
+Build photographer inspection actions on the shared viewport and navigation models, preserving view state and point of interest where intended.
+
+## R5 — Metadata / context menu / settings polish
+
+Add unobtrusive metadata access, coherent context menus, settings, performance policy controls, and requested temporary diagnostics without persistent viewport chrome.
+
+## Later
+
+- broader codec coverage and specialized/native backends;
+- full monitor ICC and multi-monitor color validation;
+- huge-image tiled or region strategies;
+- macOS runtime validation;
+- packaging, distribution, and platform integration polish;
+- HDR research when the SDR pipeline is trustworthy.

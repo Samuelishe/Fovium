@@ -1,0 +1,27 @@
+# Documentation index
+
+Role: Navigation map for project documentation.
+Read when: Selecting context for a task or locating an authoritative owner.
+Authoritative for: Document discovery and reading routes.
+Not authoritative for: The subjects summarized by linked documents.
+
+| Document | Contains | Read when |
+| --- | --- | --- |
+| [`PROJECT-STATE.md`](PROJECT-STATE.md) | Current checkpoint, focus, implemented capability, and active blockers | Every nontrivial task |
+| [`PROJECT-VISION.md`](PROJECT-VISION.md) | Product identity, audience, philosophy, Stage, photographer features, and non-goals | Evaluating product direction or feature fit |
+| [`UX-CONTRACT.md`](UX-CONTRACT.md) | Observable interaction and zero-UI behavior | Changing input, menus, window behavior, or settings UX |
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | Responsibility boundaries, dependency direction, and minimal architecture rules | Designing components or dependencies |
+| [`IMAGING-PIPELINE.md`](IMAGING-PIPELINE.md) | Probe, orientation, decoding, metadata boundary, formats, and large-image safety | Working on image ingestion or codecs |
+| [`RENDERING.md`](RENDERING.md) | Viewport semantics, DPI, physical-pixel 100%, zoom, pan, and R0 rendering evidence | Working on display or viewport behavior |
+| [`COLOR-MANAGEMENT.md`](COLOR-MANAGEMENT.md) | Source/destination profiles, transforms, multi-monitor behavior, and research boundary | Working on color or display profiles |
+| [`PERFORMANCE.md`](PERFORMANCE.md) | Responsiveness, preload/cache policy, concurrency, limits, and measurement | Working on loading, navigation latency, memory, or diagnostics |
+| [`CODING-GUIDELINES.md`](CODING-GUIDELINES.md) | C# implementation and testing conventions | Writing or reviewing production code |
+| [`TEST-EXECUTION.md`](TEST-EXECUTION.md) | Local/CI test commands and evidence boundaries | Running, filtering, or interpreting tests |
+| [`PROJECT-STATS.md`](PROJECT-STATS.md) | Repository diagnostics usage, exclusions, metrics, and limits | Running or changing ProjectStats |
+| [`ROADMAP.md`](ROADMAP.md) | Directional stages and future work | Planning or scoping a stage |
+| [`DECISIONS-LOG.md`](DECISIONS-LOG.md) | Durable decisions already established | Checking or recording why a direction is binding |
+| [`KNOWN-PROBLEMS.md`](KNOWN-PROBLEMS.md) | Open risks and unresolved technical questions | Investigating uncertainty or planning validation |
+| [`THIRD-PARTY.md`](THIRD-PARTY.md) | Dependencies, evaluated technology, CI actions/services, and asset provenance | Considering or adding third-party material |
+| [`DOCUMENTATION-GOVERNANCE.md`](DOCUMENTATION-GOVERNANCE.md) | Canonical ownership, update triggers, conflict resolution, and archival rules | Editing documentation or resolving overlap |
+
+Operational repository rules live in the root [`AGENTS.md`](../AGENTS.md). The public introduction is [`README.md`](../README.md).
