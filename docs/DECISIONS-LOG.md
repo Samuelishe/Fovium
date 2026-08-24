@@ -138,3 +138,21 @@ Fovium may register supported types and participate in Open With, but it must ne
 Status: Accepted in CONTRACTS-R1.
 
 A future platform thumbnail provider may reuse bounded imaging capabilities but must not launch or depend on the full viewer UI. Existing good system providers remain preferred; when no thumbnail can be generated, the platform-registered Fovium image/document icon is the fallback rather than a fabricated thumbnail.
+
+## D-023 — R1 production starts as one application assembly
+
+Status: Accepted in R1.
+
+The first production viewer is the single `Fovium` assembly. Logical application, navigation, loading, imaging, rendering, localization, and view responsibilities remain separated inside it. Production has no dependency on RenderProbe, and no extra production project is justified by R1 evidence.
+
+## D-024 — Foreground publication is generation-owned and cache-bounded
+
+Status: Accepted in R1.
+
+Every sequence selection has explicit session/generation identity; cancellation is an efficiency mechanism, while generation equality controls publication. The previous display lease remains visible until an accepted replacement is ready. Adjacent speculative loads use a byte-accounted bounded LRU and may not displace the protected current image.
+
+## D-025 — Retained drawing uses explicit native-image leases
+
+Status: Accepted in R1.
+
+Cache, displayed image, and retained Avalonia custom draw operations hold explicit reference-counted leases. Replacement, eviction, stale completion, and shutdown release their own ownership; the native Skia image is disposed only after the last render operation releases it. This isolates both lifetime and Avalonia's unstable Skia API at the rendering edge.

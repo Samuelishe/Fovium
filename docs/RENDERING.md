@@ -1,9 +1,9 @@
 # Rendering
 
-Role: Technical contract and research agenda for photographic viewport rendering.
+Role: Technical contract for photographic viewport rendering and its remaining research agenda.
 Read when: Working on renderer choice, Fit/100%, zoom, pan, DPI, pixel alignment, resize, or display sampling.
 Authoritative for: Physical/logical pixel semantics, viewport-state direction, cursor anchoring, and the accepted initial rendering foundation.
-Not authoritative for: Final lifetime renderer choice, image decode policy, ICC implementation, or product-level input bindings.
+Not authoritative for: Image decode policy, ICC implementation, or product-level input bindings.
 
 ## Quality premise
 
@@ -35,12 +35,14 @@ Resize, fullscreen changes, and DPI transitions must define whether they preserv
 
 ## Sampling and alignment
 
-The display path may need different sampling for downscale, modest upscale, exact 100%, interactive zoom, and prepared representations. R0 compared explicit candidates for quality, edge behavior, alpha, and pixel alignment; later changes still require evidence rather than library popularity.
+The production display path selects sampling from physical scale. R0 compared the candidates for quality, edge behavior, alpha, and pixel alignment; later changes still require evidence rather than library popularity.
 
 At exact integer physical scales, align the image origin in backing-pixel space; R0 showed a crisp one-pixel pattern at 100% on the available display. Do not apply rounding indiscriminately at every fractional zoom.
 
-The initial direct-Skia policy is nearest for exact-pixel inspection and linear plus linear mipmaps for general Fit/downscale and interaction. Mitchell and Catmull–Rom remain available research choices; R0 did not justify a separate settled representation or two-stage renderer.
+R1 uses nearest plus physical backing-pixel origin alignment at exact integer physical scales. General Fit, fractional zoom, downscale, and interaction use linear filtering with linear mipmaps; fractional origins are not unconditionally rounded. There is one renderer for interactive and settled states because R0 did not justify a second representation.
+
+The production viewport remains independent of Avalonia and Skia. Fit is capped at physical 100%, wheel zoom uses discrete `1.14` steps around the cursor, and internal physical-scale bounds are `0.01` through `64` as transform-safety limits rather than user-facing policy. Double-click from Fit enters physical 100% around the clicked source point; any non-Fit state returns to Fit. Navigation transfers physical zoom and normalized point of interest, while Fit remains Fit.
 
 ## Retained R0 evidence
 
-The disposable probe, exact comparisons, measured observations, and limitations are recorded in [`experiments/R0-RENDERING-PROBE.md`](experiments/R0-RENDERING-PROBE.md). That report is evidence, not a production architecture owner. Color goals and unknowns remain owned by [`COLOR-MANAGEMENT.md`](COLOR-MANAGEMENT.md).
+The disposable probe, exact comparisons, measured observations, and limitations are recorded in [`experiments/R0-RENDERING-PROBE.md`](experiments/R0-RENDERING-PROBE.md). R1 implemented the retained direction independently and manually exercised it on Windows at `RenderScaling = 1.00`; fractional/per-monitor and Linux/macOS runtime proof remain open. Color goals and unknowns remain owned by [`COLOR-MANAGEMENT.md`](COLOR-MANAGEMENT.md).

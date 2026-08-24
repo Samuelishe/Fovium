@@ -1,0 +1,27 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:viewer="using:Fovium.Viewer"
+        x:Class="Fovium.Views.ViewerWindow"
+        Title="Fovium"
+        Background="Black"
+        WindowState="Maximized"
+        MinWidth="480"
+        MinHeight="320">
+  <Grid Background="Black">
+    <viewer:PhotoViewportControl x:Name="PhotoViewport" />
+    <Border x:Name="ErrorSurface"
+            IsVisible="False"
+            IsHitTestVisible="False"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            MaxWidth="520"
+            Padding="18,12"
+            CornerRadius="6"
+            Background="#DD181818">
+      <TextBlock x:Name="ErrorText"
+                 Foreground="#FFF2F2F2"
+                 TextAlignment="Center"
+                 TextWrapping="Wrap" />
+    </Border>
+  </Grid>
+</Window>

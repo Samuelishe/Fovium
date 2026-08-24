@@ -33,10 +33,16 @@ Run only render-independent R0 logic tests:
 dotnet test Fovium.Tests/Fovium.Tests.csproj --filter "FullyQualifiedName~Fovium.Tests.RenderProbe"
 ```
 
+Run the production R1 logic and boundary tests while iterating:
+
+```powershell
+dotnet test Fovium.Tests/Fovium.Tests.csproj --filter "FullyQualifiedName~Fovium.Tests.Application|FullyQualifiedName~Fovium.Tests.Navigation|FullyQualifiedName~Fovium.Tests.Loading|FullyQualifiedName~Fovium.Tests.Imaging|FullyQualifiedName~Fovium.Tests.Rendering|FullyQualifiedName~Fovium.Tests.Localization|FullyQualifiedName~Fovium.Tests.Versioning"
+```
+
 ## Scope
 
-Focused tests are preferred during implementation; run the full solution before handoff when shared tooling or project configuration changes. The current xUnit suite covers repository tooling plus R0 viewport, orientation, decode-cost, and malformed-input logic. No production Fovium application exists yet.
+Focused tests are preferred during implementation; run the full solution before handoff when shared tooling or project configuration changes. The xUnit suite covers repository tooling and retained R0 logic plus production activation, navigation, decoding, viewport, loading ownership, cache, memory policy, localization, version metadata, and native render-lease lifetime.
 
 UI interaction, rendering quality, runtime DPI, pixel alignment, color, native lifetime, and platform behavior require bounded integration, visual, and manual smoke evidence; passing pure tests cannot prove those properties.
 
-CI restores, builds, and tests on Windows, Linux, and macOS. The workflow's presence is not evidence of a hosted passing run, and repository-tool portability does not yet prove a future Avalonia viewer runs correctly on those systems.
+CI restores, builds, and tests on Windows, Linux, and macOS. The workflow's presence is not evidence of a hosted passing run, and build/test success does not prove the Avalonia viewer's runtime rendering on those systems.

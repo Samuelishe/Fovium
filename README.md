@@ -34,11 +34,11 @@ See the canonical [UX contract](docs/UX-CONTRACT.md), [rendering contract](docs/
 
 ## Current status
 
-The current project checkpoint is **`0.0.0.0003`**. The bounded R0 rendering/DPI/decoder/color-foundation investigation is complete, and CONTRACTS-R1 has established versioning and product-shell contracts. Its disposable RenderProbe accepted an initial Avalonia/direct-Skia/SKCodec direction, but no production photo viewer exists yet. Repository diagnostics, automated tests, and cross-platform CI configuration are present; this local stage does not claim a hosted CI run.
+The current project checkpoint is **`0.0.0.0004`**. R1 provides the first runnable production Core Viewer: JPEG/PNG, zero-UI Black Stage, Fit and physical-pixel 100%, cursor-anchored zoom, pan, same-directory or explicit-sequence navigation, adjacent preload, bounded caching, fullscreen, and EN/RU secondary UI.
 
-The next stage is the first production **R1 Core Viewer vertical slice**. The canonical current handoff is [PROJECT-STATE.md](docs/PROJECT-STATE.md); bounded R0 evidence is retained in the [experiment report](docs/experiments/R0-RENDERING-PROBE.md).
+This remains an early vertical slice, not a release claim. Full monitor-aware ICC, broad codecs, Settings, metadata, platform associations, and later photographer features are not implemented. The expected next stage is **R2 navigation/cache/performance hardening**. The canonical handoff is [PROJECT-STATE.md](docs/PROJECT-STATE.md); bounded R0 evidence remains in the [experiment report](docs/experiments/R0-RENDERING-PROBE.md).
 
-The initial shell direction includes English/Russian localization and independent Dark/Light application themes; these are contracts, not implemented features. See [VERSIONING.md](docs/VERSIONING.md) and the [documentation index](docs/INDEX.md) for the canonical owners.
+English/Russian catalogs and the Dark R1 secondary-UI baseline are implemented; language/theme Settings and Light selection remain future work. See [VERSIONING.md](docs/VERSIONING.md) and the [documentation index](docs/INDEX.md) for the canonical owners.
 
 ## Technology direction
 
@@ -46,7 +46,7 @@ The initial shell direction includes English/Russian localization and independen
 - Avalonia 12.1.1 as the accepted initial cross-platform UI host;
 - an isolated direct-Skia photographic path with SkiaSharp 3.119.4;
 - controlled SKCodec probing/decoding as the initial JPEG/PNG foundation;
-- xUnit for current repository-tool tests.
+- xUnit for repository, experiment, and production logic tests.
 
 Full monitor-aware ICC, broad codec coverage, and huge/tiled image handling remain future work.
 
@@ -57,12 +57,11 @@ Full monitor-aware ICC, broad codec coverage, and huge/tiled image handling rema
 | `docs/` | Canonical product, technical, planning, and repository contracts |
 | `eng/` | Small repository verification wrappers |
 | `resources/` | Tracked asset root governed by provenance policy |
+| `Fovium/` | First production Core Viewer application |
 | `Fovium.Tools.ProjectStats/` | BCL-only repository diagnostics CLI |
-| `Fovium.Tests/` | Automated tests for repository tooling and render-independent R0 logic |
+| `Fovium.Tests/` | Automated tests for repository tooling, retained R0 logic, and production R1 boundaries |
 | `experiments/Fovium.RenderProbe/` | Disposable R0 rendering/imaging evidence executable; not the viewer |
 | `.github/workflows/ci.yml` | Windows, Linux, and macOS restore/build/test workflow |
-
-There is intentionally no production Fovium application project yet.
 
 ## Development / verification
 
@@ -77,6 +76,12 @@ pwsh eng/project-stats.ps1
 ```
 
 ProjectStats generates an ignored local `project-stats.md` report. Test details are in [TEST-EXECUTION.md](docs/TEST-EXECUTION.md).
+
+Run the viewer with zero or more paths (zero opens the picker):
+
+```powershell
+dotnet run --project Fovium -- "C:\path\to\photo.jpg"
+```
 
 ## Documentation
 

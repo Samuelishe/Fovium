@@ -18,7 +18,7 @@ English is the fallback locale. The architecture must permit additional catalogs
 
 ## Catalog direction
 
-Prefer external, key-based UI catalogs over inline locale branches. A possible future layout is:
+R1 implements external, key-based JSON UI catalogs at:
 
 ```text
 resources/localization/ui/
@@ -26,7 +26,7 @@ resources/localization/ui/
     ru.json
 ```
 
-This path and JSON are design direction, not an implemented or permanently selected storage format. CONTRACTS-R1 creates no catalogs, resource directories, or localization package.
+The catalogs are embedded into the production assembly; no localization package is used. Context-menu commands, the file-picker title, and controlled image-load errors resolve through catalog keys rather than scattered locale branches.
 
 ## Locale resolution
 
@@ -54,7 +54,7 @@ English
 visible key + diagnostic warning
 ```
 
-Missing or malformed translations must not crash or prevent photograph viewing. Diagnostics must not replace the visible fallback.
+Missing translations do not crash or prevent photograph viewing. R1 falls back from the resolved locale to English and then returns the visible key while emitting a diagnostic trace. Catalog parse/load failure is currently an application-startup boundary failure rather than a recoverable missing-key case; future user-editable catalogs would require a different policy.
 
 ## Translation boundary
 

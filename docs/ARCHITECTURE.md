@@ -7,7 +7,7 @@ Not authoritative for: Exact future classes, final renderer/library selection, i
 
 ## Shape
 
-Begin with one production assembly when implementation starts. Add projects only when an evidenced build, deployment, test, or dependency boundary requires them. Do not pre-create enterprise Clean Architecture layers.
+R1 begins with one production assembly, `Fovium`. Add projects only when an evidenced build, deployment, test, or dependency boundary requires them. Do not pre-create enterprise Clean Architecture layers.
 
 Repository tooling and experiments are separate from this future production shape. `Fovium.Tools.ProjectStats` depends only on the BCL and remains diagnostic CLI code. `experiments/Fovium.RenderProbe` is disposable evidence, not a production layer or class-name source. `Fovium.Tests` may reference tooling, experiments, and production assemblies; production assemblies must never depend on them.
 
@@ -38,9 +38,9 @@ Dependencies should point toward small project-owned contracts and pure models o
 
 ## Imaging extensibility
 
-Multiple decoder backends may coexist behind a project-owned probe/decode contract. Adding a codec backend must not require rewriting navigation, viewport math, cache policy, or rendering. This is backend extensibility, not a user plugin system. R0 supports beginning with SKCodec behind such a boundary, but exact production contracts should emerge from the R1 vertical slice rather than copying experiment types.
+Multiple decoder backends may coexist behind a project-owned probe/decode contract. Adding a codec backend must not require rewriting navigation, viewport math, cache policy, or rendering. This is backend extensibility, not a user plugin system. R1 uses a narrow project-owned asynchronous loader contract with controlled SKCodec JPEG/PNG probing and decode; navigation and loading depend on typed results rather than SKCodec details.
 
-R0 also supports an isolated direct-Skia drawing adapter. Skia types must not leak into navigation or render-independent viewport math, and Avalonia's unstable lease must be confined to the platform/render edge.
+The production direct-Skia adapter is confined to `SkiaPhotoDrawOperation`. Skia types do not leak into navigation or render-independent viewport math, and Avalonia's unstable lease remains at the platform/render edge.
 
 ## Source and display representations
 
@@ -52,4 +52,4 @@ Keeping these concepts distinct allows later monitor-aware transforms, alternati
 
 ## Concurrency and lifetime
 
-Long-running operations receive cancellation and/or an explicit selection generation. Native or unmanaged resources have clear owners and deterministic disposal. Latest-wins publication and resource budgets are specified in [`PERFORMANCE.md`](PERFORMANCE.md); coding rules are in [`CODING-GUIDELINES.md`](CODING-GUIDELINES.md).
+Long-running operations receive cancellation and an explicit session/generation identity. R1 uses reference-counted cache/display/render leases: eviction or replacement releases ownership, while a retained Avalonia draw operation keeps its native `SKImage` alive until that operation is disposed. Stale results and shutdown release ownership deterministically. Latest-wins publication and resource budgets are specified in [`PERFORMANCE.md`](PERFORMANCE.md); coding rules are in [`CODING-GUIDELINES.md`](CODING-GUIDELINES.md).

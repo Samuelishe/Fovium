@@ -31,15 +31,15 @@ The active destination is associated with the display presenting the photograph,
 
 If a platform cannot provide reliable destination-profile information, the fallback and diagnostic state must be explicit. Claims of correctness require measured output or platform evidence, not an assumption that Avalonia or Skia handles the entire monitor-aware pipeline automatically.
 
-## R0 findings and not-yet-validated direction
+## R0/R1 findings and not-yet-validated direction
 
 R0 introduced SkiaSharp for the experiment. `SKCodec.Info.ColorSpace` preserves a normalized Skia color-space object when recognized, but the tested boundary did not expose the original embedded ICC payload and did not yield usable equivalent profile bytes for the inspected sRGB JPEG. Avalonia Bitmap does not expose the needed source profile/orientation facts publicly. The initial boundary therefore retains original encoded bytes plus explicit normalized/fallback color state rather than keeping decoded pixels alone.
 
-The temporary R0 display policy treats untagged sources as sRGB and uses recognized Skia color information where supported. It is not final policy and does not claim monitor-aware conversion, wide-gamut correctness, or invalid-profile correctness.
+R1 retains the original encoded bytes and records whether SKCodec reported assumed sRGB, normalized sRGB, or normalized non-sRGB. Decode creates a premultiplied BGRA representation using the recognized Skia color space when available and assumes sRGB for untagged input. This is the inherited probe policy, not final color management; it does not claim monitor-aware conversion, wide-gamut correctness, raw ICC preservation, or invalid-profile correctness.
 
 LittleCMS, native platform color APIs, ImageSharp ICC facilities, and other suitable libraries remain research candidates. No final ICC engine or destination-monitor integration is selected.
 
-The initial runnable viewer may be SDR-first and may ship before full monitor ICC behavior, but its architecture must retain enough information to add that behavior. HDR output is future work; current boundaries should avoid assuming all content and destinations are 8-bit sRGB.
+The initial runnable viewer is SDR-first and retains encoded source data so a future profile extractor/transform path is not blocked by the R1 decoded bitmap boundary. HDR output is future work; current boundaries must avoid presenting R1's 8-bit BGRA display representation as the only possible source representation.
 
 ## Validation direction
 

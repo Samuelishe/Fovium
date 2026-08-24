@@ -9,7 +9,7 @@ Not authoritative for: Decoder implementation, navigation loading policy, Settin
 
 Platform integration is an edge subsystem. It translates operating-system activation and shell capabilities into project-owned requests and consumes imaging capabilities; it does not belong inside the imaging pipeline and must not spread registry, MIME, bundle, or shell APIs through application code.
 
-The future activation shape must accept an ordered collection of paths, conceptually `IReadOnlyList<string>`, even when one file is common. This is a requirement, not a mandated interface name.
+R1 startup accepts an ordered collection of command-line paths even when one file is common. The application also maps a native multi-select file-picker result into the same activation plan.
 
 Inputs may contain Unicode, spaces, long names, platform-specific syntax, and paths supplied by shell activation. Fovium must eventually support `fovium <path>` and equivalent native activation. Startup must not assume that a Fovium file picker produced the request.
 
@@ -27,7 +27,7 @@ make the opened file current
 browse previous/next neighbors
 ```
 
-This creates no import, catalog, or database.
+R1 implements this as a non-recursive background directory snapshot with deterministic natural filename ordering. This creates no import, catalog, database, or live watcher.
 
 ## Multiple-file activation
 
@@ -42,6 +42,8 @@ Use the first supplied file as the initial item and build navigation from its co
 Use only the supplied files, preserving their supplied order as the navigation sequence. Files may come from multiple directories. Existing viability rules may skip unsupported, corrupt, or unsafe entries without inventing additional directory merging.
 
 **Mode B — explicit selection is the default.**
+
+R1 implements Mode B for multiple command-line paths and picker selections. Mode A remains a future Advanced preference because Settings is not implemented.
 
 The future preference is located at:
 
@@ -62,7 +64,7 @@ Do not add a third implicit merge mode. Preference persistence belongs to [`SETT
 
 Fovium should eventually register the image types it can actually open. Registration advertises capability; the operating system and user retain ownership of the default-app choice. Fovium must never silently seize or rewrite default associations.
 
-Settings may later offer **Open system file association settings** or a platform equivalent. CONTRACTS-R1 adds no registry, MIME, bundle, or default-app implementation.
+Settings may later offer **Open system file association settings** or a platform equivalent. R1 adds no registry, MIME, bundle, or default-app implementation; command-line activation is not a claim of installed shell integration.
 
 Expected directions differ by platform:
 
@@ -136,4 +138,4 @@ Thumbnail reuse may eventually justify a reusable imaging assembly, but only aft
 
 ## Packaging and current status
 
-Association registration, bundle/MIME metadata, document icons, thumbnail providers, and packaging are future platform work. None is implemented in CONTRACTS-R1, and no platform parity claim follows from these contracts.
+Association registration, bundle/MIME metadata, document icons, thumbnail providers, and packaging are future platform work. None is implemented in R1, and no platform parity claim follows from command-line/file-picker activation.

@@ -17,9 +17,10 @@ Fovium displays its version as:
 0.0.0.0001
 0.0.0.0002
 0.0.0.0003
+0.0.0.0004
 ```
 
-CLR assembly and file-version fields are numeric and do not preserve meaningful leading zeros. Their equivalent values may therefore be `0.0.0.1`, `0.0.0.2`, and `0.0.0.3`. The human-facing informational version preserves `0001`, `0002`, and `0003`.
+CLR assembly and file-version fields are numeric and do not preserve meaningful leading zeros. Their equivalent values may therefore be `0.0.0.1` through `0.0.0.4`. The human-facing informational version preserves the four-digit BUILD.
 
 ## Component semantics
 
@@ -56,12 +57,21 @@ The displayed checkpoint is not a substitute for a Git commit, tag, or branch. G
 | `0.0.0.0001` | DOCS-R1 + REPO-R1 | Initial repository, documentation, tooling, test, and CI foundation |
 | `0.0.0.0002` | R0 | Rendering, DPI, decoder, and color-foundation investigation accepted |
 | `0.0.0.0003` | CONTRACTS-R1 | Versioning, Settings, localization, themes, and platform-integration contracts established |
+| `0.0.0.0004` | R1 | First runnable production Core Viewer vertical slice |
 
-The current accepted project checkpoint is `0.0.0.0003`. Current implementation state remains owned by [`PROJECT-STATE.md`](PROJECT-STATE.md).
+The current accepted project checkpoint is `0.0.0.0004`. Current implementation state remains owned by [`PROJECT-STATE.md`](PROJECT-STATE.md).
 
 ## Future code and packaging source
 
-When a production application exists, use one canonical source for the four numeric components and formatted display identity. From that source:
+The root `Directory.Build.props` is the canonical source for the current components and formatted display identity. It supplies the production `Fovium` assembly with:
+
+```text
+InformationalVersion = 0.0.0.0004
+AssemblyVersion      = 0.0.0.4
+FileVersion          = 0.0.0.4
+```
+
+From that source:
 
 - `InformationalVersion` preserves the four-digit BUILD display;
 - `AssemblyVersion` and `FileVersion` receive the numeric equivalent;
@@ -69,4 +79,4 @@ When a production application exists, use one canonical source for the four nume
 - installer, package, bundle, and distribution metadata derive from the same owner;
 - diagnostics report the resolved runtime version rather than duplicating constants.
 
-CONTRACTS-R1 creates no version class or production build metadata because no application project exists yet.
+The small runtime accessor reads assembly metadata and does not duplicate the display version. Future About, diagnostics, installer, and package metadata must continue to derive from this owner.

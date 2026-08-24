@@ -7,20 +7,18 @@ Not authoritative for: Final technical choices still under evaluation, subsystem
 
 ## Introduced
 
-Exact direct versions are authoritative in the linked project manifests. REPO-R1 introduced the test packages; R0 introduced only the Avalonia/Skia packages needed by the disposable RenderProbe. Restore verified the combined graph on .NET 10.
-
-CONTRACTS-R1 introduces no package, service, action, or external asset.
+Exact direct versions are authoritative in the linked project manifests. REPO-R1 introduced the test packages; R0 introduced the Avalonia/Skia line for the disposable RenderProbe; R1 adopts the same coherent line in the production `Fovium` project. Restore verified the combined graph on .NET 10.
 
 | Name | Author / organization | License | Purpose | Official source | Version | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | Microsoft.NET.Test.Sdk | Microsoft | MIT | MSBuild targets and test host integration | [NuGet](https://www.nuget.org/packages/Microsoft.NET.Test.Sdk/18.9.0) | `18.9.0` | Direct test-project reference; VSTest platform |
 | xunit | xUnit.net project | Apache-2.0 | Test framework, assertions, and analyzers | [NuGet](https://www.nuget.org/packages/xunit/2.9.3) | `2.9.3` | Direct test-project reference; xUnit v2 |
 | xunit.runner.visualstudio | xUnit.net project | Apache-2.0 | VSTest discovery and execution adapter | [NuGet](https://www.nuget.org/packages/xunit.runner.visualstudio/4.0.0) | `4.0.0` | Direct private test asset; supports xUnit v2 |
-| Avalonia | AvaloniaUI | MIT | Core UI/control APIs for the RenderProbe | [NuGet](https://www.nuget.org/packages/Avalonia/12.1.1) | `12.1.1` | Direct RenderProbe reference; introduced R0 |
-| Avalonia.Desktop | AvaloniaUI | MIT | Windows/Linux/macOS desktop platform bundle | [NuGet](https://www.nuget.org/packages/Avalonia.Desktop/12.1.1) | `12.1.1` | Direct RenderProbe reference; introduces platform/native runtime assets transitively; R0 |
-| Avalonia.Skia | AvaloniaUI | MIT | Avalonia Skia renderer and direct-canvas lease | [NuGet](https://www.nuget.org/packages/Avalonia.Skia/12.1.1) | `12.1.1` | Direct RenderProbe reference; requires SkiaSharp `>= 3.119.4`; R0 |
-| Avalonia.Themes.Fluent | AvaloniaUI | MIT | Basic diagnostic-control styling | [NuGet](https://www.nuget.org/packages/Avalonia.Themes.Fluent/12.1.1) | `12.1.1` | Direct RenderProbe reference only; not Fovium product styling; R0 |
-| SkiaSharp | Microsoft / SkiaSharp contributors | MIT | Controlled `SKCodec` decode, test-pattern generation, and explicit photographic sampling | [NuGet](https://www.nuget.org/packages/SkiaSharp/3.119.4) | `3.119.4` | Direct RenderProbe reference pinned to Avalonia.Skia's coherent graph; independent latest 4.x was intentionally not mixed; R0 |
+| Avalonia | AvaloniaUI | MIT | Core UI/control APIs for RenderProbe and the production viewer | [NuGet](https://www.nuget.org/packages/Avalonia/12.1.1) | `12.1.1` | Direct RenderProbe reference in R0; direct production reference in R1 |
+| Avalonia.Desktop | AvaloniaUI | MIT | Windows/Linux/macOS desktop platform bundle | [NuGet](https://www.nuget.org/packages/Avalonia.Desktop/12.1.1) | `12.1.1` | Direct experimental and production reference; introduces platform/native runtime assets transitively; production adoption R1 |
+| Avalonia.Skia | AvaloniaUI | MIT | Avalonia Skia renderer and isolated direct-canvas lease | [NuGet](https://www.nuget.org/packages/Avalonia.Skia/12.1.1) | `12.1.1` | Direct experimental and production reference; requires SkiaSharp `>= 3.119.4`; production adoption R1 |
+| Avalonia.Themes.Fluent | AvaloniaUI | MIT | Basic RenderProbe controls and R1 Dark secondary UI | [NuGet](https://www.nuget.org/packages/Avalonia.Themes.Fluent/12.1.1) | `12.1.1` | Direct experimental and production reference; not the final Fovium visual system; production adoption R1 |
+| SkiaSharp | Microsoft / SkiaSharp contributors | MIT | Controlled `SKCodec` decode and explicit photographic sampling | [NuGet](https://www.nuget.org/packages/SkiaSharp/3.119.4) | `3.119.4` | Direct experimental and production reference pinned to Avalonia.Skia's coherent graph; production adoption R1 |
 
 No separate coverage collector is introduced. Transitive package resolution remains NuGet/MSBuild data rather than a manually duplicated version ledger here.
 
@@ -44,7 +42,7 @@ Consult the affected technical owner before choosing a candidate: rendering in [
 
 ## Assets / borrowed material
 
-No external images, icons, fonts, logos, generated image dumps, or test-image corpora are introduced through CONTRACTS-R1. RenderProbe patterns are deterministic code-generated runtime input and are not stored assets. Local JPEG/PNG smoke inputs were never copied into the repository. Future shipped or test assets must follow [`resources/README.md`](../resources/README.md) and record name, author/source, license, purpose, official source, modifications, and introduced stage here before commit.
+No external images, icons, fonts, logos, generated image dumps, or test-image corpora are introduced through R1. RenderProbe/test patterns are deterministic code-generated runtime input and are not stored assets. R1 English/Russian JSON catalogs are project-authored product resources. Local JPEG/PNG acceptance inputs remain ignored runtime data and were not copied into the repository. Future shipped or test assets must follow [`resources/README.md`](../resources/README.md) and record name, author/source, license, purpose, official source, modifications, and introduced stage here before commit.
 
 ## Repository services and actions
 

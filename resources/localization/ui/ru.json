@@ -1,0 +1,16 @@
+{
+  "menu.open": "Открыть…",
+  "menu.previous": "Предыдущее",
+  "menu.next": "Следующее",
+  "menu.fit": "Вписать",
+  "menu.actualSize": "100%",
+  "menu.fullscreen": "Полный экран",
+  "menu.close": "Закрыть",
+  "picker.title": "Открыть JPEG или PNG",
+  "picker.imageType": "Изображения JPEG / PNG",
+  "error.missing": "Не удалось открыть изображение: файл не найден",
+  "error.unsupported": "Не удалось открыть изображение: формат не поддерживается",
+  "error.corrupt": "Не удалось открыть изображение: файл повреждён",
+  "error.resourceLimit": "Не удалось открыть изображение: ограничение ресурсов",
+  "error.decodeFailed": "Не удалось открыть изображение"
+}

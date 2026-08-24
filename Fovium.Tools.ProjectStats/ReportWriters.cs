@@ -42,7 +42,7 @@ internal static class ConsoleReportWriter
         WriteLargest(writer, "Largest Markdown", report.LargestFiles.Markdown);
 
         writer.WriteLine();
-        writer.WriteLine("Folder density (.cs, .xaml, .md):");
+        writer.WriteLine("Folder density (.cs, .xaml/.axaml, .md):");
         foreach (var folder in report.FolderDensity)
         {
             writer.WriteLine(
@@ -175,7 +175,7 @@ internal static class MarkdownReportWriter
         writer.WriteLine();
         writer.WriteLine("## Folder density");
         writer.WriteLine();
-        writer.WriteLine("Includes `.cs`, `.xaml`, and `.md` files.");
+        writer.WriteLine("Includes `.cs`, `.xaml`, `.axaml`, and `.md` files.");
         writer.WriteLine();
         writer.WriteLine("| Folder | Files | Lines | Characters |");
         writer.WriteLine("| --- | ---: | ---: | ---: |");

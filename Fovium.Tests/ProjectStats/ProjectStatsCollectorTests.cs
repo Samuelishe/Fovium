@@ -15,6 +15,7 @@ public sealed class ProjectStatsCollectorTests
             "Fovium.Tests/SampleTests.cs",
             "using Xunit;\nclass SampleTests {\n[Fact] public void A() {}\n[Theory] [InlineData(1)] public void B(int value) {}\n}\n");
         repository.WriteFile("View.xaml", "<View />\n");
+        repository.WriteFile("App.axaml", "<Application />\n");
         repository.WriteFile("docs/Guide.md", "# Guide\n");
         repository.WriteFile("Fovium.sln", "Microsoft Visual Studio Solution File\n");
         repository.WriteFile("src/App.csproj", "<Project />\n");
@@ -22,13 +23,13 @@ public sealed class ProjectStatsCollectorTests
         var scan = new FileScanner().Scan(repository.Root, null);
         var report = ProjectStatsCollector.Collect(scan, 10);
 
-        Assert.Equal(8, report.TotalScannedFiles);
+        Assert.Equal(9, report.TotalScannedFiles);
         Assert.Equal(4, report.CSharp.FileCount);
         Assert.Equal(1, report.CSharp.ProductionFileCount);
         Assert.Equal(1, report.CSharp.TestFileCount);
         Assert.Equal(1, report.CSharp.ToolingFileCount);
         Assert.Equal(1, report.CSharp.ExperimentalFileCount);
-        Assert.Equal(1, report.Xaml.FileCount);
+        Assert.Equal(2, report.Xaml.FileCount);
         Assert.Equal(1, report.Markdown.FileCount);
         Assert.Equal(1, report.Tests.SourceFileCount);
         Assert.Equal(1, report.Tests.ApproximateFactCount);

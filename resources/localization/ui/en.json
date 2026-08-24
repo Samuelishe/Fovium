@@ -1,0 +1,16 @@
+{
+  "menu.open": "Open…",
+  "menu.previous": "Previous",
+  "menu.next": "Next",
+  "menu.fit": "Fit",
+  "menu.actualSize": "100%",
+  "menu.fullscreen": "Fullscreen",
+  "menu.close": "Close",
+  "picker.title": "Open JPEG or PNG",
+  "picker.imageType": "JPEG / PNG images",
+  "error.missing": "Unable to open this image: file not found",
+  "error.unsupported": "Unable to open this image: unsupported format",
+  "error.corrupt": "Unable to open this image: file is damaged",
+  "error.resourceLimit": "Unable to open this image: resource limit",
+  "error.decodeFailed": "Unable to open this image"
+}

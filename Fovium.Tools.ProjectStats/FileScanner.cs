@@ -67,6 +67,7 @@ internal sealed class FileScanner
     {
         ".cs",
         ".csproj",
+        ".axaml",
         ".json",
         ".md",
         ".props",

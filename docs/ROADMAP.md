@@ -25,11 +25,11 @@ Establish canonical versioning, Settings, localization, themes, external activat
 
 ## R1 — First production Core Viewer
 
-Create the smallest coherent viewer that opens supported images and implements the validated baseline viewport, input, and same-directory previous/next navigation path without pretending broader codec or color completion.
+Create the smallest coherent viewer that opens supported images and implements the validated baseline viewport, input, and same-directory previous/next navigation path without pretending broader codec or color completion. The accepted vertical slice establishes JPEG/PNG, zero-UI Black Stage, navigation, preload/cache, viewport input, fullscreen, basic context menu, and EN/RU runtime localization.
 
 ## R2 — Navigation, cache, and performance polish as needed
 
-Measure and refine adjacent-image preparation, latest-wins loading, bounded caching, failure skipping, and navigation responsiveness as evidence requires. Navigation already exists as a core path by this stage; R2 hardens it rather than introducing it as an optional feature.
+Measure and refine adjacent-image preparation, latest-wins loading, bounded caching, failure skipping, startup/decode latency, and navigation responsiveness as evidence requires. Validate the provisional memory formula and runtime portability. Navigation already exists as a core path; R2 hardens it rather than introducing it as an optional feature.
 
 ## R3 — Stage
 

@@ -3,7 +3,7 @@
 Role: Contract for application UI theme semantics and future visual-system structure.
 Read when: Styling Settings, menus, overlays, dialogs, metadata UI, error surfaces, temporary controls, or window chrome.
 Authoritative for: Supported application themes, default theme, semantic visual roles, and separation from photographic Stage.
-Not authoritative for: Stage appearance, photograph rendering, exact palette values, product input, or current theme implementation.
+Not authoritative for: Stage appearance, photograph rendering, exact palette values, or product input.
 
 ## Initial themes
 
@@ -54,4 +54,4 @@ Error
 
 Exact colors, contrast values, platform chrome treatment, and theme resource mechanics wait for implementation evidence. Fovium should remain visually quiet and purpose-built rather than becoming a generic framework-theme demonstration.
 
-CONTRACTS-R1 introduces no palette, branding asset, or production theme resources.
+R1 fixes the application UI to Dark and uses Avalonia Fluent for its small context-menu/error surface. There is no selector or final semantic palette yet. The viewer Stage is explicitly Black and remains independent of these resources; Light remains a contracted future option.

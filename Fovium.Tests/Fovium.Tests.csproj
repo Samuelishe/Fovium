@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Fovium\Fovium.csproj" />
     <ProjectReference Include="..\Fovium.Tools.ProjectStats\Fovium.Tools.ProjectStats.csproj" />
     <ProjectReference Include="..\experiments\Fovium.RenderProbe\Fovium.RenderProbe.csproj" />
   </ItemGroup>

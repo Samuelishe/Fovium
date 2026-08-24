@@ -17,7 +17,7 @@ The intended flow is:
 6. Extract optional metadata without coupling it to correct display.
 7. Prepare a display representation through the rendering/color path.
 
-R0 accepted controlled Skia `SKCodec` probing/decoding as the initial JPEG/PNG foundation. It exposes dimensions, encoded origin, format, frame count, normalized color-space state, and reduced-decode dimensions before full decode. A project-owned production result must still own these facts; the experiment's concrete types are not the production contract.
+R0 accepted controlled Skia `SKCodec` probing/decoding as the initial JPEG/PNG foundation. R1 implements that path behind a project-owned asynchronous loader and result boundary. The production source representation owns encoded bytes, detected format, encoded/oriented dimensions, orientation, frame count, normalized color state, pixel format, reduced-decode capability, cost estimates, timings, and deterministic native-image ownership. It does not depend on RenderProbe types.
 
 ## Header probe and decode plan
 
@@ -38,7 +38,7 @@ Approximate cost should include dimensions, bytes per pixel or channel layout, f
 
 ## Orientation and metadata boundary
 
-Orientation is part of baseline display correctness. Downstream dimensions, viewport math, and 100% semantics refer to the **oriented** source image. The pipeline must apply or carry the orientation exactly once and make that choice unambiguous. R0 modeled and tested all eight EXIF orientations and kept encoded dimensions distinct from oriented dimensions.
+Orientation is part of baseline display correctness. Downstream dimensions, viewport math, and 100% semantics refer to the **oriented** source image. The pipeline must apply or carry the orientation exactly once and make that choice unambiguous. R1 maps all eight SKCodec encoded origins to an explicit orientation transform, retains encoded dimensions separately, and renders through oriented coordinates; pure tests cover every orientation.
 
 EXIF, XMP, IPTC, and other descriptive metadata are useful but optional to ordinary display. Their extraction may be lazy and independently fallible. Metadata parsing must not block navigation unnecessarily. Source ICC/profile data is not optional UI metadata: it must survive to the color boundary even before the full color pipeline exists.
 
@@ -52,7 +52,7 @@ This registry is internal composition, not a plugin system or third-party extens
 
 During directory navigation, unsupported, corrupt, truncated, policy-rejected, or oversized candidates may be skipped while navigation continues to the next viable image. Failures must not crash the process or publish stale content.
 
-For direct open, the future UI should retain a stable Stage and show a quiet, actionable message instead of an out-of-memory crash or a sequence of modal dialogs. Tiled or region decoding may extend the safe envelope later; it is not assumed for the initial viewer.
+For direct open, R1 retains the Black Stage and shows a short localized in-viewport error instead of an out-of-memory crash or modal sequence. During navigation, missing, corrupt, unsupported, and policy-rejected candidates are skipped while the previous decoded photograph remains visible. Tiled or region decoding may extend the safe envelope later; it is not part of R1.
 
 Limits come from current available resources, actual representations, concurrent work, and product caps. R0 used a 512 MiB two-BGRA-copy safety guard only to protect the experiment; it is not a permanent limit. Scheduling and cache policy belong to [`PERFORMANCE.md`](PERFORMANCE.md).
 
@@ -60,4 +60,4 @@ Limits come from current available resources, actual representations, concurrent
 
 Likely areas include JPEG, PNG, WebP, TIFF, HEIF/HEIC, AVIF, JPEG XL, JPEG 2000, PSD previews, OpenEXR, and embedded RAW previews. This is a research set, not an initial support promise.
 
-Initial support should be intentionally bounded by validated backends and test assets. Broader codecs can arrive incrementally without changing core viewer semantics. Candidate technologies are tracked as evaluations in [`THIRD-PARTY.md`](THIRD-PARTY.md).
+R1 advertises JPEG/JPG/PNG candidates and validates actual content through SKCodec. A directly supplied unusual extension is attempted rather than trusted or rejected solely by name. Broader codecs can arrive incrementally without changing core viewer semantics. Candidate technologies are tracked as evaluations in [`THIRD-PARTY.md`](THIRD-PARTY.md).

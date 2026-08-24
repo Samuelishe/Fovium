@@ -59,7 +59,7 @@ internal static class ProjectStatsCollector
     {
         var files = scan.Files;
         var csharp = files.Where(IsCSharp).ToArray();
-        var xaml = files.Where(file => HasExtension(file, ".xaml")).ToArray();
+        var xaml = files.Where(IsXaml).ToArray();
         var markdown = files.Where(file => HasExtension(file, ".md")).ToArray();
         var testCSharp = csharp
             .Where(file => file.CSharpOwnership == CSharpOwnership.Tests)
@@ -85,7 +85,7 @@ internal static class ProjectStatsCollector
 
         var sourceLike = files.Where(file =>
             IsCSharp(file) ||
-            HasExtension(file, ".xaml") ||
+            IsXaml(file) ||
             HasExtension(file, ".md"));
 
         var folderDensity = sourceLike
@@ -129,6 +129,9 @@ internal static class ProjectStatsCollector
     }
 
     private static bool IsCSharp(ScannedFile file) => HasExtension(file, ".cs");
+
+    private static bool IsXaml(ScannedFile file) =>
+        HasExtension(file, ".xaml") || HasExtension(file, ".axaml");
 
     private static bool HasExtension(ScannedFile file, string extension) =>
         file.Extension.Equals(extension, StringComparison.OrdinalIgnoreCase);

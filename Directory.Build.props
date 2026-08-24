@@ -1,0 +1,19 @@
+<Project>
+  <PropertyGroup>
+    <FoviumVersionMajor>0</FoviumVersionMajor>
+    <FoviumVersionMinor>0</FoviumVersionMinor>
+    <FoviumVersionPatch>0</FoviumVersionPatch>
+    <FoviumVersionBuild>0004</FoviumVersionBuild>
+    <FoviumNumericBuild>4</FoviumNumericBuild>
+    <FoviumDisplayVersion>$(FoviumVersionMajor).$(FoviumVersionMinor).$(FoviumVersionPatch).$(FoviumVersionBuild)</FoviumDisplayVersion>
+    <FoviumNumericVersion>$(FoviumVersionMajor).$(FoviumVersionMinor).$(FoviumVersionPatch).$(FoviumNumericBuild)</FoviumNumericVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'Fovium'">
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <Version>$(FoviumDisplayVersion)</Version>
+    <AssemblyVersion>$(FoviumNumericVersion)</AssemblyVersion>
+    <FileVersion>$(FoviumNumericVersion)</FileVersion>
+    <InformationalVersion>$(FoviumDisplayVersion)</InformationalVersion>
+  </PropertyGroup>
+</Project>
