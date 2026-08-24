@@ -1,5 +1,51 @@
-bin/
-obj/
+# Build and package output
+[Bb]in/
+[Oo]bj/
 /packages/
+/artifacts/
+/publish/
+TestResults/
+
+# Test, coverage, and benchmark output
+*.trx
+*.coverage
+*.coveragexml
+coverage/
+coverage.*
+BenchmarkDotNet.Artifacts/
+
+# JetBrains Rider and ReSharper
+.idea/
+*.iml
 riderModule.iml
-/_ReSharper.Caches/
+_ReSharper.Caches/
+*.DotSettings.user
+
+# Visual Studio and editors
+.vs/
+.vscode/
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Generated repository diagnostics
+/project-stats.md
+/project-stats.json
+/.codex-cache/
+
+# Local settings
+*.local.json
+*.local.yaml
+*.local.yml
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
