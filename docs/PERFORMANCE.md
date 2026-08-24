@@ -25,7 +25,7 @@ Navigation is a core subsystem. After opening an image, discover viable neighbor
 
 Unsupported, corrupt, or resource-policy-rejected candidates are skipped so navigation can continue. Probe/decode eligibility is owned by [`IMAGING-PIPELINE.md`](IMAGING-PIPELINE.md).
 
-R1 implements one sequential speculative preload worker. After a publication it searches for one viable previous and one viable next neighbor, with current foreground selection/cancellation taking priority. R2 may refine directionality or concurrency only from measured need.
+R2 retains one sequential speculative preload worker. After a publication it searches for one viable previous and one viable next neighbor, with current foreground selection/cancellation taking priority. Local stress did not establish enough benefit to justify direction prediction, next+1 preload, or more than the existing two decode slots.
 
 ## Cache and memory budget
 
@@ -43,7 +43,7 @@ R1's provisional Automatic formula uses `GC.GetGCMemoryInfo().TotalAvailableMemo
 - foreground working allowance = one quarter, clamped to 256 MiB–2 GiB;
 - one speculative decode allowance = the smaller of the cache budget and half the foreground allowance.
 
-Admission checks both estimated peak working bytes and retained encoded-plus-BGRA bytes. The foreground image is admitted before speculative work, the displayed cache key is protected, and byte-accounted LRU eviction releases neighbors deterministically. These constants are R1 safety evidence, not permanent product settings.
+Admission checks both estimated peak working bytes and retained encoded-plus-BGRA bytes. The foreground image is admitted before speculative work, the displayed cache key is protected, and byte-accounted LRU eviction releases neighbors deterministically. R2 retained this formula after local stress; these constants remain provisional evidence, not permanent product settings.
 
 ## Diagnostics
 
@@ -56,3 +56,7 @@ Define representative local test assets and record environment, format, dimensio
 R1 Windows smoke at `RenderScaling = 1.00` used local runtime inputs: a 3840×2400 JPEG probed/decoded/prepared in 23.5/46.2/5.1 ms (81.9 ms decoder end-to-end), a 2400×3840 JPEG in 18.7/32.8/7.4 ms (65.5 ms end-to-end), and a 640×480 alpha PNG in 18.3/1.5/0.5 ms (26.6 ms end-to-end). A warm Release launch showed the window at 538 ms and the first photograph at 632 ms by screen polling. A prepared adjacent switch was observed at 29 ms; an immediate follow-on navigation/skip/load change at 105 ms. These are single-run engineering observations, not thresholds.
 
 After an initial 360-key navigation burst, process working/private memory rose by about 13.5/14.2 MiB; a second 360-key burst rose by about 1.3/0.9 MiB and handle count decreased from 777 to 772. The process remained responsive. This is an observed bounded smoke, not a leak proof or a cross-platform benchmark. Numeric acceptance thresholds still require representative environments and assets.
+
+R2 Windows local-corpus stress used repeated mixed-direction bursts, failed-candidate skipping, explicit sequence replacement, and high-cost decoded images. Across six sampled cycles the process remained responsive; working set ranged about 1083–1199 MiB and private bytes about 1188–1309 MiB after warm-up rather than increasing by traversal count. A two-file explicit reopen reduced the working/private set to about 681/754 MiB. Native/shell handle observations were affected by the Windows file picker and are not a leak verdict. Settings autosave completed without a visible navigation stall, and graceful shutdown after in-flight-aware lifetime hardening completed in about 77 ms in one run.
+
+Three warm R2 launches with an existing tiny settings document showed the window at 505–546 ms and photograph at 513–560 ms by the same screen-polling style used for the R1 538/632 ms observation. This shows no material first-open regression in that local environment; it is not a general performance claim. All R2 numbers remain local observations, not thresholds or cross-platform proof.

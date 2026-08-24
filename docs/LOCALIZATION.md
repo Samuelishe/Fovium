@@ -26,7 +26,7 @@ resources/localization/ui/
     ru.json
 ```
 
-The catalogs are embedded into the production assembly; no localization package is used. Context-menu commands, the file-picker title, and controlled image-load errors resolve through catalog keys rather than scattered locale branches.
+The catalogs are embedded into the production assembly; no localization package is used. Context-menu commands, the file-picker title, controlled image-load errors, and R2 Settings/Viewing/About strings resolve through catalog keys rather than scattered locale branches.
 
 ## Locale resolution
 

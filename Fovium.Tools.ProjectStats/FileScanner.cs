@@ -163,7 +163,7 @@ internal sealed class FileScanner
 
                 if (isDirectory)
                 {
-                    if (!ExcludedDirectoryNames.Contains(Path.GetFileName(entry)))
+                    if (!ShouldExcludeDirectory(root, entry))
                     {
                         pendingDirectories.Push(entry);
                     }
@@ -255,6 +255,12 @@ internal sealed class FileScanner
         return isRootGeneratedReport ||
                ExcludedFileExtensions.Contains(Path.GetExtension(path));
     }
+
+    private static bool ShouldExcludeDirectory(string root, string path) =>
+        ExcludedDirectoryNames.Contains(Path.GetFileName(path)) ||
+        ToRelativePath(root, path).Equals(
+            "resources/test-images",
+            StringComparison.OrdinalIgnoreCase);
 
     private static bool IsTextFile(string path, string extension) =>
         TextExtensions.Contains(extension) ||

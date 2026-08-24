@@ -20,6 +20,24 @@ public sealed class FileScannerTests
     }
 
     [Fact]
+    public void ResourcesTestImagesDirectoryIsNotTraversed()
+    {
+        using var repository = new TemporaryRepository();
+        repository.WriteFile("visible.md");
+        repository.WriteFile("resources/test-images/private-name.md", "must not be read");
+        var scanner = new FileScanner(path =>
+        {
+            Assert.DoesNotContain("test-images", path, StringComparison.OrdinalIgnoreCase);
+            return new StreamReader(path);
+        });
+
+        var result = scanner.Scan(repository.Root, null);
+
+        Assert.Equal(["visible.md"], result.Files.Select(file => file.RelativePath));
+        Assert.Empty(result.SkippedPaths);
+    }
+
+    [Fact]
     public void GeneratedAndExplicitOutputTargetsAreNotScanned()
     {
         using var repository = new TemporaryRepository();

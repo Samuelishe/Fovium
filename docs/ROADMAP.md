@@ -27,9 +27,9 @@ Establish canonical versioning, Settings, localization, themes, external activat
 
 Create the smallest coherent viewer that opens supported images and implements the validated baseline viewport, input, and same-directory previous/next navigation path without pretending broader codec or color completion. The accepted vertical slice establishes JPEG/PNG, zero-UI Black Stage, navigation, preload/cache, viewport input, fullscreen, basic context menu, and EN/RU runtime localization.
 
-## R2 — Navigation, cache, and performance polish as needed
+## R2 — Navigation, view continuity, Settings foundation, and performance hardening
 
-Measure and refine adjacent-image preparation, latest-wins loading, bounded caching, failure skipping, startup/decode latency, and navigation responsiveness as evidence requires. Validate the provisional memory formula and runtime portability. Navigation already exists as a core path; R2 hardens it rather than introducing it as an optional feature.
+Accepted outcome: preserve physical scale/point of interest by default with a Fit-each alternative, persist the choice through the first minimal Settings surface, establish the ignored local imaging corpus, and harden async shutdown/cache ownership. Local evidence retained adjacent-only preload, two decode slots, and the provisional memory formula.
 
 ## R3 — Stage
 
@@ -41,7 +41,7 @@ Build photographer inspection actions on the shared viewport and navigation mode
 
 ## R5 — Settings / metadata / context-menu polish
 
-Add unobtrusive metadata access, coherent context menus, settings, performance policy controls, and requested temporary diagnostics without persistent viewport chrome.
+Add unobtrusive metadata access, coherent context-menu polish, broader Settings controls, performance policy controls, and requested temporary diagnostics without persistent viewport chrome.
 
 ## Later / separate platform milestones
 

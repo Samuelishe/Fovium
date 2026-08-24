@@ -38,6 +38,8 @@ Fullscreen preserves the same zoom and pan behavior as a normal window.
 
 Left/right navigation operates over supported, safe, decodable neighboring files in the opened image's directory. It should feel seamless rather than inserting a routine black frame or spinner between photographs. Unsupported, corrupt, or unsafe images may be skipped without ending navigation. Internal loading policy belongs to [`PERFORMANCE.md`](PERFORMANCE.md) and image viability belongs to [`IMAGING-PIPELINE.md`](IMAGING-PIPELINE.md).
 
+By default, navigation preserves physical scale and normalized point of interest for non-Fit views; an intentionally reduced common scale stays reduced. Fit remains semantic Fit. The user may instead select **Fit each image**, which centers every navigated image in Fit. A newly opened sequence always begins in Fit. The preference is owned by [`SETTINGS.md`](SETTINGS.md).
+
 ## Context menu, metadata, and Stage
 
 Rare features live behind right click. Planned metadata access follows:
@@ -50,9 +52,9 @@ A complete metadata viewer is acceptable when explicitly opened; it must not res
 
 Stage mode selection should later be available from both the context menu and Settings. Stage definitions belong to [`PROJECT-VISION.md`](PROJECT-VISION.md).
 
-## Future settings principles
+## Settings principles
 
-Settings expose durable preferences, not ordinary navigation. They may be powerful when explicitly opened, but must never force a settings surface into the normal viewport. They should use plain choices with sensible automatic defaults and avoid expert jargon where a product concept exists. Section ownership, persistence, and reset behavior belong to [`SETTINGS.md`](SETTINGS.md); performance policy belongs to [`PERFORMANCE.md`](PERFORMANCE.md).
+Settings expose durable preferences, not ordinary navigation. They open as secondary UI from the context menu or `Ctrl+,` and never occupy the normal viewport. They should use plain choices with sensible automatic defaults and avoid expert jargon where a product concept exists. Section ownership, persistence, and reset behavior belong to [`SETTINGS.md`](SETTINGS.md); performance policy belongs to [`PERFORMANCE.md`](PERFORMANCE.md).
 
 Dark/Light application theme affects controls and secondary UI, never the photograph or Stage. The separation is owned by [`THEMES.md`](THEMES.md).
 

@@ -32,7 +32,7 @@ Use ordinary composition and explicit ownership. Do not use a Service Locator, m
 - Rendering consumes prepared display data plus viewport state; it never chooses the next file.
 - The UI/coordinator requests work and publishes the newest valid result; it does not decode JPEGs or perform ICC transforms itself.
 - Platform-specific implementations sit behind narrow boundaries at the edge. Platform details must not leak throughout application code.
-- Settings describe user policy; subsystems interpret it within safe product caps.
+- Settings storage owns typed persisted preferences; the viewer coordinator resolves image-change policy into a `ViewTransfer`. Renderer and viewport math never query settings.
 
 Dependencies should point toward small project-owned contracts and pure models only where substitution, resource ownership, or test isolation creates a real need. Do not add interfaces speculatively.
 
@@ -52,4 +52,4 @@ Keeping these concepts distinct allows later monitor-aware transforms, alternati
 
 ## Concurrency and lifetime
 
-Long-running operations receive cancellation and an explicit session/generation identity. R1 uses reference-counted cache/display/render leases: eviction or replacement releases ownership, while a retained Avalonia draw operation keeps its native `SKImage` alive until that operation is disposed. Stale results and shutdown release ownership deterministically. Latest-wins publication and resource budgets are specified in [`PERFORMANCE.md`](PERFORMANCE.md); coding rules are in [`CODING-GUIDELINES.md`](CODING-GUIDELINES.md).
+Long-running operations receive cancellation and an explicit session/generation identity. Reference-counted cache/display/render leases let eviction or replacement release ownership while a retained Avalonia draw operation keeps its native `SKImage` alive. R2 additionally tracks all foreground and speculative session work: window shutdown cancels it, asynchronously waits for completion, then disposes cache ownership. New-sequence cache release also moves native owner disposal off the UI thread. Latest-wins publication and resource budgets are specified in [`PERFORMANCE.md`](PERFORMANCE.md); coding rules are in [`CODING-GUIDELINES.md`](CODING-GUIDELINES.md).

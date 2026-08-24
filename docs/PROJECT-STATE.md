@@ -7,13 +7,13 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R1 Core Viewer is complete. The project version is `0.0.0.0004`; its semantics and accepted checkpoint history are owned by [`VERSIONING.md`](VERSIONING.md).
+R2 is complete. The project version is `0.0.0.0005`; its semantics and accepted checkpoint history are owned by [`VERSIONING.md`](VERSIONING.md).
 
 The retained R0 probe remains experimental evidence under `experiments/Fovium.RenderProbe`. Production code is the single `Fovium` assembly and does not depend on the experiment. Local Windows acceptance used one `RenderScaling = 1.00` display; no GitHub-hosted CI or Linux/macOS runtime result is claimed by this stage.
 
 ## Current focus
 
-R2 — navigation, cache, and performance hardening based on evidence from the first production viewer.
+R3 — bounded implementation and validation of the photographic Stage modes.
 
 ## Implemented application functionality
 
@@ -24,8 +24,11 @@ R2 — navigation, cache, and performance hardening based on evidence from the f
 - Natural filename ordering, failure skipping, adjacent preload, latest-wins publication, and a byte-bounded cache.
 - Fullscreen, cursor auto-hide, `Ctrl+O`, and a basic temporary context menu.
 - English/Russian runtime localization foundation with English fallback.
+- Persistent image-change view policy: Keep current scale by default, or Fit each image.
+- Minimal dark Settings window with Viewing and About, schema-versioned JSON autosave, and malformed-file fallback.
+- Traversal-excluded local imaging corpus policy plus hardened async session shutdown/cache release.
 
-Settings, selectable themes, Stage modes beyond Black, metadata UI, Peek/Blink, broad codecs, file associations/thumbnails, and full monitor-aware ICC are not implemented.
+Language/theme selection, Stage modes beyond Black, metadata UI, Peek/Blink, broad codecs, file associations/thumbnails, and full monitor-aware ICC are not implemented.
 
 ## Active blockers
 

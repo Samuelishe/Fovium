@@ -26,7 +26,7 @@ The repository root is the first positional argument and defaults to the current
 
 ## Exclusions
 
-The scanner excludes `.git`, `.idea`, `.vs`, `.vscode`, `bin`, `obj`, `packages`, `artifacts`, `publish`, `TestResults`, and `.codex-cache` directories. It also excludes `*.user`, `*.tmp`, `*.temp`, `*.cache`, the conventional repository-root `project-stats.md/json` reports, and the explicit output target. A same-named file below a source-controlled subdirectory is not mistaken for the generated root report.
+The scanner excludes `.git`, `.idea`, `.vs`, `.vscode`, `bin`, `obj`, `packages`, `artifacts`, `publish`, `TestResults`, and `.codex-cache` directories. It also excludes the complete repository-relative `resources/test-images/` tree at traversal time, so a large private corpus is neither opened nor reported. File exclusions cover `*.user`, `*.tmp`, `*.temp`, `*.cache`, the conventional repository-root `project-stats.md/json` reports, and the explicit output target. A same-named file below a source-controlled subdirectory is not mistaken for the generated root report.
 
 Reparse-point files/directories are recorded as skipped and not followed. Individual inaccessible paths are recorded by repository-relative path and failure type while the remaining scan continues.
 

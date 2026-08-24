@@ -29,12 +29,12 @@ internal sealed class PhotoViewportControl : Control
 
     public bool HasImage => _image is not null;
 
-    public void SetImage(SharedResourceLease<DecodedImage> image, bool preserveView)
+    public ViewTransfer CaptureViewTransfer() =>
+        _image is null ? ViewTransfer.Fit : _viewport.CaptureTransfer();
+
+    public void SetImage(SharedResourceLease<DecodedImage> image, ViewTransfer transfer)
     {
         ArgumentNullException.ThrowIfNull(image);
-        var transfer = preserveView && _image is not null
-            ? _viewport.CaptureTransfer()
-            : ViewTransfer.Fit;
         var previous = _image;
         _image = image;
         _viewport.SetImage(image.Value.Descriptor.OrientedSize, transfer);

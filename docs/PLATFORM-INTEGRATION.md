@@ -43,7 +43,7 @@ Use only the supplied files, preserving their supplied order as the navigation s
 
 **Mode B — explicit selection is the default.**
 
-R1 implements Mode B for multiple command-line paths and picker selections. Mode A remains a future Advanced preference because Settings is not implemented.
+R1 implements Mode B for multiple command-line paths and picker selections. R2 introduces a minimal Settings foundation, but the Mode A Advanced preference remains unimplemented.
 
 The future preference is located at:
 

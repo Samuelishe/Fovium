@@ -51,4 +51,20 @@ public sealed class LocalizationTests
 
         Assert.Equal(expected, localizer[UiStrings.MenuOpen]);
     }
+
+    [Theory]
+    [InlineData("en-US", "Scale when changing images", "Keep current scale", "Fit each image")]
+    [InlineData("ru-RU", "Масштаб при смене изображения", "Сохранять текущий масштаб", "Вписывать каждое изображение")]
+    public void ViewingSettingsCatalogsContainPolicyLabels(
+        string cultureName,
+        string heading,
+        string keep,
+        string fit)
+    {
+        var localizer = Localizer.Create(CultureInfo.GetCultureInfo(cultureName));
+
+        Assert.Equal(heading, localizer[UiStrings.SettingsScaleOnImageChange]);
+        Assert.Equal(keep, localizer[UiStrings.SettingsKeepCurrentScale]);
+        Assert.Equal(fit, localizer[UiStrings.SettingsFitEachImage]);
+    }
 }

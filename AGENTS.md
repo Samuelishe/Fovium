@@ -20,6 +20,7 @@ Do not load every document by default. If documents conflict, follow the owner n
 ## Git safety
 
 - Treat existing changes as user-owned unless the task establishes otherwise.
+- `resources/test-images/` is an ignored local imaging sandbox. For relevant imaging, rendering, navigation, or performance work, agents may inspect and reorganize it and create or mutate derived files inside it, but must never stage, commit, publish, or move its contents into tracked resources without explicit authorization.
 - Do not use `git reset`, `git clean`, `git checkout --`, or `git restore`.
 - Do not commit, push, pull, fetch, merge, or rebase without explicit user authorization.
 - Do not rewrite or remove existing content merely to make the worktree cleaner.

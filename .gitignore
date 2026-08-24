@@ -35,6 +35,7 @@ _ReSharper.Caches/
 /project-stats.json
 /.codex-cache/
 /.testagent/
+/resources/test-images/
 
 # Local settings
 *.local.json

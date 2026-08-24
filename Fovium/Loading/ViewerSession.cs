@@ -28,7 +28,13 @@ internal sealed record SelectionResult<T>(
         new(status, null, null, generation, null, null, false, TimeSpan.Zero);
 }
 
-internal sealed class ViewerSession<T> : IDisposable, IAsyncDisposable
+internal readonly record struct ViewerSessionMetrics(
+    long CacheHits,
+    long StaleResultDisposals,
+    long CacheRetainedBytes,
+    int CacheItemCount);
+
+internal sealed class ViewerSession<T> : IAsyncDisposable
     where T : class, IRetainedResource
 {
     private readonly object _sync = new();
@@ -39,6 +45,7 @@ internal sealed class ViewerSession<T> : IDisposable, IAsyncDisposable
     private CancellationTokenSource? _foregroundCancellation;
     private CancellationTokenSource? _preloadCancellation;
     private Task _preloadTask = Task.CompletedTask;
+    private readonly HashSet<Task> _runningTasks = [];
     private ImageSequence? _sequence;
     private long _sessionIdentity;
     private long _generation;
@@ -61,6 +68,12 @@ internal sealed class ViewerSession<T> : IDisposable, IAsyncDisposable
     public long StaleResultDisposals => Interlocked.Read(ref _staleResultDisposals);
 
     public long CacheHits => Interlocked.Read(ref _cacheHits);
+
+    public ViewerSessionMetrics GetMetrics() => new(
+        CacheHits,
+        StaleResultDisposals,
+        _cache.RetainedBytes,
+        _cache.Count);
 
     public int CurrentIndex
     {
@@ -89,11 +102,13 @@ internal sealed class ViewerSession<T> : IDisposable, IAsyncDisposable
         long sessionIdentity;
         long generation;
         CancellationToken token;
+        Task cacheClear;
+        TaskCompletionSource tracking;
         lock (_sync)
         {
             ThrowIfDisposed();
             CancelForegroundAndPreload();
-            _cache.Clear();
+            cacheClear = _cache.ClearAsync();
             _sequence = sequence;
             _currentIndex = sequence.InitialIndex;
             _requestedIndex = sequence.InitialIndex;
@@ -103,9 +118,17 @@ internal sealed class ViewerSession<T> : IDisposable, IAsyncDisposable
                 _lifetimeCancellation.Token,
                 cancellationToken);
             token = _foregroundCancellation.Token;
+            tracking = CreateTrackingGateUnsafe();
         }
 
-        return LoadExactAsync(sequence, sequence.InitialIndex, sessionIdentity, generation, token);
+        var task = OpenAfterCacheClearAsync(
+            sequence,
+            sessionIdentity,
+            generation,
+            token,
+            cacheClear);
+        _ = CompleteTrackingAsync(task, tracking);
+        return task;
     }
 
     public Task<SelectionResult<T>> NavigateAsync(
@@ -117,6 +140,7 @@ internal sealed class ViewerSession<T> : IDisposable, IAsyncDisposable
         long sessionIdentity;
         long generation;
         CancellationToken token;
+        TaskCompletionSource tracking;
         lock (_sync)
         {
             ThrowIfDisposed();
@@ -135,20 +159,23 @@ internal sealed class ViewerSession<T> : IDisposable, IAsyncDisposable
                 _lifetimeCancellation.Token,
                 cancellationToken);
             token = _foregroundCancellation.Token;
+            tracking = CreateTrackingGateUnsafe();
         }
 
-        return LoadViableAsync(
+        var task = LoadViableAsync(
             sequence,
             requestedIndex,
             direction,
             sessionIdentity,
             generation,
             token);
+        _ = CompleteTrackingAsync(task, tracking);
+        return task;
     }
 
     public async ValueTask DisposeAsync()
     {
-        Task preload;
+        Task[] runningTasks;
         lock (_sync)
         {
             if (_disposed)
@@ -159,12 +186,12 @@ internal sealed class ViewerSession<T> : IDisposable, IAsyncDisposable
             _disposed = true;
             _lifetimeCancellation.Cancel();
             CancelForegroundAndPreload();
-            preload = _preloadTask;
+            runningTasks = _runningTasks.ToArray();
         }
 
         try
         {
-            await preload.ConfigureAwait(false);
+            await Task.WhenAll(runningTasks).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -176,22 +203,27 @@ internal sealed class ViewerSession<T> : IDisposable, IAsyncDisposable
         _cache.Dispose();
     }
 
-    public void Dispose()
+    private async Task<SelectionResult<T>> OpenAfterCacheClearAsync(
+        ImageSequence sequence,
+        long sessionIdentity,
+        long generation,
+        CancellationToken cancellationToken,
+        Task cacheClear)
     {
-        lock (_sync)
+        try
         {
-            if (_disposed)
-            {
-                return;
-            }
-
-            _disposed = true;
-            _lifetimeCancellation.Cancel();
-            CancelForegroundAndPreload();
+            await cacheClear.ConfigureAwait(false);
+            return await LoadExactAsync(
+                sequence,
+                sequence.InitialIndex,
+                sessionIdentity,
+                generation,
+                cancellationToken).ConfigureAwait(false);
         }
-
-        _lifetimeCancellation.Dispose();
-        _cache.Dispose();
+        catch (OperationCanceledException)
+        {
+            return SelectionResult<T>.Simple(SelectionStatus.Stale, generation);
+        }
     }
 
     private async Task<SelectionResult<T>> LoadExactAsync(
@@ -432,6 +464,7 @@ internal sealed class ViewerSession<T> : IDisposable, IAsyncDisposable
                 currentIndex,
                 sessionIdentity,
                 _preloadCancellation.Token);
+            RegisterTaskUnsafe(_preloadTask);
         }
     }
 
@@ -519,6 +552,45 @@ internal sealed class ViewerSession<T> : IDisposable, IAsyncDisposable
         _preloadCancellation?.Cancel();
         _preloadCancellation?.Dispose();
         _preloadCancellation = null;
+    }
+
+    private TaskCompletionSource CreateTrackingGateUnsafe()
+    {
+        var tracking = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        RegisterTaskUnsafe(tracking.Task);
+        return tracking;
+    }
+
+    private static async Task CompleteTrackingAsync(Task operation, TaskCompletionSource tracking)
+    {
+        try
+        {
+            await operation.ConfigureAwait(false);
+        }
+        catch
+        {
+            // The caller owns observation of the original operation task.
+        }
+        finally
+        {
+            tracking.TrySetResult();
+        }
+    }
+
+    private void RegisterTaskUnsafe(Task task)
+    {
+        _runningTasks.Add(task);
+        _ = task.ContinueWith(
+            completed =>
+            {
+                lock (_sync)
+                {
+                    _runningTasks.Remove(completed);
+                }
+            },
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
     }
 
     private void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, this);

@@ -34,11 +34,11 @@ See the canonical [UX contract](docs/UX-CONTRACT.md), [rendering contract](docs/
 
 ## Current status
 
-The current project checkpoint is **`0.0.0.0004`**. R1 provides the first runnable production Core Viewer: JPEG/PNG, zero-UI Black Stage, Fit and physical-pixel 100%, cursor-anchored zoom, pan, same-directory or explicit-sequence navigation, adjacent preload, bounded caching, fullscreen, and EN/RU secondary UI.
+The current project checkpoint is **`0.0.0.0005`**. R2 retains the runnable JPEG/PNG Core Viewer and adds a persistent image-change view policy, a minimal dark Settings/About surface, and navigation/cache/lifetime hardening backed by local stress.
 
-This remains an early vertical slice, not a release claim. Full monitor-aware ICC, broad codecs, Settings, metadata, platform associations, and later photographer features are not implemented. The expected next stage is **R2 navigation/cache/performance hardening**. The canonical handoff is [PROJECT-STATE.md](docs/PROJECT-STATE.md); bounded R0 evidence remains in the [experiment report](docs/experiments/R0-RENDERING-PROBE.md).
+This remains an early vertical slice, not a release claim. Full monitor-aware ICC, broad codecs, broader Settings, metadata, platform associations, and later photographer features are not implemented. The expected next stage is **R3 Stage**. The canonical handoff is [PROJECT-STATE.md](docs/PROJECT-STATE.md); bounded R0 evidence remains in the [experiment report](docs/experiments/R0-RENDERING-PROBE.md).
 
-English/Russian catalogs and the Dark R1 secondary-UI baseline are implemented; language/theme Settings and Light selection remain future work. See [VERSIONING.md](docs/VERSIONING.md) and the [documentation index](docs/INDEX.md) for the canonical owners.
+English/Russian catalogs and the Dark secondary-UI baseline are implemented; language/theme selection remains future work. See [VERSIONING.md](docs/VERSIONING.md) and the [documentation index](docs/INDEX.md) for the canonical owners.
 
 ## Technology direction
 
@@ -59,7 +59,7 @@ Full monitor-aware ICC, broad codec coverage, and huge/tiled image handling rema
 | `resources/` | Tracked asset root governed by provenance policy |
 | `Fovium/` | First production Core Viewer application |
 | `Fovium.Tools.ProjectStats/` | BCL-only repository diagnostics CLI |
-| `Fovium.Tests/` | Automated tests for repository tooling, retained R0 logic, and production R1 boundaries |
+| `Fovium.Tests/` | Automated tests for repository tooling, retained R0 logic, and production viewer boundaries |
 | `experiments/Fovium.RenderProbe/` | Disposable R0 rendering/imaging evidence executable; not the viewer |
 | `.github/workflows/ci.yml` | Windows, Linux, and macOS restore/build/test workflow |
 

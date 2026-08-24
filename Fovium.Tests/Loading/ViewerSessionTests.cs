@@ -140,6 +140,51 @@ public sealed class ViewerSessionTests
         Assert.Equal(0, session.CurrentIndex);
     }
 
+    [Fact]
+    public async Task DisposeAsyncWaitsForInFlightDecodeAndDisposesStaleResult()
+    {
+        var source = new TaskCompletionSource<ImageLoadResult<FakeImage>>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var loader = new FakeImageLoader((_, _, _) => source.Task);
+        var session = CreateSession(loader);
+        var opening = session.OpenAsync(new ImageSequence(["A.jpg"], 0));
+
+        var disposal = session.DisposeAsync().AsTask();
+
+        Assert.False(disposal.IsCompleted);
+        var image = new FakeImage("A.jpg");
+        source.SetResult(ImageLoadResult<FakeImage>.Success(image));
+        var result = await opening;
+        await disposal;
+
+        Assert.Equal(SelectionStatus.Stale, result.Status);
+        Assert.Equal(1, image.DisposeCount);
+    }
+
+    [Fact]
+    public async Task OpeningNewSequenceReleasesObsoleteCacheOwnership()
+    {
+        var images = new Dictionary<string, FakeImage>();
+        var loader = FakeImageLoader.Immediate(path =>
+        {
+            var image = new FakeImage(Path.GetFileName(path));
+            images.Add(image.Name, image);
+            return ImageLoadResult<FakeImage>.Success(image);
+        });
+        await using var session = CreateSession(loader);
+        var first = await session.OpenAsync(new ImageSequence(["A.jpg"], 0));
+        using var firstLease = first.Image;
+
+        using var secondLease = (await session.OpenAsync(new ImageSequence(["B.jpg"], 0))).Image;
+
+        Assert.Equal(0, images["A.jpg"].DisposeCount);
+        firstLease!.Dispose();
+        Assert.Equal(1, images["A.jpg"].DisposeCount);
+        var metrics = session.GetMetrics();
+        Assert.Equal(1, metrics.CacheItemCount);
+        Assert.Equal(16, metrics.CacheRetainedBytes);
+    }
+
     private static ViewerSession<FakeImage> CreateSession(FakeImageLoader loader)
     {
         var policy = AutomaticMemoryPolicy.FromAvailableMemory(2L * 1024 * 1024 * 1024);

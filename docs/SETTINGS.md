@@ -36,6 +36,7 @@ Locale behavior is owned by [`LOCALIZATION.md`](LOCALIZATION.md).
 
 ### Viewing
 
+- **Scale when changing images** is implemented with `Keep current scale` (default) and `Fit each image`. Fit remains semantic Fit; a non-Fit view preserves physical scale and normalized point of interest, including a deliberately reduced scale.
 - future discrete zoom-step or zoom-sensitivity control;
 - mouse behavior;
 - navigation behavior that is genuinely user-configurable.
@@ -71,7 +72,7 @@ The default multiple-file behavior and its two valid modes are owned by [`PLATFO
 
 ### About
 
-The future About page shows Fovium, the canonical formatted version, project/site links, third-party license access, and an optional Copy diagnostics action. Version identity comes from [`VERSIONING.md`](VERSIONING.md), not a hardcoded view string.
+R2's initial About surface shows Fovium and the canonical runtime version. Future additions may include project/site links, third-party license access, and an optional Copy diagnostics action. Version identity comes from [`VERSIONING.md`](VERSIONING.md), not a hardcoded view string.
 
 Copied diagnostics may include only genuinely known values such as Fovium version, OS, .NET/Avalonia versions, renderer/backend, `RenderScaling`, and cache budget. About is not a benchmark, hardware inventory, or hardware re-detection tool.
 
@@ -79,7 +80,7 @@ Copied diagnostics may include only genuinely known values such as Fovium versio
 
 Ordinary preferences use platform-appropriate per-user application-data storage. They do not require a database, catalog, or project-local file.
 
-The future representation should be readable, explicitly schema-versioned, and safely persisted through atomic replacement or an equivalently robust mechanism. Add schema migration only when an actual incompatible change exists; do not build a migration framework in advance.
+R2 implements a readable JSON document with `schemaVersion = 1` in the platform-appropriate per-user application-data directory. It writes through a same-directory temporary file and replacement, tolerates unknown properties, and falls back to deterministic defaults on missing, malformed, inaccessible, or unsupported-schema input. Add migration only when an actual incompatible change exists; do not build a migration framework in advance.
 
 Settings normally autosave after a valid non-destructive preference change. Do not require Save or Apply buttons without evidence that deferred application is necessary. Destructive or system-owned actions remain explicit.
 
@@ -92,4 +93,4 @@ Reset all settings
 
 Reset all restores a known default state and removes obsolete stored values rather than retaining hidden legacy configuration. A reset operation should be recoverable where practical and must not remove user photographs or unrelated platform data.
 
-No persistence format, Settings UI, or runtime preference model is implemented in CONTRACTS-R1.
+R2 materializes only meaningful `Viewing` and `About` sections. It does not create empty future tabs, Save/Apply buttons, a language selector, theme selection, reset UI, or Performance controls.

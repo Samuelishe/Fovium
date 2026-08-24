@@ -10,6 +10,8 @@ using Fovium.Imaging;
 using Fovium.Loading;
 using Fovium.Localization;
 using Fovium.Navigation;
+using Fovium.Rendering;
+using Fovium.Settings;
 using Fovium.Viewer;
 using ViewerNavigationDirection = Fovium.Navigation.NavigationDirection;
 
@@ -22,6 +24,7 @@ internal sealed partial class ViewerWindow : Window
     private readonly ActivationService _activation;
     private readonly ViewerSession<DecodedImage> _session;
     private readonly Localizer _localizer;
+    private readonly SettingsService _settings;
     private readonly IReadOnlyList<string> _startupPaths;
     private readonly CancellationTokenSource _lifetimeCancellation = new();
     private readonly DispatcherTimer _cursorTimer;
@@ -32,17 +35,22 @@ internal sealed partial class ViewerWindow : Window
     private readonly MenuItem _nextMenuItem;
     private bool _contextMenuOpen;
     private bool _closed;
+    private bool _shutdownCompleted;
+    private bool _shutdownStarted;
+    private SettingsWindow? _settingsWindow;
     private WindowState _windowStateBeforeFullscreen = WindowState.Maximized;
 
     public ViewerWindow(
         ActivationService activation,
         ViewerSession<DecodedImage> session,
         Localizer localizer,
+        SettingsService settings,
         IReadOnlyList<string> startupPaths)
     {
         _activation = activation;
         _session = session;
         _localizer = localizer;
+        _settings = settings;
         _startupPaths = startupPaths;
 
         InitializeComponent();
@@ -59,6 +67,7 @@ internal sealed partial class ViewerWindow : Window
         _cursorTimer.Tick += OnCursorTimerTick;
         PhotoViewport.PointerActivity += OnPointerActivity;
         Opened += OnOpened;
+        Closing += OnClosing;
         Closed += OnClosed;
         KeyDown += OnWindowKeyDown;
     }
@@ -69,6 +78,7 @@ internal sealed partial class ViewerWindow : Window
         {
             PhotoViewport.Focus();
             RestartCursorTimer();
+            await _settings.InitializeAsync(_lifetimeCancellation.Token);
             if (_startupPaths.Count == 0)
             {
                 var selected = await PickFilesAsync();
@@ -93,13 +103,39 @@ internal sealed partial class ViewerWindow : Window
         }
     }
 
-    private void OnClosed(object? sender, EventArgs e)
+    private async void OnClosing(object? sender, WindowClosingEventArgs e)
     {
+        if (_shutdownCompleted)
+        {
+            return;
+        }
+
+        e.Cancel = true;
+        if (_shutdownStarted)
+        {
+            return;
+        }
+
+        _shutdownStarted = true;
         _closed = true;
         _cursorTimer.Stop();
+        _settingsWindow?.Close();
         _lifetimeCancellation.Cancel();
         PhotoViewport.ClearImage();
-        _session.Dispose();
+        try
+        {
+            await _settings.FlushAsync();
+            await _session.DisposeAsync();
+        }
+        finally
+        {
+            _shutdownCompleted = true;
+            Close();
+        }
+    }
+
+    private void OnClosed(object? sender, EventArgs e)
+    {
         _lifetimeCancellation.Dispose();
         _visibleCursor.Dispose();
         _hiddenCursor.Dispose();
@@ -141,6 +177,11 @@ internal sealed partial class ViewerWindow : Window
                 e.Handled = true;
                 await OpenFromPickerAsync();
             }
+            else if (e.Key == Key.OemComma && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+            {
+                e.Handled = true;
+                ShowSettings();
+            }
         }
         catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
         {
@@ -175,6 +216,12 @@ internal sealed partial class ViewerWindow : Window
                 CreateMenuItem(UiStrings.MenuFullscreen, () =>
                 {
                     ToggleFullscreen();
+                    return Task.CompletedTask;
+                }),
+                new Separator(),
+                CreateMenuItem(UiStrings.MenuSettings, () =>
+                {
+                    ShowSettings();
                     return Task.CompletedTask;
                 }),
                 CreateMenuItem(UiStrings.MenuClose, () =>
@@ -276,18 +323,21 @@ internal sealed partial class ViewerWindow : Window
         }
 
         var result = await _session.OpenAsync(sequence, _lifetimeCancellation.Token);
-        ApplySelection(result, preserveView: false, showFailure: true);
+        ApplySelection(result, ImageChangeViewPolicyResolver.ForNewSequence(), showFailure: true);
     }
 
     private async Task NavigateAsync(ViewerNavigationDirection direction)
     {
         var result = await _session.NavigateAsync(direction, _lifetimeCancellation.Token);
-        ApplySelection(result, preserveView: true, showFailure: false);
+        var transfer = ImageChangeViewPolicyResolver.ForNavigation(
+            _settings.Current.ImageChangeViewPolicy,
+            PhotoViewport.CaptureViewTransfer());
+        ApplySelection(result, transfer, showFailure: false);
     }
 
     private void ApplySelection(
         SelectionResult<DecodedImage> result,
-        bool preserveView,
+        ViewTransfer transfer,
         bool showFailure)
     {
         if (_closed)
@@ -299,7 +349,7 @@ internal sealed partial class ViewerWindow : Window
         if (result.Status == SelectionStatus.Published && result.Image is not null)
         {
             ErrorSurface.IsVisible = false;
-            PhotoViewport.SetImage(result.Image, preserveView);
+            PhotoViewport.SetImage(result.Image, transfer);
             return;
         }
 
@@ -335,6 +385,26 @@ internal sealed partial class ViewerWindow : Window
         PhotoViewport.ClearImage();
         ErrorText.Text = _localizer[UiStrings.ErrorDecodeFailed];
         ErrorSurface.IsVisible = true;
+    }
+
+    private void ShowSettings()
+    {
+        ShowCursor();
+        _cursorTimer.Stop();
+        if (_settingsWindow is { } existing)
+        {
+            existing.Activate();
+            return;
+        }
+
+        var window = new SettingsWindow(_settings, _localizer);
+        _settingsWindow = window;
+        window.Closed += (_, _) =>
+        {
+            _settingsWindow = null;
+            RestartCursorTimer();
+        };
+        window.Show(this);
     }
 
     private static bool IsRecoverableBoundaryException(Exception exception) =>

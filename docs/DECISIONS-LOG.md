@@ -156,3 +156,9 @@ Every sequence selection has explicit session/generation identity; cancellation 
 Status: Accepted in R1.
 
 Cache, displayed image, and retained Avalonia custom draw operations hold explicit reference-counted leases. Replacement, eviction, stale completion, and shutdown release their own ownership; the native Skia image is disposed only after the last render operation releases it. This isolates both lifetime and Avalonia's unstable Skia API at the rendering edge.
+
+## D-026 — Navigation preserves non-Fit physical scale by default
+
+Status: Accepted in R2.
+
+Fovium defaults to **Keep current scale**: semantic Fit remains Fit, while 100% or manual views preserve physical scale and normalized point of interest across image changes. A deliberately reduced scale is not raised to Fit merely because the next image could fill more space. This behavior was discovered as useful during R1 manual use, supports sequence inspection and future Blink Compare, and never changes source pixels. Users may choose **Fit each image** instead; every new sequence still begins in Fit.

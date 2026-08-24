@@ -1,0 +1,24 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Fovium.Views.SettingsWindow"
+        Width="540"
+        Height="380"
+        MinWidth="440"
+        MinHeight="300"
+        WindowStartupLocation="CenterOwner">
+  <TabControl Margin="20">
+    <TabItem x:Name="ViewingTab">
+      <StackPanel Margin="12,18" Spacing="14">
+        <TextBlock x:Name="ScaleHeading" FontSize="18" FontWeight="SemiBold" />
+        <RadioButton x:Name="KeepCurrentScaleOption" GroupName="ImageChangeViewPolicy" />
+        <RadioButton x:Name="FitEachImageOption" GroupName="ImageChangeViewPolicy" />
+      </StackPanel>
+    </TabItem>
+    <TabItem x:Name="AboutTab">
+      <StackPanel Margin="12,22" Spacing="10">
+        <TextBlock Text="Fovium" FontSize="26" FontWeight="SemiBold" />
+        <TextBlock x:Name="VersionText" Opacity="0.72" />
+      </StackPanel>
+    </TabItem>
+  </TabControl>
+</Window>

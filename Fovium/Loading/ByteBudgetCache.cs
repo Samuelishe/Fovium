@@ -10,6 +10,7 @@ internal sealed class ByteBudgetCache<TKey, TValue> : IDisposable
     private readonly Dictionary<TKey, Entry> _entries;
     private readonly LinkedList<TKey> _leastRecentlyUsed = new();
     private bool _disposed;
+    private long _retainedBytes;
     private TKey? _protectedKey;
     private bool _hasProtectedKey;
 
@@ -22,7 +23,16 @@ internal sealed class ByteBudgetCache<TKey, TValue> : IDisposable
 
     public long BudgetBytes { get; }
 
-    public long RetainedBytes { get; private set; }
+    public long RetainedBytes
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return _retainedBytes;
+            }
+        }
+    }
 
     public int Count
     {
@@ -41,7 +51,7 @@ internal sealed class ByteBudgetCache<TKey, TValue> : IDisposable
         {
             lock (_sync)
             {
-                return Math.Max(0, BudgetBytes - RetainedBytes);
+                return Math.Max(0, BudgetBytes - _retainedBytes);
             }
         }
     }
@@ -80,7 +90,7 @@ internal sealed class ByteBudgetCache<TKey, TValue> : IDisposable
             if (_entries.Remove(key, out var replaced))
             {
                 _leastRecentlyUsed.Remove(replaced.Node);
-                RetainedBytes -= replaced.Cost;
+                _retainedBytes -= replaced.Cost;
                 releases.Add(replaced.Resource);
             }
 
@@ -92,14 +102,14 @@ internal sealed class ByteBudgetCache<TKey, TValue> : IDisposable
 
             var node = _leastRecentlyUsed.AddFirst(key);
             _entries.Add(key, new Entry(new SharedResource<TValue>(value), value.RetainedBytes, node));
-            RetainedBytes += value.RetainedBytes;
+            _retainedBytes += value.RetainedBytes;
             EvictToBudget(key, releases);
-            if (RetainedBytes > BudgetBytes)
+            if (_retainedBytes > BudgetBytes)
             {
                 var rejected = _entries[key];
                 _entries.Remove(key);
                 _leastRecentlyUsed.Remove(rejected.Node);
-                RetainedBytes -= rejected.Cost;
+                _retainedBytes -= rejected.Cost;
                 releases.Add(rejected.Resource);
                 retained = false;
             }
@@ -136,7 +146,7 @@ internal sealed class ByteBudgetCache<TKey, TValue> : IDisposable
             releases = _entries.Values.Select(entry => entry.Resource).ToList();
             _entries.Clear();
             _leastRecentlyUsed.Clear();
-            RetainedBytes = 0;
+            _retainedBytes = 0;
             _protectedKey = default;
             _hasProtectedKey = false;
         }
@@ -145,6 +155,29 @@ internal sealed class ByteBudgetCache<TKey, TValue> : IDisposable
         {
             release.ReleaseOwner();
         }
+    }
+
+    public Task ClearAsync()
+    {
+        List<SharedResource<TValue>> releases;
+        lock (_sync)
+        {
+            ThrowIfDisposed();
+            releases = _entries.Values.Select(entry => entry.Resource).ToList();
+            _entries.Clear();
+            _leastRecentlyUsed.Clear();
+            _retainedBytes = 0;
+            _protectedKey = default;
+            _hasProtectedKey = false;
+        }
+
+        return Task.Run(() =>
+        {
+            foreach (var release in releases)
+            {
+                release.ReleaseOwner();
+            }
+        });
     }
 
     public void Dispose()
@@ -161,7 +194,7 @@ internal sealed class ByteBudgetCache<TKey, TValue> : IDisposable
             releases = _entries.Values.Select(entry => entry.Resource).ToList();
             _entries.Clear();
             _leastRecentlyUsed.Clear();
-            RetainedBytes = 0;
+            _retainedBytes = 0;
         }
 
         foreach (var release in releases)
@@ -173,7 +206,7 @@ internal sealed class ByteBudgetCache<TKey, TValue> : IDisposable
     private void EvictToBudget(TKey newlyAddedKey, List<SharedResource<TValue>> releases)
     {
         var node = _leastRecentlyUsed.Last;
-        while (RetainedBytes > BudgetBytes && node is not null)
+        while (_retainedBytes > BudgetBytes && node is not null)
         {
             var previous = node.Previous;
             var key = node.Value;
@@ -183,7 +216,7 @@ internal sealed class ByteBudgetCache<TKey, TValue> : IDisposable
                 var entry = _entries[key];
                 _entries.Remove(key);
                 _leastRecentlyUsed.Remove(node);
-                RetainedBytes -= entry.Cost;
+                _retainedBytes -= entry.Cost;
                 releases.Add(entry.Resource);
             }
 
