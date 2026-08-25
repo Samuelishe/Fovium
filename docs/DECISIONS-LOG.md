@@ -249,6 +249,12 @@ Draw operations capture immutable color, source-space width, and opacity; opacit
 
 ## D-041 — Matching current Ambient outranks speculative neighbor work
 
-Status: Current-first priority accepted in R5-P1; presentation-boundary refinement implemented in R5-P2 pending owner review.
+Status: Current-first priority accepted in R5-P1; presentation-boundary refinement retained in the corrective line pending owner visual acceptance.
 
-The canonical photograph still publishes before decoration. Its matching current-image Ambient is user-visible presentation work and never waits for adjacent preload; later neighbor work remains speculative. R5-P2 refines publication so a cached matching Ambient and photograph enter the viewport atomically, while progressively ready neighbors may prepare without a full-neighbor barrier. A genuine miss uses Black rather than a mismatched previous-image derivative, and latest-wins source/blur authority rejects stale publication. No fade, cache-budget increase, lower resolution, or previous-image fallback is introduced. The earlier claim that scheduler latency alone eliminated the owner-visible flash is withdrawn pending R5-P2 review.
+The canonical photograph still publishes before decoration. Its matching current-image Ambient is user-visible presentation work and never waits for adjacent preload; later neighbor work remains speculative. R5-P2 refines publication so a cached matching Ambient and photograph enter the viewport atomically, while progressively ready neighbors may prepare without a full-neighbor barrier. A genuine miss uses Black rather than a mismatched previous-image derivative, and latest-wins source/blur authority rejects stale publication. No fade, cache-budget increase, lower resolution, or previous-image fallback is introduced. The earlier claim that scheduler latency alone eliminated the owner-visible flash is withdrawn pending corrective-line owner review.
+
+## D-042 — Speculative preload admits against reclaimable LRU capacity
+
+Status: Implemented in R5-P3 pending owner visual acceptance of the corrective line.
+
+Speculative retained admission is based on the existing cache budget after reserving the protected current entry, not only on currently unused bytes. Old non-protected LRU entries are reclaimable, while decode working allowance remains separately bounded and `ByteBudgetCache.Add` performs the final race-safe eviction/admission check. This keeps adjacent preload alive at steady-state saturation without increasing the global cache, weakening current-image protection, or increasing decode concurrency.

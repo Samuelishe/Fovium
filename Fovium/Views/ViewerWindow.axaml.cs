@@ -7,6 +7,7 @@ using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Fovium.Application;
+using Fovium.Diagnostics;
 using Fovium.Imaging;
 using Fovium.Input;
 using Fovium.Loading;
@@ -30,6 +31,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
     private readonly Localizer _localizer;
     private readonly SettingsService _settings;
     private readonly AmbientStageCoordinator _stageCoordinator;
+    private readonly AmbientSoakTrace _ambientSoakTrace;
     private readonly IReadOnlyList<string> _startupPaths;
     private readonly CancellationTokenSource _lifetimeCancellation = new();
     private readonly DispatcherTimer _cursorTimer;
@@ -68,8 +70,14 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             new AmbientImageRepository(session),
             new AmbientStagePreparer(),
             settings.Current.Stage);
+        _ambientSoakTrace = AmbientSoakTrace.CreateFromEnvironment();
 
         InitializeComponent();
+        if (_ambientSoakTrace.IsEnabled)
+        {
+            PhotoViewport.EnableAmbientPipelineDiagnostics();
+        }
+
         _presentation = new PresentationOverlaySession(
             settings.Current.Presentation,
             StringComparer.OrdinalIgnoreCase);
@@ -149,6 +157,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         _cursorTimer.Stop();
         _settingsWindow?.Close();
         _lifetimeCancellation.Cancel();
+        CompleteAmbientSoakTransition();
         PhotoViewport.ClearImage();
         try
         {
@@ -179,6 +188,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         _hiddenCursor.Dispose();
         _settings.SettingsChanged -= OnSettingsChanged;
         _stageCoordinator.PresentationChanged -= OnStagePresentationChanged;
+        _ambientSoakTrace.Dispose();
         _settings.Dispose();
     }
 
@@ -443,6 +453,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
     private async Task OpenPathsAsync(IReadOnlyList<string> paths)
     {
         _holdController.Cancel();
+        CompleteAmbientSoakTransition();
         var plan = ActivationPlan.Create(paths);
         var sequence = await _activation.ResolveAsync(plan, _lifetimeCancellation.Token);
         if (sequence is null)
@@ -458,6 +469,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
     private async Task NavigateAsync(ViewerNavigationDirection direction)
     {
         _holdController.Cancel();
+        CompleteAmbientSoakTransition();
         var result = await _session.NavigateAsync(direction, _lifetimeCancellation.Token);
         var transfer = ImageChangeViewPolicyResolver.ForNavigation(
             _settings.Current.ImageChangeViewPolicy,
@@ -483,9 +495,16 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             var path = result.Path
                 ?? throw new InvalidOperationException("Published selection has no source path.");
             var identity = result.Image.Value.Identity;
+            var initialFrames = PhotoViewport.GetAmbientRenderFrameMetrics();
             using var presentation = _stageCoordinator.BeginImageSelection(path, identity);
+            var initialMatchingAmbient = presentation.Ambient is not null;
             PhotoViewport.SetPresentation(result.Image, transfer, path, presentation);
             _stageCoordinator.StartCurrentImageWork();
+            _ambientSoakTrace.BeginTransition(
+                result,
+                result.Image.Value,
+                initialMatchingAmbient,
+                initialFrames);
             return;
         }
 
@@ -598,6 +617,20 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
 
         using var presentation = _stageCoordinator.AcquirePresentation();
         PhotoViewport.SetStage(presentation);
+    }
+
+    private void CompleteAmbientSoakTransition()
+    {
+        if (!_ambientSoakTrace.IsEnabled)
+        {
+            return;
+        }
+
+        _ambientSoakTrace.CompleteCurrent(
+            _session.GetMetrics(),
+            _stageCoordinator.GetMetrics(),
+            PhotoViewport.GetAmbientRenderFrameMetrics(),
+            PhotoViewport.CaptureAmbientPresentationState());
     }
 
     private static bool IsRecoverableBoundaryException(Exception exception) =>

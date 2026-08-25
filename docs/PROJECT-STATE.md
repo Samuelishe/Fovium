@@ -7,13 +7,13 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R5-P2 is implemented for owner review on corrective build `0.0.0.0013`. R5-P1's current-first scheduling improvement is retained, but its Black-flash elimination claim was not owner-accepted. The last owner-accepted product checkpoint remains R5-F2 / `0.0.0.0012`; version semantics are owned by [`VERSIONING.md`](VERSIONING.md).
+R5-P3 is implemented for owner review on corrective build `0.0.0.0013`. R5-P1 current-first scheduling and R5-P2 atomic cached presentation remain; R5-P3 corrects the speculative-admission collapse that appeared when the photo cache became full. Black-flash elimination is still not owner-accepted. The last owner-accepted product checkpoint remains R5-F2 / `0.0.0.0012`; version semantics are owned by [`VERSIONING.md`](VERSIONING.md).
 
 The retained R0 probe remains experimental evidence under `experiments/Fovium.RenderProbe`. Production code is the single `Fovium` assembly and does not depend on the experiment. Local Windows acceptance used one `RenderScaling = 1.00` display; no GitHub-hosted CI or Linux/macOS runtime result is claimed by this stage.
 
 ## Current focus
 
-Owner visual review of atomic Ambient presentation on representative sequential browsing. R5-F3 remains next only after explicit acceptance; do not begin it or metadata/context-menu work automatically.
+Owner visual review of sustained long-sequence Ambient browsing after cache saturation. R5-F3 remains next only after explicit acceptance; do not begin it or metadata/context-menu work automatically.
 
 ## Implemented application functionality
 
@@ -30,6 +30,8 @@ Owner visual review of atomic Ambient presentation on representative sequential 
 - Persisted Matte physical width and Solid, Rounded, Soft, and Angular outer presentation styles; all styles retain an opaque rectangular backing beneath alpha photographs without changing photo geometry.
 - Bounded asynchronous blur-only Ambient preparation from the oriented decoded photograph; current-first scheduling after photograph publication; progressive direction-prioritized adjacent readiness; render-time brightness/saturation; byte-accounted cache ownership; and matching-identity publication.
 - Atomic cached photo+Stage installation plus identity-aware coordinator and actual render-frame diagnostics distinguish generated/cache readiness and count matching versus Black-fallback Ambient frames.
+- Speculative decode admission accounts for reclaimable non-protected LRU capacity instead of only currently unused bytes, so bounded adjacent preload continues after cache saturation without evicting the protected current photograph.
+- Opt-in anonymized sustained-session diagnostics correlate selection/cache/preload/Ambient readiness with viewport, custom-draw, Skia-lease, and Stage-render counters without permanent viewport UI.
 - Persistent command shortcuts with locale-independent identifiers, conflict confirmation, unassigned state, reset, and reserved `Esc` behavior. Defaults add `+`, `-`, `0`, `1`, and `M` viewer controls.
 - Whole-viewport Peek 100% on configurable hold `Z`, anchored to the source point beneath the cursor with deterministic Stage fallback, temporary pan, and exact semantic Fit/manual restoration.
 - Non-navigating Blink Compare on configurable hold `Shift+C`, acquiring the previous viable image through retained inspection leases while preserving canonical sequence/index/generation state.
@@ -56,6 +58,6 @@ Markup save/export, text, dedicated Highlighter, contextual tool-selection short
 - GitHub Actions portability is configured but cannot be claimed as passing until the workflow runs remotely.
 - R4 runtime inspection evidence is Windows-only at `RenderScaling = 1.00`; precise cold non-cached Blink latency and real fractional-DPI interaction still need representative owner hardware evidence.
 - R5 through R5-F2 pointer, eraser, constrained-drawing, opacity, and rendering evidence is Windows-only at `RenderScaling = 1.00`; fractional-DPI, Linux, and macOS runtime feel remain unvalidated.
-- R5-P1 reduced coordinator-side current Ambient latency from roughly `134 ms` to `15 ms`, but owner review still observed a compositor-visible Black transition. R5-P2 local Windows diagnostics measured zero additional fallback-rendered frames across 20 natural 24 MP transitions, but the product defect remains open until owner visual acceptance; fractional-DPI and cross-platform frame presentation remain unmeasured.
+- R5-P1 reduced coordinator-side current Ambient latency from roughly `134 ms` to `15 ms`, but owner review still observed a compositor-visible Black transition. R5-P3 then reproduced the delayed failure on a long owner-supplied local 24 MP corpus: the first speculative `ResourceLimit` occurred at ordinal 10 and the first foreground miss/missing Ambient/fallback frame at ordinal 11. After reclaim-aware admission, 100 distinct forward plus 20 backward transitions were cache hits with matching Ambient and zero measured fallback frames, while the cache plateaued near its existing 1 GiB cap. The product defect nevertheless remains open until owner visual acceptance; fractional-DPI and cross-platform presentation remain unmeasured.
 
 Open technical risks are tracked in [`KNOWN-PROBLEMS.md`](KNOWN-PROBLEMS.md). Directional stages are in [`ROADMAP.md`](ROADMAP.md). Git remains the authority for branch, HEAD, and worktree status.

@@ -457,6 +457,96 @@ public sealed class ViewerSessionTests
         Assert.Equal(2, session.CurrentIndex);
     }
 
+    [Fact]
+    public async Task SpeculativePreloadContinuesAcrossRepeatedCacheSaturation()
+    {
+        const long imageBytes = 10;
+        var loader = new FakeImageLoader((path, allowance, _) => Task.FromResult(
+            imageBytes <= allowance.MaximumRetainedBytes
+                ? FakeLoadResult.Success(path, imageBytes)
+                : FakeLoadResult.Failure(ImageLoadErrorKind.ResourceLimit)));
+        var policy = new AutomaticMemoryPolicy(
+            AvailableMemoryBytes: 1_000,
+            CacheBudgetBytes: 50,
+            ForegroundDecodeBudgetBytes: 100,
+            SpeculativeDecodeBudgetBytes: 100);
+        var cache = new ByteBudgetCache<string, FakeImage>(policy.CacheBudgetBytes, StringComparer.Ordinal);
+        await using var session = new ViewerSession<FakeImage>(loader, cache, policy);
+        var sequence = new ImageSequence(
+            Enumerable.Range(0, 31).Select(index => $"{index:D2}.jpg").ToArray(),
+            0);
+        var current = (await session.OpenAsync(sequence)).Image!;
+        await session.WaitForAdjacentPreloadAsync(CancellationToken.None);
+        var cacheHits = 0;
+
+        for (var index = 1; index < sequence.Paths.Count; index++)
+        {
+            var next = await session.NavigateAsync(NavigationDirection.Next);
+            current.Dispose();
+            current = next.Image!;
+            Assert.Equal(SelectionStatus.Published, next.Status);
+            Assert.True(next.FromCache);
+            cacheHits++;
+            await session.WaitForAdjacentPreloadAsync(CancellationToken.None);
+        }
+
+        current.Dispose();
+        var metrics = session.GetMetrics();
+        Assert.Equal(30, cacheHits);
+        Assert.Equal(0, metrics.SpeculativeResourceLimitRejections);
+        Assert.True(metrics.SpeculativeCacheAdds >= 30);
+        Assert.True(metrics.CacheEvictions >= 26);
+        Assert.Equal(0, metrics.CacheRejectedAdds);
+        Assert.All(
+            loader.Requests.Where(request => request.Allowance.IsSpeculative),
+            request => Assert.Equal(40, request.Allowance.MaximumRetainedBytes));
+        Assert.InRange(metrics.CacheRetainedBytes, 1, metrics.CacheBudgetBytes);
+        Assert.InRange(metrics.CacheItemCount, 1, 5);
+    }
+
+    [Fact]
+    public async Task SpeculativeAllowanceUsesReclaimableCapacityInsteadOfUnusedBytes()
+    {
+        const long imageBytes = 20;
+        var loader = new FakeImageLoader((path, allowance, _) => Task.FromResult(
+            imageBytes <= allowance.MaximumRetainedBytes
+                ? FakeLoadResult.Success(path, imageBytes)
+                : FakeLoadResult.Failure(ImageLoadErrorKind.ResourceLimit)));
+        var policy = new AutomaticMemoryPolicy(1_000, 100, 100, 100);
+        var cache = new ByteBudgetCache<string, FakeImage>(policy.CacheBudgetBytes, StringComparer.Ordinal);
+        await using var session = new ViewerSession<FakeImage>(loader, cache, policy);
+        using var opened = (await session.OpenAsync(
+            new ImageSequence(Enumerable.Range(0, 8).Select(index => $"{index}.jpg").ToArray(), 3))).Image;
+        await session.WaitForAdjacentPreloadAsync(CancellationToken.None);
+
+        var speculativeAllowances = loader.Requests
+            .Where(request => request.Allowance.IsSpeculative)
+            .Select(request => request.Allowance.MaximumRetainedBytes)
+            .ToArray();
+        Assert.NotEmpty(speculativeAllowances);
+        Assert.All(speculativeAllowances, allowance => Assert.Equal(80, allowance));
+        Assert.True(session.GetMetrics().SpeculativeCacheAdds >= 2);
+    }
+
+    [Fact]
+    public async Task ResourceLargerThanWholeCacheBudgetRemainsRejected()
+    {
+        const long retainedBytes = 60;
+        var loader = new FakeImageLoader((path, allowance, _) => Task.FromResult(
+            retainedBytes <= allowance.MaximumRetainedBytes
+                ? FakeLoadResult.Success(path, retainedBytes)
+                : FakeLoadResult.Failure(ImageLoadErrorKind.ResourceLimit)));
+        var policy = new AutomaticMemoryPolicy(1_000, 50, 100, 100);
+        var cache = new ByteBudgetCache<string, FakeImage>(policy.CacheBudgetBytes, StringComparer.Ordinal);
+        await using var session = new ViewerSession<FakeImage>(loader, cache, policy);
+
+        var opened = await session.OpenAsync(new ImageSequence(["too-large.jpg"], 0));
+
+        Assert.Equal(SelectionStatus.Failed, opened.Status);
+        Assert.Equal(ImageLoadErrorKind.ResourceLimit, opened.Error!.Kind);
+        Assert.Equal(0, session.GetMetrics().CacheItemCount);
+    }
+
     private static ViewerSession<FakeImage> CreateSession(FakeImageLoader loader)
     {
         var policy = AutomaticMemoryPolicy.FromAvailableMemory(2L * 1024 * 1024 * 1024);

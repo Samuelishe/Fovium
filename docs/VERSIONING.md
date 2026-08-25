@@ -75,7 +75,7 @@ The displayed checkpoint is not a substitute for a Git commit, tag, or branch. G
 | `0.0.0.0010` | R5 | Session-local presenter markup overlay and configurable cursor highlight |
 | `0.0.0.0011` | R5-F1 | True partial Eraser, bounded per-image markup history, Undo/Redo, and undoable Clear |
 | `0.0.0.0012` | R5-F2 | Ellipse/Circle, immutable per-draw opacity, Shift constraints, and contextual markup style shortcuts |
-| `0.0.0.0013` | R5-P1 / R5-P2 corrective line | Current-first scheduling plus atomic Ambient presentation/frame-readiness hardening; owner visual acceptance pending |
+| `0.0.0.0013` | R5-P1 / R5-P2 / R5-P3 corrective line | Current-first scheduling, atomic Ambient presentation, and sustained preload across cache saturation; owner visual acceptance pending |
 
 The current corrective build identity is `0.0.0.0013`; the last owner-accepted product checkpoint is `0.0.0.0012`. Promotion or another BUILD increment waits for explicit owner acceptance. Current implementation state remains owned by [`PROJECT-STATE.md`](PROJECT-STATE.md).
 

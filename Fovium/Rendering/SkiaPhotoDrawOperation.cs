@@ -63,6 +63,7 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
 
     public void Render(ImmediateDrawingContext context)
     {
+        _frameDiagnostics.RecordCustomDrawEntered();
         var imageLease = _imageLease;
         if (imageLease is null)
         {
@@ -72,10 +73,12 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
         var feature = context.TryGetFeature<ISkiaSharpApiLeaseFeature>();
         if (feature is null)
         {
+            _frameDiagnostics.RecordSkiaLeaseUnavailable();
             return;
         }
 
         using var canvasLease = feature.Lease();
+        _frameDiagnostics.RecordSkiaLeaseAcquired();
         var canvas = canvasLease.SkCanvas;
         var ambientLease = _ambientLease;
         SkiaStageRenderer.Draw(

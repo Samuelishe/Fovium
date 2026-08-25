@@ -32,7 +32,37 @@ internal readonly record struct ViewerSessionMetrics(
     long CacheHits,
     long StaleResultDisposals,
     long CacheRetainedBytes,
-    int CacheItemCount);
+    long CacheBudgetBytes,
+    long CacheRemainingBytes,
+    int CacheItemCount,
+    long CacheEvictions,
+    long CacheRejectedAdds,
+    long ForegroundLoadAttempts,
+    long ForegroundLoadSuccesses,
+    long SpeculativeRequests,
+    long SpeculativeLoadAttempts,
+    long SpeculativeLoadSuccesses,
+    long SpeculativeCacheHits,
+    long SpeculativeResourceLimitRejections,
+    long SpeculativeCancellations,
+    long SpeculativeCacheAdds,
+    long SpeculativeCacheAddRejections,
+    int LastSpeculativeCandidateIndex,
+    SpeculativeLoadOutcome LastSpeculativeOutcome);
+
+internal enum SpeculativeLoadOutcome
+{
+    None,
+    Requested,
+    CacheHit,
+    Started,
+    Decoded,
+    ResourceLimit,
+    Failed,
+    Canceled,
+    Added,
+    CacheRejected,
+}
 
 internal sealed record CachedResourceLease<T>(string Path, SharedResourceLease<T> Resource) : IDisposable
     where T : class, IRetainedResource
@@ -78,6 +108,18 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
     private long _generation;
     private long _staleResultDisposals;
     private long _cacheHits;
+    private long _foregroundLoadAttempts;
+    private long _foregroundLoadSuccesses;
+    private long _speculativeRequests;
+    private long _speculativeLoadAttempts;
+    private long _speculativeLoadSuccesses;
+    private long _speculativeCacheHits;
+    private long _speculativeResourceLimitRejections;
+    private long _speculativeCancellations;
+    private long _speculativeCacheAdds;
+    private long _speculativeCacheAddRejections;
+    private int _lastSpeculativeCandidateIndex = -1;
+    private int _lastSpeculativeOutcome;
     private int _currentIndex;
     private int _requestedIndex;
     private bool _disposed;
@@ -102,7 +144,23 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
         CacheHits,
         StaleResultDisposals,
         _cache.RetainedBytes,
-        _cache.Count);
+        _cache.BudgetBytes,
+        _cache.RemainingBytes,
+        _cache.Count,
+        _cache.EvictionCount,
+        _cache.RejectedAddCount,
+        Interlocked.Read(ref _foregroundLoadAttempts),
+        Interlocked.Read(ref _foregroundLoadSuccesses),
+        Interlocked.Read(ref _speculativeRequests),
+        Interlocked.Read(ref _speculativeLoadAttempts),
+        Interlocked.Read(ref _speculativeLoadSuccesses),
+        Interlocked.Read(ref _speculativeCacheHits),
+        Interlocked.Read(ref _speculativeResourceLimitRejections),
+        Interlocked.Read(ref _speculativeCancellations),
+        Interlocked.Read(ref _speculativeCacheAdds),
+        Interlocked.Read(ref _speculativeCacheAddRejections),
+        Volatile.Read(ref _lastSpeculativeCandidateIndex),
+        (SpeculativeLoadOutcome)Volatile.Read(ref _lastSpeculativeOutcome));
 
     public int CurrentIndex
     {
@@ -354,7 +412,7 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
         try
         {
             var path = sequence.Paths[index];
-            var loaded = await LoadPathAsync(path, isSpeculative: false, cancellationToken)
+            var loaded = await LoadPathAsync(path, index, isSpeculative: false, cancellationToken)
                 .ConfigureAwait(false);
             if (!loaded.IsSuccess)
             {
@@ -433,7 +491,7 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
                         stopwatch.Elapsed);
                 }
 
-                var loaded = await LoadPathAsync(path, isSpeculative: false, cancellationToken)
+                var loaded = await LoadPathAsync(path, index, isSpeculative: false, cancellationToken)
                     .ConfigureAwait(false);
                 if (!loaded.IsSuccess)
                 {
@@ -516,7 +574,7 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
                     currentIndex,
                     sessionIdentity,
                     generation);
-                var loaded = await LoadPathAsync(path, isSpeculative: false, cancellationToken)
+                var loaded = await LoadPathAsync(path, index, isSpeculative: false, cancellationToken)
                     .ConfigureAwait(false);
                 if (!loaded.IsSuccess)
                 {
@@ -595,12 +653,26 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
 
     private async Task<ImageLoadResult<T>> LoadPathAsync(
         string path,
+        int candidateIndex,
         bool isSpeculative,
         CancellationToken cancellationToken)
     {
-        var remaining = isSpeculative ? _cache.RemainingBytes : _memoryPolicy.CacheBudgetBytes;
-        if (remaining <= 0)
+        if (!isSpeculative)
         {
+            Interlocked.Increment(ref _foregroundLoadAttempts);
+        }
+
+        var retainedAllowance = isSpeculative
+            ? _cache.MaximumUnprotectedEntryBytes
+            : _memoryPolicy.CacheBudgetBytes;
+        if (retainedAllowance <= 0)
+        {
+            if (isSpeculative)
+            {
+                Interlocked.Increment(ref _speculativeResourceLimitRejections);
+                RecordLastSpeculative(candidateIndex, SpeculativeLoadOutcome.ResourceLimit);
+            }
+
             return ImageLoadResult<T>.Failure(new ImageLoadError(
                 ImageLoadErrorKind.ResourceLimit,
                 "No cache budget remains for the requested image."));
@@ -610,9 +682,50 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
             isSpeculative
                 ? _memoryPolicy.SpeculativeDecodeBudgetBytes
                 : _memoryPolicy.ForegroundDecodeBudgetBytes,
-            remaining,
+            retainedAllowance,
             isSpeculative);
-        return await _loader.LoadAsync(path, allowance, cancellationToken).ConfigureAwait(false);
+        if (isSpeculative)
+        {
+            Interlocked.Increment(ref _speculativeLoadAttempts);
+            RecordLastSpeculative(candidateIndex, SpeculativeLoadOutcome.Started);
+        }
+
+        try
+        {
+            var result = await _loader.LoadAsync(path, allowance, cancellationToken).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                if (isSpeculative)
+                {
+                    Interlocked.Increment(ref _speculativeLoadSuccesses);
+                    RecordLastSpeculative(candidateIndex, SpeculativeLoadOutcome.Decoded);
+                }
+                else
+                {
+                    Interlocked.Increment(ref _foregroundLoadSuccesses);
+                }
+            }
+            else if (isSpeculative)
+            {
+                if (result.Error?.Kind == ImageLoadErrorKind.ResourceLimit)
+                {
+                    Interlocked.Increment(ref _speculativeResourceLimitRejections);
+                    RecordLastSpeculative(candidateIndex, SpeculativeLoadOutcome.ResourceLimit);
+                }
+                else
+                {
+                    RecordLastSpeculative(candidateIndex, SpeculativeLoadOutcome.Failed);
+                }
+            }
+
+            return result;
+        }
+        catch (OperationCanceledException) when (isSpeculative)
+        {
+            Interlocked.Increment(ref _speculativeCancellations);
+            RecordLastSpeculative(candidateIndex, SpeculativeLoadOutcome.Canceled);
+            throw;
+        }
     }
 
     private SelectionResult<T> PublishLoaded(
@@ -765,14 +878,18 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
         {
             cancellationToken.ThrowIfCancellationRequested();
             var path = sequence.Paths[index];
+            Interlocked.Increment(ref _speculativeRequests);
+            RecordLastSpeculative(index, SpeculativeLoadOutcome.Requested);
             if (_cache.TryAcquire(path, out var existing))
             {
                 existing!.Dispose();
+                Interlocked.Increment(ref _speculativeCacheHits);
+                RecordLastSpeculative(index, SpeculativeLoadOutcome.CacheHit);
                 NotifyAdjacentPreloadProgressed();
                 return;
             }
 
-            var loaded = await LoadPathAsync(path, isSpeculative: true, cancellationToken)
+            var loaded = await LoadPathAsync(path, index, isSpeculative: true, cancellationToken)
                 .ConfigureAwait(false);
             if (!loaded.IsSuccess)
             {
@@ -793,11 +910,24 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
 
             if (added)
             {
+                Interlocked.Increment(ref _speculativeCacheAdds);
+                RecordLastSpeculative(index, SpeculativeLoadOutcome.Added);
                 NotifyAdjacentPreloadProgressed();
+            }
+            else
+            {
+                Interlocked.Increment(ref _speculativeCacheAddRejections);
+                RecordLastSpeculative(index, SpeculativeLoadOutcome.CacheRejected);
             }
 
             return;
         }
+    }
+
+    private void RecordLastSpeculative(int candidateIndex, SpeculativeLoadOutcome outcome)
+    {
+        Volatile.Write(ref _lastSpeculativeCandidateIndex, candidateIndex);
+        Volatile.Write(ref _lastSpeculativeOutcome, (int)outcome);
     }
 
     private void NotifyAdjacentPreloadProgressed() =>

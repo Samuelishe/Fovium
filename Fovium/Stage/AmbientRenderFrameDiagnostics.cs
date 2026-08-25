@@ -12,17 +12,40 @@ internal readonly record struct AmbientRenderedFrame(
 internal readonly record struct AmbientRenderFrameMetrics(
     long BlackFallbackRenderedFrameCount,
     long MatchingAmbientRenderedFrameCount,
+    long ViewportRenderCount,
+    long CustomDrawScheduledCount,
+    long CustomDrawEnteredCount,
+    long SkiaLeaseAcquiredCount,
+    long SkiaLeaseUnavailableCount,
     AmbientRenderedFrame LastFrame);
 
 internal sealed class AmbientRenderFrameDiagnostics
 {
     private long _blackFallbackRenderedFrameCount;
     private long _matchingAmbientRenderedFrameCount;
+    private long _viewportRenderCount;
+    private long _customDrawScheduledCount;
+    private long _customDrawEnteredCount;
+    private long _skiaLeaseAcquiredCount;
+    private long _skiaLeaseUnavailableCount;
     private long _lastTimestamp;
     private long _lastImageIdentity;
     private long _lastAmbientIdentity;
     private int _lastBackgroundMode;
     private int _lastUsedBlackFallback;
+    private int _pipelineTrackingEnabled;
+
+    public void EnablePipelineTracking() => Volatile.Write(ref _pipelineTrackingEnabled, 1);
+
+    public void RecordViewportRender() => IncrementIfPipelineTrackingEnabled(ref _viewportRenderCount);
+
+    public void RecordCustomDrawScheduled() => IncrementIfPipelineTrackingEnabled(ref _customDrawScheduledCount);
+
+    public void RecordCustomDrawEntered() => IncrementIfPipelineTrackingEnabled(ref _customDrawEnteredCount);
+
+    public void RecordSkiaLeaseAcquired() => IncrementIfPipelineTrackingEnabled(ref _skiaLeaseAcquiredCount);
+
+    public void RecordSkiaLeaseUnavailable() => IncrementIfPipelineTrackingEnabled(ref _skiaLeaseUnavailableCount);
 
     public void Record(
         long imageIdentity,
@@ -58,11 +81,24 @@ internal sealed class AmbientRenderFrameDiagnostics
         return new AmbientRenderFrameMetrics(
             Interlocked.Read(ref _blackFallbackRenderedFrameCount),
             Interlocked.Read(ref _matchingAmbientRenderedFrameCount),
+            Interlocked.Read(ref _viewportRenderCount),
+            Interlocked.Read(ref _customDrawScheduledCount),
+            Interlocked.Read(ref _customDrawEnteredCount),
+            Interlocked.Read(ref _skiaLeaseAcquiredCount),
+            Interlocked.Read(ref _skiaLeaseUnavailableCount),
             new AmbientRenderedFrame(
                 Interlocked.Read(ref _lastTimestamp),
                 Interlocked.Read(ref _lastImageIdentity),
                 (StageBackgroundMode)Volatile.Read(ref _lastBackgroundMode),
                 ambientIdentity == 0 ? null : ambientIdentity,
                 Volatile.Read(ref _lastUsedBlackFallback) != 0));
+    }
+
+    private void IncrementIfPipelineTrackingEnabled(ref long counter)
+    {
+        if (Volatile.Read(ref _pipelineTrackingEnabled) != 0)
+        {
+            Interlocked.Increment(ref counter);
+        }
     }
 }

@@ -76,6 +76,31 @@ public sealed class SkiaStageRendererTests
         Assert.Equal(0, diagnostics.GetMetrics().MatchingAmbientRenderedFrameCount);
     }
 
+    [Fact]
+    public void RenderPipelineDiagnosticsDistinguishSchedulingEntryAndSkiaLeaseAvailability()
+    {
+        var diagnostics = new AmbientRenderFrameDiagnostics();
+        diagnostics.RecordViewportRender();
+        Assert.Equal(0, diagnostics.GetMetrics().ViewportRenderCount);
+        diagnostics.EnablePipelineTracking();
+
+        diagnostics.RecordViewportRender();
+        diagnostics.RecordCustomDrawScheduled();
+        diagnostics.RecordCustomDrawEntered();
+        diagnostics.RecordSkiaLeaseUnavailable();
+        diagnostics.RecordViewportRender();
+        diagnostics.RecordCustomDrawScheduled();
+        diagnostics.RecordCustomDrawEntered();
+        diagnostics.RecordSkiaLeaseAcquired();
+
+        var metrics = diagnostics.GetMetrics();
+        Assert.Equal(2, metrics.ViewportRenderCount);
+        Assert.Equal(2, metrics.CustomDrawScheduledCount);
+        Assert.Equal(2, metrics.CustomDrawEnteredCount);
+        Assert.Equal(1, metrics.SkiaLeaseUnavailableCount);
+        Assert.Equal(1, metrics.SkiaLeaseAcquiredCount);
+    }
+
     [Theory]
     [InlineData((int)StageBackgroundMode.Black, 0x00, 0x00, 0x00)]
     [InlineData((int)StageBackgroundMode.Neutral, 0x50, 0x50, 0x50)]

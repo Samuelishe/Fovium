@@ -59,13 +59,13 @@ Accepted outcome: replace append-only primitives with bounded per-image ordered 
 
 Accepted outcome: add Ellipse/Shift-circle, immutable per-draw opacity, Shift constraints for Line/Arrow/Rectangle/Ellipse/Brush, contextual bracket-key thickness/opacity adjustment, and conflict-safe Clear/Blink default evolution without adding a dedicated Highlighter or persistent markup data.
 
-## R5-P1 / R5-P2 — Ambient transition latency and atomic presentation hardening
+## R5-P1 / R5-P2 / R5-P3 — Ambient transition and sustained-readiness hardening
 
-Current corrective work on `0.0.0.0013`: retain photograph-first/current-first scheduling, atomically install a cached matching Ambient with the target photo, prepare adjacent Ambient progressively with direction priority, and measure actual fallback-rendered frames. Local evidence is ready for review, but Black-flash elimination is not accepted roadmap truth until owner visual confirmation.
+Current corrective work on `0.0.0.0013`: retain photograph-first/current-first scheduling, atomically install cached matching Ambient, prepare adjacent Ambient progressively, and keep speculative preload alive through byte-cache saturation by admitting against reclaimable LRU capacity. A long owner-corpus trace explains the delayed failure and shows zero measured fallback frames after correction, but Black-flash elimination is not accepted roadmap truth until owner visual confirmation.
 
 ## R5-F3 — Contextual drawing shortcuts and presentation UI polish
 
-Expected next bounded stage only after explicit R5-P2 owner acceptance. It may address contextual tool shortcuts plus compact dock/Controls grouping and iconography; do not start automatically or fold in text, selection/editing, export, sidecars, or layers.
+Expected next bounded stage only after explicit corrective-line owner acceptance. It may address contextual tool shortcuts plus compact dock/Controls grouping and iconography; do not start automatically or fold in text, selection/editing, export, sidecars, or layers.
 
 ## R6 — Metadata / context-menu polish
 

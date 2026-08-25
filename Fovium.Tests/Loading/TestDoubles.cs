@@ -22,15 +22,20 @@ internal sealed class FakeImageLoader(
     : IImageLoader<FakeImage>
 {
     private readonly ConcurrentQueue<string> _calls = new();
+    private readonly ConcurrentQueue<(string Name, ImageLoadAllowance Allowance)> _requests = new();
 
     public IReadOnlyList<string> Calls => _calls.ToArray();
+
+    public IReadOnlyList<(string Name, ImageLoadAllowance Allowance)> Requests => _requests.ToArray();
 
     public Task<ImageLoadResult<FakeImage>> LoadAsync(
         string path,
         ImageLoadAllowance allowance,
         CancellationToken cancellationToken)
     {
-        _calls.Enqueue(Path.GetFileName(path));
+        var name = Path.GetFileName(path);
+        _calls.Enqueue(name);
+        _requests.Enqueue((name, allowance));
         return load(path, allowance, cancellationToken);
     }
 

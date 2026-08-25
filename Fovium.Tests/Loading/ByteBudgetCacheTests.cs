@@ -86,4 +86,42 @@ public sealed class ByteBudgetCacheTests
         Assert.InRange(cache.Count, 1, 5);
         Assert.InRange(cache.RetainedBytes, 1, 100);
     }
+
+    [Fact]
+    public void UnprotectedAdmissionIncludesReclaimableLruButExcludesProtectedCurrent()
+    {
+        using var cache = new ByteBudgetCache<string, FakeImage>(100, StringComparer.Ordinal);
+        cache.Add("current", new FakeImage("current", 40), protect: true);
+        cache.Add("old-neighbor", new FakeImage("old-neighbor", 60), protect: false);
+
+        Assert.Equal(0, cache.RemainingBytes);
+        Assert.Equal(60, cache.MaximumUnprotectedEntryBytes);
+    }
+
+    [Fact]
+    public void SpeculativeReplacementPreservesCurrentAndOutstandingEvictedLease()
+    {
+        using var cache = new ByteBudgetCache<string, FakeImage>(100, StringComparer.Ordinal);
+        var current = new FakeImage("current", 40);
+        var oldNeighbor = new FakeImage("old-neighbor", 60);
+        var replacement = new FakeImage("replacement", 60);
+        Assert.True(cache.Add("current", current, protect: true));
+        Assert.True(cache.Add("old-neighbor", oldNeighbor, protect: false));
+        Assert.True(cache.TryAcquire("old-neighbor", out var oldLease));
+
+        Assert.True(cache.Add("replacement", replacement, protect: false));
+
+        Assert.True(cache.TryAcquire("current", out var currentLease));
+        Assert.True(cache.TryAcquire("replacement", out var replacementLease));
+        Assert.False(cache.TryAcquire("old-neighbor", out _));
+        Assert.Equal("old-neighbor", oldLease!.Value.Name);
+        Assert.Equal(0, current.DisposeCount);
+        Assert.Equal(0, oldNeighbor.DisposeCount);
+        Assert.Equal(1, cache.EvictionCount);
+        Assert.Equal(100, cache.RetainedBytes);
+        currentLease!.Dispose();
+        replacementLease!.Dispose();
+        oldLease.Dispose();
+        Assert.Equal(1, oldNeighbor.DisposeCount);
+    }
 }

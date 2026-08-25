@@ -17,6 +17,8 @@ internal sealed class ByteBudgetCache<TKey, TValue> : IDisposable
     private readonly Dictionary<TKey, Entry> _entries;
     private readonly LinkedList<TKey> _leastRecentlyUsed = new();
     private bool _disposed;
+    private long _evictionCount;
+    private long _rejectedAddCount;
     private long _retainedBytes;
     private TKey? _protectedKey;
     private bool _hasProtectedKey;
@@ -29,6 +31,10 @@ internal sealed class ByteBudgetCache<TKey, TValue> : IDisposable
     }
 
     public long BudgetBytes { get; }
+
+    public long EvictionCount => Interlocked.Read(ref _evictionCount);
+
+    public long RejectedAddCount => Interlocked.Read(ref _rejectedAddCount);
 
     public long RetainedBytes
     {
@@ -63,6 +69,21 @@ internal sealed class ByteBudgetCache<TKey, TValue> : IDisposable
         }
     }
 
+    public long MaximumUnprotectedEntryBytes
+    {
+        get
+        {
+            lock (_sync)
+            {
+                var protectedBytes = _hasProtectedKey &&
+                    _entries.TryGetValue(_protectedKey!, out var protectedEntry)
+                        ? protectedEntry.Cost
+                        : 0;
+                return Math.Max(0, BudgetBytes - protectedBytes);
+            }
+        }
+    }
+
     public bool TryAcquire(TKey key, out SharedResourceLease<TValue>? lease)
     {
         lock (_sync)
@@ -90,6 +111,7 @@ internal sealed class ByteBudgetCache<TKey, TValue> : IDisposable
             ThrowIfDisposed();
             if (value.RetainedBytes > BudgetBytes)
             {
+                Interlocked.Increment(ref _rejectedAddCount);
                 value.Dispose();
                 return false;
             }
@@ -118,6 +140,7 @@ internal sealed class ByteBudgetCache<TKey, TValue> : IDisposable
                 _leastRecentlyUsed.Remove(rejected.Node);
                 _retainedBytes -= rejected.Cost;
                 releases.Add(rejected.Resource);
+                Interlocked.Increment(ref _rejectedAddCount);
                 retained = false;
             }
         }
@@ -269,6 +292,7 @@ internal sealed class ByteBudgetCache<TKey, TValue> : IDisposable
                 _leastRecentlyUsed.Remove(node);
                 _retainedBytes -= entry.Cost;
                 releases.Add(entry.Resource);
+                Interlocked.Increment(ref _evictionCount);
             }
 
             node = previous;

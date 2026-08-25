@@ -70,6 +70,9 @@ internal sealed class PhotoViewportControl : Control
     internal AmbientRenderFrameMetrics GetAmbientRenderFrameMetrics() =>
         _ambientFrameDiagnostics.GetMetrics();
 
+    internal void EnableAmbientPipelineDiagnostics() =>
+        _ambientFrameDiagnostics.EnablePipelineTracking();
+
     internal ViewportAmbientPresentationState CaptureAmbientPresentationState()
     {
         var imageIdentity = _image?.Value.Identity;
@@ -324,6 +327,7 @@ internal sealed class PhotoViewportControl : Control
     public override void Render(DrawingContext context)
     {
         base.Render(context);
+        _ambientFrameDiagnostics.RecordViewportRender();
         var presentationStage = _inspectionImage is not null ? _inspectionStage! : _stage;
         var fallbackColor = presentationStage.BackgroundMode switch
         {
@@ -359,6 +363,7 @@ internal sealed class PhotoViewportControl : Control
                     : _canonicalImageIdentity;
                 var markup = _presentation?.GetRenderSnapshot(presentationIdentity)
                     ?? MarkupRenderSnapshot.Empty;
+                _ambientFrameDiagnostics.RecordCustomDrawScheduled();
                 context.Custom(new SkiaPhotoDrawOperation(
                     new Rect(Bounds.Size),
                     renderLease,
