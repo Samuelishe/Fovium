@@ -1,5 +1,7 @@
 namespace Fovium.Localization;
 
+using Fovium.Input;
+
 internal static class UiStrings
 {
     public const string MenuOpen = "menu.open";
@@ -10,6 +12,7 @@ internal static class UiStrings
     public const string MenuFullscreen = "menu.fullscreen";
     public const string MenuSettings = "menu.settings";
     public const string MenuStage = "menu.stage";
+    public const string MenuOverlays = "menu.overlays";
     public const string MenuClose = "menu.close";
     public const string SettingsTitle = "settings.title";
     public const string SettingsViewing = "settings.viewing";
@@ -67,6 +70,24 @@ internal static class UiStrings
     public const string CommandIncreaseMarkupThickness = "command.markupThicknessUp";
     public const string CommandDecreaseMarkupOpacity = "command.markupOpacityDown";
     public const string CommandIncreaseMarkupOpacity = "command.markupOpacityUp";
+    public const string CommandDecreaseHighlightRadius = "command.highlightRadiusDown";
+    public const string CommandIncreaseHighlightRadius = "command.highlightRadiusUp";
+    public const string CommandSelectHandTool = "command.markupTool.hand";
+    public const string CommandSelectBrushTool = "command.markupTool.brush";
+    public const string CommandSelectEraserTool = "command.markupTool.eraser";
+    public const string CommandSelectLineTool = "command.markupTool.line";
+    public const string CommandSelectRectangleTool = "command.markupTool.rectangle";
+    public const string CommandSelectEllipseTool = "command.markupTool.ellipse";
+    public const string CommandSelectArrowTool = "command.markupTool.arrow";
+    public const string CommandTemporaryMarkupHand = "command.markupTemporaryHand";
+    public const string CommandGroupNavigation = "commandGroup.navigation";
+    public const string CommandGroupViewing = "commandGroup.viewing";
+    public const string CommandGroupInspection = "commandGroup.inspection";
+    public const string CommandGroupPresentation = "commandGroup.presentation";
+    public const string CommandGroupMarkup = "commandGroup.markup";
+    public const string CommandGroupApplication = "commandGroup.application";
+    public const string CommandScopeHighlightHint = "commandScope.highlightHint";
+    public const string CommandScopeMarkupHint = "commandScope.markupHint";
     public const string PresentationEnableMarkup = "presentation.enableMarkup";
     public const string PresentationHighlight = "presentation.highlight";
     public const string PresentationHighlightColor = "presentation.highlightColor";
@@ -86,6 +107,8 @@ internal static class UiStrings
     public const string PresentationClear = "presentation.clear";
     public const string PresentationUndo = "presentation.undo";
     public const string PresentationRedo = "presentation.redo";
+    public const string PresentationHand = "presentation.hand";
+    public const string PresentationMovePanel = "presentation.movePanel";
     public const string SettingsScaleOnImageChange = "settings.scaleOnImageChange";
     public const string SettingsKeepCurrentScale = "settings.keepCurrentScale";
     public const string SettingsFitEachImage = "settings.fitEachImage";
@@ -97,4 +120,51 @@ internal static class UiStrings
     public const string ErrorCorrupt = "error.corrupt";
     public const string ErrorResourceLimit = "error.resourceLimit";
     public const string ErrorDecodeFailed = "error.decodeFailed";
+
+    public static string ForCommand(ViewerCommand command) => command switch
+    {
+        ViewerCommand.PreviousImage => CommandPrevious,
+        ViewerCommand.NextImage => CommandNext,
+        ViewerCommand.ZoomIn => CommandZoomIn,
+        ViewerCommand.ZoomOut => CommandZoomOut,
+        ViewerCommand.Fit => CommandFit,
+        ViewerCommand.ActualSize => CommandActualSize,
+        ViewerCommand.ToggleMatte => CommandToggleMatte,
+        ViewerCommand.Fullscreen => CommandFullscreen,
+        ViewerCommand.Open => CommandOpen,
+        ViewerCommand.Settings => CommandSettings,
+        ViewerCommand.Peek100 => CommandPeek100,
+        ViewerCommand.BlinkCompare => CommandBlinkCompare,
+        ViewerCommand.ToggleHighlight => CommandToggleHighlight,
+        ViewerCommand.ToggleMarkupTools => CommandToggleMarkupTools,
+        ViewerCommand.MarkupUndo => CommandMarkupUndo,
+        ViewerCommand.MarkupRedo => CommandMarkupRedo,
+        ViewerCommand.ClearMarkup => CommandClearMarkup,
+        ViewerCommand.DecreaseMarkupThickness => CommandDecreaseMarkupThickness,
+        ViewerCommand.IncreaseMarkupThickness => CommandIncreaseMarkupThickness,
+        ViewerCommand.DecreaseMarkupOpacity => CommandDecreaseMarkupOpacity,
+        ViewerCommand.IncreaseMarkupOpacity => CommandIncreaseMarkupOpacity,
+        ViewerCommand.DecreaseHighlightRadius => CommandDecreaseHighlightRadius,
+        ViewerCommand.IncreaseHighlightRadius => CommandIncreaseHighlightRadius,
+        ViewerCommand.SelectHandTool => CommandSelectHandTool,
+        ViewerCommand.SelectBrushTool => CommandSelectBrushTool,
+        ViewerCommand.SelectEraserTool => CommandSelectEraserTool,
+        ViewerCommand.SelectLineTool => CommandSelectLineTool,
+        ViewerCommand.SelectRectangleTool => CommandSelectRectangleTool,
+        ViewerCommand.SelectEllipseTool => CommandSelectEllipseTool,
+        ViewerCommand.SelectArrowTool => CommandSelectArrowTool,
+        ViewerCommand.TemporaryMarkupHand => CommandTemporaryMarkupHand,
+        _ => throw new ArgumentOutOfRangeException(nameof(command)),
+    };
+
+    public static string ForCommandGroup(ViewerCommandGroup group) => group switch
+    {
+        ViewerCommandGroup.Navigation => CommandGroupNavigation,
+        ViewerCommandGroup.Viewing => CommandGroupViewing,
+        ViewerCommandGroup.Inspection => CommandGroupInspection,
+        ViewerCommandGroup.Presentation => CommandGroupPresentation,
+        ViewerCommandGroup.Markup => CommandGroupMarkup,
+        ViewerCommandGroup.Application => CommandGroupApplication,
+        _ => throw new ArgumentOutOfRangeException(nameof(group)),
+    };
 }

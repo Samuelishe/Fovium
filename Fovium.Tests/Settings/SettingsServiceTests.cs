@@ -178,6 +178,17 @@ public sealed class SettingsServiceTests
         Assert.Equal(
             new ShortcutGesture("CloseBracket", ShortcutModifiers.Control),
             service.Current.Shortcuts.Get(ViewerCommand.IncreaseMarkupOpacity));
+        Assert.Equal(
+            new ShortcutGesture("OpenBracket"),
+            service.Current.Shortcuts.Get(ViewerCommand.DecreaseHighlightRadius));
+        Assert.Equal(
+            new ShortcutGesture("CloseBracket"),
+            service.Current.Shortcuts.Get(ViewerCommand.IncreaseHighlightRadius));
+        Assert.Equal(new ShortcutGesture("V"), service.Current.Shortcuts.Get(ViewerCommand.SelectHandTool));
+        Assert.Equal(new ShortcutGesture("B"), service.Current.Shortcuts.Get(ViewerCommand.SelectBrushTool));
+        Assert.Equal(
+            new ShortcutGesture("Space"),
+            service.Current.Shortcuts.Get(ViewerCommand.TemporaryMarkupHand));
     }
 
     [Fact]
@@ -193,6 +204,7 @@ public sealed class SettingsServiceTests
             DefaultMarkupColor = new PresentationColor(40, 50, 60),
             DefaultMarkupStrokePhysicalPixels = 7,
             DefaultMarkupOpacity = 0.35,
+            MarkupDockPlacement = new FloatingOverlayPlacement(0.73, 0.21),
         };
 
         await service.SetPresentationAsync(presentation);

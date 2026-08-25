@@ -26,6 +26,16 @@ public sealed class ShortcutDefaultsTests
     [InlineData((int)ViewerCommand.IncreaseMarkupThickness, "CloseBracket", (int)ShortcutModifiers.None)]
     [InlineData((int)ViewerCommand.DecreaseMarkupOpacity, "OpenBracket", (int)ShortcutModifiers.Control)]
     [InlineData((int)ViewerCommand.IncreaseMarkupOpacity, "CloseBracket", (int)ShortcutModifiers.Control)]
+    [InlineData((int)ViewerCommand.DecreaseHighlightRadius, "OpenBracket", (int)ShortcutModifiers.None)]
+    [InlineData((int)ViewerCommand.IncreaseHighlightRadius, "CloseBracket", (int)ShortcutModifiers.None)]
+    [InlineData((int)ViewerCommand.SelectHandTool, "V", (int)ShortcutModifiers.None)]
+    [InlineData((int)ViewerCommand.SelectBrushTool, "B", (int)ShortcutModifiers.None)]
+    [InlineData((int)ViewerCommand.SelectEraserTool, "E", (int)ShortcutModifiers.None)]
+    [InlineData((int)ViewerCommand.SelectLineTool, "L", (int)ShortcutModifiers.None)]
+    [InlineData((int)ViewerCommand.SelectRectangleTool, "R", (int)ShortcutModifiers.None)]
+    [InlineData((int)ViewerCommand.SelectEllipseTool, "O", (int)ShortcutModifiers.None)]
+    [InlineData((int)ViewerCommand.SelectArrowTool, "A", (int)ShortcutModifiers.None)]
+    [InlineData((int)ViewerCommand.TemporaryMarkupHand, "Space", (int)ShortcutModifiers.None)]
     public void ExactDefaultBindingsUseProjectOwnedGestures(
         int commandValue,
         string key,
@@ -70,12 +80,60 @@ public sealed class ShortcutDefaultsTests
         Assert.Equal(
             "viewer.markupOpacityUp",
             ViewerCommands.GetId(ViewerCommand.IncreaseMarkupOpacity));
+        Assert.Equal(
+            "viewer.highlightRadiusDown",
+            ViewerCommands.GetId(ViewerCommand.DecreaseHighlightRadius));
+        Assert.Equal(
+            "viewer.highlightRadiusUp",
+            ViewerCommands.GetId(ViewerCommand.IncreaseHighlightRadius));
+        Assert.Equal("viewer.markupTool.hand", ViewerCommands.GetId(ViewerCommand.SelectHandTool));
+        Assert.Equal("viewer.markupTool.brush", ViewerCommands.GetId(ViewerCommand.SelectBrushTool));
+        Assert.Equal("viewer.markupTool.eraser", ViewerCommands.GetId(ViewerCommand.SelectEraserTool));
+        Assert.Equal("viewer.markupTool.line", ViewerCommands.GetId(ViewerCommand.SelectLineTool));
+        Assert.Equal(
+            "viewer.markupTool.rectangle",
+            ViewerCommands.GetId(ViewerCommand.SelectRectangleTool));
+        Assert.Equal("viewer.markupTool.ellipse", ViewerCommands.GetId(ViewerCommand.SelectEllipseTool));
+        Assert.Equal("viewer.markupTool.arrow", ViewerCommands.GetId(ViewerCommand.SelectArrowTool));
+        Assert.Equal(
+            "viewer.markupTemporaryHand",
+            ViewerCommands.GetId(ViewerCommand.TemporaryMarkupHand));
         Assert.Equal(ViewerCommandTrigger.Hold, ViewerCommands.GetDefinition(ViewerCommand.Peek100).Trigger);
         Assert.Equal(ViewerCommandTrigger.Hold, ViewerCommands.GetDefinition(ViewerCommand.BlinkCompare).Trigger);
+        Assert.Equal(
+            ViewerCommandTrigger.Hold,
+            ViewerCommands.GetDefinition(ViewerCommand.TemporaryMarkupHand).Trigger);
         Assert.All(
             ViewerCommands.Definitions.Where(definition =>
-                definition.Command is not ViewerCommand.Peek100 and not ViewerCommand.BlinkCompare),
+                definition.Command is not ViewerCommand.Peek100 and
+                    not ViewerCommand.BlinkCompare and
+                    not ViewerCommand.TemporaryMarkupHand),
             definition => Assert.Equal(ViewerCommandTrigger.Press, definition.Trigger));
+    }
+
+    [Fact]
+    public void EveryCommandHasExactlyOneTypedGroupAndScope()
+    {
+        Assert.Equal(Enum.GetValues<ViewerCommand>().Length, ViewerCommands.Definitions.Count);
+        Assert.Equal(
+            ViewerCommands.Definitions.Count,
+            ViewerCommands.Definitions.Select(definition => definition.Command).Distinct().Count());
+        Assert.All(ViewerCommands.Definitions, definition =>
+        {
+            Assert.True(Enum.IsDefined(definition.Group));
+            Assert.True(Enum.IsDefined(definition.Scope));
+            Assert.False(string.IsNullOrWhiteSpace(definition.Id));
+        });
+
+        Assert.Equal(
+            ViewerCommandScope.Markup,
+            ViewerCommands.GetDefinition(ViewerCommand.SelectBrushTool).Scope);
+        Assert.Equal(
+            ViewerCommandScope.Highlight,
+            ViewerCommands.GetDefinition(ViewerCommand.IncreaseHighlightRadius).Scope);
+        Assert.Equal(
+            ViewerCommandGroup.Navigation,
+            ViewerCommands.GetDefinition(ViewerCommand.NextImage).Group);
     }
 
     [Fact]

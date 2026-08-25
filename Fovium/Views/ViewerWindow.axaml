@@ -7,60 +7,74 @@
         WindowState="Maximized"
         MinWidth="480"
         MinHeight="320">
-  <Grid Background="Black">
+  <Grid x:Name="ViewerRoot" Background="Black">
     <viewer:PhotoViewportControl x:Name="PhotoViewport" />
     <Border x:Name="MarkupToolsPanel"
-            IsVisible="False"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Top"
-            Margin="12,18"
-            Padding="8"
-            CornerRadius="7"
-            Background="#E6202020"
-            BorderBrush="#604A4A4A"
-            BorderThickness="1">
-      <StackPanel Orientation="Horizontal" Spacing="6">
-        <Button x:Name="MarkupBrushButton" MinWidth="64" Focusable="False" />
-        <Button x:Name="MarkupEraserButton" MinWidth="64" Focusable="False" />
-        <Button x:Name="MarkupLineButton" MinWidth="58" Focusable="False" />
-        <Button x:Name="MarkupRectangleButton" MinWidth="82" Focusable="False" />
-        <Button x:Name="MarkupEllipseButton" MinWidth="64" Focusable="False" />
-        <Button x:Name="MarkupArrowButton" MinWidth="64" Focusable="False" />
-        <Button x:Name="MarkupColorButton" MinWidth="64" Focusable="False">
-          <StackPanel Orientation="Horizontal" Spacing="6">
-            <Border x:Name="MarkupColorSwatch"
-                    Width="16" Height="16" CornerRadius="3" />
-            <TextBlock x:Name="MarkupColorText" VerticalAlignment="Center" />
+              IsVisible="False"
+              HorizontalAlignment="Left"
+              VerticalAlignment="Top"
+              Padding="8"
+              CornerRadius="7"
+              Background="#E6202020"
+              BorderBrush="#604A4A4A"
+              BorderThickness="1">
+        <StackPanel Spacing="6">
+          <StackPanel Orientation="Horizontal" Spacing="5">
+            <Border x:Name="MarkupDragHandle"
+                    Width="18"
+                    Height="30"
+                    Cursor="SizeAll"
+                    Background="Transparent"
+                    CornerRadius="3">
+              <TextBlock Text="⠿"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center"
+                         Opacity="0.65" />
+            </Border>
+            <Button x:Name="MarkupHandButton" Width="32" Height="30" Padding="6" Focusable="False" />
+            <Button x:Name="MarkupBrushButton" Width="32" Height="30" Padding="6" Focusable="False" />
+            <Button x:Name="MarkupEraserButton" Width="32" Height="30" Padding="6" Focusable="False" />
+            <Button x:Name="MarkupLineButton" Width="32" Height="30" Padding="6" Focusable="False" />
+            <Button x:Name="MarkupRectangleButton" Width="32" Height="30" Padding="6" Focusable="False" />
+            <Button x:Name="MarkupEllipseButton" Width="32" Height="30" Padding="6" Focusable="False" />
+            <Button x:Name="MarkupArrowButton" Width="32" Height="30" Padding="6" Focusable="False" />
+            <Separator Width="1" Margin="3,2" />
+            <Button x:Name="MarkupUndoButton" Width="32" Height="30" Padding="6" Focusable="False" />
+            <Button x:Name="MarkupRedoButton" Width="32" Height="30" Padding="6" Focusable="False" />
+            <Button x:Name="MarkupClearButton" Width="32" Height="30" Padding="6" Focusable="False" />
           </StackPanel>
-        </Button>
-        <TextBlock x:Name="MarkupStrokeText"
-                   VerticalAlignment="Center"
-                   Margin="4,0,0,0" />
-        <Slider x:Name="MarkupStrokeSlider"
-                Focusable="False"
-                Width="90"
-                Minimum="1"
-                Maximum="32"
-                TickFrequency="1" />
-        <TextBlock x:Name="MarkupStrokeValue"
-                   Width="24"
-                   VerticalAlignment="Center" />
-        <TextBlock x:Name="MarkupOpacityText"
-                   VerticalAlignment="Center"
-                   Margin="4,0,0,0" />
-        <Slider x:Name="MarkupOpacitySlider"
-                Focusable="False"
-                Width="82"
-                Minimum="5"
-                Maximum="100"
-                TickFrequency="5" />
-        <TextBlock x:Name="MarkupOpacityValue"
-                   Width="38"
-                   VerticalAlignment="Center" />
-        <Button x:Name="MarkupUndoButton" MinWidth="58" Focusable="False" />
-        <Button x:Name="MarkupRedoButton" MinWidth="58" Focusable="False" />
-        <Button x:Name="MarkupClearButton" MinWidth="58" Focusable="False" />
-      </StackPanel>
+          <Separator Height="1" />
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <Button x:Name="MarkupColorButton" Width="36" Height="28" Padding="6" Focusable="False">
+              <Border x:Name="MarkupColorSwatch"
+                      Width="18" Height="18" CornerRadius="3" />
+            </Button>
+            <TextBlock x:Name="MarkupStrokeText"
+                       VerticalAlignment="Center"
+                       Margin="3,0,0,0" />
+            <Slider x:Name="MarkupStrokeSlider"
+                    Focusable="False"
+                    Width="104"
+                    Minimum="1"
+                    Maximum="128"
+                    TickFrequency="1" />
+            <TextBlock x:Name="MarkupStrokeValue"
+                       Width="30"
+                       VerticalAlignment="Center" />
+            <TextBlock x:Name="MarkupOpacityText"
+                       VerticalAlignment="Center"
+                       Margin="3,0,0,0" />
+            <Slider x:Name="MarkupOpacitySlider"
+                    Focusable="False"
+                    Width="92"
+                    Minimum="5"
+                    Maximum="100"
+                    TickFrequency="5" />
+            <TextBlock x:Name="MarkupOpacityValue"
+                       Width="38"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+        </StackPanel>
     </Border>
     <Border x:Name="ErrorSurface"
             IsVisible="False"

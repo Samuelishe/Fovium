@@ -26,7 +26,7 @@ resources/localization/ui/
     ru.json
 ```
 
-The catalogs are embedded into the production assembly; no localization package is used. Context-menu commands, the file-picker title, controlled image-load errors, Settings/Viewing/Stage/Presentation/Controls/About strings, Stage and presenter customization, markup dock tools including Eraser/Ellipse/Undo/Redo, Opacity, Clear Markup, thickness/opacity command names, EN/RU hold wording for Peek 100% and Blink Compare, capture/conflict dialogs, and shortcut states resolve through catalog keys rather than scattered locale branches. English uses “Opacity” and Russian consistently uses “Непрозрачность”, where 100% means fully opaque. Persisted command, Matte-style, markup-tool, and operation identities are never localized.
+The catalogs are embedded into the production assembly; no localization package is used. Context-menu commands and overlay submenu, the file-picker title, controlled image-load errors, Settings sections and typed command groups, contextual-scope hints, Stage/presenter customization, Hand and all markup tools/actions, effective-shortcut icon tooltips, EN/RU hold wording, capture/conflict dialogs, and shortcut states resolve through catalog keys rather than scattered locale branches. English uses “Opacity” and Russian consistently uses “Непрозрачность”, where 100% means fully opaque. Persisted command, scope/group, Matte-style, markup-tool, placement, and operation identities are never localized.
 
 ## Locale resolution
 

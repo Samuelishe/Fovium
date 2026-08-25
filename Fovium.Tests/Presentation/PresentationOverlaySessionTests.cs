@@ -450,6 +450,61 @@ public sealed class PresentationOverlaySessionTests
     }
 
     [Fact]
+    public void PermanentHandIsPanInteractionAndNeverCreatesHistory()
+    {
+        var session = CreateReadySession("A");
+
+        session.SetActiveTool(MarkupTool.Hand);
+
+        Assert.Equal(MarkupPointerGesture.Pan, MarkupPointerInteraction.ForTool(session.EffectiveTool));
+        Assert.False(session.BeginDrawing(new PointD(10, 10), physicalScale: 1));
+        Assert.False(session.CanUndo);
+        Assert.Empty(session.GetRenderSnapshot("A").Operations);
+    }
+
+    [Fact]
+    public void TemporaryHandRestoresSelectedToolAndSequenceReplacementCancelsIt()
+    {
+        var session = CreateReadySession("A");
+        session.SetActiveTool(MarkupTool.Rectangle);
+
+        Assert.True(session.BeginTemporaryHand());
+        Assert.Equal(MarkupTool.Hand, session.EffectiveTool);
+        Assert.Equal(MarkupTool.Rectangle, session.ActiveTool);
+        Assert.True(session.EndTemporaryHand());
+        Assert.Equal(MarkupTool.Rectangle, session.EffectiveTool);
+
+        Assert.True(session.BeginTemporaryHand());
+        session.StartNewSequence();
+        Assert.False(session.TemporaryHandActive);
+        Assert.Equal(MarkupTool.Rectangle, session.EffectiveTool);
+        Assert.False(session.CanUndo);
+    }
+
+    [Theory]
+    [InlineData((int)MarkupTool.Brush)]
+    [InlineData((int)MarkupTool.Eraser)]
+    public void BrushAndEraserCommitAt128PhysicalPixelsWithoutGeometryOverflow(int toolValue)
+    {
+        var session = CreateReadySession("A");
+        session.SetActiveTool((MarkupTool)toolValue);
+        session.SetActiveStrokePhysicalPixels(128);
+
+        Assert.True(session.BeginDrawing(new PointD(10, 10), physicalScale: 2));
+        Assert.True(session.EndDrawing(new PointD(100, 10)));
+
+        var operation = Assert.Single(session.GetRenderSnapshot("A").Operations);
+        var sourceWidth = operation switch
+        {
+            DrawMarkupOperation { Element: BrushMarkup brush } => brush.StrokeWidthSource,
+            EraseMarkupOperation erase => erase.StrokeWidthSource,
+            _ => throw new Xunit.Sdk.XunitException("Expected Brush or Eraser operation."),
+        };
+        Assert.Equal(64, sourceWidth);
+        Assert.Equal(128, session.ActiveStrokePhysicalPixels);
+    }
+
+    [Fact]
     public void InvalidHistoryLimitsAreRejected()
     {
         var invalid = new MarkupHistoryLimits(0, 1, 1, 1);

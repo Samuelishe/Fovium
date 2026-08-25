@@ -84,6 +84,25 @@ public sealed class SkiaMarkupOverlayRendererTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void BrushAndEraserRenderAt128PhysicalPixelsWithoutOverflow()
+    {
+        using var brush = Render(Draw(new BrushMarkup(
+            Red,
+            128,
+            MarkupStrokePoints.From(new PointD(10, 40), new PointD(110, 40)))));
+        using var erased = Render(
+            Draw(new BrushMarkup(
+                Red,
+                128,
+                MarkupStrokePoints.From(new PointD(10, 40), new PointD(110, 40)))),
+            Erase(128, new PointD(60, 40)));
+
+        AssertMarkupRed(brush, 60, 40);
+        Assert.Equal(PhotoColor, erased.GetPixel(60, 40));
+        AssertMarkupRed(erased, 5, 5);
+    }
+
+    [Fact]
     public void EraserCannotDamagePhotoStageOrMarkupClip()
     {
         using var surface = SKSurface.Create(new SKImageInfo(140, 100));

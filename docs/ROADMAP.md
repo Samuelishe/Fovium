@@ -61,15 +61,19 @@ Accepted outcome: add Ellipse/Shift-circle, immutable per-draw opacity, Shift co
 
 ## R5-P1 / R5-P2 / R5-P3 — Ambient transition and sustained-readiness hardening
 
-Current corrective work on `0.0.0.0013`: retain photograph-first/current-first scheduling, atomically install cached matching Ambient, prepare adjacent Ambient progressively, and keep speculative preload alive through byte-cache saturation by admitting against reclaimable LRU capacity. A long owner-corpus trace explains the delayed failure and shows zero measured fallback frames after correction, but Black-flash elimination is not accepted roadmap truth until owner visual confirmation.
+Accepted corrective outcome on `0.0.0.0013`: retain photograph-first/current-first scheduling, atomically install cached matching Ambient, prepare adjacent Ambient progressively, and keep speculative preload alive through byte-cache saturation by admitting against reclaimable LRU capacity. Owner review accepts normal human browsing around 3–4 24 MP photographs per second; deliberately browsing roughly 5–6+ per second may outrun speculative readiness and expose a brief matching Black fallback, never stale or mismatched Ambient.
 
 ## R5-F3 — Contextual drawing shortcuts and presentation UI polish
 
-Expected next bounded stage only after explicit corrective-line owner acceptance. It may address contextual tool shortcuts plus compact dock/Controls grouping and iconography; do not start automatically or fold in text, selection/editing, export, sidecars, or layers.
+Accepted outcome and `0.1.0.0000` alpha milestone: code-owned contextual shortcut scopes, drawing/Hand cursors, a 128 px markup-size range, permanent and temporary Hand modes, a normalized movable presenter dock, project-owned icons, overlay context-menu toggles, and grouped Controls. No text, selection/editing, export, sidecars, or layers were added.
 
-## R6 — Metadata / context-menu polish
+## R6-A — Metadata foundation and Photo Info floating overlay
 
-Potential later bounded stage: unobtrusive metadata access and coherent context-menu polish. It requires explicit owner acceptance after the remaining bounded presenter work; do not expand presenter markup into editing/export work.
+Next intended bounded product stage: metadata extraction/model boundaries and an unobtrusive Photo Info panel using the accepted floating-overlay foundation. Do not begin automatically.
+
+## R6-B — Histogram floating overlay
+
+Following bounded stage: an identity-safe Histogram overlay. It remains separate from R6-A and must not expand presenter markup into editing/export work.
 
 ## Later / separate platform milestones
 

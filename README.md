@@ -26,7 +26,7 @@ Zero-UI is intentional: normal viewing removes persistent chrome rather than sur
 - seamless previous/next navigation through viable images in the current directory;
 - cursor-anchored zoom, exact panning, and photographic 100% based on physical display pixels;
 - photographer-oriented inspection with whole-viewport **Peek 100%** and non-navigating **Blink Compare**;
-- session-local presenter tools with image-bound markup, Ellipse, per-stroke opacity, constrained drawing, true partial erasing, per-image Undo/Redo, and a configurable cursor highlight;
+- session-local presenter tools with image-bound markup, Ellipse, per-stroke opacity, constrained drawing, true partial erasing, per-image Undo/Redo, contextual controls, accurate drawing cursors, and a configurable cursor highlight;
 - a deliberate photographic **Stage** with Black, Neutral, Custom, or Ambient backgrounds plus an independent Matte;
 - color-management foundations and broader image-format support over time;
 - no database, import workflow, or plugin platform.
@@ -35,9 +35,9 @@ See the canonical [UX contract](docs/UX-CONTRACT.md), [rendering contract](docs/
 
 ## Current status
 
-The current corrective build is **`0.0.0.0013`**. R5-P1 retained current-first Ambient scheduling, R5-P2 made cached photo+Ambient handoff atomic, and R5-P3 fixes the sustained-preload admission collapse found after the byte cache saturated. Long-sequence local diagnostics now keep LRU replacement and matching neighbor Ambient readiness active, but Black-flash elimination remains pending owner visual acceptance. Markup remains image-bound, session-local, memory-only, and never changes or writes the source photograph.
+The current checkpoint is **`0.1.0.0000`**, the first substantial usable Fovium alpha milestone. R5-P1/P2/P3 Ambient hardening is owner-accepted for normal human browsing: sustained preload continues across cache saturation and matching presentation remains identity-safe. Deliberately outrunning speculative readiness at roughly 5–6+ distinct 24 MP photographs per second may still expose a brief matching Black fallback. R5-F3 adds contextual controls, Hand/temporary Space-Hand, physical drawing cursors, a movable compact presenter dock, and grouped secondary UI. Markup remains image-bound, session-local, memory-only, and never changes or writes the source photograph.
 
-This remains an early vertical slice, not a release claim. Full monitor-aware ICC, broad codecs, metadata, platform associations, markup export/object editing, and selected-reference A/B comparison are not implemented. The next stage requires owner review rather than automatic continuation. The canonical handoff is [PROJECT-STATE.md](docs/PROJECT-STATE.md); bounded R0 evidence remains in the [experiment report](docs/experiments/R0-RENDERING-PROBE.md).
+This is an alpha milestone, not a feature-complete or stable release claim. Full monitor-aware ICC, broad codecs, metadata, platform associations, markup export/object editing, and selected-reference A/B comparison are not implemented. The canonical handoff is [PROJECT-STATE.md](docs/PROJECT-STATE.md); bounded R0 evidence remains in the [experiment report](docs/experiments/R0-RENDERING-PROBE.md).
 
 English/Russian catalogs and the Dark secondary-UI baseline are implemented; language/theme selection remains future work. See [VERSIONING.md](docs/VERSIONING.md) and the [documentation index](docs/INDEX.md) for the canonical owners.
 

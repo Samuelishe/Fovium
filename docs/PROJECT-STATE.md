@@ -7,13 +7,13 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R5-P3 is implemented for owner review on corrective build `0.0.0.0013`. R5-P1 current-first scheduling and R5-P2 atomic cached presentation remain; R5-P3 corrects the speculative-admission collapse that appeared when the photo cache became full. Black-flash elimination is still not owner-accepted. The last owner-accepted product checkpoint remains R5-F2 / `0.0.0.0012`; version semantics are owned by [`VERSIONING.md`](VERSIONING.md).
+R5-F3 is complete at `0.1.0.0000`, the first substantial usable Fovium alpha milestone. R5-P1 current-first scheduling, R5-P2 atomic cached presentation, and R5-P3 sustained preload across cache saturation are owner-accepted for normal human browsing. Version semantics are owned by [`VERSIONING.md`](VERSIONING.md).
 
 The retained R0 probe remains experimental evidence under `experiments/Fovium.RenderProbe`. Production code is the single `Fovium` assembly and does not depend on the experiment. Local Windows acceptance used one `RenderScaling = 1.00` display; no GitHub-hosted CI or Linux/macOS runtime result is claimed by this stage.
 
 ## Current focus
 
-Owner visual review of sustained long-sequence Ambient browsing after cache saturation. R5-F3 remains next only after explicit acceptance; do not begin it or metadata/context-menu work automatically.
+The next intended stage is R6-A, metadata foundation and a Photo Info floating overlay, followed by R6-B Histogram. Do not begin either automatically.
 
 ## Implemented application functionality
 
@@ -44,10 +44,16 @@ Owner visual review of sustained long-sequence Ambient browsing after cache satu
 - Project-owned Shift constraints: Line/Arrow/Brush snap to the nearest 45-degree direction, Rectangle becomes a square, and Ellipse becomes a circle without storing viewport coordinates.
 - Contextual `[`/`]` thickness and `Ctrl+[`/`Ctrl+]` opacity adjustments while the presenter dock is visible; Clear defaults to `C`, and its previous untouched `Ctrl+Delete`/Blink `C` pair evolves idempotently to Clear `C`/Blink `Shift+C`.
 - Configurable `Ctrl+Z` and `Ctrl+Y` commands for per-image Undo/Redo plus conflict-safe schema-v2 additive defaults and customization preservation for all new/evolved shortcuts.
+- Code-owned Global, Highlight, and Markup shortcut scopes with deterministic Markup → Highlight → Global precedence, cross-scope gesture reuse, and typed Navigation/Viewing/Inspection/Presentation/Markup/Application groups.
+- Contextual `V/B/E/L/R/O/A` Hand/Brush/Eraser/Line/Rectangle/Ellipse/Arrow commands; permanent Hand pans without history, while hold `Space` temporarily activates Hand through the shared repeat/focus/cancellation-safe hold lifecycle.
+- Lightweight physical-pixel drawing feedback: opacity/color/size-aware Brush circle, true Eraser-diameter outline, precision shape crosshair, and Hand cursor; markup interaction suppresses but does not disable persisted Cursor Highlight.
+- Shared markup physical size range extended to `1–128 px` without changing existing/default values.
+- Compact project-owned vector-icon presenter dock with normalized client-relative persisted placement, bounds clamping across resize/fullscreen, localized effective-shortcut tooltips, and no external icon dependency.
+- Grouped Controls generated from command metadata plus standard icon-and-text context menus with checked, shared-state Cursor Highlight and Markup Tools toggles.
 - Peek renders the canonical image's overlay; Blink selects only the comparison image's own overlay and cannot leak current markup onto it.
 - Traversal-excluded local imaging corpus policy plus hardened async session shutdown/cache release.
 
-Markup save/export, text, dedicated Highlighter, contextual tool-selection shortcuts, dock/Controls grouping polish, edit handles/layers, selected-reference A/B comparison, language/theme selection, metadata UI, broad codecs, file associations/thumbnails, and full monitor-aware ICC are not implemented.
+Markup save/export, text, dedicated Highlighter, edit handles/layers, selected-reference A/B comparison, language/theme selection, metadata/EXIF/Histogram UI, broad codecs, file associations/thumbnails, and full monitor-aware ICC are not implemented.
 
 ## Active blockers
 
@@ -58,6 +64,7 @@ Markup save/export, text, dedicated Highlighter, contextual tool-selection short
 - GitHub Actions portability is configured but cannot be claimed as passing until the workflow runs remotely.
 - R4 runtime inspection evidence is Windows-only at `RenderScaling = 1.00`; precise cold non-cached Blink latency and real fractional-DPI interaction still need representative owner hardware evidence.
 - R5 through R5-F2 pointer, eraser, constrained-drawing, opacity, and rendering evidence is Windows-only at `RenderScaling = 1.00`; fractional-DPI, Linux, and macOS runtime feel remain unvalidated.
-- R5-P1 reduced coordinator-side current Ambient latency from roughly `134 ms` to `15 ms`, but owner review still observed a compositor-visible Black transition. R5-P3 then reproduced the delayed failure on a long owner-supplied local 24 MP corpus: the first speculative `ResourceLimit` occurred at ordinal 10 and the first foreground miss/missing Ambient/fallback frame at ordinal 11. After reclaim-aware admission, 100 distinct forward plus 20 backward transitions were cache hits with matching Ambient and zero measured fallback frames, while the cache plateaued near its existing 1 GiB cap. The product defect nevertheless remains open until owner visual acceptance; fractional-DPI and cross-platform presentation remain unmeasured.
+- R5-P1 reduced coordinator-side current Ambient latency from roughly `134 ms` to `15 ms`; R5-P2 removed cached-handoff intermediate state; R5-P3 explained the delayed long-sequence failure at cache saturation and restored continuous bounded LRU replacement. Owner review accepts normal human browsing around 3–4 distinct 24 MP photographs per second. Deliberately browsing roughly 5–6+ per second can outrun speculative photo/Ambient readiness and briefly expose matching Black fallback; stale or mismatched Ambient remains forbidden. Fractional-DPI and cross-platform presentation remain unmeasured.
+- R5-F3 pointer/cursor and floating-panel runtime evidence is Windows-only at `RenderScaling = 1.00`; pure geometry covers 1.00/1.25/1.50/2.00, but real fractional-DPI, Linux, and macOS interaction feel remains unvalidated.
 
 Open technical risks are tracked in [`KNOWN-PROBLEMS.md`](KNOWN-PROBLEMS.md). Directional stages are in [`ROADMAP.md`](ROADMAP.md). Git remains the authority for branch, HEAD, and worktree status.

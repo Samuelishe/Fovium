@@ -202,29 +202,64 @@ internal sealed partial class SettingsWindow : Window
     private void CreateShortcutRows()
     {
         var list = FindRequired<StackPanel>("ControlsList");
-        foreach (var definition in ViewerCommands.Definitions)
+        foreach (var group in Enum.GetValues<ViewerCommandGroup>())
         {
-            var row = new Grid
+            var definitions = ViewerCommands.Definitions
+                .Where(definition => definition.Group == group)
+                .ToArray();
+            if (definitions.Length == 0)
             {
-                ColumnDefinitions = new ColumnDefinitions("*,Auto"),
-                ColumnSpacing = 14,
-            };
-            row.Children.Add(new TextBlock
+                continue;
+            }
+
+            list.Children.Add(new TextBlock
             {
-                Text = LocalizeCommand(definition.Command),
-                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                Text = _localizer[UiStrings.ForCommandGroup(group)],
+                FontSize = 16,
+                FontWeight = FontWeight.SemiBold,
+                Margin = new Avalonia.Thickness(0, 8, 0, 0),
             });
-            var button = new Button
+
+            var hintKey = group switch
             {
-                MinWidth = 128,
-                HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Center,
-                Tag = definition.Command,
+                ViewerCommandGroup.Presentation => UiStrings.CommandScopeHighlightHint,
+                ViewerCommandGroup.Markup => UiStrings.CommandScopeMarkupHint,
+                _ => null,
             };
-            Grid.SetColumn(button, 1);
-            button.Click += OnShortcutButtonClick;
-            row.Children.Add(button);
-            list.Children.Add(row);
-            _shortcutButtons.Add(definition.Command, button);
+            if (hintKey is not null)
+            {
+                list.Children.Add(new TextBlock
+                {
+                    Text = _localizer[hintKey],
+                    Opacity = 0.65,
+                    TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+                });
+            }
+
+            foreach (var definition in definitions)
+            {
+                var row = new Grid
+                {
+                    ColumnDefinitions = new ColumnDefinitions("*,Auto"),
+                    ColumnSpacing = 14,
+                };
+                row.Children.Add(new TextBlock
+                {
+                    Text = LocalizeCommand(definition.Command),
+                    VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                });
+                var button = new Button
+                {
+                    MinWidth = 128,
+                    HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+                    Tag = definition.Command,
+                };
+                Grid.SetColumn(button, 1);
+                button.Click += OnShortcutButtonClick;
+                row.Children.Add(button);
+                list.Children.Add(row);
+                _shortcutButtons.Add(definition.Command, button);
+            }
         }
     }
 
@@ -472,31 +507,8 @@ internal sealed partial class SettingsWindow : Window
         }
     }
 
-    private string LocalizeCommand(ViewerCommand command) => _localizer[command switch
-    {
-        ViewerCommand.PreviousImage => UiStrings.CommandPrevious,
-        ViewerCommand.NextImage => UiStrings.CommandNext,
-        ViewerCommand.ZoomIn => UiStrings.CommandZoomIn,
-        ViewerCommand.ZoomOut => UiStrings.CommandZoomOut,
-        ViewerCommand.Fit => UiStrings.CommandFit,
-        ViewerCommand.ActualSize => UiStrings.CommandActualSize,
-        ViewerCommand.ToggleMatte => UiStrings.CommandToggleMatte,
-        ViewerCommand.Fullscreen => UiStrings.CommandFullscreen,
-        ViewerCommand.Open => UiStrings.CommandOpen,
-        ViewerCommand.Settings => UiStrings.CommandSettings,
-        ViewerCommand.Peek100 => UiStrings.CommandPeek100,
-        ViewerCommand.BlinkCompare => UiStrings.CommandBlinkCompare,
-        ViewerCommand.ToggleHighlight => UiStrings.CommandToggleHighlight,
-        ViewerCommand.ToggleMarkupTools => UiStrings.CommandToggleMarkupTools,
-        ViewerCommand.MarkupUndo => UiStrings.CommandMarkupUndo,
-        ViewerCommand.MarkupRedo => UiStrings.CommandMarkupRedo,
-        ViewerCommand.ClearMarkup => UiStrings.CommandClearMarkup,
-        ViewerCommand.DecreaseMarkupThickness => UiStrings.CommandDecreaseMarkupThickness,
-        ViewerCommand.IncreaseMarkupThickness => UiStrings.CommandIncreaseMarkupThickness,
-        ViewerCommand.DecreaseMarkupOpacity => UiStrings.CommandDecreaseMarkupOpacity,
-        ViewerCommand.IncreaseMarkupOpacity => UiStrings.CommandIncreaseMarkupOpacity,
-        _ => throw new ArgumentOutOfRangeException(nameof(command)),
-    }];
+    private string LocalizeCommand(ViewerCommand command) =>
+        _localizer[UiStrings.ForCommand(command)];
 
     private void OnClosed(object? sender, EventArgs e)
     {

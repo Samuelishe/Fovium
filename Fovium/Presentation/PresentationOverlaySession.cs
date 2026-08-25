@@ -27,6 +27,7 @@ internal sealed class PresentationOverlaySession
     private PresentationSettings _settings;
     private DrawingDraft? _draft;
     private int _totalCommittedPoints;
+    private bool _temporaryHandActive;
 
     public PresentationOverlaySession(
         PresentationSettings settings,
@@ -54,6 +55,10 @@ internal sealed class PresentationOverlaySession
     public bool MarkupToolsVisible { get; private set; }
 
     public MarkupTool ActiveTool { get; private set; } = MarkupTool.Brush;
+
+    public MarkupTool EffectiveTool => _temporaryHandActive ? MarkupTool.Hand : ActiveTool;
+
+    public bool TemporaryHandActive => _temporaryHandActive;
 
     public PresentationColor ActiveColor { get; private set; }
 
@@ -101,6 +106,7 @@ internal sealed class PresentationOverlaySession
         {
             MarkupToolsVisible = false;
             _draft = null;
+            _temporaryHandActive = false;
         }
 
         RaiseChanged();
@@ -124,6 +130,7 @@ internal sealed class PresentationOverlaySession
         if (!MarkupToolsVisible)
         {
             _draft = null;
+            _temporaryHandActive = false;
         }
 
         RaiseChanged();
@@ -140,6 +147,7 @@ internal sealed class PresentationOverlaySession
         }
 
         _draft = null;
+        _temporaryHandActive = false;
         CurrentImageIdentity = identity;
         RaiseChanged();
     }
@@ -147,6 +155,7 @@ internal sealed class PresentationOverlaySession
     public void StartNewSequence()
     {
         _draft = null;
+        _temporaryHandActive = false;
         CurrentImageIdentity = null;
         _documents.Clear();
         _totalCommittedPoints = 0;
@@ -161,8 +170,34 @@ internal sealed class PresentationOverlaySession
         }
 
         _draft = null;
+        _temporaryHandActive = false;
         ActiveTool = tool;
         RaiseChanged();
+    }
+
+    public bool BeginTemporaryHand()
+    {
+        if (!MarkupToolsVisible || _temporaryHandActive)
+        {
+            return false;
+        }
+
+        _draft = null;
+        _temporaryHandActive = true;
+        RaiseChanged();
+        return true;
+    }
+
+    public bool EndTemporaryHand()
+    {
+        if (!_temporaryHandActive)
+        {
+            return false;
+        }
+
+        _temporaryHandActive = false;
+        RaiseChanged();
+        return true;
     }
 
     public void SetActiveColor(PresentationColor color)
@@ -245,6 +280,7 @@ internal sealed class PresentationOverlaySession
         PixelSize? sourceSize)
     {
         if (!MarkupToolsVisible ||
+            EffectiveTool == MarkupTool.Hand ||
             CurrentImageIdentity is null ||
             _draft is not null ||
             !double.IsFinite(physicalScale) ||
@@ -255,7 +291,7 @@ internal sealed class PresentationOverlaySession
 
         _draft = new DrawingDraft(
             CurrentImageIdentity,
-            ActiveTool,
+            EffectiveTool,
             ActiveColor,
             ActiveOpacity,
             ActiveStrokePhysicalPixels / physicalScale,

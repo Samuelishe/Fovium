@@ -90,8 +90,40 @@ public sealed class ViewerCommandExecutorTests
     }
 
     [Theory]
+    [InlineData((int)ViewerCommand.DecreaseHighlightRadius, -4)]
+    [InlineData((int)ViewerCommand.IncreaseHighlightRadius, 4)]
+    public async Task HighlightRadiusCommandsUseFourPhysicalPixelSteps(
+        int commandValue,
+        double expected)
+    {
+        var target = new RecordingTarget();
+
+        await new ViewerCommandExecutor(target).ExecuteAsync((ViewerCommand)commandValue);
+
+        Assert.Equal(expected, target.HighlightRadiusAdjustment);
+    }
+
+    [Theory]
+    [InlineData((int)ViewerCommand.SelectHandTool, "hand")]
+    [InlineData((int)ViewerCommand.SelectBrushTool, "brush")]
+    [InlineData((int)ViewerCommand.SelectEraserTool, "eraser")]
+    [InlineData((int)ViewerCommand.SelectLineTool, "line")]
+    [InlineData((int)ViewerCommand.SelectRectangleTool, "rectangle")]
+    [InlineData((int)ViewerCommand.SelectEllipseTool, "ellipse")]
+    [InlineData((int)ViewerCommand.SelectArrowTool, "arrow")]
+    public async Task ToolSelectionCommandsUseSharedExecutor(int commandValue, string expected)
+    {
+        var target = new RecordingTarget();
+
+        await new ViewerCommandExecutor(target).ExecuteAsync((ViewerCommand)commandValue);
+
+        Assert.Equal(expected, target.SelectedTool);
+    }
+
+    [Theory]
     [InlineData((int)ViewerCommand.Peek100)]
     [InlineData((int)ViewerCommand.BlinkCompare)]
+    [InlineData((int)ViewerCommand.TemporaryMarkupHand)]
     public async Task HoldCommandsCannotRunThroughOneShotExecutor(int commandValue)
     {
         var executor = new ViewerCommandExecutor(new RecordingTarget());
@@ -115,6 +147,10 @@ public sealed class ViewerCommandExecutorTests
         public double ThicknessAdjustment { get; private set; }
 
         public double OpacityAdjustment { get; private set; }
+
+        public double HighlightRadiusAdjustment { get; private set; }
+
+        public string? SelectedTool { get; private set; }
 
         public Task PreviousAsync() => Task.CompletedTask;
 
@@ -152,5 +188,25 @@ public sealed class ViewerCommandExecutorTests
             ThicknessAdjustment += deltaPhysicalPixels;
 
         public void AdjustMarkupOpacity(double delta) => OpacityAdjustment += delta;
+
+        public Task AdjustHighlightRadiusAsync(double deltaPhysicalPixels)
+        {
+            HighlightRadiusAdjustment += deltaPhysicalPixels;
+            return Task.CompletedTask;
+        }
+
+        public void SelectHandTool() => SelectedTool = "hand";
+
+        public void SelectBrushTool() => SelectedTool = "brush";
+
+        public void SelectEraserTool() => SelectedTool = "eraser";
+
+        public void SelectLineTool() => SelectedTool = "line";
+
+        public void SelectRectangleTool() => SelectedTool = "rectangle";
+
+        public void SelectEllipseTool() => SelectedTool = "ellipse";
+
+        public void SelectArrowTool() => SelectedTool = "arrow";
     }
 }

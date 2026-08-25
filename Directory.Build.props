@@ -1,10 +1,10 @@
 <Project>
   <PropertyGroup>
     <FoviumVersionMajor>0</FoviumVersionMajor>
-    <FoviumVersionMinor>0</FoviumVersionMinor>
+    <FoviumVersionMinor>1</FoviumVersionMinor>
     <FoviumVersionPatch>0</FoviumVersionPatch>
-    <FoviumVersionBuild>0013</FoviumVersionBuild>
-    <FoviumNumericBuild>13</FoviumNumericBuild>
+    <FoviumVersionBuild>0000</FoviumVersionBuild>
+    <FoviumNumericBuild>0</FoviumNumericBuild>
     <FoviumDisplayVersion>$(FoviumVersionMajor).$(FoviumVersionMinor).$(FoviumVersionPatch).$(FoviumVersionBuild)</FoviumDisplayVersion>
     <FoviumNumericVersion>$(FoviumVersionMajor).$(FoviumVersionMinor).$(FoviumVersionPatch).$(FoviumNumericBuild)</FoviumNumericVersion>
   </PropertyGroup>

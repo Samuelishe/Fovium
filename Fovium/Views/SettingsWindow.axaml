@@ -104,7 +104,7 @@
             </Grid>
             <TextBlock x:Name="DefaultStrokeLabel" Grid.Row="1" VerticalAlignment="Center" />
             <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="12">
-              <Slider x:Name="DefaultStrokeSlider" MinWidth="220" Minimum="1" Maximum="32" TickFrequency="1" />
+              <Slider x:Name="DefaultStrokeSlider" MinWidth="220" Minimum="1" Maximum="128" TickFrequency="1" />
               <TextBlock x:Name="DefaultStrokeValue" Grid.Column="1" Width="58" TextAlignment="Right" VerticalAlignment="Center" />
             </Grid>
             <TextBlock x:Name="DefaultMarkupOpacityLabel" Grid.Row="2" VerticalAlignment="Center" />

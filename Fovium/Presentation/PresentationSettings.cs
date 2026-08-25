@@ -49,7 +49,7 @@ internal sealed record PresentationSettings
     public const double MinimumHighlightRadiusPhysicalPixels = 8;
     public const double MaximumHighlightRadiusPhysicalPixels = 256;
     public const double MinimumMarkupStrokePhysicalPixels = 1;
-    public const double MaximumMarkupStrokePhysicalPixels = 32;
+    public const double MaximumMarkupStrokePhysicalPixels = 128;
     public const double MinimumMarkupOpacity = 0.05;
     public const double MaximumMarkupOpacity = 1;
 
@@ -67,7 +67,26 @@ internal sealed record PresentationSettings
 
     public double DefaultMarkupOpacity { get; init; } = 1;
 
+    public FloatingOverlayPlacement MarkupDockPlacement { get; init; } =
+        FloatingOverlayPlacement.Default;
+
     public static PresentationSettings Default { get; } = new();
+
+    public PresentationSettings AdjustHighlightRadius(double deltaPhysicalPixels)
+    {
+        if (!double.IsFinite(deltaPhysicalPixels) || deltaPhysicalPixels == 0)
+        {
+            return this;
+        }
+
+        return this with
+        {
+            HighlightRadiusPhysicalPixels = Math.Clamp(
+                HighlightRadiusPhysicalPixels + deltaPhysicalPixels,
+                MinimumHighlightRadiusPhysicalPixels,
+                MaximumHighlightRadiusPhysicalPixels),
+        };
+    }
 
     public PresentationSettings Normalize() => this with
     {
@@ -91,6 +110,7 @@ internal sealed record PresentationSettings
             Default.DefaultMarkupOpacity,
             MinimumMarkupOpacity,
             MaximumMarkupOpacity),
+        MarkupDockPlacement = MarkupDockPlacement.Normalize(),
     };
 
     private static double NormalizeFinite(double value, double fallback, double minimum, double maximum) =>

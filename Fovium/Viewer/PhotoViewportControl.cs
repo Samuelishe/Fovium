@@ -42,6 +42,7 @@ internal sealed class PhotoViewportControl : Control
     private string? _canonicalImageIdentity;
     private Cursor? _visibleViewerCursor;
     private Cursor? _hiddenViewerCursor;
+    private Cursor? _handViewerCursor;
 
     public PhotoViewportControl()
     {
@@ -86,7 +87,8 @@ internal sealed class PhotoViewportControl : Control
     public void ConfigurePresentation(
         PresentationOverlaySession presentation,
         Cursor? visibleViewerCursor = null,
-        Cursor? hiddenViewerCursor = null)
+        Cursor? hiddenViewerCursor = null,
+        Cursor? handViewerCursor = null)
     {
         ArgumentNullException.ThrowIfNull(presentation);
         if (_presentation is not null)
@@ -97,6 +99,7 @@ internal sealed class PhotoViewportControl : Control
         _presentation = presentation;
         _visibleViewerCursor = visibleViewerCursor;
         _hiddenViewerCursor = hiddenViewerCursor;
+        _handViewerCursor = handViewerCursor;
         presentation.Changed += OnPresentationChanged;
         ApplyCursor();
         InvalidateVisual();
@@ -388,40 +391,11 @@ internal sealed class PhotoViewportControl : Control
             }
         }
 
-        if (_presentation is { HighlightEnabled: true } presentation &&
+        if (_presentation is { } pointerPresentation &&
             _pointerInside &&
-            _lastPointerPosition is { } pointer)
+            _lastPointerPosition is { } pointerPosition)
         {
-            var color = presentation.Settings.HighlightColor;
-            var alpha = (byte)Math.Round(presentation.Settings.HighlightOpacity * byte.MaxValue);
-            var brush = new SolidColorBrush(Color.FromArgb(alpha, color.Red, color.Green, color.Blue));
-            var radius = presentation.Settings.HighlightRadiusPhysicalPixels / _viewport.RenderScaling;
-            context.DrawEllipse(brush, null, new Point(pointer.X, pointer.Y), radius, radius);
-        }
-
-        if (_presentation is
-            {
-                MarkupToolsVisible: true,
-                ActiveTool: MarkupTool.Eraser,
-            } eraserPresentation &&
-            _pointerInside &&
-            _lastPointerPosition is { } eraserPointer)
-        {
-            var radius = eraserPresentation.ActiveStrokePhysicalPixels /
-                (2 * _viewport.RenderScaling);
-            var center = new Point(eraserPointer.X, eraserPointer.Y);
-            context.DrawEllipse(
-                null,
-                new Pen(Brushes.Black, 3 / _viewport.RenderScaling),
-                center,
-                radius,
-                radius);
-            context.DrawEllipse(
-                null,
-                new Pen(Brushes.White, 1 / _viewport.RenderScaling),
-                center,
-                radius,
-                radius);
+            DrawPointerFeedback(context, pointerPosition);
         }
     }
 
@@ -509,6 +483,15 @@ internal sealed class PhotoViewportControl : Control
         if (_presentation is { MarkupToolsVisible: true } presentation)
         {
             var pointer = e.GetPosition(this);
+            if (MarkupPointerInteraction.ForTool(presentation.EffectiveTool) ==
+                MarkupPointerGesture.Pan)
+            {
+                _lastDragPoint = pointer;
+                e.Pointer.Capture(this);
+                e.Handled = true;
+                return;
+            }
+
             var source = TryGetSourcePoint(pointer);
             if (source is not null && presentation.BeginDrawing(
                     source.Value,
@@ -651,7 +634,7 @@ internal sealed class PhotoViewportControl : Control
         ApplyCursor();
         if (_presentation is { } presentation &&
             (presentation.HighlightEnabled ||
-                presentation.MarkupToolsVisible && presentation.ActiveTool == MarkupTool.Eraser))
+                presentation.MarkupToolsVisible))
         {
             InvalidateVisual();
         }
@@ -692,9 +675,110 @@ internal sealed class PhotoViewportControl : Control
             return;
         }
 
-        Cursor = _presentation?.HighlightEnabled == true && _pointerInside
-            ? _hiddenViewerCursor
-            : _visibleViewerCursor;
+        var feedback = GetPointerFeedback();
+        Cursor = feedback.Kind switch
+        {
+            DrawingCursorKind.Hand when _pointerInside => _handViewerCursor ?? _visibleViewerCursor,
+            DrawingCursorKind.Highlight or
+                DrawingCursorKind.Brush or
+                DrawingCursorKind.Eraser or
+                DrawingCursorKind.Precision when _pointerInside => _hiddenViewerCursor,
+            _ => _visibleViewerCursor,
+        };
+    }
+
+    private DrawingCursorPresentation GetPointerFeedback()
+    {
+        if (_presentation is not { } presentation)
+        {
+            return default;
+        }
+
+        var useMarkupStyle = presentation.MarkupToolsVisible;
+        var color = useMarkupStyle
+            ? presentation.ActiveColor
+            : presentation.Settings.HighlightColor;
+        var opacity = useMarkupStyle
+            ? presentation.ActiveOpacity
+            : presentation.Settings.HighlightOpacity;
+        return DrawingCursorPresentation.Resolve(
+            presentation.MarkupToolsVisible,
+            presentation.HighlightEnabled,
+            presentation.EffectiveTool,
+            presentation.ActiveStrokePhysicalPixels,
+            color,
+            opacity,
+            presentation.Settings.HighlightRadiusPhysicalPixels,
+            _viewport.RenderScaling);
+    }
+
+    private void DrawPointerFeedback(
+        DrawingContext context,
+        PointD pointer)
+    {
+        var feedback = GetPointerFeedback();
+        var center = new Point(pointer.X, pointer.Y);
+        switch (feedback.Kind)
+        {
+            case DrawingCursorKind.Highlight:
+            case DrawingCursorKind.Brush:
+                {
+                    var alpha = (byte)Math.Round(feedback.Opacity * byte.MaxValue);
+                    var color = feedback.Color;
+                    var fill = new SolidColorBrush(Color.FromArgb(alpha, color.Red, color.Green, color.Blue));
+                    var radius = feedback.DiameterDip / 2;
+                    context.DrawEllipse(fill, null, center, radius, radius);
+                    if (feedback.Kind == DrawingCursorKind.Brush)
+                    {
+                        DrawHighContrastCircle(context, center, radius, feedback.OutlineWidthDip);
+                    }
+
+                    break;
+                }
+
+            case DrawingCursorKind.Eraser:
+                DrawHighContrastCircle(
+                    context,
+                    center,
+                    feedback.DiameterDip / 2,
+                    feedback.OutlineWidthDip);
+                break;
+
+            case DrawingCursorKind.Precision:
+                DrawPrecisionCursor(context, center, feedback);
+                break;
+        }
+    }
+
+    private static void DrawHighContrastCircle(
+        DrawingContext context,
+        Point center,
+        double radius,
+        double outlineWidth)
+    {
+        context.DrawEllipse(null, new Pen(Brushes.Black, outlineWidth * 3), center, radius, radius);
+        context.DrawEllipse(null, new Pen(Brushes.White, outlineWidth), center, radius, radius);
+    }
+
+    private static void DrawPrecisionCursor(
+        DrawingContext context,
+        Point center,
+        DrawingCursorPresentation feedback)
+    {
+        var half = feedback.CrosshairHalfExtentDip;
+        var gap = Math.Min(half / 3, 3 * feedback.OutlineWidthDip);
+        var segments = new[]
+        {
+            (new Point(center.X - half, center.Y), new Point(center.X - gap, center.Y)),
+            (new Point(center.X + gap, center.Y), new Point(center.X + half, center.Y)),
+            (new Point(center.X, center.Y - half), new Point(center.X, center.Y - gap)),
+            (new Point(center.X, center.Y + gap), new Point(center.X, center.Y + half)),
+        };
+        foreach (var (start, end) in segments)
+        {
+            context.DrawLine(new Pen(Brushes.Black, feedback.OutlineWidthDip * 3), start, end);
+            context.DrawLine(new Pen(Brushes.White, feedback.OutlineWidthDip), start, end);
+        }
     }
 
     private PointD? TryGetSourcePoint(Point pointer)

@@ -101,6 +101,7 @@ public sealed class JsonSettingsStoreTests : IDisposable
                 DefaultMarkupColor = new PresentationColor(0xAB, 0xCD, 0xEF),
                 DefaultMarkupStrokePhysicalPixels = 9,
                 DefaultMarkupOpacity = 0.65,
+                MarkupDockPlacement = new FloatingOverlayPlacement(0.22, 0.84),
             },
         };
 
@@ -314,7 +315,9 @@ public sealed class JsonSettingsStoreTests : IDisposable
         Assert.Equal(
             new ShortcutGesture("C", ShortcutModifiers.Shift),
             result.Settings.Shortcuts.Get(ViewerCommand.BlinkCompare));
-        Assert.Null(result.Settings.Shortcuts.Get(ViewerCommand.ClearMarkup));
+        Assert.Equal(
+            new ShortcutGesture("C"),
+            result.Settings.Shortcuts.Get(ViewerCommand.ClearMarkup));
     }
 
     [Fact]
@@ -438,6 +441,9 @@ public sealed class JsonSettingsStoreTests : IDisposable
         Assert.Equal(new PresentationColor(0xAA, 0xBB, 0xCC), result.Settings.Presentation.DefaultMarkupColor);
         Assert.Equal(11, result.Settings.Presentation.DefaultMarkupStrokePhysicalPixels);
         Assert.Equal(1, result.Settings.Presentation.DefaultMarkupOpacity);
+        Assert.Equal(
+            FloatingOverlayPlacement.Default,
+            result.Settings.Presentation.MarkupDockPlacement);
         Assert.False(result.RequiresSave);
     }
 
@@ -557,7 +563,7 @@ public sealed class JsonSettingsStoreTests : IDisposable
     }
 
     [Fact]
-    public async Task OccupiedBracketDefaultsBecomeUnassigned()
+    public async Task GlobalBracketBindingsCoexistWithContextualDefaults()
     {
         await WriteAsync("""
             {
@@ -577,10 +583,43 @@ public sealed class JsonSettingsStoreTests : IDisposable
 
         Assert.Equal(new ShortcutGesture("OpenBracket"), result.Settings.Shortcuts.Get(ViewerCommand.Fit));
         Assert.Equal(new ShortcutGesture("CloseBracket"), result.Settings.Shortcuts.Get(ViewerCommand.ToggleMatte));
-        Assert.Null(result.Settings.Shortcuts.Get(ViewerCommand.DecreaseMarkupThickness));
-        Assert.Null(result.Settings.Shortcuts.Get(ViewerCommand.IncreaseMarkupThickness));
-        Assert.Null(result.Settings.Shortcuts.Get(ViewerCommand.DecreaseMarkupOpacity));
-        Assert.Null(result.Settings.Shortcuts.Get(ViewerCommand.IncreaseMarkupOpacity));
+        Assert.Equal(
+            new ShortcutGesture("OpenBracket"),
+            result.Settings.Shortcuts.Get(ViewerCommand.DecreaseMarkupThickness));
+        Assert.Equal(
+            new ShortcutGesture("CloseBracket"),
+            result.Settings.Shortcuts.Get(ViewerCommand.IncreaseMarkupThickness));
+        Assert.Equal(
+            new ShortcutGesture("OpenBracket", ShortcutModifiers.Control),
+            result.Settings.Shortcuts.Get(ViewerCommand.DecreaseMarkupOpacity));
+        Assert.Equal(
+            new ShortcutGesture("CloseBracket", ShortcutModifiers.Control),
+            result.Settings.Shortcuts.Get(ViewerCommand.IncreaseMarkupOpacity));
+        Assert.Equal(
+            new ShortcutGesture("OpenBracket"),
+            result.Settings.Shortcuts.Get(ViewerCommand.DecreaseHighlightRadius));
+    }
+
+    [Fact]
+    public async Task ExistingSameScopeCustomizationWinsOverNewToolDefault()
+    {
+        await WriteAsync("""
+            {
+              "schemaVersion": 2,
+              "shortcuts": {
+                "bindings": {
+                  "viewer.clearMarkup": { "key": "B", "modifiers": "None" }
+                }
+              }
+            }
+            """);
+
+        var result = await CreateStore().LoadAsync(CancellationToken.None);
+
+        Assert.Equal(new ShortcutGesture("B"), result.Settings.Shortcuts.Get(ViewerCommand.ClearMarkup));
+        Assert.Null(result.Settings.Shortcuts.Get(ViewerCommand.SelectBrushTool));
+        Assert.Equal(new ShortcutGesture("V"), result.Settings.Shortcuts.Get(ViewerCommand.SelectHandTool));
+        Assert.Equal(new ShortcutGesture("Space"), result.Settings.Shortcuts.Get(ViewerCommand.TemporaryMarkupHand));
     }
 
     [Fact]

@@ -37,6 +37,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
     private readonly DispatcherTimer _cursorTimer;
     private readonly Cursor _visibleCursor = new(StandardCursorType.Arrow);
     private readonly Cursor _hiddenCursor = new(StandardCursorType.None);
+    private readonly Cursor _handCursor = new(StandardCursorType.SizeAll);
     private readonly ContextMenu _contextMenu;
     private readonly ViewerCommandExecutor _commandExecutor;
     private readonly ViewerInspectionCoordinator _inspectionCoordinator;
@@ -47,6 +48,11 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
     private readonly MenuItem _nextMenuItem;
     private readonly IReadOnlyDictionary<StageBackgroundMode, MenuItem> _stageBackgroundMenuItems;
     private readonly MenuItem _matteMenuItem;
+    private readonly MenuItem _highlightMenuItem;
+    private readonly MenuItem _markupMenuItem;
+    private IPointer? _dockDragPointer;
+    private Point _dockDragStartPointer;
+    private FloatingOverlayPoint _dockDragStartPosition;
     private bool _contextMenuOpen;
     private bool _closed;
     private bool _shutdownCompleted;
@@ -81,15 +87,35 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         _presentation = new PresentationOverlaySession(
             settings.Current.Presentation,
             StringComparer.OrdinalIgnoreCase);
-        PhotoViewport.ConfigurePresentation(_presentation, _visibleCursor, _hiddenCursor);
-        ConfigureMarkupTools();
+        PhotoViewport.ConfigurePresentation(
+            _presentation,
+            _visibleCursor,
+            _hiddenCursor,
+            _handCursor);
         _commandExecutor = new ViewerCommandExecutor(this);
         _inspectionCoordinator = new ViewerInspectionCoordinator(PhotoViewport, session, settings);
-        _holdController = new ViewerHoldController(_inspectionCoordinator);
-        _previousMenuItem = CreateCommandMenuItem(UiStrings.MenuPrevious, ViewerCommand.PreviousImage);
-        _nextMenuItem = CreateCommandMenuItem(UiStrings.MenuNext, ViewerCommand.NextImage);
+        _holdController = new ViewerHoldController(new ViewerHoldActionRouter(
+            _inspectionCoordinator,
+            new MarkupTemporaryHandHoldAction(_presentation)));
+        ConfigureMarkupTools();
+        _previousMenuItem = CreateCommandMenuItem(
+            UiStrings.MenuPrevious,
+            ViewerCommand.PreviousImage,
+            FoviumIcon.Previous);
+        _nextMenuItem = CreateCommandMenuItem(
+            UiStrings.MenuNext,
+            ViewerCommand.NextImage,
+            FoviumIcon.Next);
         _stageBackgroundMenuItems = CreateStageBackgroundMenuItems();
         _matteMenuItem = CreateMatteMenuItem();
+        _highlightMenuItem = CreateOverlayToggleMenuItem(
+            UiStrings.CommandToggleHighlight,
+            ViewerCommand.ToggleHighlight,
+            FoviumIcon.Highlight);
+        _markupMenuItem = CreateOverlayToggleMenuItem(
+            UiStrings.CommandToggleMarkupTools,
+            ViewerCommand.ToggleMarkupTools,
+            FoviumIcon.Markup);
         _contextMenu = CreateContextMenu();
         PhotoViewport.ContextMenu = _contextMenu;
 
@@ -186,6 +212,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         _lifetimeCancellation.Dispose();
         _visibleCursor.Dispose();
         _hiddenCursor.Dispose();
+        _handCursor.Dispose();
         _settings.SettingsChanged -= OnSettingsChanged;
         _stageCoordinator.PresentationChanged -= OnStagePresentationChanged;
         _ambientSoakTrace.Dispose();
@@ -214,7 +241,12 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
                 }
             }
             else if (AvaloniaShortcutGestureAdapter.TryCreate(e, out var gesture) &&
-                ShortcutResolver.Resolve(_settings.Current.Shortcuts, gesture) is { } command)
+                ShortcutResolver.Resolve(
+                    _settings.Current.Shortcuts,
+                    gesture,
+                    new ViewerShortcutContext(
+                        _presentation.MarkupToolsVisible,
+                        _presentation.HighlightEnabled)) is { } command)
             {
                 e.Handled = true;
                 var definition = ViewerCommands.GetDefinition(command);
@@ -258,13 +290,30 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         {
             ItemsSource = new Control[]
             {
-                CreateCommandMenuItem(UiStrings.MenuOpen, ViewerCommand.Open),
+                CreateCommandMenuItem(UiStrings.MenuOpen, ViewerCommand.Open, FoviumIcon.Open),
                 _previousMenuItem,
                 _nextMenuItem,
                 new Separator(),
-                CreateCommandMenuItem(UiStrings.MenuFit, ViewerCommand.Fit),
-                CreateCommandMenuItem(UiStrings.MenuActualSize, ViewerCommand.ActualSize),
+                CreateCommandMenuItem(UiStrings.MenuFit, ViewerCommand.Fit, FoviumIcon.Fit),
+                CreateCommandMenuItem(
+                    UiStrings.MenuActualSize,
+                    ViewerCommand.ActualSize,
+                    FoviumIcon.ActualSize),
+                CreateCommandMenuItem(
+                    UiStrings.MenuFullscreen,
+                    ViewerCommand.Fullscreen,
+                    FoviumIcon.Fullscreen),
                 new Separator(),
+                new MenuItem
+                {
+                    Header = _localizer[UiStrings.MenuOverlays],
+                    Icon = FoviumIconCatalog.Create(FoviumIcon.Markup),
+                    ItemsSource = new Control[]
+                    {
+                        _highlightMenuItem,
+                        _markupMenuItem,
+                    },
+                },
                 new MenuItem
                 {
                     Header = _localizer[UiStrings.MenuStage],
@@ -280,14 +329,15 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
                     },
                 },
                 new Separator(),
-                CreateCommandMenuItem(UiStrings.MenuFullscreen, ViewerCommand.Fullscreen),
-                new Separator(),
-                CreateCommandMenuItem(UiStrings.MenuSettings, ViewerCommand.Settings),
+                CreateCommandMenuItem(
+                    UiStrings.MenuSettings,
+                    ViewerCommand.Settings,
+                    FoviumIcon.Settings),
                 CreateMenuItem(UiStrings.MenuClose, () =>
                 {
                     Close();
                     return Task.CompletedTask;
-                }),
+                }, FoviumIcon.Close),
             },
         };
         menu.Opening += (_, _) =>
@@ -304,6 +354,11 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             }
 
             _matteMenuItem.IsChecked = _settings.Current.Stage.MatteEnabled;
+            var overlays = ViewerOverlayMenuState.Capture(
+                _presentation,
+                _settings.Current.Shortcuts);
+            _highlightMenuItem.IsChecked = overlays.HighlightChecked;
+            _markupMenuItem.IsChecked = overlays.MarkupChecked;
             UpdateCommandGestures();
         };
         menu.Closing += (_, _) =>
@@ -368,9 +423,22 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         return item;
     }
 
-    private MenuItem CreateCommandMenuItem(string key, ViewerCommand command)
+    private MenuItem CreateOverlayToggleMenuItem(
+        string key,
+        ViewerCommand command,
+        FoviumIcon icon)
     {
-        var item = CreateMenuItem(key, () => ExecutePersistentCommandAsync(command));
+        var item = CreateCommandMenuItem(key, command, icon);
+        item.ToggleType = MenuItemToggleType.CheckBox;
+        return item;
+    }
+
+    private MenuItem CreateCommandMenuItem(
+        string key,
+        ViewerCommand command,
+        FoviumIcon? icon = null)
+    {
+        var item = CreateMenuItem(key, () => ExecutePersistentCommandAsync(command), icon);
         _commandMenuItems[command] = item;
         return item;
     }
@@ -384,9 +452,16 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         }
     }
 
-    private MenuItem CreateMenuItem(string key, Func<Task> action)
+    private MenuItem CreateMenuItem(
+        string key,
+        Func<Task> action,
+        FoviumIcon? icon = null)
     {
-        var item = new MenuItem { Header = _localizer[key] };
+        var item = new MenuItem
+        {
+            Header = _localizer[key],
+            Icon = icon is { } value ? FoviumIconCatalog.Create(value) : null,
+        };
         item.Click += async (_, _) =>
         {
             try
@@ -583,6 +658,8 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         ApplyStage(settings.Stage);
         _presentation.ApplySettings(settings.Presentation);
         ApplyMarkupToolsUi();
+        UpdateMarkupToolTips();
+        ApplyMarkupDockPlacement();
     }
 
     private void ApplyStage(StageSettings stage)
@@ -711,6 +788,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
     {
         _presentation.ToggleMarkupTools();
         ApplyMarkupToolsUi();
+        ApplyMarkupDockPlacement();
     }
 
     void IViewerCommandTarget.UndoMarkup() => _presentation.UndoCurrent();
@@ -725,8 +803,31 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
     void IViewerCommandTarget.AdjustMarkupOpacity(double delta) =>
         _presentation.AdjustActiveOpacity(delta);
 
+    Task IViewerCommandTarget.AdjustHighlightRadiusAsync(double deltaPhysicalPixels)
+    {
+        var current = _settings.Current.Presentation;
+        return _settings.SetPresentationAsync(
+            current.AdjustHighlightRadius(deltaPhysicalPixels),
+            _lifetimeCancellation.Token);
+    }
+
+    void IViewerCommandTarget.SelectHandTool() => SelectMarkupTool(MarkupTool.Hand);
+
+    void IViewerCommandTarget.SelectBrushTool() => SelectMarkupTool(MarkupTool.Brush);
+
+    void IViewerCommandTarget.SelectEraserTool() => SelectMarkupTool(MarkupTool.Eraser);
+
+    void IViewerCommandTarget.SelectLineTool() => SelectMarkupTool(MarkupTool.Line);
+
+    void IViewerCommandTarget.SelectRectangleTool() => SelectMarkupTool(MarkupTool.Rectangle);
+
+    void IViewerCommandTarget.SelectEllipseTool() => SelectMarkupTool(MarkupTool.Ellipse);
+
+    void IViewerCommandTarget.SelectArrowTool() => SelectMarkupTool(MarkupTool.Arrow);
+
     private void ConfigureMarkupTools()
     {
+        MarkupHandButton.Click += (_, _) => SelectMarkupTool(MarkupTool.Hand);
         MarkupBrushButton.Click += (_, _) => SelectMarkupTool(MarkupTool.Brush);
         MarkupEraserButton.Click += (_, _) => SelectMarkupTool(MarkupTool.Eraser);
         MarkupLineButton.Click += (_, _) => SelectMarkupTool(MarkupTool.Line);
@@ -749,26 +850,40 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         MarkupRedoButton.Click += (_, _) => _presentation.RedoCurrent();
         MarkupClearButton.Click += (_, _) => _presentation.ClearCurrent();
         _presentation.Changed += (_, _) => ApplyMarkupToolsUi();
+        MarkupToolsPanel.AddHandler(
+            PointerPressedEvent,
+            OnMarkupPanelPointerPressed,
+            RoutingStrategies.Tunnel);
+        MarkupDragHandle.PointerPressed += OnDockDragPressed;
+        MarkupDragHandle.PointerMoved += OnDockDragMoved;
+        MarkupDragHandle.PointerReleased += OnDockDragReleased;
+        ViewerRoot.SizeChanged += (_, _) => ApplyMarkupDockPlacement();
+        MarkupToolsPanel.SizeChanged += (_, _) => ApplyMarkupDockPlacement();
 
-        MarkupBrushButton.Content = _localizer[UiStrings.PresentationBrush];
-        MarkupEraserButton.Content = _localizer[UiStrings.PresentationEraser];
-        MarkupLineButton.Content = _localizer[UiStrings.PresentationLine];
-        MarkupRectangleButton.Content = _localizer[UiStrings.PresentationRectangle];
-        MarkupEllipseButton.Content = _localizer[UiStrings.PresentationEllipse];
-        MarkupArrowButton.Content = _localizer[UiStrings.PresentationArrow];
-        MarkupColorText.Text = _localizer[UiStrings.PresentationColor];
+        MarkupHandButton.Content = FoviumIconCatalog.Create(FoviumIcon.Hand);
+        MarkupBrushButton.Content = FoviumIconCatalog.Create(FoviumIcon.Brush);
+        MarkupEraserButton.Content = FoviumIconCatalog.Create(FoviumIcon.Eraser);
+        MarkupLineButton.Content = FoviumIconCatalog.Create(FoviumIcon.Line);
+        MarkupRectangleButton.Content = FoviumIconCatalog.Create(FoviumIcon.Rectangle);
+        MarkupEllipseButton.Content = FoviumIconCatalog.Create(FoviumIcon.Ellipse);
+        MarkupArrowButton.Content = FoviumIconCatalog.Create(FoviumIcon.Arrow);
+        MarkupUndoButton.Content = FoviumIconCatalog.Create(FoviumIcon.Undo);
+        MarkupRedoButton.Content = FoviumIconCatalog.Create(FoviumIcon.Redo);
+        MarkupClearButton.Content = FoviumIconCatalog.Create(FoviumIcon.Clear);
         MarkupStrokeText.Text = _localizer[UiStrings.PresentationStroke];
         MarkupOpacityText.Text = _localizer[UiStrings.PresentationOpacity];
-        MarkupClearButton.Content = _localizer[UiStrings.PresentationClear];
-        MarkupUndoButton.Content = _localizer[UiStrings.PresentationUndo];
-        MarkupRedoButton.Content = _localizer[UiStrings.PresentationRedo];
+        ToolTip.SetTip(MarkupDragHandle, _localizer[UiStrings.PresentationMovePanel]);
+        ToolTip.SetTip(MarkupColorButton, _localizer[UiStrings.PresentationColor]);
+        UpdateMarkupToolTips();
         ApplyMarkupToolsUi();
     }
 
     private void SelectMarkupTool(MarkupTool tool)
     {
+        _holdController.Cancel();
         _presentation.SetActiveTool(tool);
         ApplyMarkupToolsUi();
+        PhotoViewport.Focus();
     }
 
     private async Task EditMarkupColorAsync()
@@ -795,12 +910,14 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         }
 
         MarkupToolsPanel.IsVisible = _presentation.MarkupToolsVisible;
-        MarkupBrushButton.Classes.Set("accent", _presentation.ActiveTool == MarkupTool.Brush);
-        MarkupEraserButton.Classes.Set("accent", _presentation.ActiveTool == MarkupTool.Eraser);
-        MarkupLineButton.Classes.Set("accent", _presentation.ActiveTool == MarkupTool.Line);
-        MarkupRectangleButton.Classes.Set("accent", _presentation.ActiveTool == MarkupTool.Rectangle);
-        MarkupEllipseButton.Classes.Set("accent", _presentation.ActiveTool == MarkupTool.Ellipse);
-        MarkupArrowButton.Classes.Set("accent", _presentation.ActiveTool == MarkupTool.Arrow);
+        var effectiveTool = _presentation.EffectiveTool;
+        MarkupHandButton.Classes.Set("accent", effectiveTool == MarkupTool.Hand);
+        MarkupBrushButton.Classes.Set("accent", effectiveTool == MarkupTool.Brush);
+        MarkupEraserButton.Classes.Set("accent", effectiveTool == MarkupTool.Eraser);
+        MarkupLineButton.Classes.Set("accent", effectiveTool == MarkupTool.Line);
+        MarkupRectangleButton.Classes.Set("accent", effectiveTool == MarkupTool.Rectangle);
+        MarkupEllipseButton.Classes.Set("accent", effectiveTool == MarkupTool.Ellipse);
+        MarkupArrowButton.Classes.Set("accent", effectiveTool == MarkupTool.Arrow);
         MarkupUndoButton.IsEnabled = _presentation.CanUndo;
         MarkupRedoButton.IsEnabled = _presentation.CanRedo;
         MarkupClearButton.IsEnabled = _presentation.CanClear;
@@ -820,4 +937,121 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
 
         MarkupOpacityValue.Text = $"{_presentation.ActiveOpacity:P0}";
     }
+
+    private void UpdateMarkupToolTips()
+    {
+        SetCommandToolTip(MarkupHandButton, ViewerCommand.SelectHandTool);
+        SetCommandToolTip(MarkupBrushButton, ViewerCommand.SelectBrushTool);
+        SetCommandToolTip(MarkupEraserButton, ViewerCommand.SelectEraserTool);
+        SetCommandToolTip(MarkupLineButton, ViewerCommand.SelectLineTool);
+        SetCommandToolTip(MarkupRectangleButton, ViewerCommand.SelectRectangleTool);
+        SetCommandToolTip(MarkupEllipseButton, ViewerCommand.SelectEllipseTool);
+        SetCommandToolTip(MarkupArrowButton, ViewerCommand.SelectArrowTool);
+        SetCommandToolTip(MarkupUndoButton, ViewerCommand.MarkupUndo);
+        SetCommandToolTip(MarkupRedoButton, ViewerCommand.MarkupRedo);
+        SetCommandToolTip(MarkupClearButton, ViewerCommand.ClearMarkup);
+    }
+
+    private void SetCommandToolTip(Control control, ViewerCommand command)
+    {
+        var name = _localizer[UiStrings.ForCommand(command)];
+        ToolTip.SetTip(
+            control,
+            ViewerCommandDisplay.FormatToolTip(name, _settings.Current.Shortcuts.Get(command)));
+    }
+
+    private void OnMarkupPanelPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        _holdController.Cancel();
+        ShowCursor();
+    }
+
+    private void OnDockDragPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (!e.GetCurrentPoint(MarkupDragHandle).Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
+        _dockDragPointer = e.Pointer;
+        _dockDragStartPointer = e.GetPosition(ViewerRoot);
+        _dockDragStartPosition = new FloatingOverlayPoint(
+            MarkupToolsPanel.Margin.Left,
+            MarkupToolsPanel.Margin.Top);
+        e.Pointer.Capture(MarkupDragHandle);
+        e.Handled = true;
+    }
+
+    private void OnDockDragMoved(object? sender, PointerEventArgs e)
+    {
+        if (_dockDragPointer != e.Pointer ||
+            !e.GetCurrentPoint(MarkupDragHandle).Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
+        var pointer = e.GetPosition(ViewerRoot);
+        var desired = new FloatingOverlayPoint(
+            _dockDragStartPosition.X + pointer.X - _dockDragStartPointer.X,
+            _dockDragStartPosition.Y + pointer.Y - _dockDragStartPointer.Y);
+        var placement = FloatingOverlayPlacement.FromPosition(
+            desired,
+            GetFloatingSize(ViewerRoot.Bounds.Size),
+            GetFloatingSize(MarkupToolsPanel.Bounds.Size));
+        SetDockPosition(placement.Resolve(
+            GetFloatingSize(ViewerRoot.Bounds.Size),
+            GetFloatingSize(MarkupToolsPanel.Bounds.Size)));
+        e.Handled = true;
+    }
+
+    private async void OnDockDragReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (_dockDragPointer != e.Pointer)
+        {
+            return;
+        }
+
+        _dockDragPointer = null;
+        e.Pointer.Capture(null);
+        var placement = FloatingOverlayPlacement.FromPosition(
+            new FloatingOverlayPoint(
+                MarkupToolsPanel.Margin.Left,
+                MarkupToolsPanel.Margin.Top),
+            GetFloatingSize(ViewerRoot.Bounds.Size),
+            GetFloatingSize(MarkupToolsPanel.Bounds.Size));
+        try
+        {
+            await _settings.SetPresentationAsync(
+                _settings.Current.Presentation with { MarkupDockPlacement = placement },
+                _lifetimeCancellation.Token);
+        }
+        catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
+        {
+            // Window shutdown owns cancellation; the in-memory placement is no longer observable.
+        }
+
+        PhotoViewport.Focus();
+        e.Handled = true;
+    }
+
+    private void ApplyMarkupDockPlacement()
+    {
+        if (!IsInitialized || _dockDragPointer is not null)
+        {
+            return;
+        }
+
+        var position = _settings.Current.Presentation.MarkupDockPlacement.Resolve(
+            GetFloatingSize(ViewerRoot.Bounds.Size),
+            GetFloatingSize(MarkupToolsPanel.Bounds.Size));
+        SetDockPosition(position);
+    }
+
+    private void SetDockPosition(FloatingOverlayPoint position)
+    {
+        MarkupToolsPanel.Margin = new Thickness(position.X, position.Y, 0, 0);
+    }
+
+    private static FloatingOverlaySize GetFloatingSize(Size size) => new(size.Width, size.Height);
+
 }

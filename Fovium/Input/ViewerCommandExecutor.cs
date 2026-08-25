@@ -33,6 +33,22 @@ internal interface IViewerCommandTarget
     void AdjustMarkupThickness(double deltaPhysicalPixels);
 
     void AdjustMarkupOpacity(double delta);
+
+    Task AdjustHighlightRadiusAsync(double deltaPhysicalPixels);
+
+    void SelectHandTool();
+
+    void SelectBrushTool();
+
+    void SelectEraserTool();
+
+    void SelectLineTool();
+
+    void SelectRectangleTool();
+
+    void SelectEllipseTool();
+
+    void SelectArrowTool();
 }
 
 internal sealed class ViewerCommandExecutor(IViewerCommandTarget target)
@@ -69,6 +85,15 @@ internal sealed class ViewerCommandExecutor(IViewerCommandTarget target)
                 () => target.AdjustMarkupOpacity(-0.05)),
             ViewerCommand.IncreaseMarkupOpacity => Execute(
                 () => target.AdjustMarkupOpacity(0.05)),
+            ViewerCommand.DecreaseHighlightRadius => target.AdjustHighlightRadiusAsync(-4),
+            ViewerCommand.IncreaseHighlightRadius => target.AdjustHighlightRadiusAsync(4),
+            ViewerCommand.SelectHandTool => Execute(target.SelectHandTool),
+            ViewerCommand.SelectBrushTool => Execute(target.SelectBrushTool),
+            ViewerCommand.SelectEraserTool => Execute(target.SelectEraserTool),
+            ViewerCommand.SelectLineTool => Execute(target.SelectLineTool),
+            ViewerCommand.SelectRectangleTool => Execute(target.SelectRectangleTool),
+            ViewerCommand.SelectEllipseTool => Execute(target.SelectEllipseTool),
+            ViewerCommand.SelectArrowTool => Execute(target.SelectArrowTool),
             _ => throw new ArgumentOutOfRangeException(nameof(command)),
         };
     }

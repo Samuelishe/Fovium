@@ -27,9 +27,10 @@ Fovium displays its version as:
 0.0.0.0011
 0.0.0.0012
 0.0.0.0013
+0.1.0.0000
 ```
 
-CLR assembly and file-version fields are numeric and do not preserve meaningful leading zeros. Their equivalent values may therefore be `0.0.0.1` through `0.0.0.13`. The human-facing informational version preserves the four-digit BUILD.
+CLR assembly and file-version fields are numeric and do not preserve meaningful leading zeros. Their early-line equivalents are `0.0.0.1` through `0.0.0.13`; the promoted milestone is `0.1.0.0`. The human-facing informational version preserves the four-digit BUILD.
 
 ## Component semantics
 
@@ -75,18 +76,19 @@ The displayed checkpoint is not a substitute for a Git commit, tag, or branch. G
 | `0.0.0.0010` | R5 | Session-local presenter markup overlay and configurable cursor highlight |
 | `0.0.0.0011` | R5-F1 | True partial Eraser, bounded per-image markup history, Undo/Redo, and undoable Clear |
 | `0.0.0.0012` | R5-F2 | Ellipse/Circle, immutable per-draw opacity, Shift constraints, and contextual markup style shortcuts |
-| `0.0.0.0013` | R5-P1 / R5-P2 / R5-P3 corrective line | Current-first scheduling, atomic Ambient presentation, and sustained preload across cache saturation; owner visual acceptance pending |
+| `0.0.0.0013` | R5-P1 / R5-P2 / R5-P3 corrective line | Owner-accepted current-first scheduling, atomic Ambient presentation, and sustained preload across cache saturation |
+| `0.1.0.0000` | R5-F3 | First substantial usable Fovium alpha: contextual controls, drawing cursors, Hand, movable icon dock, and polished secondary UI |
 
-The current corrective build identity is `0.0.0.0013`; the last owner-accepted product checkpoint is `0.0.0.0012`. Promotion or another BUILD increment waits for explicit owner acceptance. Current implementation state remains owned by [`PROJECT-STATE.md`](PROJECT-STATE.md).
+The `0.0.0.xxxx` line records the completed foundation and early product-construction checkpoints. The explicit owner-controlled `0.1.0.0000` transition marks the first substantial usable Fovium alpha; it does not claim feature completeness, a stable API, production release status, or `1.0` quality. Current implementation state remains owned by [`PROJECT-STATE.md`](PROJECT-STATE.md).
 
 ## Future code and packaging source
 
 The root `Directory.Build.props` is the canonical source for the current components and formatted display identity. It supplies the production `Fovium` assembly with:
 
 ```text
-InformationalVersion = 0.0.0.0013
-AssemblyVersion      = 0.0.0.13
-FileVersion          = 0.0.0.13
+InformationalVersion = 0.1.0.0000
+AssemblyVersion      = 0.1.0.0
+FileVersion          = 0.1.0.0
 ```
 
 From that source:

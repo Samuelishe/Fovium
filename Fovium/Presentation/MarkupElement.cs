@@ -4,6 +4,7 @@ namespace Fovium.Presentation;
 
 internal enum MarkupTool
 {
+    Hand,
     Brush,
     Eraser,
     Line,

@@ -53,11 +53,11 @@ internal sealed record ShortcutSettings
                 ShortcutDefaults.CurrentClearMarkup;
         }
 
-        var used = new HashSet<ShortcutGesture>();
+        var used = new HashSet<(ViewerCommandScope Scope, ShortcutGesture Gesture)>();
         foreach (var definition in ViewerCommands.Definitions)
         {
             var gesture = normalized[definition.Id];
-            if (gesture is not null && !used.Add(gesture.Value))
+            if (gesture is not null && !used.Add((definition.Scope, gesture.Value)))
             {
                 normalized[definition.Id] = null;
             }
@@ -113,5 +113,15 @@ internal static class ShortcutDefaults
             new("OpenBracket", ShortcutModifiers.Control),
         [ViewerCommands.GetId(ViewerCommand.IncreaseMarkupOpacity)] =
             new("CloseBracket", ShortcutModifiers.Control),
+        [ViewerCommands.GetId(ViewerCommand.DecreaseHighlightRadius)] = new("OpenBracket"),
+        [ViewerCommands.GetId(ViewerCommand.IncreaseHighlightRadius)] = new("CloseBracket"),
+        [ViewerCommands.GetId(ViewerCommand.SelectHandTool)] = new("V"),
+        [ViewerCommands.GetId(ViewerCommand.SelectBrushTool)] = new("B"),
+        [ViewerCommands.GetId(ViewerCommand.SelectEraserTool)] = new("E"),
+        [ViewerCommands.GetId(ViewerCommand.SelectLineTool)] = new("L"),
+        [ViewerCommands.GetId(ViewerCommand.SelectRectangleTool)] = new("R"),
+        [ViewerCommands.GetId(ViewerCommand.SelectEllipseTool)] = new("O"),
+        [ViewerCommands.GetId(ViewerCommand.SelectArrowTool)] = new("A"),
+        [ViewerCommands.GetId(ViewerCommand.TemporaryMarkupHand)] = new("Space"),
     };
 }
