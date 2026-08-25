@@ -1,23 +1,35 @@
 namespace Fovium.Stage;
 
-internal readonly record struct StageColor(byte Red, byte Green, byte Blue, byte Alpha = 255);
-
 internal static class StageDefaults
 {
-    // Presentation defaults selected for R3; these are not calibrated reference values.
+    // Presentation defaults selected for R3-F1; these are not calibrated reference values.
     public static StageColor BlackColor { get; } = new(0x00, 0x00, 0x00);
 
     public static StageColor NeutralColor { get; } = new(0x50, 0x50, 0x50);
+
+    public static StageColor CustomBackgroundColor { get; } = new(0x20, 0x20, 0x20);
 
     public static StageColor MatteColor { get; } = new(0x20, 0x20, 0x20);
 
     public const int AmbientLongEdgePixels = 384;
 
-    public const float AmbientBlurSigmaPixels = 18;
+    public const double AmbientBrightness = 0.65;
 
-    public const float AmbientSaturation = 0.55f;
+    public const double AmbientBrightnessMinimum = 0.30;
 
-    public const float AmbientBrightness = 0.45f;
+    public const double AmbientBrightnessMaximum = 1.00;
+
+    public const double AmbientSaturation = 0.85;
+
+    public const double AmbientSaturationMinimum = 0.00;
+
+    public const double AmbientSaturationMaximum = 1.25;
+
+    public const double AmbientBlurSigmaPixels = 18;
+
+    public const double AmbientBlurMinimum = 8;
+
+    public const double AmbientBlurMaximum = 32;
 
     public const double MatteWidthPhysicalPixels = 24;
 }

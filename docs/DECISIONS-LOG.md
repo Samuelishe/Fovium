@@ -113,7 +113,7 @@ Fovium's pre-release checkpoint line uses display versions `0.0.0.xxxx`. BUILD a
 
 Status: Accepted in CONTRACTS-R1.
 
-Dark/Light controls application UI surfaces. Black/Neutral/Ambient/Ambient + Matte controls the photographic Stage. Changing either setting must not silently change the other or alter source pixels.
+Dark/Light controls application UI surfaces. Stage background and its independent Matte modifier control photographic presentation. Changing either system must not silently change the other or alter source pixels. D-030 owns the current Stage model.
 
 ## D-019 — Initial localization is English and Russian with English fallback
 
@@ -177,6 +177,24 @@ Ambient is prepared asynchronously from the full oriented decoded photograph at 
 
 ## D-029 — Ambient + Matte preserves photograph geometry
 
-Status: Accepted in R3.
+Status: Accepted in R3; product-model portion superseded by D-030 in R3-F1.
 
 Ambient and Ambient + Matte share one prepared Ambient representation. Matte is drawn behind the already-resolved photograph bounds at `24` physical pixels with a stable `#202020` neutral and no default shadow; it may clip at viewport edges and never shrinks or moves the photograph. Exact aesthetic constants remain refinable from later visual evidence.
+
+## D-030 — Stage background and Matte are independent
+
+Status: Accepted in R3-F1.
+
+The Stage background is Black, Neutral, Custom, or Ambient. Matte is an independent modifier over every background; the former `AmbientMatte` value exists only in deterministic schema-v1 migration and maps to Ambient plus enabled Matte. Custom and Matte colors are opaque persisted values. Neither setting changes photograph geometry, sampling, or application theme.
+
+## D-031 — Ambient separates spatial preparation from live color treatment
+
+Status: Accepted in R3-F1.
+
+Prepared Ambient owns oriented reduction and bounded blur and is identified by source plus blur. Brightness and saturation are bounded render-time color treatment and do not generate new retained images; Matte/color changes likewise do not prepare Ambient. Blur changes are coalesced and latest-wins. Owner review establishes brighter/more saturated defaults of `0.65` brightness and `0.85` saturation while keeping blur `18`.
+
+## D-032 — Configurable controls use stable command and gesture identities
+
+Status: Accepted in R3-F1.
+
+Configurable commands persist locale-independent IDs and project-owned key/modifier gestures. Capture rejects unsupported gestures, bare modifiers, and reserved `Esc`. Conflicts require explicit confirmation; replacement clears the previous command instead of swapping, and an unassigned command remains valid. Controls is a first-class Settings section, and the trigger model leaves a bounded path for future hold/release actions without implementing them early.

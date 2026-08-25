@@ -27,7 +27,7 @@ Unsupported, corrupt, or resource-policy-rejected candidates are skipped so navi
 
 R2 retains one sequential speculative preload worker. After a publication it searches for one viable previous and one viable next neighbor, with current foreground selection/cancellation taking priority. Local stress did not establish enough benefit to justify direction prediction, next+1 preload, or more than the existing two decode slots.
 
-R3 retains those photo/decode priorities. When Ambient is selected, photo publication occurs first with Black fallback; the Ambient coordinator waits for ordinary adjacent photo preload, prepares the current bounded derivative, then useful cached adjacent derivatives. Black and Neutral schedule no Ambient work. Source identity plus a Stage generation prevents late preparation from publishing for another photograph or inactive mode; cancellation only reduces waste.
+The Stage coordinator retains those photo/decode priorities. When Ambient is selected, photo publication occurs first with a matching prior derivative or Black fallback; the coordinator waits for ordinary adjacent photo preload, prepares the current bounded derivative, then useful cached adjacent derivatives. Black, Neutral, and Custom schedule no Ambient work, regardless of Matte. Source identity, blur identity, and Stage generation prevent late preparation from publishing for another photograph, obsolete blur, or inactive mode; cancellation only reduces waste. Brightness, saturation, Matte, and solid-color changes are render-time/solid-fill work and schedule no preparation. Blur changes use a `150 ms` debounce plus latest-wins authority.
 
 ## Cache and memory budget
 
@@ -47,7 +47,7 @@ R1's provisional Automatic formula uses `GC.GetGCMemoryInfo().TotalAvailableMemo
 
 Admission checks both estimated peak working bytes and retained encoded-plus-BGRA bytes. The foreground image is admitted before speculative work, the displayed cache key is protected, and byte-accounted LRU eviction releases neighbors deterministically. R2 retained this formula after local stress; these constants remain provisional evidence, not permanent product settings.
 
-R3 does not increase those caps. A prepared Ambient is at most `384` pixels on its long edge in premultiplied BGRA (about `576 KiB` at a square worst case and typically less), is owned by its decoded image, and increases the same cache entry's retained-byte cost. Optional/speculative entries are evicted before a protected current image; a derivative that still cannot fit is discarded and the visible Stage remains Black.
+Stage customization does not increase those caps. A prepared Ambient is at most `384` pixels on its long edge in premultiplied BGRA (about `576 KiB` at a square worst case and typically less), is owned by its decoded image, and increases the same cache entry's retained-byte cost. Only one blur variant per decoded image is retained; replacement respects render leases. Optional/speculative entries are evicted before a protected current image; a derivative that still cannot fit is discarded and the visible Stage uses a matching previous derivative or Black fallback.
 
 ## Diagnostics
 

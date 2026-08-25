@@ -1,0 +1,27 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Fovium.Views.ColorEditorWindow"
+        Width="380"
+        Height="400"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner">
+  <Grid Margin="22" RowDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto" ColumnDefinitions="Auto,*,Auto">
+    <Border x:Name="Preview" Grid.ColumnSpan="3" Height="52" CornerRadius="4" BorderThickness="1" />
+    <TextBlock x:Name="HexLabel" Grid.Row="1" Margin="0,18,12,0" VerticalAlignment="Center" />
+    <TextBox x:Name="HexValue" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,18,0,0" MaxLength="7" />
+    <TextBlock Grid.Row="2" Margin="0,16,12,0" VerticalAlignment="Center" Text="R" />
+    <Slider x:Name="RedSlider" Grid.Row="2" Grid.Column="1" Margin="0,16,12,0" Minimum="0" Maximum="255" TickFrequency="1" />
+    <TextBlock x:Name="RedValue" Grid.Row="2" Grid.Column="2" Margin="0,16,0,0" Width="34" TextAlignment="Right" />
+    <TextBlock Grid.Row="3" Margin="0,12,12,0" VerticalAlignment="Center" Text="G" />
+    <Slider x:Name="GreenSlider" Grid.Row="3" Grid.Column="1" Margin="0,12,12,0" Minimum="0" Maximum="255" TickFrequency="1" />
+    <TextBlock x:Name="GreenValue" Grid.Row="3" Grid.Column="2" Margin="0,12,0,0" Width="34" TextAlignment="Right" />
+    <TextBlock Grid.Row="4" Margin="0,12,12,0" VerticalAlignment="Center" Text="B" />
+    <Slider x:Name="BlueSlider" Grid.Row="4" Grid.Column="1" Margin="0,12,12,0" Minimum="0" Maximum="255" TickFrequency="1" />
+    <TextBlock x:Name="BlueValue" Grid.Row="4" Grid.Column="2" Margin="0,12,0,0" Width="34" TextAlignment="Right" />
+    <TextBlock x:Name="ValidationText" Grid.Row="5" Grid.ColumnSpan="3" Margin="0,12,0,0" Foreground="#FFE57373" />
+    <StackPanel Grid.Row="6" Grid.ColumnSpan="3" Margin="0,18,0,0" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
+      <Button x:Name="CancelButton" MinWidth="88" />
+      <Button x:Name="OkButton" MinWidth="88" />
+    </StackPanel>
+  </Grid>
+</Window>

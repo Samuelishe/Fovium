@@ -7,6 +7,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Fovium.Application;
 using Fovium.Imaging;
+using Fovium.Input;
 using Fovium.Loading;
 using Fovium.Localization;
 using Fovium.Navigation;
@@ -18,7 +19,7 @@ using ViewerNavigationDirection = Fovium.Navigation.NavigationDirection;
 
 namespace Fovium.Views;
 
-internal sealed partial class ViewerWindow : Window
+internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
 {
     private static readonly TimeSpan CursorHideDelay = TimeSpan.FromSeconds(1.75);
 
@@ -33,9 +34,12 @@ internal sealed partial class ViewerWindow : Window
     private readonly Cursor _visibleCursor = new(StandardCursorType.Arrow);
     private readonly Cursor _hiddenCursor = new(StandardCursorType.None);
     private readonly ContextMenu _contextMenu;
+    private readonly ViewerCommandExecutor _commandExecutor;
+    private readonly Dictionary<ViewerCommand, MenuItem> _commandMenuItems = [];
     private readonly MenuItem _previousMenuItem;
     private readonly MenuItem _nextMenuItem;
-    private readonly IReadOnlyDictionary<StageMode, MenuItem> _stageMenuItems;
+    private readonly IReadOnlyDictionary<StageBackgroundMode, MenuItem> _stageBackgroundMenuItems;
+    private readonly MenuItem _matteMenuItem;
     private bool _contextMenuOpen;
     private bool _closed;
     private bool _shutdownCompleted;
@@ -58,16 +62,14 @@ internal sealed partial class ViewerWindow : Window
         _stageCoordinator = new AmbientStageCoordinator(
             new AmbientImageRepository(session),
             new AmbientStagePreparer(),
-            settings.Current.StageMode);
+            settings.Current.Stage);
 
         InitializeComponent();
-        _previousMenuItem = CreateMenuItem(
-            UiStrings.MenuPrevious,
-            async () => await NavigateAsync(ViewerNavigationDirection.Previous));
-        _nextMenuItem = CreateMenuItem(
-            UiStrings.MenuNext,
-            async () => await NavigateAsync(ViewerNavigationDirection.Next));
-        _stageMenuItems = CreateStageMenuItems();
+        _commandExecutor = new ViewerCommandExecutor(this);
+        _previousMenuItem = CreateCommandMenuItem(UiStrings.MenuPrevious, ViewerCommand.PreviousImage);
+        _nextMenuItem = CreateCommandMenuItem(UiStrings.MenuNext, ViewerCommand.NextImage);
+        _stageBackgroundMenuItems = CreateStageBackgroundMenuItems();
+        _matteMenuItem = CreateMatteMenuItem();
         _contextMenu = CreateContextMenu();
         PhotoViewport.ContextMenu = _contextMenu;
 
@@ -89,7 +91,7 @@ internal sealed partial class ViewerWindow : Window
             PhotoViewport.Focus();
             RestartCursorTimer();
             await _settings.InitializeAsync(_lifetimeCancellation.Token);
-            ApplyStageMode(_settings.Current.StageMode);
+            ApplyStage(_settings.Current.Stage);
             if (_startupPaths.Count == 0)
             {
                 var selected = await PickFilesAsync();
@@ -153,28 +155,14 @@ internal sealed partial class ViewerWindow : Window
         _hiddenCursor.Dispose();
         _settings.SettingsChanged -= OnSettingsChanged;
         _stageCoordinator.PresentationChanged -= OnStagePresentationChanged;
+        _settings.Dispose();
     }
 
     private async void OnWindowKeyDown(object? sender, KeyEventArgs e)
     {
         try
         {
-            if (e.Key == Key.Left)
-            {
-                e.Handled = true;
-                await NavigateAsync(ViewerNavigationDirection.Previous);
-            }
-            else if (e.Key == Key.Right)
-            {
-                e.Handled = true;
-                await NavigateAsync(ViewerNavigationDirection.Next);
-            }
-            else if (e.Key == Key.F11)
-            {
-                e.Handled = true;
-                ToggleFullscreen();
-            }
-            else if (e.Key == Key.Escape)
+            if (e.Key == Key.Escape)
             {
                 e.Handled = true;
                 if (WindowState == WindowState.FullScreen)
@@ -186,15 +174,11 @@ internal sealed partial class ViewerWindow : Window
                     Close();
                 }
             }
-            else if (e.Key == Key.O && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+            else if (AvaloniaShortcutGestureAdapter.TryCreate(e, out var gesture) &&
+                ShortcutResolver.Resolve(_settings.Current.Shortcuts, gesture) is { } command)
             {
                 e.Handled = true;
-                await OpenFromPickerAsync();
-            }
-            else if (e.Key == Key.OemComma && e.KeyModifiers.HasFlag(KeyModifiers.Control))
-            {
-                e.Handled = true;
-                ShowSettings();
+                await _commandExecutor.ExecuteAsync(command);
             }
         }
         catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
@@ -212,38 +196,31 @@ internal sealed partial class ViewerWindow : Window
         {
             ItemsSource = new Control[]
             {
-                CreateMenuItem(UiStrings.MenuOpen, OpenFromPickerAsync),
+                CreateCommandMenuItem(UiStrings.MenuOpen, ViewerCommand.Open),
                 _previousMenuItem,
                 _nextMenuItem,
                 new Separator(),
-                CreateMenuItem(UiStrings.MenuFit, () =>
-                {
-                    PhotoViewport.Fit();
-                    return Task.CompletedTask;
-                }),
-                CreateMenuItem(UiStrings.MenuActualSize, () =>
-                {
-                    PhotoViewport.SetPhotographic100AtCenter();
-                    return Task.CompletedTask;
-                }),
+                CreateCommandMenuItem(UiStrings.MenuFit, ViewerCommand.Fit),
+                CreateCommandMenuItem(UiStrings.MenuActualSize, ViewerCommand.ActualSize),
                 new Separator(),
                 new MenuItem
                 {
                     Header = _localizer[UiStrings.MenuStage],
-                    ItemsSource = _stageMenuItems.Values,
+                    ItemsSource = new Control[]
+                    {
+                        new MenuItem
+                        {
+                            Header = _localizer[UiStrings.StageBackground],
+                            ItemsSource = _stageBackgroundMenuItems.Values,
+                        },
+                        new Separator(),
+                        _matteMenuItem,
+                    },
                 },
                 new Separator(),
-                CreateMenuItem(UiStrings.MenuFullscreen, () =>
-                {
-                    ToggleFullscreen();
-                    return Task.CompletedTask;
-                }),
+                CreateCommandMenuItem(UiStrings.MenuFullscreen, ViewerCommand.Fullscreen),
                 new Separator(),
-                CreateMenuItem(UiStrings.MenuSettings, () =>
-                {
-                    ShowSettings();
-                    return Task.CompletedTask;
-                }),
+                CreateCommandMenuItem(UiStrings.MenuSettings, ViewerCommand.Settings),
                 CreateMenuItem(UiStrings.MenuClose, () =>
                 {
                     Close();
@@ -258,10 +235,13 @@ internal sealed partial class ViewerWindow : Window
             _cursorTimer.Stop();
             _previousMenuItem.IsEnabled = _session.CanNavigate(ViewerNavigationDirection.Previous);
             _nextMenuItem.IsEnabled = _session.CanNavigate(ViewerNavigationDirection.Next);
-            foreach (var (mode, item) in _stageMenuItems)
+            foreach (var (mode, item) in _stageBackgroundMenuItems)
             {
-                item.IsChecked = _settings.Current.StageMode == mode;
+                item.IsChecked = _settings.Current.Stage.BackgroundMode == mode;
             }
+
+            _matteMenuItem.IsChecked = _settings.Current.Stage.MatteEnabled;
+            UpdateCommandGestures();
         };
         menu.Closing += (_, _) =>
         {
@@ -271,14 +251,14 @@ internal sealed partial class ViewerWindow : Window
         return menu;
     }
 
-    private IReadOnlyDictionary<StageMode, MenuItem> CreateStageMenuItems()
+    private IReadOnlyDictionary<StageBackgroundMode, MenuItem> CreateStageBackgroundMenuItems()
     {
-        var labels = new Dictionary<StageMode, string>
+        var labels = new Dictionary<StageBackgroundMode, string>
         {
-            [StageMode.Black] = UiStrings.StageBlack,
-            [StageMode.Neutral] = UiStrings.StageNeutral,
-            [StageMode.Ambient] = UiStrings.StageAmbient,
-            [StageMode.AmbientMatte] = UiStrings.StageAmbientMatte,
+            [StageBackgroundMode.Black] = UiStrings.StageBlack,
+            [StageBackgroundMode.Neutral] = UiStrings.StageNeutral,
+            [StageBackgroundMode.Custom] = UiStrings.StageCustom,
+            [StageBackgroundMode.Ambient] = UiStrings.StageAmbient,
         };
         return labels.ToDictionary(
             pair => pair.Key,
@@ -293,7 +273,9 @@ internal sealed partial class ViewerWindow : Window
                 {
                     try
                     {
-                        await _settings.SetStageModeAsync(pair.Key, _lifetimeCancellation.Token);
+                        await _settings.SetStageAsync(
+                            _settings.Current.Stage with { BackgroundMode = pair.Key },
+                            _lifetimeCancellation.Token);
                     }
                     catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
                     {
@@ -301,6 +283,42 @@ internal sealed partial class ViewerWindow : Window
                 };
                 return item;
             });
+    }
+
+    private MenuItem CreateMatteMenuItem()
+    {
+        var item = new MenuItem
+        {
+            Header = _localizer[UiStrings.StageMatte],
+            ToggleType = MenuItemToggleType.CheckBox,
+        };
+        item.Click += async (_, _) =>
+        {
+            try
+            {
+                await _settings.ToggleMatteAsync(_lifetimeCancellation.Token);
+            }
+            catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
+            {
+            }
+        };
+        return item;
+    }
+
+    private MenuItem CreateCommandMenuItem(string key, ViewerCommand command)
+    {
+        var item = CreateMenuItem(key, () => _commandExecutor.ExecuteAsync(command));
+        _commandMenuItems[command] = item;
+        return item;
+    }
+
+    private void UpdateCommandGestures()
+    {
+        foreach (var (command, item) in _commandMenuItems)
+        {
+            item.InputGesture = AvaloniaShortcutGestureAdapter.ToAvalonia(
+                _settings.Current.Shortcuts.Get(command));
+        }
     }
 
     private MenuItem CreateMenuItem(string key, Func<Task> action)
@@ -473,22 +491,22 @@ internal sealed partial class ViewerWindow : Window
     {
         if (Dispatcher.UIThread.CheckAccess())
         {
-            ApplyStageMode(e.Settings.StageMode);
+            ApplyStage(e.Settings.Stage);
         }
         else
         {
-            Dispatcher.UIThread.Post(() => ApplyStageMode(e.Settings.StageMode));
+            Dispatcher.UIThread.Post(() => ApplyStage(e.Settings.Stage));
         }
     }
 
-    private void ApplyStageMode(StageMode mode)
+    private void ApplyStage(StageSettings stage)
     {
         if (_closed)
         {
             return;
         }
 
-        _stageCoordinator.SetMode(mode);
+        _stageCoordinator.SetStage(stage);
     }
 
     private void OnStagePresentationChanged(object? sender, EventArgs e)
@@ -511,7 +529,7 @@ internal sealed partial class ViewerWindow : Window
         }
 
         using var presentation = _stageCoordinator.AcquirePresentation();
-        PhotoViewport.SetStage(presentation.Mode, presentation.TakeAmbient());
+        PhotoViewport.SetStage(presentation.Stage, presentation.TakeAmbient());
     }
 
     private static bool IsRecoverableBoundaryException(Exception exception) =>
@@ -558,4 +576,25 @@ internal sealed partial class ViewerWindow : Window
         _cursorTimer.Stop();
         _cursorTimer.Start();
     }
+
+    Task IViewerCommandTarget.PreviousAsync() => NavigateAsync(ViewerNavigationDirection.Previous);
+
+    Task IViewerCommandTarget.NextAsync() => NavigateAsync(ViewerNavigationDirection.Next);
+
+    void IViewerCommandTarget.ZoomByStepsAtCenter(int steps) =>
+        PhotoViewport.ZoomByStepsAtCenter(steps);
+
+    void IViewerCommandTarget.Fit() => PhotoViewport.Fit();
+
+    void IViewerCommandTarget.SetPhotographic100AtCenter() =>
+        PhotoViewport.SetPhotographic100AtCenter();
+
+    Task IViewerCommandTarget.ToggleMatteAsync() =>
+        _settings.ToggleMatteAsync(_lifetimeCancellation.Token);
+
+    void IViewerCommandTarget.ToggleFullscreen() => ToggleFullscreen();
+
+    Task IViewerCommandTarget.OpenAsync() => OpenFromPickerAsync();
+
+    void IViewerCommandTarget.ShowSettings() => ShowSettings();
 }

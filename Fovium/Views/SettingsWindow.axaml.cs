@@ -1,7 +1,11 @@
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using Avalonia.Media;
 using Fovium.Application;
+using Fovium.Input;
 using Fovium.Localization;
 using Fovium.Settings;
 using Fovium.Stage;
@@ -11,71 +15,151 @@ namespace Fovium.Views;
 internal sealed partial class SettingsWindow : Window
 {
     private readonly SettingsService _settings;
+    private readonly Localizer _localizer;
     private readonly RadioButton _keepCurrentScaleOption;
     private readonly RadioButton _fitEachImageOption;
     private readonly RadioButton _blackStageOption;
     private readonly RadioButton _neutralStageOption;
+    private readonly RadioButton _customStageOption;
     private readonly RadioButton _ambientStageOption;
-    private readonly RadioButton _ambientMatteStageOption;
+    private readonly CheckBox _matteEnabledOption;
+    private readonly Border _customColorSwatch;
+    private readonly Border _matteColorSwatch;
+    private readonly Slider _brightnessSlider;
+    private readonly Slider _saturationSlider;
+    private readonly Slider _blurSlider;
+    private readonly TextBlock _brightnessValue;
+    private readonly TextBlock _saturationValue;
+    private readonly TextBlock _blurValue;
+    private readonly TextBlock _shortcutValidationText;
+    private readonly Expander _ambientOptions;
+    private readonly Dictionary<ViewerCommand, Button> _shortcutButtons = [];
+    private ViewerCommand? _capturingCommand;
     private bool _initializing = true;
 
     public SettingsWindow(SettingsService settings, Localizer localizer)
     {
         _settings = settings;
+        _localizer = localizer;
         InitializeComponent();
 
         var viewingTab = FindRequired<TabItem>("ViewingTab");
-        var aboutTab = FindRequired<TabItem>("AboutTab");
         var stageTab = FindRequired<TabItem>("StageTab");
-        var scaleHeading = FindRequired<TextBlock>("ScaleHeading");
+        var controlsTab = FindRequired<TabItem>("ControlsTab");
+        var aboutTab = FindRequired<TabItem>("AboutTab");
         _keepCurrentScaleOption = FindRequired<RadioButton>("KeepCurrentScaleOption");
         _fitEachImageOption = FindRequired<RadioButton>("FitEachImageOption");
         _blackStageOption = FindRequired<RadioButton>("BlackStageOption");
         _neutralStageOption = FindRequired<RadioButton>("NeutralStageOption");
+        _customStageOption = FindRequired<RadioButton>("CustomStageOption");
         _ambientStageOption = FindRequired<RadioButton>("AmbientStageOption");
-        _ambientMatteStageOption = FindRequired<RadioButton>("AmbientMatteStageOption");
-        var stageHeading = FindRequired<TextBlock>("StageHeading");
-        var versionText = FindRequired<TextBlock>("VersionText");
+        _matteEnabledOption = FindRequired<CheckBox>("MatteEnabledOption");
+        _customColorSwatch = FindRequired<Border>("CustomColorSwatch");
+        _matteColorSwatch = FindRequired<Border>("MatteColorSwatch");
+        _brightnessSlider = FindRequired<Slider>("BrightnessSlider");
+        _saturationSlider = FindRequired<Slider>("SaturationSlider");
+        _blurSlider = FindRequired<Slider>("BlurSlider");
+        _brightnessValue = FindRequired<TextBlock>("BrightnessValue");
+        _saturationValue = FindRequired<TextBlock>("SaturationValue");
+        _blurValue = FindRequired<TextBlock>("BlurValue");
+        _shortcutValidationText = FindRequired<TextBlock>("ShortcutValidationText");
+        _ambientOptions = FindRequired<Expander>("AmbientOptions");
 
         Title = localizer[UiStrings.SettingsTitle];
         viewingTab.Header = localizer[UiStrings.SettingsViewing];
-        aboutTab.Header = localizer[UiStrings.SettingsAbout];
         stageTab.Header = localizer[UiStrings.SettingsStage];
-        scaleHeading.Text = localizer[UiStrings.SettingsScaleOnImageChange];
+        controlsTab.Header = localizer[UiStrings.SettingsControls];
+        aboutTab.Header = localizer[UiStrings.SettingsAbout];
+        FindRequired<TextBlock>("ScaleHeading").Text = localizer[UiStrings.SettingsScaleOnImageChange];
+        FindRequired<TextBlock>("BackgroundHeading").Text = localizer[UiStrings.StageBackground];
+        FindRequired<TextBlock>("MatteHeading").Text = localizer[UiStrings.StageMatte];
+        FindRequired<TextBlock>("ControlsHeading").Text = localizer[UiStrings.SettingsControls];
+        FindRequired<TextBlock>("BrightnessLabel").Text = localizer[UiStrings.StageAmbientBrightness];
+        FindRequired<TextBlock>("SaturationLabel").Text = localizer[UiStrings.StageAmbientSaturation];
+        FindRequired<TextBlock>("BlurLabel").Text = localizer[UiStrings.StageAmbientBlur];
         _keepCurrentScaleOption.Content = localizer[UiStrings.SettingsKeepCurrentScale];
         _fitEachImageOption.Content = localizer[UiStrings.SettingsFitEachImage];
-        stageHeading.Text = localizer[UiStrings.SettingsStageMode];
         _blackStageOption.Content = localizer[UiStrings.StageBlack];
         _neutralStageOption.Content = localizer[UiStrings.StageNeutral];
+        _customStageOption.Content = localizer[UiStrings.StageCustom];
         _ambientStageOption.Content = localizer[UiStrings.StageAmbient];
-        _ambientMatteStageOption.Content = localizer[UiStrings.StageAmbientMatte];
-        versionText.Text = string.Format(
+        _matteEnabledOption.Content = localizer[UiStrings.StageMatteEnabled];
+        _ambientOptions.Header = localizer[UiStrings.StageAmbientOptions];
+        FindRequired<Button>("ResetShortcutsButton").Content = localizer[UiStrings.ShortcutReset];
+        FindRequired<TextBlock>("VersionText").Text = string.Format(
             System.Globalization.CultureInfo.CurrentUICulture,
             localizer[UiStrings.SettingsVersion],
             FoviumVersion.Display);
 
-        _keepCurrentScaleOption.IsChecked =
-            settings.Current.ImageChangeViewPolicy == ImageChangeViewPolicy.KeepCurrentScale;
-        _fitEachImageOption.IsChecked =
-            settings.Current.ImageChangeViewPolicy == ImageChangeViewPolicy.FitEachImage;
+        CreateShortcutRows();
         ApplySettings(settings.Current);
-        _keepCurrentScaleOption.IsCheckedChanged += OnKeepCurrentScaleChanged;
-        _fitEachImageOption.IsCheckedChanged += OnFitEachImageChanged;
-        _blackStageOption.IsCheckedChanged += OnBlackStageChanged;
-        _neutralStageOption.IsCheckedChanged += OnNeutralStageChanged;
-        _ambientStageOption.IsCheckedChanged += OnAmbientStageChanged;
-        _ambientMatteStageOption.IsCheckedChanged += OnAmbientMatteStageChanged;
+        SubscribeEvents();
         _settings.SettingsChanged += OnSettingsChanged;
-        Closed += (_, _) => _settings.SettingsChanged -= OnSettingsChanged;
+        Closed += OnClosed;
+        KeyDown += OnShortcutCaptureKeyDown;
         _initializing = false;
     }
 
     private void InitializeComponent() => AvaloniaXamlLoader.Load(this);
 
-    private T FindRequired<T>(string name)
-        where T : Control =>
-        this.FindControl<T>(name)
-        ?? throw new InvalidOperationException($"Settings control is missing: {name}.");
+    private void SubscribeEvents()
+    {
+        _keepCurrentScaleOption.IsCheckedChanged += OnKeepCurrentScaleChanged;
+        _fitEachImageOption.IsCheckedChanged += OnFitEachImageChanged;
+        _blackStageOption.IsCheckedChanged += (_, _) => SetBackgroundIfChecked(
+            _blackStageOption,
+            StageBackgroundMode.Black);
+        _neutralStageOption.IsCheckedChanged += (_, _) => SetBackgroundIfChecked(
+            _neutralStageOption,
+            StageBackgroundMode.Neutral);
+        _customStageOption.IsCheckedChanged += (_, _) => SetBackgroundIfChecked(
+            _customStageOption,
+            StageBackgroundMode.Custom);
+        _ambientStageOption.IsCheckedChanged += (_, _) => SetBackgroundIfChecked(
+            _ambientStageOption,
+            StageBackgroundMode.Ambient);
+        _matteEnabledOption.IsCheckedChanged += OnMatteEnabledChanged;
+        _brightnessSlider.ValueChanged += OnAmbientSliderChanged;
+        _saturationSlider.ValueChanged += OnAmbientSliderChanged;
+        _blurSlider.ValueChanged += OnAmbientSliderChanged;
+        FindRequired<Button>("EditAmbientButton").Click += (_, _) =>
+            _ambientOptions.IsExpanded = !_ambientOptions.IsExpanded;
+        FindRequired<Button>("EditCustomColorButton").Click += async (_, _) =>
+            await EditColorAsync(customBackground: true);
+        FindRequired<Button>("EditMatteColorButton").Click += async (_, _) =>
+            await EditColorAsync(customBackground: false);
+        FindRequired<Button>("ResetShortcutsButton").Click += async (_, _) =>
+            await _settings.ResetShortcutsAsync();
+    }
+
+    private void CreateShortcutRows()
+    {
+        var list = FindRequired<StackPanel>("ControlsList");
+        foreach (var definition in ViewerCommands.Definitions)
+        {
+            var row = new Grid
+            {
+                ColumnDefinitions = new ColumnDefinitions("*,Auto"),
+                ColumnSpacing = 14,
+            };
+            row.Children.Add(new TextBlock
+            {
+                Text = LocalizeCommand(definition.Command),
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+            });
+            var button = new Button
+            {
+                MinWidth = 128,
+                HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+                Tag = definition.Command,
+            };
+            Grid.SetColumn(button, 1);
+            button.Click += OnShortcutButtonClick;
+            row.Children.Add(button);
+            list.Children.Add(row);
+            _shortcutButtons.Add(definition.Command, button);
+        }
+    }
 
     private async void OnKeepCurrentScaleChanged(object? sender, RoutedEventArgs e)
     {
@@ -93,22 +177,132 @@ internal sealed partial class SettingsWindow : Window
         }
     }
 
-    private async void OnBlackStageChanged(object? sender, RoutedEventArgs e) =>
-        await SetStageIfCheckedAsync(_blackStageOption, StageMode.Black);
+    private async void SetBackgroundIfChecked(RadioButton option, StageBackgroundMode mode)
+    {
+        if (!_initializing && option.IsChecked == true)
+        {
+            await _settings.SetStageAsync(_settings.Current.Stage with { BackgroundMode = mode });
+        }
+    }
 
-    private async void OnNeutralStageChanged(object? sender, RoutedEventArgs e) =>
-        await SetStageIfCheckedAsync(_neutralStageOption, StageMode.Neutral);
+    private async void OnMatteEnabledChanged(object? sender, RoutedEventArgs e)
+    {
+        if (!_initializing)
+        {
+            await _settings.SetStageAsync(_settings.Current.Stage with
+            {
+                MatteEnabled = _matteEnabledOption.IsChecked == true,
+            });
+        }
+    }
 
-    private async void OnAmbientStageChanged(object? sender, RoutedEventArgs e) =>
-        await SetStageIfCheckedAsync(_ambientStageOption, StageMode.Ambient);
+    private async void OnAmbientSliderChanged(object? sender, RangeBaseValueChangedEventArgs e)
+    {
+        if (_initializing)
+        {
+            return;
+        }
 
-    private async void OnAmbientMatteStageChanged(object? sender, RoutedEventArgs e) =>
-        await SetStageIfCheckedAsync(_ambientMatteStageOption, StageMode.AmbientMatte);
+        var stage = _settings.Current.Stage with
+        {
+            AmbientBrightness = _brightnessSlider.Value / 100,
+            AmbientSaturation = _saturationSlider.Value / 100,
+            AmbientBlur = Math.Round(_blurSlider.Value),
+        };
+        UpdateAmbientValueText(stage);
+        await _settings.SetStageAsync(stage);
+    }
 
-    private Task SetStageIfCheckedAsync(RadioButton option, StageMode mode) =>
-        !_initializing && option.IsChecked == true
-            ? _settings.SetStageModeAsync(mode)
-            : Task.CompletedTask;
+    private async Task EditColorAsync(bool customBackground)
+    {
+        var original = customBackground
+            ? _settings.Current.Stage.CustomBackgroundColor
+            : _settings.Current.Stage.MatteColor;
+        var title = _localizer[customBackground
+            ? UiStrings.StageCustomColor
+            : UiStrings.StageMatteColor];
+        var editor = new ColorEditorWindow(original, _localizer, title);
+        editor.ColorChanged += async (_, e) =>
+        {
+            var stage = _settings.Current.Stage;
+            await _settings.SetStageAsync(customBackground
+                ? stage with { CustomBackgroundColor = e.Color }
+                : stage with { MatteColor = e.Color });
+        };
+        var accepted = await editor.ShowDialog<bool>(this);
+        if (!accepted)
+        {
+            var stage = _settings.Current.Stage;
+            await _settings.SetStageAsync(customBackground
+                ? stage with { CustomBackgroundColor = original }
+                : stage with { MatteColor = original });
+        }
+    }
+
+    private void OnShortcutButtonClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: ViewerCommand command })
+        {
+            return;
+        }
+
+        _capturingCommand = command;
+        _shortcutValidationText.Text = string.Empty;
+        UpdateShortcutButtons(_settings.Current.Shortcuts);
+    }
+
+    private async void OnShortcutCaptureKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (_capturingCommand is not { } command)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        if (e.Key == Key.Escape)
+        {
+            CancelShortcutCapture();
+            return;
+        }
+
+        if (!AvaloniaShortcutGestureAdapter.TryCreate(e, out var gesture))
+        {
+            _shortcutValidationText.Text = _localizer[UiStrings.ShortcutInvalid];
+            return;
+        }
+
+        var current = _settings.Current.Shortcuts;
+        var assignment = ShortcutResolver.Assign(current, command, gesture, replaceConflict: false);
+        if (assignment.Status == ShortcutAssignmentStatus.Invalid)
+        {
+            _shortcutValidationText.Text = _localizer[UiStrings.ShortcutInvalid];
+            return;
+        }
+
+        _capturingCommand = null;
+        if (assignment.Status == ShortcutAssignmentStatus.Conflict &&
+            assignment.ConflictingCommand is { } conflict)
+        {
+            UpdateShortcutButtons(current);
+            var dialog = new ShortcutConflictWindow(_localizer, LocalizeCommand(conflict));
+            if (!await dialog.ShowDialog<bool>(this))
+            {
+                return;
+            }
+
+            assignment = ShortcutResolver.Assign(current, command, gesture, replaceConflict: true);
+        }
+
+        _shortcutValidationText.Text = string.Empty;
+        await _settings.SetShortcutsAsync(assignment.Settings);
+    }
+
+    private void CancelShortcutCapture()
+    {
+        _capturingCommand = null;
+        _shortcutValidationText.Text = string.Empty;
+        UpdateShortcutButtons(_settings.Current.Shortcuts);
+    }
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
     {
@@ -125,10 +319,70 @@ internal sealed partial class SettingsWindow : Window
     private void ApplySettings(FoviumSettings settings)
     {
         _initializing = true;
-        _blackStageOption.IsChecked = settings.StageMode == StageMode.Black;
-        _neutralStageOption.IsChecked = settings.StageMode == StageMode.Neutral;
-        _ambientStageOption.IsChecked = settings.StageMode == StageMode.Ambient;
-        _ambientMatteStageOption.IsChecked = settings.StageMode == StageMode.AmbientMatte;
+        _keepCurrentScaleOption.IsChecked =
+            settings.ImageChangeViewPolicy == ImageChangeViewPolicy.KeepCurrentScale;
+        _fitEachImageOption.IsChecked =
+            settings.ImageChangeViewPolicy == ImageChangeViewPolicy.FitEachImage;
+        _blackStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.Black;
+        _neutralStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.Neutral;
+        _customStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.Custom;
+        _ambientStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.Ambient;
+        _matteEnabledOption.IsChecked = settings.Stage.MatteEnabled;
+        _brightnessSlider.Value = settings.Stage.AmbientBrightness * 100;
+        _saturationSlider.Value = settings.Stage.AmbientSaturation * 100;
+        _blurSlider.Value = settings.Stage.AmbientBlur;
+        SetSwatch(_customColorSwatch, settings.Stage.CustomBackgroundColor);
+        SetSwatch(_matteColorSwatch, settings.Stage.MatteColor);
+        UpdateAmbientValueText(settings.Stage);
+        UpdateShortcutButtons(settings.Shortcuts);
         _initializing = false;
     }
+
+    private void UpdateAmbientValueText(StageSettings stage)
+    {
+        _brightnessValue.Text = $"{stage.AmbientBrightness:P0}";
+        _saturationValue.Text = $"{stage.AmbientSaturation:P0}";
+        _blurValue.Text = stage.AmbientBlur.ToString("0", System.Globalization.CultureInfo.CurrentUICulture);
+    }
+
+    private void UpdateShortcutButtons(ShortcutSettings shortcuts)
+    {
+        foreach (var (command, button) in _shortcutButtons)
+        {
+            button.Content = _capturingCommand == command
+                ? _localizer[UiStrings.ShortcutPressKey]
+                : ShortcutGestureFormatter.Format(
+                    shortcuts.Get(command),
+                    _localizer[UiStrings.ShortcutUnassigned]);
+        }
+    }
+
+    private string LocalizeCommand(ViewerCommand command) => _localizer[command switch
+    {
+        ViewerCommand.PreviousImage => UiStrings.CommandPrevious,
+        ViewerCommand.NextImage => UiStrings.CommandNext,
+        ViewerCommand.ZoomIn => UiStrings.CommandZoomIn,
+        ViewerCommand.ZoomOut => UiStrings.CommandZoomOut,
+        ViewerCommand.Fit => UiStrings.CommandFit,
+        ViewerCommand.ActualSize => UiStrings.CommandActualSize,
+        ViewerCommand.ToggleMatte => UiStrings.CommandToggleMatte,
+        ViewerCommand.Fullscreen => UiStrings.CommandFullscreen,
+        ViewerCommand.Open => UiStrings.CommandOpen,
+        ViewerCommand.Settings => UiStrings.CommandSettings,
+        _ => throw new ArgumentOutOfRangeException(nameof(command)),
+    }];
+
+    private void OnClosed(object? sender, EventArgs e)
+    {
+        _capturingCommand = null;
+        _settings.SettingsChanged -= OnSettingsChanged;
+    }
+
+    private static void SetSwatch(Border border, StageColor color) =>
+        border.Background = new SolidColorBrush(Color.FromRgb(color.Red, color.Green, color.Blue));
+
+    private T FindRequired<T>(string name)
+        where T : Control =>
+        this.FindControl<T>(name)
+        ?? throw new InvalidOperationException($"Settings control is missing: {name}.");
 }

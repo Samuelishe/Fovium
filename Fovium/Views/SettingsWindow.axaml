@@ -1,10 +1,10 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="Fovium.Views.SettingsWindow"
-        Width="540"
-        Height="380"
-        MinWidth="440"
-        MinHeight="300"
+        Width="680"
+        Height="580"
+        MinWidth="560"
+        MinHeight="440"
         WindowStartupLocation="CenterOwner">
   <TabControl Margin="20">
     <TabItem x:Name="ViewingTab">
@@ -15,13 +15,61 @@
       </StackPanel>
     </TabItem>
     <TabItem x:Name="StageTab">
-      <StackPanel Margin="12,18" Spacing="14">
-        <TextBlock x:Name="StageHeading" FontSize="18" FontWeight="SemiBold" />
-        <RadioButton x:Name="BlackStageOption" GroupName="StageMode" />
-        <RadioButton x:Name="NeutralStageOption" GroupName="StageMode" />
-        <RadioButton x:Name="AmbientStageOption" GroupName="StageMode" />
-        <RadioButton x:Name="AmbientMatteStageOption" GroupName="StageMode" />
-      </StackPanel>
+      <ScrollViewer>
+        <StackPanel Margin="12,18" Spacing="12">
+          <TextBlock x:Name="BackgroundHeading" FontSize="18" FontWeight="SemiBold" />
+          <RadioButton x:Name="BlackStageOption" GroupName="StageBackground" />
+          <RadioButton x:Name="NeutralStageOption" GroupName="StageBackground" />
+          <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+            <RadioButton x:Name="CustomStageOption" GroupName="StageBackground" VerticalAlignment="Center" />
+            <Border x:Name="CustomColorSwatch" Grid.Column="1" Width="30" Height="20" CornerRadius="3" BorderThickness="1" />
+            <Button x:Name="EditCustomColorButton" Grid.Column="2" Width="34" Height="28" Padding="7">
+              <Path Stretch="Uniform" Stroke="{DynamicResource ThemeForegroundBrush}" StrokeThickness="1.5"
+                    Data="M1,4 L15,4 M1,8 L15,8 M1,12 L15,12 M5,2 L5,6 M11,6 L11,10 M7,10 L7,14" />
+            </Button>
+          </Grid>
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+            <RadioButton x:Name="AmbientStageOption" GroupName="StageBackground" VerticalAlignment="Center" />
+            <Button x:Name="EditAmbientButton" Grid.Column="1" Width="34" Height="28" Padding="7">
+              <Path Stretch="Uniform" Stroke="{DynamicResource ThemeForegroundBrush}" StrokeThickness="1.5"
+                    Data="M1,4 L15,4 M1,8 L15,8 M1,12 L15,12 M5,2 L5,6 M11,6 L11,10 M7,10 L7,14" />
+            </Button>
+          </Grid>
+          <Expander x:Name="AmbientOptions" Margin="24,0,0,6">
+            <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" RowSpacing="10" Margin="0,8,0,4">
+              <TextBlock x:Name="BrightnessLabel" VerticalAlignment="Center" />
+              <Slider x:Name="BrightnessSlider" Grid.Column="1" MinWidth="180" Minimum="30" Maximum="100" TickFrequency="1" />
+              <TextBlock x:Name="BrightnessValue" Grid.Column="2" Width="50" TextAlignment="Right" VerticalAlignment="Center" />
+              <TextBlock x:Name="SaturationLabel" Grid.Row="1" VerticalAlignment="Center" />
+              <Slider x:Name="SaturationSlider" Grid.Row="1" Grid.Column="1" MinWidth="180" Minimum="0" Maximum="125" TickFrequency="1" />
+              <TextBlock x:Name="SaturationValue" Grid.Row="1" Grid.Column="2" Width="50" TextAlignment="Right" VerticalAlignment="Center" />
+              <TextBlock x:Name="BlurLabel" Grid.Row="2" VerticalAlignment="Center" />
+              <Slider x:Name="BlurSlider" Grid.Row="2" Grid.Column="1" MinWidth="180" Minimum="8" Maximum="32" TickFrequency="1" />
+              <TextBlock x:Name="BlurValue" Grid.Row="2" Grid.Column="2" Width="50" TextAlignment="Right" VerticalAlignment="Center" />
+            </Grid>
+          </Expander>
+          <Separator Margin="0,4" />
+          <TextBlock x:Name="MatteHeading" FontSize="18" FontWeight="SemiBold" />
+          <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+            <CheckBox x:Name="MatteEnabledOption" VerticalAlignment="Center" />
+            <Border x:Name="MatteColorSwatch" Grid.Column="1" Width="30" Height="20" CornerRadius="3" BorderThickness="1" />
+            <Button x:Name="EditMatteColorButton" Grid.Column="2" Width="34" Height="28" Padding="7">
+              <Path Stretch="Uniform" Stroke="{DynamicResource ThemeForegroundBrush}" StrokeThickness="1.5"
+                    Data="M1,4 L15,4 M1,8 L15,8 M1,12 L15,12 M5,2 L5,6 M11,6 L11,10 M7,10 L7,14" />
+            </Button>
+          </Grid>
+        </StackPanel>
+      </ScrollViewer>
+    </TabItem>
+    <TabItem x:Name="ControlsTab">
+      <ScrollViewer>
+        <StackPanel Margin="12,18" Spacing="14">
+          <TextBlock x:Name="ControlsHeading" FontSize="18" FontWeight="SemiBold" />
+          <StackPanel x:Name="ControlsList" Spacing="8" />
+          <TextBlock x:Name="ShortcutValidationText" Foreground="#FFE57373" TextWrapping="Wrap" />
+          <Button x:Name="ResetShortcutsButton" HorizontalAlignment="Left" Margin="0,8,0,0" />
+        </StackPanel>
+      </ScrollViewer>
     </TabItem>
     <TabItem x:Name="AboutTab">
       <StackPanel Margin="12,22" Spacing="10">

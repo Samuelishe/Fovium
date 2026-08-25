@@ -91,6 +91,17 @@ internal sealed class DecodedImage : IRetainedResource
         }
     }
 
+    public bool HasAmbientForBlur(double blur)
+    {
+        lock (_ownershipSync)
+        {
+            return _ambient is not null &&
+                _ambient.TryGetValue(out var ambient) &&
+                ambient is not null &&
+                ambient.Blur.Equals(blur);
+        }
+    }
+
     public RenderLease AcquireRenderLease()
     {
         lock (_ownershipSync)
@@ -113,6 +124,25 @@ internal sealed class DecodedImage : IRetainedResource
             _ambient = new SharedResource<PreparedAmbient>(ambient);
             return true;
         }
+    }
+
+    public bool TrySetAmbient(PreparedAmbient ambient)
+    {
+        ArgumentNullException.ThrowIfNull(ambient);
+        SharedResource<PreparedAmbient>? release;
+        lock (_ownershipSync)
+        {
+            if (_disposed)
+            {
+                return false;
+            }
+
+            release = _ambient;
+            _ambient = new SharedResource<PreparedAmbient>(ambient);
+        }
+
+        release?.ReleaseOwner();
+        return true;
     }
 
     public AmbientLease? TryAcquireAmbient()
@@ -195,6 +225,8 @@ internal sealed class DecodedImage : IRetainedResource
         public PixelSize Size => GetLease().Value.Size;
 
         public long RetainedBytes => GetLease().Value.RetainedBytes;
+
+        public double Blur => GetLease().Value.Blur;
 
         public AmbientLease Acquire() => new(GetLease().Acquire());
 

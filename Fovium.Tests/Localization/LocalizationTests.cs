@@ -69,22 +69,43 @@ public sealed class LocalizationTests
     }
 
     [Theory]
-    [InlineData("en-US", "Stage", "Black", "Neutral", "Ambient", "Ambient + Matte")]
-    [InlineData("ru-RU", "Фон", "Чёрный", "Нейтральный", "Ambient", "Ambient + паспарту")]
-    public void StageCatalogsContainEveryMode(
+    [InlineData("en-US", "Stage", "Black", "Neutral", "Custom", "Ambient", "Matte")]
+    [InlineData("ru-RU", "Фон", "Чёрный", "Нейтральный", "Свой цвет", "Ambient", "Паспарту")]
+    public void StageCatalogsContainEveryBackgroundAndIndependentMatte(
         string cultureName,
         string section,
         string black,
         string neutral,
+        string custom,
         string ambient,
-        string ambientMatte)
+        string matte)
     {
         var localizer = Localizer.Create(CultureInfo.GetCultureInfo(cultureName));
 
         Assert.Equal(section, localizer[UiStrings.SettingsStage]);
         Assert.Equal(black, localizer[UiStrings.StageBlack]);
         Assert.Equal(neutral, localizer[UiStrings.StageNeutral]);
+        Assert.Equal(custom, localizer[UiStrings.StageCustom]);
         Assert.Equal(ambient, localizer[UiStrings.StageAmbient]);
-        Assert.Equal(ambientMatte, localizer[UiStrings.StageAmbientMatte]);
+        Assert.Equal(matte, localizer[UiStrings.StageMatte]);
+    }
+
+    [Theory]
+    [InlineData("en-US", "Controls", "Press a key…", "Unassigned", "Reset shortcuts")]
+    [InlineData("ru-RU", "Управление", "Нажмите клавишу…", "Не назначено", "Сбросить сочетания")]
+    public void ControlsCatalogsContainShortcutInteractionStrings(
+        string cultureName,
+        string controls,
+        string pressKey,
+        string unassigned,
+        string reset)
+    {
+        var localizer = Localizer.Create(CultureInfo.GetCultureInfo(cultureName));
+
+        Assert.Equal(controls, localizer[UiStrings.SettingsControls]);
+        Assert.Equal(pressKey, localizer[UiStrings.ShortcutPressKey]);
+        Assert.Equal(unassigned, localizer[UiStrings.ShortcutUnassigned]);
+        Assert.Equal(reset, localizer[UiStrings.ShortcutReset]);
+        Assert.NotEqual(UiStrings.CommandToggleMatte, localizer[UiStrings.CommandToggleMatte]);
     }
 }

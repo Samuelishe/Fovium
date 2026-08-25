@@ -39,7 +39,10 @@ internal static class StageTestImages
         return new DecodedImage([1, 2, 3], descriptor, bitmap, image);
     }
 
-    public static PreparedAmbient CreateAmbient(int width = 16, int height = 8)
+    public static PreparedAmbient CreateAmbient(
+        int width = 16,
+        int height = 8,
+        double blur = StageDefaults.AmbientBlurSigmaPixels)
     {
         using var bitmap = new SKBitmap(new SKImageInfo(
             width,
@@ -50,6 +53,7 @@ internal static class StageTestImages
         return new PreparedAmbient(
             SKImage.FromBitmap(bitmap),
             new PixelSize(width, height),
+            blur,
             TimeSpan.FromMilliseconds(1));
     }
 }

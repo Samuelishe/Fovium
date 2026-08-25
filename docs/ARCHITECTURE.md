@@ -33,7 +33,8 @@ Use ordinary composition and explicit ownership. Do not use a Service Locator, m
 - The UI/coordinator requests work and publishes the newest valid result; it does not decode JPEGs or perform ICC transforms itself.
 - Platform-specific implementations sit behind narrow boundaries at the edge. Platform details must not leak throughout application code.
 - Settings storage owns typed persisted preferences; the viewer coordinator resolves image-change policy into a `ViewTransfer`. Renderer and viewport math never query settings.
-- Stage policy and asynchronous Ambient preparation are coordinated above rendering. The renderer receives resolved Stage state and geometry; it does not read settings, schedule background work, or modify viewport state.
+- Stage policy and asynchronous Ambient preparation are coordinated above rendering. The renderer receives resolved background/Matte/color-treatment state and geometry; it does not read settings, schedule background work, or modify viewport state.
+- Viewer keys resolve through stable command and project-owned gesture models. The Avalonia key adapter is a narrow boundary; command execution is not a generic application command bus and leaves `Esc` reserved.
 
 Dependencies should point toward small project-owned contracts and pure models only where substitution, resource ownership, or test isolation creates a real need. Do not add interfaces speculatively.
 
@@ -53,4 +54,4 @@ Keeping these concepts distinct allows later monitor-aware transforms, alternati
 
 ## Concurrency and lifetime
 
-Long-running operations receive cancellation and an explicit session/generation identity. Reference-counted cache/display/render leases let eviction or replacement release ownership while a retained Avalonia draw operation keeps native photo and optional Ambient `SKImage` instances alive. R3 attaches the optional prepared Ambient to the owning decoded image and refreshes that entry's cost in the same byte-budget LRU; eviction, new-sequence clear, stale completion, and shutdown therefore share deterministic ownership. Latest-wins publication and resource budgets are specified in [`PERFORMANCE.md`](PERFORMANCE.md); coding rules are in [`CODING-GUIDELINES.md`](CODING-GUIDELINES.md).
+Long-running operations receive cancellation and an explicit session/generation identity. Reference-counted cache/display/render leases let eviction or replacement release ownership while a retained Avalonia draw operation keeps native photo and optional Ambient `SKImage` instances alive. The optional blur-prepared Ambient is keyed by source identity plus blur, attached to the owning decoded image, and charged to the same byte-budget LRU. Brightness/saturation and Matte changes do not create new native images. Eviction, blur replacement, new-sequence clear, stale completion, and shutdown therefore share deterministic ownership. Latest-wins publication and resource budgets are specified in [`PERFORMANCE.md`](PERFORMANCE.md); coding rules are in [`CODING-GUIDELINES.md`](CODING-GUIDELINES.md).

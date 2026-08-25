@@ -20,16 +20,16 @@ internal sealed class StagePresentation : IDisposable
     private DecodedImage.AmbientLease? _ambient;
 
     public StagePresentation(
-        StageMode mode,
+        StageSettings stage,
         long? imageIdentity,
         DecodedImage.AmbientLease? ambient)
     {
-        Mode = mode;
+        Stage = stage;
         ImageIdentity = imageIdentity;
         _ambient = ambient;
     }
 
-    public StageMode Mode { get; }
+    public StageSettings Stage { get; }
 
     public long? ImageIdentity { get; }
 
@@ -42,6 +42,8 @@ internal sealed class StagePresentation : IDisposable
 
 internal sealed class AmbientStageCoordinator : IAsyncDisposable
 {
+    internal static readonly TimeSpan BlurDebounce = TimeSpan.FromMilliseconds(150);
+
     private readonly object _sync = new();
     private readonly IAmbientImageRepository _repository;
     private readonly IAmbientStagePreparer _preparer;
@@ -51,7 +53,8 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
     private string? _currentPath;
     private long? _currentIdentity;
     private long _sourceGeneration;
-    private StageMode _mode;
+    private long? _transitionalAmbientIdentity;
+    private StageSettings _stage;
     private AmbientStageDiagnostic? _lastDiagnostic;
     private long _preparedCount;
     private long _scheduledWorkCount;
@@ -65,11 +68,11 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
     public AmbientStageCoordinator(
         IAmbientImageRepository repository,
         IAmbientStagePreparer preparer,
-        StageMode initialMode)
+        StageSettings initialStage)
     {
         _repository = repository;
         _preparer = preparer;
-        _mode = initialMode;
+        _stage = initialStage.Normalize();
     }
 
     public event EventHandler? PresentationChanged;
@@ -98,6 +101,7 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         long generation;
+        double blur;
         CancellationToken token;
         bool shouldPrepare;
         lock (_sync)
@@ -106,15 +110,17 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
             CancelWorkUnsafe();
             _currentPath = path;
             _currentIdentity = imageIdentity;
+            _transitionalAmbientIdentity = null;
             generation = ++_sourceGeneration;
-            shouldPrepare = _mode.RequiresAmbient();
+            shouldPrepare = _stage.BackgroundMode.RequiresAmbient();
+            blur = _stage.AmbientBlur;
             token = shouldPrepare ? CreateWorkTokenUnsafe() : CancellationToken.None;
         }
 
         NotifyPresentationChanged();
         if (shouldPrepare)
         {
-            StartWork(generation, path, imageIdentity, token);
+            StartWork(generation, path, imageIdentity, blur, debounce: false, token);
         }
     }
 
@@ -126,49 +132,64 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
             CancelWorkUnsafe();
             _currentPath = null;
             _currentIdentity = null;
+            _transitionalAmbientIdentity = null;
             _sourceGeneration++;
         }
 
         NotifyPresentationChanged();
     }
 
-    public void SetMode(StageMode mode)
+    public void SetStage(StageSettings stage)
     {
+        ArgumentNullException.ThrowIfNull(stage);
+        var normalized = stage.Normalize();
         string? path;
         long? identity;
         long generation = 0;
         CancellationToken token = default;
         var shouldStart = false;
+        var debounce = false;
         lock (_sync)
         {
             ThrowIfDisposed();
-            if (_mode == mode)
+            if (_stage == normalized)
             {
                 return;
             }
 
-            var previouslyRequiredAmbient = _mode.RequiresAmbient();
-            _mode = mode;
+            var previouslyRequiredAmbient = _stage.BackgroundMode.RequiresAmbient();
+            var nowRequiresAmbient = normalized.BackgroundMode.RequiresAmbient();
+            var blurChanged = !_stage.AmbientBlur.Equals(normalized.AmbientBlur);
+            _stage = normalized;
             path = _currentPath;
             identity = _currentIdentity;
-            if (!mode.RequiresAmbient())
+            if (!nowRequiresAmbient)
             {
                 CancelWorkUnsafe();
                 _sourceGeneration++;
+                _transitionalAmbientIdentity = null;
             }
-            else if (!previouslyRequiredAmbient && path is not null && identity is not null)
+            else if ((!previouslyRequiredAmbient || blurChanged) && path is not null && identity is not null)
             {
                 CancelWorkUnsafe();
                 generation = ++_sourceGeneration;
+                _transitionalAmbientIdentity = blurChanged ? identity : null;
                 token = CreateWorkTokenUnsafe();
                 shouldStart = true;
+                debounce = previouslyRequiredAmbient && blurChanged;
             }
         }
 
         NotifyPresentationChanged();
         if (shouldStart)
         {
-            StartWork(generation, path!, identity!.Value, token);
+            StartWork(
+                generation,
+                path!,
+                identity!.Value,
+                normalized.AmbientBlur,
+                debounce,
+                token);
         }
     }
 
@@ -176,34 +197,41 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
     {
         string? path;
         long? identity;
-        StageMode mode;
+        StageSettings stage;
         lock (_sync)
         {
-            mode = _mode;
+            stage = _stage;
             path = _currentPath;
             identity = _currentIdentity;
         }
 
-        if (!mode.RequiresAmbient() || path is null || identity is null ||
+        if (!stage.BackgroundMode.RequiresAmbient() || path is null || identity is null ||
             !_repository.TryAcquire(path, out var imageLease))
         {
-            return new StagePresentation(mode, identity, null);
+            return new StagePresentation(stage, identity, null);
         }
 
         using (imageLease)
         {
             if (imageLease!.Value.Identity != identity.Value)
             {
-                return new StagePresentation(mode, identity, null);
+                return new StagePresentation(stage, identity, null);
             }
 
             var ambient = imageLease.Value.TryAcquireAmbient();
+            if (ambient is not null &&
+                !ambient.Blur.Equals(stage.AmbientBlur) &&
+                identity != _transitionalAmbientIdentity)
+            {
+                ambient.Dispose();
+                ambient = null;
+            }
             if (ambient is not null)
             {
                 Interlocked.Increment(ref _cacheHitCount);
             }
 
-            return new StagePresentation(mode, identity, ambient);
+            return new StagePresentation(stage, identity, ambient);
         }
     }
 
@@ -258,6 +286,8 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
         long generation,
         string path,
         long identity,
+        double blur,
+        bool debounce,
         CancellationToken cancellationToken)
     {
         Task task;
@@ -273,6 +303,8 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
                     generation,
                     path,
                     identity,
+                    blur,
+                    debounce,
                     cancellationToken),
                 CancellationToken.None);
             _runningTasks.Add(task);
@@ -296,18 +328,24 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
         long generation,
         string path,
         long identity,
+        double blur,
+        bool debounce,
         CancellationToken cancellationToken)
     {
         try
         {
-            // Image publication and ordinary adjacent decode always outrank decorative work.
+            if (debounce)
+            {
+                await Task.Delay(BlurDebounce, cancellationToken).ConfigureAwait(false);
+            }
+
             await _repository.WaitForAdjacentPreloadAsync(cancellationToken).ConfigureAwait(false);
-            if (!IsAuthorized(generation, path, identity))
+            if (!IsAuthorized(generation, path, identity, blur))
             {
                 return;
             }
 
-            PrepareOne(path, identity, generation, publishIfCurrent: true, cancellationToken);
+            PrepareOne(path, identity, generation, blur, publishIfCurrent: true, cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
             var adjacent = _repository.AcquireAdjacent();
             try
@@ -319,6 +357,7 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
                         candidate.Path,
                         candidate.Resource.Value.Identity,
                         generation,
+                        blur,
                         publishIfCurrent: false,
                         cancellationToken,
                         candidate.Resource);
@@ -340,8 +379,9 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
             Interlocked.Increment(ref _preparationFailureCount);
             lock (_sync)
             {
+                _transitionalAmbientIdentity = null;
                 _lastDiagnostic = new AmbientStageDiagnostic(
-                    "Ambient preparation failed; Black fallback remains active.",
+                    "Ambient preparation failed; a matching previous Ambient or Black fallback remains active.",
                     exception);
             }
 
@@ -354,6 +394,7 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
         string path,
         long identity,
         long generation,
+        double blur,
         bool publishIfCurrent,
         CancellationToken cancellationToken,
         SharedResourceLease<DecodedImage>? existingLease = null)
@@ -368,9 +409,9 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
         try
         {
             var image = imageLease!.Value;
-            if (image.Identity != identity || image.HasAmbient)
+            if (image.Identity != identity || image.HasAmbientForBlur(blur))
             {
-                if (publishIfCurrent && image.Identity == identity && image.HasAmbient)
+                if (publishIfCurrent && image.Identity == identity && image.HasAmbientForBlur(blur))
                 {
                     NotifyPresentationChanged();
                 }
@@ -378,15 +419,15 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
                 return;
             }
 
-            var prepared = _preparer.Prepare(image, cancellationToken);
-            if (!IsAuthorized(generation) || !image.TryAttachAmbient(prepared))
+            var prepared = _preparer.Prepare(image, blur, cancellationToken);
+            if (!IsAuthorized(generation, blur) || !image.TrySetAmbient(prepared))
             {
                 prepared.Dispose();
                 Interlocked.Increment(ref _staleDisposalCount);
                 return;
             }
 
-            if (!IsAuthorized(generation) || !_repository.RefreshRetainedCost(path, image))
+            if (!IsAuthorized(generation, blur) || !_repository.RefreshRetainedCost(path, image))
             {
                 image.RemoveAmbient(prepared);
                 Interlocked.Increment(ref _staleDisposalCount);
@@ -397,10 +438,18 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
             Interlocked.Add(ref _preparedRetainedBytes, prepared.RetainedBytes);
             Interlocked.Exchange(ref _lastPreparationTicks, prepared.PreparationDuration.Ticks);
             Debug.WriteLine(
-                $"Fovium Ambient prepared {prepared.Size.Width}x{prepared.Size.Height}, " +
+                $"Fovium Ambient prepared {prepared.Size.Width}x{prepared.Size.Height}, blur {blur:F1}, " +
                 $"{prepared.RetainedBytes} bytes in {prepared.PreparationDuration.TotalMilliseconds:F2} ms.");
-            if (publishIfCurrent && IsAuthorized(generation, path, identity))
+            if (publishIfCurrent && IsAuthorized(generation, path, identity, blur))
             {
+                lock (_sync)
+                {
+                    if (_currentIdentity == identity)
+                    {
+                        _transitionalAmbientIdentity = null;
+                    }
+                }
+
                 NotifyPresentationChanged();
             }
         }
@@ -413,21 +462,25 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
         }
     }
 
-    private bool IsAuthorized(long generation)
-    {
-        lock (_sync)
-        {
-            return !_disposed && generation == _sourceGeneration && _mode.RequiresAmbient();
-        }
-    }
-
-    private bool IsAuthorized(long generation, string path, long identity)
+    private bool IsAuthorized(long generation, double blur)
     {
         lock (_sync)
         {
             return !_disposed &&
                 generation == _sourceGeneration &&
-                _mode.RequiresAmbient() &&
+                _stage.BackgroundMode.RequiresAmbient() &&
+                _stage.AmbientBlur.Equals(blur);
+        }
+    }
+
+    private bool IsAuthorized(long generation, string path, long identity, double blur)
+    {
+        lock (_sync)
+        {
+            return !_disposed &&
+                generation == _sourceGeneration &&
+                _stage.BackgroundMode.RequiresAmbient() &&
+                _stage.AmbientBlur.Equals(blur) &&
                 string.Equals(path, _currentPath, StringComparison.Ordinal) &&
                 identity == _currentIdentity;
         }

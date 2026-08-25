@@ -1,3 +1,4 @@
+using Fovium.Input;
 using Fovium.Settings;
 using Fovium.Stage;
 
@@ -11,11 +12,17 @@ public sealed class JsonSettingsStoreTests : IDisposable
         Guid.NewGuid().ToString("N"));
 
     [Fact]
-    public void DefaultsUseSchemaVersionOneKeepCurrentScaleAndBlackStage()
+    public void DefaultsUseSchemaVersionTwoAndCanonicalValues()
     {
-        Assert.Equal(1, FoviumSettings.Default.SchemaVersion);
+        Assert.Equal(2, FoviumSettings.Default.SchemaVersion);
         Assert.Equal(ImageChangeViewPolicy.KeepCurrentScale, FoviumSettings.Default.ImageChangeViewPolicy);
-        Assert.Equal(StageMode.Black, FoviumSettings.Default.StageMode);
+        Assert.Equal(StageBackgroundMode.Black, FoviumSettings.Default.Stage.BackgroundMode);
+        Assert.False(FoviumSettings.Default.Stage.MatteEnabled);
+        Assert.Equal(StageDefaults.CustomBackgroundColor, FoviumSettings.Default.Stage.CustomBackgroundColor);
+        Assert.Equal(StageDefaults.MatteColor, FoviumSettings.Default.Stage.MatteColor);
+        Assert.Equal(StageDefaults.AmbientBrightness, FoviumSettings.Default.Stage.AmbientBrightness);
+        Assert.Equal(StageDefaults.AmbientSaturation, FoviumSettings.Default.Stage.AmbientSaturation);
+        Assert.Equal(StageDefaults.AmbientBlurSigmaPixels, FoviumSettings.Default.Stage.AmbientBlur);
     }
 
     [Fact]
@@ -25,69 +32,162 @@ public sealed class JsonSettingsStoreTests : IDisposable
 
         Assert.Equal(FoviumSettings.Default, result.Settings);
         Assert.Null(result.Diagnostic);
+        Assert.False(result.RequiresSave);
     }
 
     [Fact]
-    public async Task SaveLoadRoundTripPersistsPreference()
+    public Task V1BlackMigratesToBlackWithoutMatte() =>
+        AssertV1MigrationAsync("Black", StageBackgroundMode.Black, expectedMatte: false);
+
+    [Fact]
+    public Task V1NeutralMigratesToNeutralWithoutMatte() =>
+        AssertV1MigrationAsync("Neutral", StageBackgroundMode.Neutral, expectedMatte: false);
+
+    [Fact]
+    public Task V1AmbientMigratesToAmbientWithoutMatte() =>
+        AssertV1MigrationAsync("Ambient", StageBackgroundMode.Ambient, expectedMatte: false);
+
+    [Fact]
+    public Task V1AmbientMatteMigratesToAmbientWithMatte() =>
+        AssertV1MigrationAsync("AmbientMatte", StageBackgroundMode.Ambient, expectedMatte: true);
+
+    [Fact]
+    public async Task V1MigrationPreservesImageChangeViewPolicy()
+    {
+        await WriteAsync(
+            """
+            { "schemaVersion": 1, "imageChangeViewPolicy": "KeepCurrentScale", "stageMode": "AmbientMatte" }
+            """);
+
+        var result = await CreateStore().LoadAsync(CancellationToken.None);
+
+        Assert.Equal(ImageChangeViewPolicy.KeepCurrentScale, result.Settings.ImageChangeViewPolicy);
+        Assert.Equal(StageBackgroundMode.Ambient, result.Settings.Stage.BackgroundMode);
+        Assert.True(result.Settings.Stage.MatteEnabled);
+    }
+
+    [Fact]
+    public async Task V2RoundTripPreservesStageCustomizationAndShortcuts()
     {
         var store = CreateStore();
         var expected = FoviumSettings.Default with
         {
             ImageChangeViewPolicy = ImageChangeViewPolicy.FitEachImage,
-            StageMode = StageMode.AmbientMatte,
+            Stage = StageSettings.Default with
+            {
+                BackgroundMode = StageBackgroundMode.Custom,
+                MatteEnabled = true,
+                CustomBackgroundColor = new StageColor(0x12, 0x34, 0x56),
+                MatteColor = new StageColor(0x65, 0x43, 0x21),
+                AmbientBrightness = 0.72,
+                AmbientSaturation = 1.1,
+                AmbientBlur = 24,
+            },
+            Shortcuts = ShortcutSettings.Default.WithBinding(
+                ViewerCommand.ToggleMatte,
+                new ShortcutGesture("K", ShortcutModifiers.Control)),
         };
 
         await store.SaveAsync(expected, CancellationToken.None);
+        var serialized = await File.ReadAllTextAsync(Path.Combine(_directory, "settings.json"));
         var result = await store.LoadAsync(CancellationToken.None);
 
-        Assert.Equal(expected, result.Settings);
+        Assert.Equal(expected.SchemaVersion, result.Settings.SchemaVersion);
+        Assert.Equal(expected.ImageChangeViewPolicy, result.Settings.ImageChangeViewPolicy);
+        Assert.Equal(expected.Stage, result.Settings.Stage);
+        Assert.Equal("#123456", result.Settings.Stage.CustomBackgroundColor.ToHex());
+        Assert.Equal("#654321", result.Settings.Stage.MatteColor.ToHex());
+        Assert.Equal(
+            new ShortcutGesture("K", ShortcutModifiers.Control),
+            result.Settings.Shortcuts.Get(ViewerCommand.ToggleMatte));
+        Assert.DoesNotContain("isValid", serialized, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("isReserved", serialized, StringComparison.OrdinalIgnoreCase);
         Assert.Null(result.Diagnostic);
     }
 
     [Fact]
-    public async Task ExistingR2SettingsWithoutStageLoadAsBlack()
+    public async Task UnknownFutureSettingsAndShortcutEntriesAreTolerated()
     {
-        Directory.CreateDirectory(_directory);
-        await File.WriteAllTextAsync(
-            Path.Combine(_directory, "settings.json"),
+        await WriteAsync(
             """
-            { "schemaVersion": 1, "imageChangeViewPolicy": "FitEachImage" }
+            {
+              "schemaVersion": 2,
+              "imageChangeViewPolicy": "FitEachImage",
+              "stage": { "backgroundMode": "Ambient", "futureStageValue": 42 },
+              "shortcuts": {
+                "bindings": {
+                  "viewer.previous": { "key": "Left", "modifiers": "None" },
+                  "viewer.future": { "key": "F12", "modifiers": "None" }
+                },
+                "futureShortcutValue": true
+              },
+              "futureRootValue": "ignored"
+            }
             """);
 
         var result = await CreateStore().LoadAsync(CancellationToken.None);
 
         Assert.Equal(ImageChangeViewPolicy.FitEachImage, result.Settings.ImageChangeViewPolicy);
-        Assert.Equal(StageMode.Black, result.Settings.StageMode);
+        Assert.Equal(StageBackgroundMode.Ambient, result.Settings.Stage.BackgroundMode);
+        Assert.Equal(new ShortcutGesture("Left"), result.Settings.Shortcuts.Get(ViewerCommand.PreviousImage));
+        Assert.DoesNotContain("viewer.future", result.Settings.Shortcuts.Bindings.Keys);
+        Assert.Null(result.Diagnostic);
+    }
+
+    [Fact]
+    public async Task NullNestedObjectsAndUnknownEnumsNormalizeToSafeDefaults()
+    {
+        await WriteAsync(
+            """
+            {
+              "schemaVersion": 2,
+              "imageChangeViewPolicy": 999,
+              "stage": null,
+              "shortcuts": null
+            }
+            """);
+
+        var result = await CreateStore().LoadAsync(CancellationToken.None);
+
+        Assert.Equal(ImageChangeViewPolicy.KeepCurrentScale, result.Settings.ImageChangeViewPolicy);
+        Assert.Equal(StageSettings.Default, result.Settings.Stage);
+        Assert.Equal(
+            ShortcutSettings.Default.Get(ViewerCommand.ToggleMatte),
+            result.Settings.Shortcuts.Get(ViewerCommand.ToggleMatte));
+        Assert.Null(result.Diagnostic);
+    }
+
+    [Fact]
+    public async Task NullShortcutBindingMapRecoversToCanonicalDefaults()
+    {
+        await WriteAsync(
+            """
+            {
+              "schemaVersion": 2,
+              "shortcuts": { "bindings": null }
+            }
+            """);
+
+        var result = await CreateStore().LoadAsync(CancellationToken.None);
+
+        Assert.Equal(
+            new ShortcutGesture("Left"),
+            result.Settings.Shortcuts.Get(ViewerCommand.PreviousImage));
+        Assert.Equal(
+            new ShortcutGesture("M"),
+            result.Settings.Shortcuts.Get(ViewerCommand.ToggleMatte));
         Assert.Null(result.Diagnostic);
     }
 
     [Fact]
     public async Task MalformedJsonRecoversToDefaults()
     {
-        Directory.CreateDirectory(_directory);
-        await File.WriteAllTextAsync(Path.Combine(_directory, "settings.json"), "{not-json");
+        await WriteAsync("{not-json");
 
         var result = await CreateStore().LoadAsync(CancellationToken.None);
 
         Assert.Equal(FoviumSettings.Default, result.Settings);
         Assert.Equal(SettingsDiagnosticKind.Malformed, result.Diagnostic?.Kind);
-    }
-
-    [Fact]
-    public async Task UnknownPropertiesAreTolerated()
-    {
-        Directory.CreateDirectory(_directory);
-        await File.WriteAllTextAsync(
-            Path.Combine(_directory, "settings.json"),
-            """
-            { "schemaVersion": 1, "imageChangeViewPolicy": "FitEachImage", "stageMode": "Ambient", "futureValue": 42 }
-            """);
-
-        var result = await CreateStore().LoadAsync(CancellationToken.None);
-
-        Assert.Equal(ImageChangeViewPolicy.FitEachImage, result.Settings.ImageChangeViewPolicy);
-        Assert.Equal(StageMode.Ambient, result.Settings.StageMode);
-        Assert.Null(result.Diagnostic);
     }
 
     public void Dispose()
@@ -98,6 +198,31 @@ public sealed class JsonSettingsStoreTests : IDisposable
         }
     }
 
+    private Task WriteAsync(string contents)
+    {
+        Directory.CreateDirectory(_directory);
+        return File.WriteAllTextAsync(Path.Combine(_directory, "settings.json"), contents);
+    }
+
     private JsonSettingsStore CreateStore() =>
         new(Path.Combine(_directory, "settings.json"));
+
+    private async Task AssertV1MigrationAsync(
+        string legacyMode,
+        StageBackgroundMode expectedBackground,
+        bool expectedMatte)
+    {
+        await WriteAsync($$"""
+            { "schemaVersion": 1, "imageChangeViewPolicy": "FitEachImage", "stageMode": "{{legacyMode}}" }
+            """);
+
+        var result = await CreateStore().LoadAsync(CancellationToken.None);
+
+        Assert.Equal(2, result.Settings.SchemaVersion);
+        Assert.Equal(expectedBackground, result.Settings.Stage.BackgroundMode);
+        Assert.Equal(expectedMatte, result.Settings.Stage.MatteEnabled);
+        Assert.Equal(ImageChangeViewPolicy.FitEachImage, result.Settings.ImageChangeViewPolicy);
+        Assert.True(result.RequiresSave);
+        Assert.Null(result.Diagnostic);
+    }
 }

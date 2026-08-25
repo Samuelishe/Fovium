@@ -19,12 +19,16 @@ Temporary overlays are acceptable only in response to a direct action and should
 | Left drag | Pan when the image is zoomed beyond the viewport |
 | Right click | Open the context menu |
 | Double click | Toggle Fit and 100% |
-| `Left Arrow` | Navigate to the previous viable image |
-| `Right Arrow` | Navigate to the next viable image |
-| `F11` | Toggle fullscreen |
+| `Left Arrow` | Navigate to the previous viable image (default binding) |
+| `Right Arrow` | Navigate to the next viable image (default binding) |
+| `+` / `-` | Zoom one normal step around the viewport point of interest (default bindings) |
+| `0` | Fit (default binding) |
+| `1` | Photographic 100% (default binding) |
+| `M` | Toggle Matte without changing the Stage background (default binding) |
+| `F11` | Toggle fullscreen (default binding) |
 | `Esc` | Leave fullscreen; otherwise close the viewer |
 
-Fullscreen preserves the same zoom and pan behavior as a normal window.
+The effective bindings except `Esc` are user-configurable in Settings → Controls. `Esc` is reserved and cancels shortcut capture before applying its fullscreen/close behavior. Fullscreen preserves the same zoom and pan behavior as a normal window. The command model is ready to distinguish future press/hold behavior, but Peek/Blink are not implemented.
 
 ## View behavior
 
@@ -50,7 +54,7 @@ A future split between basic photo information and advanced metadata is acceptab
 
 A complete metadata viewer is acceptable when explicitly opened; it must not reserve permanent viewport space.
 
-Stage mode selection is available from both the context menu and Settings. Black remains default; Neutral, Ambient, and Ambient + Matte apply immediately without changing Fit, physical scale, pan, or point of interest. Ambient remains fixed to the full photograph rather than following viewport zoom/pan. Stage definitions belong to [`PROJECT-VISION.md`](PROJECT-VISION.md).
+Stage background selection is available from both the context menu and Settings. Black remains default; Neutral, Custom, and Ambient apply immediately. Matte is an independent modifier over every background. Neither choice changes Fit, physical scale, pan, or point of interest. Ambient remains fixed to the full photograph rather than following viewport zoom/pan. Stage definitions belong to [`PROJECT-VISION.md`](PROJECT-VISION.md).
 
 ## Settings principles
 

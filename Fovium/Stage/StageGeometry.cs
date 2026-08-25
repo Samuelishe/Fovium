@@ -12,16 +12,17 @@ internal readonly record struct StageRenderGeometry(
 internal static class StageGeometry
 {
     public static StageRenderGeometry CalculateRenderGeometry(
-        StageMode mode,
+        StageSettings stage,
         RectD photoDestination,
         PixelSize? ambientSize,
         LogicalSize viewport,
         double renderScaling)
     {
-        RectD? ambient = mode.RequiresAmbient() && ambientSize is { IsValid: true } size
+        ArgumentNullException.ThrowIfNull(stage);
+        RectD? ambient = stage.BackgroundMode.RequiresAmbient() && ambientSize is { IsValid: true } size
             ? CalculateCover(size, viewport)
             : null;
-        RectD? matte = mode == StageMode.AmbientMatte
+        RectD? matte = stage.MatteEnabled
             ? CalculateMatte(photoDestination, viewport, renderScaling).MatteDestination
             : null;
         return new StageRenderGeometry(photoDestination, ambient, matte);

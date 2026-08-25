@@ -1,5 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Fovium.Input;
+using Fovium.Stage;
 
 namespace Fovium.Settings;
 
@@ -18,7 +20,8 @@ internal sealed record SettingsDiagnostic(
 
 internal sealed record SettingsLoadResult(
     FoviumSettings Settings,
-    SettingsDiagnostic? Diagnostic);
+    SettingsDiagnostic? Diagnostic,
+    bool RequiresSave = false);
 
 internal interface ISettingsStore
 {
@@ -50,25 +53,34 @@ internal sealed class JsonSettingsStore(string path) : ISettingsStore
                 FileShare.Read,
                 4096,
                 FileOptions.Asynchronous | FileOptions.SequentialScan);
-            var settings = await JsonSerializer.DeserializeAsync<FoviumSettings>(
+            using var document = await JsonDocument.ParseAsync(
                 stream,
-                SerializerOptions,
-                cancellationToken).ConfigureAwait(false);
-            if (settings is null)
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+            if (!document.RootElement.TryGetProperty("schemaVersion", out var schemaElement) ||
+                !schemaElement.TryGetInt32(out var schemaVersion))
             {
                 return Defaults(
                     SettingsDiagnosticKind.Malformed,
-                    "The settings document is empty.");
+                    "The settings document has no valid schema version.");
             }
 
-            if (settings.SchemaVersion != FoviumSettings.CurrentSchemaVersion)
+            if (schemaVersion == 1)
+            {
+                var legacy = document.Deserialize<LegacyV1Settings>(SerializerOptions)
+                    ?? throw new JsonException("The schema-v1 settings document is empty.");
+                return new SettingsLoadResult(MigrateV1(legacy), null, RequiresSave: true);
+            }
+
+            if (schemaVersion != FoviumSettings.CurrentSchemaVersion)
             {
                 return Defaults(
                     SettingsDiagnosticKind.UnsupportedSchema,
-                    $"Unsupported settings schema version: {settings.SchemaVersion}.");
+                    $"Unsupported settings schema version: {schemaVersion}.");
             }
 
-            return new SettingsLoadResult(settings, null);
+            var settings = document.Deserialize<FoviumSettings>(SerializerOptions)
+                ?? throw new JsonException("The settings document is empty.");
+            return new SettingsLoadResult(settings.Normalize(), null);
         }
         catch (FileNotFoundException)
         {
@@ -142,4 +154,50 @@ internal sealed class JsonSettingsStore(string path) : ISettingsStore
         string message,
         Exception? exception = null) =>
         new(FoviumSettings.Default, new SettingsDiagnostic(kind, message, exception));
+
+    private static FoviumSettings MigrateV1(LegacyV1Settings legacy)
+    {
+        var stage = legacy.StageMode switch
+        {
+            LegacyStageMode.Black => StageSettings.Default,
+            LegacyStageMode.Neutral => StageSettings.Default with
+            {
+                BackgroundMode = StageBackgroundMode.Neutral,
+            },
+            LegacyStageMode.Ambient => StageSettings.Default with
+            {
+                BackgroundMode = StageBackgroundMode.Ambient,
+            },
+            LegacyStageMode.AmbientMatte => StageSettings.Default with
+            {
+                BackgroundMode = StageBackgroundMode.Ambient,
+                MatteEnabled = true,
+            },
+            _ => StageSettings.Default,
+        };
+        return new FoviumSettings
+        {
+            ImageChangeViewPolicy = legacy.ImageChangeViewPolicy,
+            Stage = stage,
+            Shortcuts = ShortcutSettings.Default,
+        }.Normalize();
+    }
+
+    private enum LegacyStageMode
+    {
+        Black,
+        Neutral,
+        Ambient,
+        AmbientMatte,
+    }
+
+    private sealed record LegacyV1Settings
+    {
+        public int SchemaVersion { get; init; } = 1;
+
+        public ImageChangeViewPolicy ImageChangeViewPolicy { get; init; } =
+            ImageChangeViewPolicy.KeepCurrentScale;
+
+        public LegacyStageMode StageMode { get; init; } = LegacyStageMode.Black;
+    }
 }

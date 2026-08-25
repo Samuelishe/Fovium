@@ -7,14 +7,24 @@ namespace Fovium.Stage;
 
 internal interface IAmbientStagePreparer
 {
-    PreparedAmbient Prepare(DecodedImage image, CancellationToken cancellationToken);
+    PreparedAmbient Prepare(DecodedImage image, double blur, CancellationToken cancellationToken);
 }
 
 internal sealed class AmbientStagePreparer : IAmbientStagePreparer
 {
-    public PreparedAmbient Prepare(DecodedImage image, CancellationToken cancellationToken)
+    public PreparedAmbient Prepare(
+        DecodedImage image,
+        double blur,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(image);
+        if (!double.IsFinite(blur) ||
+            blur < StageDefaults.AmbientBlurMinimum ||
+            blur > StageDefaults.AmbientBlurMaximum)
+        {
+            throw new ArgumentOutOfRangeException(nameof(blur));
+        }
+
         cancellationToken.ThrowIfCancellationRequested();
         var stopwatch = Stopwatch.StartNew();
         var targetSize = CalculateTargetSize(
@@ -47,10 +57,9 @@ internal sealed class AmbientStagePreparer : IAmbientStagePreparer
         {
             IsAntialias = false,
             ImageFilter = SKImageFilter.CreateBlur(
-                StageDefaults.AmbientBlurSigmaPixels,
-                StageDefaults.AmbientBlurSigmaPixels,
+                (float)blur,
+                (float)blur,
                 SKShaderTileMode.Clamp),
-            ColorFilter = SKColorFilter.CreateColorMatrix(CreateColorMatrix()),
         };
         var bounds = new SKRect(0, 0, targetSize.Width, targetSize.Height);
         outputSurface.Canvas.DrawImage(
@@ -61,7 +70,7 @@ internal sealed class AmbientStagePreparer : IAmbientStagePreparer
             paint);
         outputSurface.Canvas.Flush();
         cancellationToken.ThrowIfCancellationRequested();
-        return new PreparedAmbient(outputSurface.Snapshot(), targetSize, stopwatch.Elapsed);
+        return new PreparedAmbient(outputSurface.Snapshot(), targetSize, blur, stopwatch.Elapsed);
     }
 
     public static PixelSize CalculateTargetSize(PixelSize orientedSize, int longEdgePixels)
@@ -111,36 +120,4 @@ internal sealed class AmbientStagePreparer : IAmbientStagePreparer
         canvas.Flush();
     }
 
-    private static float[] CreateColorMatrix()
-    {
-        const float redLuminance = 0.2126f;
-        const float greenLuminance = 0.7152f;
-        const float blueLuminance = 0.0722f;
-        var saturation = StageDefaults.AmbientSaturation;
-        var inverseSaturation = 1 - saturation;
-        var brightness = StageDefaults.AmbientBrightness;
-        return
-        [
-            brightness * (redLuminance * inverseSaturation + saturation),
-            brightness * greenLuminance * inverseSaturation,
-            brightness * blueLuminance * inverseSaturation,
-            0,
-            0,
-            brightness * redLuminance * inverseSaturation,
-            brightness * (greenLuminance * inverseSaturation + saturation),
-            brightness * blueLuminance * inverseSaturation,
-            0,
-            0,
-            brightness * redLuminance * inverseSaturation,
-            brightness * greenLuminance * inverseSaturation,
-            brightness * (blueLuminance * inverseSaturation + saturation),
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-        ];
-    }
 }

@@ -1,20 +1,25 @@
 using System.Diagnostics;
+using Fovium.Input;
+using Fovium.Stage;
 
 namespace Fovium.Settings;
-
-using Fovium.Stage;
 
 internal sealed class SettingsChangedEventArgs(FoviumSettings settings) : EventArgs
 {
     public FoviumSettings Settings { get; } = settings;
 }
 
-internal sealed class SettingsService(ISettingsStore store)
+internal sealed class SettingsService(ISettingsStore store) : IDisposable
 {
+    private static readonly TimeSpan PersistenceDebounce = TimeSpan.FromMilliseconds(150);
     private readonly object _stateSync = new();
+    private readonly object _persistenceSync = new();
     private readonly SemaphoreSlim _persistenceGate = new(1, 1);
     private FoviumSettings _current = FoviumSettings.Default;
     private SettingsDiagnostic? _lastDiagnostic;
+    private CancellationTokenSource? _pendingPersistenceCancellation;
+    private Task _pendingPersistence = Task.CompletedTask;
+    private bool _disposed;
 
     public event EventHandler<SettingsChangedEventArgs>? SettingsChanged;
 
@@ -45,65 +50,144 @@ internal sealed class SettingsService(ISettingsStore store)
         var result = await store.LoadAsync(cancellationToken).ConfigureAwait(false);
         lock (_stateSync)
         {
-            _current = result.Settings;
+            _current = result.Settings.Normalize();
             _lastDiagnostic = result.Diagnostic;
         }
 
         TraceDiagnostic(result.Diagnostic);
-        SettingsChanged?.Invoke(this, new SettingsChangedEventArgs(result.Settings));
+        SettingsChanged?.Invoke(this, new SettingsChangedEventArgs(Current));
+        if (result.RequiresSave)
+        {
+            await SchedulePersistence(cancellationToken).ConfigureAwait(false);
+        }
     }
 
     public Task SetImageChangeViewPolicyAsync(
         ImageChangeViewPolicy policy,
+        CancellationToken cancellationToken = default) =>
+        UpdateAsync(
+            settings => settings.ImageChangeViewPolicy == policy
+                ? settings
+                : settings with { ImageChangeViewPolicy = policy },
+            cancellationToken);
+
+    public Task SetStageAsync(
+        StageSettings stage,
         CancellationToken cancellationToken = default)
     {
-        FoviumSettings snapshot;
-        lock (_stateSync)
-        {
-            if (_current.ImageChangeViewPolicy == policy)
-            {
-                return Task.CompletedTask;
-            }
-
-            snapshot = _current with { ImageChangeViewPolicy = policy };
-            _current = snapshot;
-        }
-
-        SettingsChanged?.Invoke(this, new SettingsChangedEventArgs(snapshot));
-        return PersistAsync(cancellationToken);
+        ArgumentNullException.ThrowIfNull(stage);
+        var normalized = stage.Normalize();
+        return UpdateAsync(
+            settings => settings.Stage == normalized
+                ? settings
+                : settings with { Stage = normalized },
+            cancellationToken);
     }
 
-    public Task SetStageModeAsync(
-        StageMode mode,
+    public Task ToggleMatteAsync(CancellationToken cancellationToken = default) =>
+        UpdateAsync(
+            settings => settings with
+            {
+                Stage = settings.Stage with { MatteEnabled = !settings.Stage.MatteEnabled },
+            },
+            cancellationToken);
+
+    public Task SetShortcutsAsync(
+        ShortcutSettings shortcuts,
         CancellationToken cancellationToken = default)
     {
-        FoviumSettings snapshot;
-        lock (_stateSync)
-        {
-            if (_current.StageMode == mode)
-            {
-                return Task.CompletedTask;
-            }
-
-            snapshot = _current with { StageMode = mode };
-            _current = snapshot;
-        }
-
-        SettingsChanged?.Invoke(this, new SettingsChangedEventArgs(snapshot));
-        return PersistAsync(cancellationToken);
+        ArgumentNullException.ThrowIfNull(shortcuts);
+        var normalized = shortcuts.Normalize();
+        return UpdateAsync(
+            settings => SettingsEqual(settings.Shortcuts, normalized)
+                ? settings
+                : settings with { Shortcuts = normalized },
+            cancellationToken);
     }
+
+    public Task ResetShortcutsAsync(CancellationToken cancellationToken = default) =>
+        SetShortcutsAsync(ShortcutSettings.Default, cancellationToken);
 
     public async Task FlushAsync(CancellationToken cancellationToken = default)
     {
-        await _persistenceGate.WaitAsync(cancellationToken).ConfigureAwait(false);
-        _persistenceGate.Release();
+        while (true)
+        {
+            Task pending;
+            lock (_persistenceSync)
+            {
+                pending = _pendingPersistence;
+            }
+
+            await pending.WaitAsync(cancellationToken).ConfigureAwait(false);
+            lock (_persistenceSync)
+            {
+                if (ReferenceEquals(pending, _pendingPersistence))
+                {
+                    return;
+                }
+            }
+        }
     }
 
-    private async Task PersistAsync(CancellationToken cancellationToken)
+    public void Dispose()
     {
-        await _persistenceGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        lock (_persistenceSync)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            _pendingPersistenceCancellation?.Cancel();
+            _pendingPersistenceCancellation?.Dispose();
+            _pendingPersistenceCancellation = null;
+        }
+
+        _persistenceGate.Dispose();
+    }
+
+    private Task UpdateAsync(
+        Func<FoviumSettings, FoviumSettings> update,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        FoviumSettings snapshot;
+        lock (_stateSync)
+        {
+            var updated = update(_current).Normalize();
+            if (AreEqual(updated, _current))
+            {
+                return Task.CompletedTask;
+            }
+
+            _current = updated;
+            snapshot = updated;
+        }
+
+        SettingsChanged?.Invoke(this, new SettingsChangedEventArgs(snapshot));
+        return SchedulePersistence(cancellationToken);
+    }
+
+    private Task SchedulePersistence(CancellationToken cancellationToken)
+    {
+        lock (_persistenceSync)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            _pendingPersistenceCancellation?.Cancel();
+            _pendingPersistenceCancellation?.Dispose();
+            _pendingPersistenceCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            _pendingPersistence = PersistAfterDelayAsync(_pendingPersistenceCancellation.Token);
+            return _pendingPersistence;
+        }
+    }
+
+    private async Task PersistAfterDelayAsync(CancellationToken cancellationToken)
+    {
         try
         {
+            await Task.Delay(PersistenceDebounce, cancellationToken).ConfigureAwait(false);
+            await _persistenceGate.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 await store.SaveAsync(Current, cancellationToken).ConfigureAwait(false);
@@ -112,29 +196,38 @@ internal sealed class SettingsService(ISettingsStore store)
                     _lastDiagnostic = null;
                 }
             }
-            catch (OperationCanceledException)
+            finally
             {
-                throw;
-            }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-            {
-                var diagnostic = new SettingsDiagnostic(
-                    SettingsDiagnosticKind.WriteFailed,
-                    "Settings could not be saved; the in-memory preference remains active.",
-                    exception);
-                lock (_stateSync)
-                {
-                    _lastDiagnostic = diagnostic;
-                }
-
-                TraceDiagnostic(diagnostic);
+                _persistenceGate.Release();
             }
         }
-        finally
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            _persistenceGate.Release();
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            var diagnostic = new SettingsDiagnostic(
+                SettingsDiagnosticKind.WriteFailed,
+                "Settings could not be saved; the in-memory preference remains active.",
+                exception);
+            lock (_stateSync)
+            {
+                _lastDiagnostic = diagnostic;
+            }
+
+            TraceDiagnostic(diagnostic);
         }
     }
+
+    private static bool AreEqual(FoviumSettings left, FoviumSettings right) =>
+        left.SchemaVersion == right.SchemaVersion &&
+        left.ImageChangeViewPolicy == right.ImageChangeViewPolicy &&
+        left.Stage == right.Stage &&
+        SettingsEqual(left.Shortcuts, right.Shortcuts);
+
+    private static bool SettingsEqual(ShortcutSettings left, ShortcutSettings right) =>
+        ViewerCommands.Definitions.All(
+            definition => left.Get(definition.Command) == right.Get(definition.Command));
 
     private static void TraceDiagnostic(SettingsDiagnostic? diagnostic)
     {

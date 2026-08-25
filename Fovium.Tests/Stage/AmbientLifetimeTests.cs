@@ -76,4 +76,23 @@ public sealed class AmbientLifetimeTests
         retainedDraw.Dispose();
         Assert.Throws<ObjectDisposedException>(() => retainedDraw.Image.Width);
     }
+
+    [Fact]
+    public void ReplacingBlurVariantKeepsOldDrawLeaseAliveAndPublishesNewOwner()
+    {
+        using var decoded = StageTestImages.CreateDecoded();
+        var oldAmbient = StageTestImages.CreateAmbient(blur: 18);
+        Assert.True(decoded.TryAttachAmbient(oldAmbient));
+        var oldDrawLease = decoded.TryAcquireAmbient();
+        var replacement = StageTestImages.CreateAmbient(blur: 24);
+
+        Assert.True(decoded.TrySetAmbient(replacement));
+        using var replacementLease = decoded.TryAcquireAmbient();
+
+        Assert.Equal(18, oldDrawLease!.Blur);
+        Assert.True(oldDrawLease.Image.Width > 0);
+        Assert.Equal(24, replacementLease!.Blur);
+        oldDrawLease.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => oldDrawLease.Image.Width);
+    }
 }

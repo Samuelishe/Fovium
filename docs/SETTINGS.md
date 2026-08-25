@@ -16,6 +16,7 @@ General
 Viewing
 Stage
 Appearance
+Controls
 Color
 Performance
 Advanced
@@ -45,11 +46,15 @@ A future zoom-step control may present a Fine-to-Coarse slider. It adjusts the s
 
 ### Stage
 
-R3 implements Black (default), Neutral, Ambient, and Ambient + Matte as one typed, autosaved preference. Existing schema-v1 documents without the additive field resolve to Black without migration. Settings and the context menu observe the same state owner and apply changes immediately without Save/Apply. No blur, darkness, saturation, or matte-width sliders are exposed. Stage is photographic presentation and is independent from the application UI theme; see [`PROJECT-VISION.md`](PROJECT-VISION.md) and [`THEMES.md`](THEMES.md).
+Stage background is a typed choice: Black (default), fixed Neutral `#505050`, configurable Custom solid color, or Ambient. Matte is an independent toggle over any background with its own opaque color; its width remains a fixed presentation default. Ambient exposes bounded brightness, saturation, and blur controls. Background/color/Matte/brightness/saturation apply live; blur reparations are coalesced and asynchronous. Settings and the context menu observe the same state owner and autosave without Save/Apply. Stage remains independent from application theme; see [`PROJECT-VISION.md`](PROJECT-VISION.md) and [`THEMES.md`](THEMES.md).
 
 ### Appearance
 
 Owns application UI theme selection: Dark or Light. It does not alter Stage or photograph pixels.
+
+### Controls
+
+R3-F1 implements configurable bindings for previous/next, zoom in/out, Fit, 100%, Toggle Matte, fullscreen, Open, and Settings. Persisted command IDs and gesture names are locale-independent. Capture rejects bare modifiers and reserved `Esc`. A conflict requires explicit confirmation; replacement assigns the new command and leaves the former owner unassigned rather than swapping. Reset shortcuts restores this section only. The input model leaves a bounded trigger seam for future hold/release commands without implementing Peek/Blink.
 
 ### Color
 
@@ -80,7 +85,7 @@ Copied diagnostics may include only genuinely known values such as Fovium versio
 
 Ordinary preferences use platform-appropriate per-user application-data storage. They do not require a database, catalog, or project-local file.
 
-R2 implements a readable JSON document with `schemaVersion = 1` in the platform-appropriate per-user application-data directory. It writes through a same-directory temporary file and replacement, tolerates unknown properties, and falls back to deterministic defaults on missing, malformed, inaccessible, or unsupported-schema input. Add migration only when an actual incompatible change exists; do not build a migration framework in advance.
+The readable JSON document now uses `schemaVersion = 2` in the platform-appropriate per-user application-data directory. Its explicit v1→v2 migration maps the former four-value Stage enum to background plus independent Matte while preserving image-change policy. It writes through a same-directory temporary file and replacement, tolerates unknown properties/command IDs, and falls back to deterministic defaults on missing, malformed, inaccessible, or unsupported-schema input. Extend this direct migration path only when a real incompatible change exists; do not build a generic migration framework.
 
 Settings normally autosave after a valid non-destructive preference change. Do not require Save or Apply buttons without evidence that deferred application is necessary. Destructive or system-owned actions remain explicit.
 
@@ -93,4 +98,4 @@ Reset all settings
 
 Reset all restores a known default state and removes obsolete stored values rather than retaining hidden legacy configuration. A reset operation should be recoverable where practical and must not remove user photographs or unrelated platform data.
 
-R3 materializes only meaningful `Viewing`, `Stage`, and `About` sections. It does not create empty future tabs, Save/Apply buttons, a language selector, theme selection, reset UI, customization sliders, or Performance controls.
+The implemented Settings surface contains only meaningful `Viewing`, `Stage`, `Controls`, and `About` sections. It does not create empty future tabs, Save/Apply buttons, a language selector, theme selection, or Performance controls.

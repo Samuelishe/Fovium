@@ -8,10 +8,15 @@ internal sealed class PreparedAmbient : IRetainedResource
 {
     private SKImage? _image;
 
-    public PreparedAmbient(SKImage image, PixelSize size, TimeSpan preparationDuration)
+    public PreparedAmbient(
+        SKImage image,
+        PixelSize size,
+        double blur,
+        TimeSpan preparationDuration)
     {
         _image = image ?? throw new ArgumentNullException(nameof(image));
         Size = size.IsValid ? size : throw new ArgumentOutOfRangeException(nameof(size));
+        Blur = blur;
         PreparationDuration = preparationDuration;
         RetainedBytes = checked((long)size.Width * size.Height * 4);
     }
@@ -20,6 +25,8 @@ internal sealed class PreparedAmbient : IRetainedResource
         Volatile.Read(ref _image) ?? throw new ObjectDisposedException(nameof(PreparedAmbient));
 
     public PixelSize Size { get; }
+
+    public double Blur { get; }
 
     public TimeSpan PreparationDuration { get; }
 

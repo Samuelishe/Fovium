@@ -1,0 +1,15 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Fovium.Views.ShortcutConflictWindow"
+        Width="430"
+        Height="190"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner">
+  <Grid Margin="24" RowDefinitions="*,Auto">
+    <TextBlock x:Name="MessageText" TextWrapping="Wrap" VerticalAlignment="Center" />
+    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
+      <Button x:Name="CancelButton" MinWidth="88" />
+      <Button x:Name="OkButton" MinWidth="88" />
+    </StackPanel>
+  </Grid>
+</Window>

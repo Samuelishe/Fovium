@@ -35,6 +35,10 @@ Accepted outcome: preserve physical scale/point of interest by default with a Fi
 
 Accepted outcome: persisted Black, Neutral, Ambient, and Ambient + Matte presentation modes with bounded oriented derivation, shared cache ownership, synchronized Settings/context-menu access, and unchanged photograph/viewport behavior.
 
+## R3-F1 — Stage customization and configurable controls
+
+Accepted outcome: split Stage background from independent Matte, add Custom/color and bounded Ambient controls with schema-v2 migration, and establish persistent conflict-safe viewer command bindings before hold-based inspection actions.
+
 ## R4 — Peek 100% / Blink Compare
 
 Build photographer inspection actions on the shared viewport and navigation models, preserving view state and point of interest where intended.

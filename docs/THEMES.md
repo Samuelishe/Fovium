@@ -27,11 +27,14 @@ ApplicationTheme
     Dark
     Light
 
-StageMode
+StageBackground
     Black
     Neutral
+    Custom
     Ambient
-    AmbientMatte
+
+MatteEnabled
+    false / true
 ```
 
 Changing application theme must not silently change Stage mode. Changing Stage must not change Settings, menus, or dialogs. Neither system may modify the original photograph. Stage product semantics remain owned by [`PROJECT-VISION.md`](PROJECT-VISION.md).
@@ -54,4 +57,4 @@ Error
 
 Exact colors, contrast values, platform chrome treatment, and theme resource mechanics wait for implementation evidence. Fovium should remain visually quiet and purpose-built rather than becoming a generic framework-theme demonstration.
 
-R1 fixes the application UI to Dark and uses Avalonia Fluent for its small context-menu/error surface. There is no selector or final semantic palette yet. R3 implements every Stage mode as a separate persisted photographic preference; Neutral `#505050`, Ambient treatment, and matte `#202020` do not derive from Dark theme resources. Light remains a contracted future option.
+R1 fixes the application UI to Dark and uses Avalonia Fluent for its context menus, Settings, and small dialogs/error surfaces. There is no selector or final semantic palette yet. Stage background, custom colors, Ambient treatment, and independent Matte do not derive from Dark theme resources. Light remains a contracted future option.

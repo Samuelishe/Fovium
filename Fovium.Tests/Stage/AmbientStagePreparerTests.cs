@@ -41,24 +41,29 @@ public sealed class AmbientStagePreparerTests
         var orientation = (ExifOrientation)orientationValue;
         using var decoded = StageTestImages.CreateDecoded(orientation: orientation);
 
-        using var prepared = new AmbientStagePreparer().Prepare(decoded, CancellationToken.None);
+        using var prepared = new AmbientStagePreparer().Prepare(
+            decoded,
+            StageDefaults.AmbientBlurSigmaPixels,
+            CancellationToken.None);
         using var source = decoded.AcquireRenderLease();
 
         Assert.Equal(new PixelSize(expectedWidth, expectedHeight), prepared.Size);
         Assert.Equal(checked((long)expectedWidth * expectedHeight * 4), prepared.RetainedBytes);
         Assert.NotSame(source.Image, prepared.Image);
+        Assert.Equal(StageDefaults.AmbientBlurSigmaPixels, prepared.Blur);
     }
 
     [Fact]
     public void PreparedAmbientIsSeparateOwnedResource()
     {
         using var decoded = StageTestImages.CreateDecoded();
-        var prepared = new AmbientStagePreparer().Prepare(decoded, CancellationToken.None);
+        var prepared = new AmbientStagePreparer().Prepare(decoded, 24, CancellationToken.None);
         var width = prepared.Image.Width;
 
         decoded.Dispose();
 
         Assert.Equal(width, prepared.Image.Width);
+        Assert.Equal(24, prepared.Blur);
         prepared.Dispose();
         Assert.Throws<ObjectDisposedException>(() => prepared.Image.Width);
     }

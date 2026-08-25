@@ -18,7 +18,7 @@ internal sealed class PhotoViewportControl : Control
     private Point? _lastDragPoint;
     private TopLevel? _topLevel;
     private double _wheelAccumulator;
-    private StageMode _stageMode;
+    private StageSettings _stage = StageSettings.Default;
 
     public PhotoViewportControl()
     {
@@ -49,16 +49,17 @@ internal sealed class PhotoViewportControl : Control
         RaiseViewStateChanged();
     }
 
-    public void SetStage(StageMode mode, DecodedImage.AmbientLease? ambient)
+    public void SetStage(StageSettings stage, DecodedImage.AmbientLease? ambient)
     {
-        if (!mode.RequiresAmbient())
+        ArgumentNullException.ThrowIfNull(stage);
+        if (!stage.BackgroundMode.RequiresAmbient())
         {
             ambient?.Dispose();
             ambient = null;
         }
 
         var previous = _ambient;
-        _stageMode = mode;
+        _stage = stage;
         _ambient = ambient;
         InvalidateVisual();
         previous?.Dispose();
@@ -98,15 +99,31 @@ internal sealed class PhotoViewportControl : Control
         InvalidateAndReport();
     }
 
+    public void ZoomByStepsAtCenter(int steps)
+    {
+        if (_image is null || steps == 0)
+        {
+            return;
+        }
+
+        var center = new PointD(Bounds.Width / 2, Bounds.Height / 2);
+        _viewport.ZoomBySteps(center, steps);
+        InvalidateAndReport();
+    }
+
     public override void Render(DrawingContext context)
     {
         base.Render(context);
-        IBrush fallback = _stageMode == StageMode.Neutral
-            ? new SolidColorBrush(Color.FromRgb(
-                StageDefaults.NeutralColor.Red,
-                StageDefaults.NeutralColor.Green,
-                StageDefaults.NeutralColor.Blue))
-            : Brushes.Black;
+        var fallbackColor = _stage.BackgroundMode switch
+        {
+            StageBackgroundMode.Neutral => StageDefaults.NeutralColor,
+            StageBackgroundMode.Custom => _stage.CustomBackgroundColor,
+            _ => StageDefaults.BlackColor,
+        };
+        IBrush fallback = new SolidColorBrush(Color.FromRgb(
+            fallbackColor.Red,
+            fallbackColor.Green,
+            fallbackColor.Blue));
         context.FillRectangle(fallback, new Rect(Bounds.Size));
         var cachedLease = _image;
         if (cachedLease is null)
@@ -128,7 +145,7 @@ internal sealed class PhotoViewportControl : Control
                 descriptor.Orientation,
                 GetDestination(),
                 _viewport.UsesExactPixelSampling,
-                _stageMode,
+                _stage,
                 _viewport.RenderScaling,
                 ambientLease));
             renderLease = null;

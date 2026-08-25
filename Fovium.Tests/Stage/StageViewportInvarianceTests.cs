@@ -6,34 +6,30 @@ namespace Fovium.Tests.Stage;
 public sealed class StageViewportInvarianceTests
 {
     [Theory]
-    [InlineData((int)StageMode.Black, (int)StageMode.Neutral)]
-    [InlineData((int)StageMode.Neutral, (int)StageMode.Ambient)]
-    [InlineData((int)StageMode.Ambient, (int)StageMode.AmbientMatte)]
-    [InlineData((int)StageMode.AmbientMatte, (int)StageMode.Black)]
+    [InlineData((int)StageBackgroundMode.Black, false)]
+    [InlineData((int)StageBackgroundMode.Neutral, true)]
+    [InlineData((int)StageBackgroundMode.Custom, true)]
+    [InlineData((int)StageBackgroundMode.Ambient, true)]
     public void StageTransitionDoesNotChangePhotoGeometry(
-        int fromValue,
-        int toValue)
+        int backgroundValue,
+        bool matteEnabled)
     {
-        var from = (StageMode)fromValue;
-        var to = (StageMode)toValue;
+        var stage = StageSettings.Default with
+        {
+            BackgroundMode = (StageBackgroundMode)backgroundValue,
+            MatteEnabled = matteEnabled,
+        };
         var destination = new RectD(-120, 75, 1800, 1200);
         var viewport = new LogicalSize(1200, 800);
         var ambient = new PixelSize(384, 256);
 
-        var before = StageGeometry.CalculateRenderGeometry(
-            from,
+        var result = StageGeometry.CalculateRenderGeometry(
+            stage,
             destination,
             ambient,
             viewport,
             1.5);
-        var after = StageGeometry.CalculateRenderGeometry(
-            to,
-            destination,
-            ambient,
-            viewport,
-            1.5);
-
-        Assert.Equal(destination, before.PhotoDestination);
-        Assert.Equal(destination, after.PhotoDestination);
+        Assert.Equal(destination, result.PhotoDestination);
+        Assert.Equal(matteEnabled, result.MatteDestination is not null);
     }
 }

@@ -19,7 +19,7 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
     private readonly ExifOrientation _orientation;
     private readonly RectD _destination;
     private readonly bool _exactPixelSampling;
-    private readonly StageMode _stageMode;
+    private readonly StageSettings _stage;
     private readonly double _renderScaling;
 
     public SkiaPhotoDrawOperation(
@@ -29,7 +29,7 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
         ExifOrientation orientation,
         RectD destination,
         bool exactPixelSampling,
-        StageMode stageMode,
+        StageSettings stage,
         double renderScaling,
         DecodedImage.AmbientLease? ambientLease)
     {
@@ -39,7 +39,7 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
         _orientation = orientation;
         _destination = destination;
         _exactPixelSampling = exactPixelSampling;
-        _stageMode = stageMode;
+        _stage = stage;
         _renderScaling = renderScaling;
         _ambientLease = ambientLease;
     }
@@ -70,7 +70,7 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
             new RectD(Bounds.X, Bounds.Y, Bounds.Width, Bounds.Height),
             _destination,
             _renderScaling,
-            _stageMode,
+            _stage,
             ambientLease?.Image,
             ambientLease?.Size);
         var affine = OrientationAffine.Create(_encodedSize, _orientation);
