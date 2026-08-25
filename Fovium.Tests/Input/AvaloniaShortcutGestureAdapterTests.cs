@@ -34,4 +34,14 @@ public sealed class AvaloniaShortcutGestureAdapterTests
     {
         Assert.False(AvaloniaShortcutGestureAdapter.TryCreate(Key.Escape, KeyModifiers.None, out _));
     }
+
+    [Theory]
+    [InlineData((int)Key.Z, "Z")]
+    [InlineData((int)Key.C, "C")]
+    [InlineData((int)Key.NumPad1, "1")]
+    public void PrimaryKeyIdentityDoesNotDependOnModifierState(int keyValue, string expected)
+    {
+        Assert.True(AvaloniaShortcutGestureAdapter.TryGetPrimaryKey((Key)keyValue, out var primaryKey));
+        Assert.Equal(expected, primaryKey);
+    }
 }

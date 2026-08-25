@@ -26,7 +26,7 @@ resources/localization/ui/
     ru.json
 ```
 
-The catalogs are embedded into the production assembly; no localization package is used. Context-menu commands, the file-picker title, controlled image-load errors, Settings/Viewing/Stage/Controls/About strings, Stage customization including Matte style/size labels, command names, capture/conflict dialogs, and shortcut states resolve through catalog keys rather than scattered locale branches. Persisted command and Matte-style identities are never localized.
+The catalogs are embedded into the production assembly; no localization package is used. Context-menu commands, the file-picker title, controlled image-load errors, Settings/Viewing/Stage/Controls/About strings, Stage customization including Matte style/size labels, command names including EN/RU hold wording for Peek 100% and Blink Compare, capture/conflict dialogs, and shortcut states resolve through catalog keys rather than scattered locale branches. Persisted command and Matte-style identities are never localized.
 
 ## Locale resolution
 

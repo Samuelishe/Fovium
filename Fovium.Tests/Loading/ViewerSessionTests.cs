@@ -185,6 +185,204 @@ public sealed class ViewerSessionTests
         Assert.Equal(16, metrics.CacheRetainedBytes);
     }
 
+    [Fact]
+    public async Task CachedInspectionDoesNotNavigateAndFollowingNextPreviousRemainCoherent()
+    {
+        var loader = FakeImageLoader.Immediate(path => FakeLoadResult.Success(path));
+        await using var session = CreateSession(loader);
+        using var opened = (await session.OpenAsync(new ImageSequence(["A.jpg", "B.jpg", "C.jpg"], 1))).Image;
+        await session.WaitForAdjacentPreloadAsync(CancellationToken.None);
+        var callsBeforeInspection = loader.Calls.Count;
+
+        var inspection = await session.AcquireNeighborForInspectionAsync(NavigationDirection.Previous);
+        using (inspection.Image)
+        {
+            Assert.Equal(InspectionAcquisitionStatus.Acquired, inspection.Status);
+            Assert.True(inspection.FromCache);
+            Assert.Equal("A.jpg", inspection.Image!.Value.Name);
+            Assert.Equal(1, session.CurrentIndex);
+            Assert.Equal(callsBeforeInspection, loader.Calls.Count);
+        }
+
+        var next = await session.NavigateAsync(NavigationDirection.Next);
+        using (next.Image)
+        {
+            Assert.Equal("C.jpg", next.Image!.Value.Name);
+            Assert.Equal(2, session.CurrentIndex);
+        }
+
+        var previous = await session.NavigateAsync(NavigationDirection.Previous);
+        using (previous.Image)
+        {
+            Assert.Equal("B.jpg", previous.Image!.Value.Name);
+            Assert.Equal(1, session.CurrentIndex);
+        }
+    }
+
+    [Fact]
+    public async Task InspectionSkipsMissingCorruptAndResourceRejectedCandidatesWithoutChangingSelection()
+    {
+        var loader = FakeImageLoader.Immediate(path => Path.GetFileName(path) switch
+        {
+            "A.jpg" or "D.jpg" => FakeLoadResult.Success(path),
+            "B.jpg" => FakeLoadResult.Failure(ImageLoadErrorKind.Corrupt),
+            "C.jpg" => FakeLoadResult.Failure(ImageLoadErrorKind.Missing),
+            _ => FakeLoadResult.Failure(ImageLoadErrorKind.ResourceLimit),
+        });
+        await using var session = CreateSession(loader);
+        using var opened = (await session.OpenAsync(
+            new ImageSequence(["A.jpg", "B.jpg", "C.jpg", "D.jpg"], 3))).Image;
+        await session.WaitForAdjacentPreloadAsync(CancellationToken.None);
+
+        var inspection = await session.AcquireNeighborForInspectionAsync(NavigationDirection.Previous);
+        using var comparison = inspection.Image;
+
+        Assert.Equal(InspectionAcquisitionStatus.Acquired, inspection.Status);
+        Assert.Equal("A.jpg", comparison!.Value.Name);
+        Assert.Equal(3, session.CurrentIndex);
+        Assert.Contains("B.jpg", loader.Calls);
+        Assert.Contains("C.jpg", loader.Calls);
+    }
+
+    [Fact]
+    public async Task ReleasingDelayedInspectionPreventsLateResultFromBeingReturned()
+    {
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var delayed = new TaskCompletionSource<ImageLoadResult<FakeImage>>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var loader = new FakeImageLoader((path, allowance, _) =>
+        {
+            if (Path.GetFileName(path) == "C.jpg" && !allowance.IsSpeculative)
+            {
+                started.TrySetResult();
+                return delayed.Task;
+            }
+
+            return Task.FromResult(
+                allowance.IsSpeculative
+                    ? FakeLoadResult.Failure(ImageLoadErrorKind.ResourceLimit)
+                    : FakeLoadResult.Success(path));
+        });
+        await using var session = CreateSession(loader);
+        using var opened = (await session.OpenAsync(
+            new ImageSequence(["A.jpg", "B.jpg", "C.jpg", "D.jpg"], 3))).Image;
+        await session.WaitForAdjacentPreloadAsync(CancellationToken.None);
+        using var cancellation = new CancellationTokenSource();
+
+        var pending = session.AcquireNeighborForInspectionAsync(
+            NavigationDirection.Previous,
+            cancellation.Token);
+        await started.Task;
+        cancellation.Cancel();
+        var lateImage = new FakeImage("C.jpg");
+        delayed.SetResult(ImageLoadResult<FakeImage>.Success(lateImage));
+        var result = await pending;
+
+        Assert.Equal(InspectionAcquisitionStatus.Canceled, result.Status);
+        Assert.Null(result.Image);
+        Assert.Equal(1, lateImage.DisposeCount);
+        Assert.Equal(3, session.CurrentIndex);
+    }
+
+    [Fact]
+    public async Task NewSequenceRevokesDelayedInspectionAuthorityAndDisposesOldResult()
+    {
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var delayed = new TaskCompletionSource<ImageLoadResult<FakeImage>>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var loader = new FakeImageLoader((path, allowance, _) =>
+        {
+            if (Path.GetFileName(path) == "C.jpg" && !allowance.IsSpeculative)
+            {
+                started.TrySetResult();
+                return delayed.Task;
+            }
+
+            return Task.FromResult(
+                allowance.IsSpeculative
+                    ? FakeLoadResult.Failure(ImageLoadErrorKind.ResourceLimit)
+                    : FakeLoadResult.Success(path));
+        });
+        await using var session = CreateSession(loader);
+        using var opened = (await session.OpenAsync(
+            new ImageSequence(["A.jpg", "B.jpg", "C.jpg", "D.jpg"], 3))).Image;
+        await session.WaitForAdjacentPreloadAsync(CancellationToken.None);
+
+        var pending = session.AcquireNeighborForInspectionAsync(NavigationDirection.Previous);
+        await started.Task;
+        using var replacement = (await session.OpenAsync(new ImageSequence(["E.jpg"], 0))).Image;
+        var lateImage = new FakeImage("C.jpg");
+        delayed.SetResult(ImageLoadResult<FakeImage>.Success(lateImage));
+        var stale = await pending;
+
+        Assert.Equal(InspectionAcquisitionStatus.Stale, stale.Status);
+        Assert.Null(stale.Image);
+        Assert.Equal(1, lateImage.DisposeCount);
+        Assert.Equal("E.jpg", replacement!.Value.Name);
+        Assert.Equal(0, session.CurrentIndex);
+    }
+
+    [Fact]
+    public async Task InspectionLeaseKeepsComparisonAliveAfterSequenceCacheRelease()
+    {
+        var images = new Dictionary<string, FakeImage>();
+        var loader = FakeImageLoader.Immediate(path =>
+        {
+            var image = new FakeImage(Path.GetFileName(path));
+            images[image.Name] = image;
+            return ImageLoadResult<FakeImage>.Success(image);
+        });
+        await using var session = CreateSession(loader);
+        using var opened = (await session.OpenAsync(new ImageSequence(["A.jpg", "B.jpg"], 1))).Image;
+        await session.WaitForAdjacentPreloadAsync(CancellationToken.None);
+        var inspection = await session.AcquireNeighborForInspectionAsync(NavigationDirection.Previous);
+        var comparison = inspection.Image!;
+
+        using var replacement = (await session.OpenAsync(new ImageSequence(["C.jpg"], 0))).Image;
+
+        Assert.Equal(0, images["A.jpg"].DisposeCount);
+        Assert.Equal("A.jpg", comparison.Value.Name);
+        comparison.Dispose();
+        Assert.Equal(1, images["A.jpg"].DisposeCount);
+    }
+
+    [Fact]
+    public async Task InspectionDeclinesWhileCanonicalSelectionIsChanging()
+    {
+        var navigationStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var delayedNavigation = new TaskCompletionSource<ImageLoadResult<FakeImage>>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var loader = new FakeImageLoader((path, allowance, _) =>
+        {
+            if (Path.GetFileName(path) == "C.jpg" && !allowance.IsSpeculative)
+            {
+                navigationStarted.TrySetResult();
+                return delayedNavigation.Task;
+            }
+
+            return Task.FromResult(
+                allowance.IsSpeculative
+                    ? FakeLoadResult.Failure(ImageLoadErrorKind.ResourceLimit)
+                    : FakeLoadResult.Success(path));
+        });
+        await using var session = CreateSession(loader);
+        using var current = (await session.OpenAsync(
+            new ImageSequence(["A.jpg", "B.jpg", "C.jpg"], 1))).Image;
+        await session.WaitForAdjacentPreloadAsync(CancellationToken.None);
+
+        var pendingNavigation = session.NavigateAsync(NavigationDirection.Next);
+        await navigationStarted.Task;
+        var inspection = await session.AcquireNeighborForInspectionAsync(NavigationDirection.Previous);
+
+        delayedNavigation.SetResult(FakeLoadResult.Success("C.jpg"));
+        using var navigated = (await pendingNavigation).Image;
+
+        Assert.Equal(InspectionAcquisitionStatus.Unavailable, inspection.Status);
+        Assert.Null(inspection.Image);
+        Assert.Equal("C.jpg", navigated!.Value.Name);
+        Assert.Equal(2, session.CurrentIndex);
+    }
+
     private static ViewerSession<FakeImage> CreateSession(FakeImageLoader loader)
     {
         var policy = AutomaticMemoryPolicy.FromAvailableMemory(2L * 1024 * 1024 * 1024);

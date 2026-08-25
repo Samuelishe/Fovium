@@ -25,7 +25,7 @@ Zero-UI is intentional: normal viewing removes persistent chrome rather than sur
 
 - seamless previous/next navigation through viable images in the current directory;
 - cursor-anchored zoom, exact panning, and photographic 100% based on physical display pixels;
-- photographer-oriented inspection, including future **Peek 100%** and **Blink Compare**;
+- photographer-oriented inspection with whole-viewport **Peek 100%** and non-navigating **Blink Compare**;
 - a deliberate photographic **Stage** with Black, Neutral, Custom, or Ambient backgrounds plus an independent Matte;
 - color-management foundations and broader image-format support over time;
 - no database, import workflow, or plugin platform.
@@ -34,9 +34,9 @@ See the canonical [UX contract](docs/UX-CONTRACT.md), [rendering contract](docs/
 
 ## Current status
 
-The current project checkpoint is **`0.0.0.0008`**. R3-F2 adds DPI-aware configurable Matte width and Solid, Rounded, Soft, and Angular outer presentation styles while keeping the photograph rectangle and R2/R3 viewport, navigation, and rendering contracts unchanged.
+The current project checkpoint is **`0.0.0.0009`**. R4 adds configurable press-and-hold Peek 100% and Blink Compare: Peek anchors physical 100% at the cursor and restores the exact semantic view, while Blink temporarily shows the previous viable image without changing canonical navigation.
 
-This remains an early vertical slice, not a release claim. Full monitor-aware ICC, broad codecs, broader Settings, metadata, platform associations, and later photographer features are not implemented. The expected next stage is **R4 Peek 100% / Blink Compare**. The canonical handoff is [PROJECT-STATE.md](docs/PROJECT-STATE.md); bounded R0 evidence remains in the [experiment report](docs/experiments/R0-RENDERING-PROBE.md).
+This remains an early vertical slice, not a release claim. Full monitor-aware ICC, broad codecs, broader Settings, metadata, platform associations, and selected-reference A/B comparison are not implemented. The expected next stage is **R5 Settings / metadata / context-menu polish**, subject to owner review of the R4 interaction feel. The canonical handoff is [PROJECT-STATE.md](docs/PROJECT-STATE.md); bounded R0 evidence remains in the [experiment report](docs/experiments/R0-RENDERING-PROBE.md).
 
 English/Russian catalogs and the Dark secondary-UI baseline are implemented; language/theme selection remains future work. See [VERSIONING.md](docs/VERSIONING.md) and the [documentation index](docs/INDEX.md) for the canonical owners.
 

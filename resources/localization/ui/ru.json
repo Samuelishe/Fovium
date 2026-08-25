@@ -55,6 +55,8 @@
   "command.fullscreen": "Полный экран",
   "command.open": "Открыть",
   "command.settings": "Настройки",
+  "command.peek100": "Просмотр 100% (удерживать)",
+  "command.blinkCompare": "Быстрое сравнение (удерживать)",
   "settings.version": "Версия {0}",
   "picker.title": "Открыть JPEG или PNG",
   "picker.imageType": "Изображения JPEG / PNG",

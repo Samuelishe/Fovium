@@ -33,6 +33,10 @@ Persistent viewport state should be expressed in oriented source-image coordinat
 
 Resize, fullscreen changes, and DPI transitions must define whether they preserve Fit, physical scale, or source-space point of interest based on the active view mode. These cases require explicit tests rather than incidental framework behavior.
 
+R4 temporary inspection stores a semantic `ViewTransfer`, never an Avalonia transform. Peek sets `PhysicalScale = 1.0` around the source point under the current pointer. If the pointer is outside the current photograph, it uses the existing normalized point of interest at viewport center. Bounds clamp naturally; release reapplies the captured Fit or manual physical scale plus normalized point of interest under current geometry, so geometry/DPI changes do not replay stale raw coordinates. Temporary Peek pan is discarded.
+
+Blink temporarily replaces only the photographic presentation. Fit transfers as Fit; every non-Fit state transfers the same physical scale and normalized point of interest to the comparison dimensions with ordinary clamping. The canonical image and its semantic view remain retained and are restored directly on release. Solid Stage backgrounds remain unchanged. Under Ambient, the comparison may use only its own already prepared derivative for the active blur; absence or mismatch renders the normal Black fallback. Existing Matte settings are recomputed around the temporary destination rectangle.
+
 ## Sampling and alignment
 
 The production display path selects sampling from physical scale. R0 compared the candidates for quality, edge behavior, alpha, and pixel alignment; later changes still require evidence rather than library popularity.

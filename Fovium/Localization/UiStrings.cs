@@ -55,6 +55,8 @@ internal static class UiStrings
     public const string CommandFullscreen = "command.fullscreen";
     public const string CommandOpen = "command.open";
     public const string CommandSettings = "command.settings";
+    public const string CommandPeek100 = "command.peek100";
+    public const string CommandBlinkCompare = "command.blinkCompare";
     public const string SettingsScaleOnImageChange = "settings.scaleOnImageChange";
     public const string SettingsKeepCurrentScale = "settings.keepCurrentScale";
     public const string SettingsFitEachImage = "settings.fitEachImage";

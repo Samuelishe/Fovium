@@ -7,13 +7,13 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R3-F2 is complete. The project version is `0.0.0.0008`; its semantics and accepted checkpoint history are owned by [`VERSIONING.md`](VERSIONING.md).
+R4 is complete. The project version is `0.0.0.0009`; its semantics and accepted checkpoint history are owned by [`VERSIONING.md`](VERSIONING.md).
 
 The retained R0 probe remains experimental evidence under `experiments/Fovium.RenderProbe`. Production code is the single `Fovium` assembly and does not depend on the experiment. Local Windows acceptance used one `RenderScaling = 1.00` display; no GitHub-hosted CI or Linux/macOS runtime result is claimed by this stage.
 
 ## Current focus
 
-R4 — Peek 100% / Blink Compare photographer-inspection interactions.
+Owner review of the completed R4 inspection feel, followed by the next accepted roadmap stage. If that review finds an interaction defect, contain it in a bounded R4-F1 rather than starting unrelated R5 work.
 
 ## Implemented application functionality
 
@@ -30,9 +30,13 @@ R4 — Peek 100% / Blink Compare photographer-inspection interactions.
 - Persisted Matte physical width and Solid, Rounded, Soft, and Angular outer presentation styles; all styles retain an opaque rectangular backing beneath alpha photographs without changing photo geometry.
 - Bounded asynchronous blur-only Ambient preparation from the oriented decoded photograph; render-time brightness/saturation; adjacent preparation; byte-accounted cache ownership; and matching-identity publication.
 - Persistent command shortcuts with locale-independent identifiers, conflict confirmation, unassigned state, reset, and reserved `Esc` behavior. Defaults add `+`, `-`, `0`, `1`, and `M` viewer controls.
+- Whole-viewport Peek 100% on configurable hold `Z`, anchored to the source point beneath the cursor with deterministic Stage fallback, temporary pan, and exact semantic Fit/manual restoration.
+- Non-navigating Blink Compare on configurable hold `C`, acquiring the previous viable image through retained inspection leases while preserving canonical sequence/index/generation state.
+- One application-level transient inspection mode, primary-key release ownership, repeat suppression, persistent-command/Esc/focus-loss cancellation, and stale-result rejection.
+- Temporary Blink Stage presentation with unchanged solid backgrounds and Matte, matching prepared comparison Ambient when available, and Black fallback rather than mismatched Ambient.
 - Traversal-excluded local imaging corpus policy plus hardened async session shutdown/cache release.
 
-Language/theme selection, metadata UI, Peek/Blink, broad codecs, file associations/thumbnails, and full monitor-aware ICC are not implemented.
+Selected-reference A/B comparison, language/theme selection, metadata UI, broad codecs, file associations/thumbnails, and full monitor-aware ICC are not implemented.
 
 ## Active blockers
 
@@ -41,5 +45,6 @@ Language/theme selection, metadata UI, Peek/Blink, broad codecs, file associatio
 - The monitor-aware color pipeline and raw embedded-profile extraction boundary have not been selected.
 - Broader codec support and a huge/tiled-image strategy remain unselected.
 - GitHub Actions portability is configured but cannot be claimed as passing until the workflow runs remotely.
+- R4 runtime inspection evidence is Windows-only at `RenderScaling = 1.00`; precise cold non-cached Blink latency and real fractional-DPI interaction still need representative owner hardware evidence.
 
 Open technical risks are tracked in [`KNOWN-PROBLEMS.md`](KNOWN-PROBLEMS.md). Directional stages are in [`ROADMAP.md`](ROADMAP.md). Git remains the authority for branch, HEAD, and worktree status.

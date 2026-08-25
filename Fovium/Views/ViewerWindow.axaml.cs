@@ -35,6 +35,8 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
     private readonly Cursor _hiddenCursor = new(StandardCursorType.None);
     private readonly ContextMenu _contextMenu;
     private readonly ViewerCommandExecutor _commandExecutor;
+    private readonly ViewerInspectionCoordinator _inspectionCoordinator;
+    private readonly ViewerHoldController _holdController;
     private readonly Dictionary<ViewerCommand, MenuItem> _commandMenuItems = [];
     private readonly MenuItem _previousMenuItem;
     private readonly MenuItem _nextMenuItem;
@@ -66,6 +68,8 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
 
         InitializeComponent();
         _commandExecutor = new ViewerCommandExecutor(this);
+        _inspectionCoordinator = new ViewerInspectionCoordinator(PhotoViewport, session, settings);
+        _holdController = new ViewerHoldController(_inspectionCoordinator);
         _previousMenuItem = CreateCommandMenuItem(UiStrings.MenuPrevious, ViewerCommand.PreviousImage);
         _nextMenuItem = CreateCommandMenuItem(UiStrings.MenuNext, ViewerCommand.NextImage);
         _stageBackgroundMenuItems = CreateStageBackgroundMenuItems();
@@ -81,7 +85,9 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         Opened += OnOpened;
         Closing += OnClosing;
         Closed += OnClosed;
+        Deactivated += OnDeactivated;
         KeyDown += OnWindowKeyDown;
+        KeyUp += OnWindowKeyUp;
     }
 
     private async void OnOpened(object? sender, EventArgs e)
@@ -130,6 +136,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         }
 
         _shutdownStarted = true;
+        _holdController.Cancel();
         _closed = true;
         _cursorTimer.Stop();
         _settingsWindow?.Close();
@@ -165,6 +172,11 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             if (e.Key == Key.Escape)
             {
                 e.Handled = true;
+                if (_holdController.Cancel())
+                {
+                    return;
+                }
+
                 if (WindowState == WindowState.FullScreen)
                 {
                     LeaveFullscreen();
@@ -178,7 +190,19 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
                 ShortcutResolver.Resolve(_settings.Current.Shortcuts, gesture) is { } command)
             {
                 e.Handled = true;
-                await _commandExecutor.ExecuteAsync(command);
+                var definition = ViewerCommands.GetDefinition(command);
+                if (definition.Trigger == ViewerCommandTrigger.Hold &&
+                    AvaloniaShortcutGestureAdapter.TryGetPrimaryKey(e.Key, out var primaryKey))
+                {
+                    await _holdController.TryBeginAsync(
+                        command,
+                        primaryKey,
+                        _lifetimeCancellation.Token);
+                }
+                else
+                {
+                    await ExecutePersistentCommandAsync(command);
+                }
             }
         }
         catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
@@ -189,6 +213,17 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             ShowBoundaryError();
         }
     }
+
+    private void OnWindowKeyUp(object? sender, KeyEventArgs e)
+    {
+        if (AvaloniaShortcutGestureAdapter.TryGetPrimaryKey(e.Key, out var primaryKey) &&
+            _holdController.EndPrimaryKey(primaryKey))
+        {
+            e.Handled = true;
+        }
+    }
+
+    private void OnDeactivated(object? sender, EventArgs e) => _holdController.CancelForFocusLoss();
 
     private ContextMenu CreateContextMenu()
     {
@@ -230,6 +265,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         };
         menu.Opening += (_, _) =>
         {
+            _holdController.CancelForFocusLoss();
             _contextMenuOpen = true;
             ShowCursor();
             _cursorTimer.Stop();
@@ -307,7 +343,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
 
     private MenuItem CreateCommandMenuItem(string key, ViewerCommand command)
     {
-        var item = CreateMenuItem(key, () => _commandExecutor.ExecuteAsync(command));
+        var item = CreateMenuItem(key, () => ExecutePersistentCommandAsync(command));
         _commandMenuItems[command] = item;
         return item;
     }
@@ -389,6 +425,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
 
     private async Task OpenPathsAsync(IReadOnlyList<string> paths)
     {
+        _holdController.Cancel();
         var plan = ActivationPlan.Create(paths);
         var sequence = await _activation.ResolveAsync(plan, _lifetimeCancellation.Token);
         if (sequence is null)
@@ -402,6 +439,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
 
     private async Task NavigateAsync(ViewerNavigationDirection direction)
     {
+        _holdController.Cancel();
         var result = await _session.NavigateAsync(direction, _lifetimeCancellation.Token);
         var transfer = ImageChangeViewPolicyResolver.ForNavigation(
             _settings.Current.ImageChangeViewPolicy,
@@ -422,6 +460,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
 
         if (result.Status == SelectionStatus.Published && result.Image is not null)
         {
+            _holdController.Cancel();
             ErrorSurface.IsVisible = false;
             var path = result.Path
                 ?? throw new InvalidOperationException("Published selection has no source path.");
@@ -461,6 +500,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             return;
         }
 
+        _holdController.Cancel();
         PhotoViewport.ClearImage();
         _stageCoordinator.ClearImage();
         ErrorText.Text = _localizer[UiStrings.ErrorDecodeFailed];
@@ -469,6 +509,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
 
     private void ShowSettings()
     {
+        _holdController.Cancel();
         ShowCursor();
         _cursorTimer.Stop();
         if (_settingsWindow is { } existing)
@@ -506,6 +547,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             return;
         }
 
+        _holdController.Cancel();
         _stageCoordinator.SetStage(stage);
     }
 
@@ -534,6 +576,12 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
 
     private static bool IsRecoverableBoundaryException(Exception exception) =>
         exception is IOException or UnauthorizedAccessException or InvalidOperationException;
+
+    private Task ExecutePersistentCommandAsync(ViewerCommand command)
+    {
+        _holdController.Cancel();
+        return _commandExecutor.ExecuteAsync(command);
+    }
 
     private void ToggleFullscreen()
     {

@@ -40,6 +40,27 @@ internal sealed record CachedResourceLease<T>(string Path, SharedResourceLease<T
     public void Dispose() => Resource.Dispose();
 }
 
+internal enum InspectionAcquisitionStatus
+{
+    Acquired,
+    Unavailable,
+    Canceled,
+    Stale,
+}
+
+internal sealed record InspectionAcquisitionResult<T>(
+    InspectionAcquisitionStatus Status,
+    string? Path,
+    int? Index,
+    SharedResourceLease<T>? Image,
+    bool FromCache,
+    TimeSpan AcquisitionLatency)
+    where T : class, IRetainedResource
+{
+    public static InspectionAcquisitionResult<T> Simple(InspectionAcquisitionStatus status) =>
+        new(status, null, null, null, false, TimeSpan.Zero);
+}
+
 internal sealed class ViewerSession<T> : IAsyncDisposable
     where T : class, IRetainedResource
 {
@@ -225,6 +246,48 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
         return task;
     }
 
+    public Task<InspectionAcquisitionResult<T>> AcquireNeighborForInspectionAsync(
+        NavigationDirection direction,
+        CancellationToken cancellationToken = default)
+    {
+        ImageSequence sequence;
+        int currentIndex;
+        long sessionIdentity;
+        long generation;
+        CancellationTokenSource linkedCancellation;
+        TaskCompletionSource tracking;
+        lock (_sync)
+        {
+            ThrowIfDisposed();
+            if (_sequence is null ||
+                _requestedIndex != _currentIndex ||
+                !_sequence.CanMoveFrom(_currentIndex, direction))
+            {
+                return Task.FromResult(
+                    InspectionAcquisitionResult<T>.Simple(InspectionAcquisitionStatus.Unavailable));
+            }
+
+            sequence = _sequence;
+            currentIndex = _currentIndex;
+            sessionIdentity = _sessionIdentity;
+            generation = _generation;
+            linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+                _lifetimeCancellation.Token,
+                cancellationToken);
+            tracking = CreateTrackingGateUnsafe();
+        }
+
+        var task = AcquireNeighborForInspectionCoreAsync(
+            sequence,
+            currentIndex,
+            direction,
+            sessionIdentity,
+            generation,
+            linkedCancellation.Token);
+        _ = CompleteInspectionTrackingAsync(task, tracking, linkedCancellation);
+        return task;
+    }
+
     public async ValueTask DisposeAsync()
     {
         Task[] runningTasks;
@@ -395,6 +458,125 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
         catch (OperationCanceledException)
         {
             return SelectionResult<T>.Simple(SelectionStatus.Stale, generation);
+        }
+    }
+
+    private async Task<InspectionAcquisitionResult<T>> AcquireNeighborForInspectionCoreAsync(
+        ImageSequence sequence,
+        int currentIndex,
+        NavigationDirection direction,
+        long sessionIdentity,
+        long generation,
+        CancellationToken cancellationToken)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        var interruptedPreload = false;
+        try
+        {
+            foreach (var index in sequence.EnumerateFrom(currentIndex + (int)direction, direction))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var path = sequence.Paths[index];
+                if (_cache.TryAcquire(path, out var cached))
+                {
+                    if (!IsInspectionAuthorized(
+                            sequence,
+                            currentIndex,
+                            sessionIdentity,
+                            generation,
+                            cancellationToken))
+                    {
+                        cached!.Dispose();
+                        return InspectionAcquisitionResult<T>.Simple(
+                            cancellationToken.IsCancellationRequested
+                                ? InspectionAcquisitionStatus.Canceled
+                                : InspectionAcquisitionStatus.Stale);
+                    }
+
+                    Interlocked.Increment(ref _cacheHits);
+                    return new InspectionAcquisitionResult<T>(
+                        InspectionAcquisitionStatus.Acquired,
+                        path,
+                        index,
+                        cached,
+                        true,
+                        stopwatch.Elapsed);
+                }
+
+                interruptedPreload |= CancelPreloadForInspection(
+                    sequence,
+                    currentIndex,
+                    sessionIdentity,
+                    generation);
+                var loaded = await LoadPathAsync(path, isSpeculative: false, cancellationToken)
+                    .ConfigureAwait(false);
+                if (!loaded.IsSuccess)
+                {
+                    continue;
+                }
+
+                if (!IsInspectionAuthorized(
+                        sequence,
+                        currentIndex,
+                        sessionIdentity,
+                        generation,
+                        cancellationToken))
+                {
+                    loaded.Image!.Dispose();
+                    Interlocked.Increment(ref _staleResultDisposals);
+                    return InspectionAcquisitionResult<T>.Simple(
+                        cancellationToken.IsCancellationRequested
+                            ? InspectionAcquisitionStatus.Canceled
+                            : InspectionAcquisitionStatus.Stale);
+                }
+
+                SharedResourceLease<T>? lease;
+                lock (_sync)
+                {
+                    if (!IsInspectionAuthorizedUnsafe(
+                            sequence,
+                            currentIndex,
+                            sessionIdentity,
+                            generation) ||
+                        cancellationToken.IsCancellationRequested)
+                    {
+                        loaded.Image!.Dispose();
+                        Interlocked.Increment(ref _staleResultDisposals);
+                        return InspectionAcquisitionResult<T>.Simple(
+                            cancellationToken.IsCancellationRequested
+                                ? InspectionAcquisitionStatus.Canceled
+                                : InspectionAcquisitionStatus.Stale);
+                    }
+
+                    if (!_cache.Add(path, loaded.Image!, protect: false) ||
+                        !_cache.TryAcquire(path, out lease))
+                    {
+                        return InspectionAcquisitionResult<T>.Simple(
+                            InspectionAcquisitionStatus.Unavailable);
+                    }
+                }
+
+                return new InspectionAcquisitionResult<T>(
+                    InspectionAcquisitionStatus.Acquired,
+                    path,
+                    index,
+                    lease,
+                    false,
+                    stopwatch.Elapsed);
+            }
+
+            return InspectionAcquisitionResult<T>.Simple(InspectionAcquisitionStatus.Unavailable);
+        }
+        catch (OperationCanceledException)
+        {
+            return InspectionAcquisitionResult<T>.Simple(InspectionAcquisitionStatus.Canceled);
+        }
+        finally
+        {
+            if (interruptedPreload)
+            {
+                StartAdjacentPreload(sequence, currentIndex, sessionIdentity, generation);
+            }
         }
     }
 
@@ -596,6 +778,53 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
     private bool IsCurrentUnsafe(long sessionIdentity, long generation) =>
         !_disposed && sessionIdentity == _sessionIdentity && generation == _generation;
 
+    private bool IsInspectionAuthorized(
+        ImageSequence sequence,
+        int currentIndex,
+        long sessionIdentity,
+        long generation,
+        CancellationToken cancellationToken)
+    {
+        lock (_sync)
+        {
+            return !cancellationToken.IsCancellationRequested &&
+                IsInspectionAuthorizedUnsafe(sequence, currentIndex, sessionIdentity, generation);
+        }
+    }
+
+    private bool IsInspectionAuthorizedUnsafe(
+        ImageSequence sequence,
+        int currentIndex,
+        long sessionIdentity,
+        long generation) =>
+        !_disposed &&
+        ReferenceEquals(_sequence, sequence) &&
+        sessionIdentity == _sessionIdentity &&
+        generation == _generation &&
+        currentIndex == _currentIndex &&
+        currentIndex == _requestedIndex;
+
+    private bool CancelPreloadForInspection(
+        ImageSequence sequence,
+        int currentIndex,
+        long sessionIdentity,
+        long generation)
+    {
+        lock (_sync)
+        {
+            if (!IsInspectionAuthorizedUnsafe(sequence, currentIndex, sessionIdentity, generation) ||
+                _preloadCancellation is null)
+            {
+                return false;
+            }
+
+            _preloadCancellation.Cancel();
+            _preloadCancellation.Dispose();
+            _preloadCancellation = null;
+            return true;
+        }
+    }
+
     private void CancelForegroundAndPreload()
     {
         _foregroundCancellation?.Cancel();
@@ -625,6 +854,26 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
         }
         finally
         {
+            tracking.TrySetResult();
+        }
+    }
+
+    private static async Task CompleteInspectionTrackingAsync(
+        Task operation,
+        TaskCompletionSource tracking,
+        CancellationTokenSource cancellation)
+    {
+        try
+        {
+            await operation.ConfigureAwait(false);
+        }
+        catch
+        {
+            // The caller owns observation of the original operation task.
+        }
+        finally
+        {
+            cancellation.Dispose();
             tracking.TrySetResult();
         }
     }

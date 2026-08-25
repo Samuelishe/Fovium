@@ -130,4 +130,18 @@ public sealed class LocalizationTests
         Assert.Equal(reset, localizer[UiStrings.ShortcutReset]);
         Assert.NotEqual(UiStrings.CommandToggleMatte, localizer[UiStrings.CommandToggleMatte]);
     }
+
+    [Theory]
+    [InlineData("en-US", "Peek 100% (hold)", "Blink Compare (hold)")]
+    [InlineData("ru-RU", "Просмотр 100% (удерживать)", "Быстрое сравнение (удерживать)")]
+    public void InspectionHoldCommandsHaveLocalizedControlsLabels(
+        string cultureName,
+        string peek,
+        string blink)
+    {
+        var localizer = Localizer.Create(CultureInfo.GetCultureInfo(cultureName));
+
+        Assert.Equal(peek, localizer[UiStrings.CommandPeek100]);
+        Assert.Equal(blink, localizer[UiStrings.CommandBlinkCompare]);
+    }
 }

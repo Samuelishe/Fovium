@@ -2,7 +2,7 @@
 
 Role: Product identity and long-term product boundary.
 Read when: Proposing a feature, evaluating product fit, or making experience-level tradeoffs.
-Authoritative for: Intended user, photographer-centric philosophy, zero-UI intent, Stage concept, future Peek/Blink direction, non-goals, and feature-creep test.
+Authoritative for: Intended user, photographer-centric philosophy, zero-UI intent, Stage concept, Peek/Blink product direction, non-goals, and feature-creep test.
 Not authoritative for: Exact interaction bindings, implementation architecture, rendering math, or current progress.
 
 ## Identity and audience
@@ -38,11 +38,11 @@ An optional persisted **Matte** is an independent modifier over any background. 
 
 ## Photographer-specific direction
 
-**Peek 100%** is a future press-and-hold action: hold `Z` from Fit to inspect 100% around the cursor, then release to restore the prior view state. Its purpose is immediate sharpness checking.
+**Peek 100%** is a whole-viewport press-and-hold action: hold `Z` to inspect exact photographic 100% around the cursor/source point, then release to restore the prior semantic view. Its purpose is immediate sharpness checking without a loupe, overlay, or persistent viewport mutation.
 
-**Blink Compare** is a future press-and-hold action: hold `C` to see the previous image, release to return to the current image, ideally preserving zoom and point of interest.
+**Blink Compare** is a press-and-hold action: hold `C` to see the previous viable image with Fit or the current physical scale and point of interest, then release to return immediately to the retained current presentation. Comparison never navigates or changes canonical selection.
 
-Both depend on a correct shared viewport and navigation model. They are important directions, not current functionality.
+Both use the shared shortcut system, allow one transient mode at a time, and add no persistent viewport UI. Selected-reference A/B and combined compare-at-100 remain future possibilities requiring evidence from real use.
 
 ## Non-goals
 

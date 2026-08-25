@@ -423,6 +423,8 @@ internal sealed partial class SettingsWindow : Window
         ViewerCommand.Fullscreen => UiStrings.CommandFullscreen,
         ViewerCommand.Open => UiStrings.CommandOpen,
         ViewerCommand.Settings => UiStrings.CommandSettings,
+        ViewerCommand.Peek100 => UiStrings.CommandPeek100,
+        ViewerCommand.BlinkCompare => UiStrings.CommandBlinkCompare,
         _ => throw new ArgumentOutOfRangeException(nameof(command)),
     }];
 

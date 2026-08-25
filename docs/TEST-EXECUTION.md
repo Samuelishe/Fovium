@@ -45,6 +45,12 @@ Run configurable-command, gesture-normalization, and command-execution tests:
 dotnet test Fovium.Tests/Fovium.Tests.csproj --filter "FullyQualifiedName~Fovium.Tests.Input"
 ```
 
+Run R4 hold lifecycle, inspection acquisition, viewport transfer/restoration, and temporary Stage tests:
+
+```powershell
+dotnet test Fovium.Tests/Fovium.Tests.csproj --filter "FullyQualifiedName~Fovium.Tests.Input|FullyQualifiedName~Fovium.Tests.Loading.ViewerSessionTests|FullyQualifiedName~Fovium.Tests.Rendering.ViewportModelTests|FullyQualifiedName~Fovium.Tests.Viewer"
+```
+
 Run the production logic and boundary tests while iterating:
 
 ```powershell
@@ -55,6 +61,6 @@ dotnet test Fovium.Tests/Fovium.Tests.csproj --filter "FullyQualifiedName~Fovium
 
 Focused tests are preferred during implementation; run the full solution before handoff when shared tooling or project configuration changes. The xUnit suite covers repository tooling and retained R0 logic plus production activation, navigation, decoding, viewport/view-policy transfer, settings persistence, loading ownership, cache, memory policy, localization, Stage geometry/preparation/publication/lifetime, DPI-aware Matte geometry and offscreen alpha composition, version metadata, and native render-lease lifetime.
 
-UI interaction, shortcut capture/conflict dialogs, rendering quality, runtime DPI, pixel alignment, color, native lifetime, and platform behavior require bounded integration, visual, and manual smoke evidence; passing pure tests cannot prove those properties.
+UI interaction, shortcut capture/conflict dialogs, rendering quality, runtime DPI, pixel alignment, color, native lifetime, and platform behavior require bounded integration, visual, and manual smoke evidence; passing pure tests cannot prove those properties. R4 adds deterministic coverage for repeat/release/cancel hold ownership, 100-cycle Peek restoration, source anchoring across simulated scaling, read-only Blink session invariance and stale-result races, comparison lease lifetime, and matching-Ambient fallback policy.
 
 CI restores, builds, and tests on Windows, Linux, and macOS. The workflow's presence is not evidence of a hosted passing run, and build/test success does not prove the Avalonia viewer's runtime rendering on those systems.

@@ -67,5 +67,7 @@ internal static class ShortcutDefaults
         [ViewerCommands.GetId(ViewerCommand.Fullscreen)] = new("F11"),
         [ViewerCommands.GetId(ViewerCommand.Open)] = new("O", ShortcutModifiers.Control),
         [ViewerCommands.GetId(ViewerCommand.Settings)] = new("Comma", ShortcutModifiers.Control),
+        [ViewerCommands.GetId(ViewerCommand.Peek100)] = new("Z"),
+        [ViewerCommands.GetId(ViewerCommand.BlinkCompare)] = new("C"),
     };
 }

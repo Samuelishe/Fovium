@@ -12,6 +12,8 @@ internal enum ViewerCommand
     Fullscreen,
     Open,
     Settings,
+    Peek100,
+    BlinkCompare,
 }
 
 internal enum ViewerCommandTrigger
@@ -39,6 +41,8 @@ internal static class ViewerCommands
         new(ViewerCommand.Fullscreen, "viewer.fullscreen"),
         new(ViewerCommand.Open, "viewer.open"),
         new(ViewerCommand.Settings, "viewer.settings"),
+        new(ViewerCommand.Peek100, "viewer.peek100", ViewerCommandTrigger.Hold),
+        new(ViewerCommand.BlinkCompare, "viewer.blinkCompare", ViewerCommandTrigger.Hold),
     ];
 
     private static readonly IReadOnlyDictionary<ViewerCommand, ViewerCommandDefinition> ByCommand =
@@ -50,6 +54,8 @@ internal static class ViewerCommands
     public static IReadOnlyList<ViewerCommandDefinition> Definitions => DefinitionsValue;
 
     public static string GetId(ViewerCommand command) => ByCommand[command].Id;
+
+    public static ViewerCommandDefinition GetDefinition(ViewerCommand command) => ByCommand[command];
 
     public static bool TryGetById(string id, out ViewerCommand command)
     {

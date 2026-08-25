@@ -15,6 +15,8 @@ public sealed class ShortcutDefaultsTests
     [InlineData((int)ViewerCommand.Fullscreen, "F11", (int)ShortcutModifiers.None)]
     [InlineData((int)ViewerCommand.Open, "O", (int)ShortcutModifiers.Control)]
     [InlineData((int)ViewerCommand.Settings, "Comma", (int)ShortcutModifiers.Control)]
+    [InlineData((int)ViewerCommand.Peek100, "Z", (int)ShortcutModifiers.None)]
+    [InlineData((int)ViewerCommand.BlinkCompare, "C", (int)ShortcutModifiers.None)]
     public void ExactDefaultBindingsUseProjectOwnedGestures(
         int commandValue,
         string key,
@@ -40,7 +42,13 @@ public sealed class ShortcutDefaultsTests
         Assert.Equal("viewer.fullscreen", ViewerCommands.GetId(ViewerCommand.Fullscreen));
         Assert.Equal("viewer.open", ViewerCommands.GetId(ViewerCommand.Open));
         Assert.Equal("viewer.settings", ViewerCommands.GetId(ViewerCommand.Settings));
-        Assert.All(ViewerCommands.Definitions, definition =>
-            Assert.Equal(ViewerCommandTrigger.Press, definition.Trigger));
+        Assert.Equal("viewer.peek100", ViewerCommands.GetId(ViewerCommand.Peek100));
+        Assert.Equal("viewer.blinkCompare", ViewerCommands.GetId(ViewerCommand.BlinkCompare));
+        Assert.Equal(ViewerCommandTrigger.Hold, ViewerCommands.GetDefinition(ViewerCommand.Peek100).Trigger);
+        Assert.Equal(ViewerCommandTrigger.Hold, ViewerCommands.GetDefinition(ViewerCommand.BlinkCompare).Trigger);
+        Assert.All(
+            ViewerCommands.Definitions.Where(definition =>
+                definition.Command is not ViewerCommand.Peek100 and not ViewerCommand.BlinkCompare),
+            definition => Assert.Equal(ViewerCommandTrigger.Press, definition.Trigger));
     }
 }

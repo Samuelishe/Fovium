@@ -46,6 +46,17 @@ public sealed class ViewerCommandExecutorTests
         Assert.Equal(0, target.FitCount);
     }
 
+    [Theory]
+    [InlineData((int)ViewerCommand.Peek100)]
+    [InlineData((int)ViewerCommand.BlinkCompare)]
+    public async Task HoldCommandsCannotRunThroughOneShotExecutor(int commandValue)
+    {
+        var executor = new ViewerCommandExecutor(new RecordingTarget());
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => executor.ExecuteAsync((ViewerCommand)commandValue));
+    }
+
     private sealed class RecordingTarget : IViewerCommandTarget
     {
         public int ZoomSteps { get; private set; }

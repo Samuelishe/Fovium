@@ -45,7 +45,7 @@ Accepted outcome: add persisted DPI-aware Matte width plus Solid, Rounded, Soft,
 
 ## R4 — Peek 100% / Blink Compare
 
-Build photographer inspection actions on the shared viewport and navigation models, preserving view state and point of interest where intended.
+Accepted outcome: add configurable press-and-hold whole-viewport Peek 100% and previous-viable Blink Compare on the shared viewport/session models. Peek preserves cursor/source anchoring and restores semantic view state; Blink uses retained read-only acquisition without changing canonical navigation, and both cancel safely on lost hold authority.
 
 ## R5 — Settings / metadata / context-menu polish
 

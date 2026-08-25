@@ -54,7 +54,7 @@ Owns application UI theme selection: Dark or Light. It does not alter Stage or p
 
 ### Controls
 
-R3-F1 implements configurable bindings for previous/next, zoom in/out, Fit, 100%, Toggle Matte, fullscreen, Open, and Settings. Persisted command IDs and gesture names are locale-independent. Capture rejects bare modifiers and reserved `Esc`. A conflict requires explicit confirmation; replacement assigns the new command and leaves the former owner unassigned rather than swapping. Reset shortcuts restores this section only. The input model leaves a bounded trigger seam for future hold/release commands without implementing Peek/Blink.
+Controls implements configurable bindings for previous/next, zoom in/out, Fit, 100%, Toggle Matte, fullscreen, Open, Settings, Peek 100%, and Blink Compare. Peek/Blink are visibly named hold commands and default to `Z`/`C`; they use the same locale-independent IDs, gesture capture, conflict confirmation, unassigned state, and reset table as press commands. Capture rejects bare modifiers and reserved `Esc`. Replacement assigns the new command and leaves the former owner unassigned rather than swapping. Reset shortcuts restores this section only.
 
 ### Color
 
@@ -85,7 +85,7 @@ Copied diagnostics may include only genuinely known values such as Fovium versio
 
 Ordinary preferences use platform-appropriate per-user application-data storage. They do not require a database, catalog, or project-local file.
 
-The readable JSON document now uses `schemaVersion = 2` in the platform-appropriate per-user application-data directory. Its explicit v1→v2 migration maps the former four-value Stage enum to background plus independent Matte while preserving image-change policy. R3-F2's additive Matte style/width fields do not change the schema: older v2 documents resolve them to Solid and `24` physical pixels. It writes through a same-directory temporary file and replacement, tolerates unknown properties/command IDs, and falls back to deterministic defaults on missing, malformed, inaccessible, or unsupported-schema input. Extend this direct migration path only when a real incompatible change exists; do not build a generic migration framework.
+The readable JSON document now uses `schemaVersion = 2` in the platform-appropriate per-user application-data directory. Its explicit v1→v2 migration maps the former four-value Stage enum to background plus independent Matte while preserving image-change policy. R3-F2's additive Matte style/width fields and R4's additive hold-command IDs do not change the schema. Older v2 documents receive `Z`/`C` defaults only when those gestures are not already owned by an existing command; existing customization wins and the colliding new command becomes Unassigned. It writes through a same-directory temporary file and replacement, tolerates unknown properties/command IDs, and falls back to deterministic defaults on missing, malformed, inaccessible, or unsupported-schema input. Extend this direct migration path only when a real incompatible change exists; do not build a generic migration framework.
 
 Settings normally autosave after a valid non-destructive preference change. Do not require Save or Apply buttons without evidence that deferred application is necessary. Destructive or system-owned actions remain explicit.
 

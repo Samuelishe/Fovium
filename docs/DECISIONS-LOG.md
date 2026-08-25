@@ -204,3 +204,21 @@ Configurable commands persist locale-independent IDs and project-owned key/modif
 Status: Accepted in R3-F2.
 
 Matte is an independent presentation layer with an opaque color, a physical-pixel width, and an initial Solid, Rounded, Soft, or Angular outer style. The complete photograph remains rectangular and unmodified, with an opaque Matte backing beneath its entire destination for alpha compositing. Style and width are synchronous renderer geometry and never invalidate Ambient; this initial style catalog and its aesthetic ratios may be refined by later visual evidence.
+
+## D-034 — Peek is temporary whole-viewport physical 100%
+
+Status: Accepted in R4.
+
+Peek is a cursor/source-anchored whole-viewport inspection at exact photographic 100%, not a magnifier, lens, split view, or persistent zoom. It snapshots Fit or manual physical scale plus normalized point of interest, allows only temporary pan, and restores the semantic snapshot under current geometry without accumulating transform drift.
+
+## D-035 — Blink is a non-navigating retained comparison
+
+Status: Accepted in R4.
+
+Blink compares the current canonical image with the nearest previous viable image through a read-only retained acquisition; it does not call normal Previous/Next navigation or mutate current/requested index, generation, sequence, cache protection, or view policy. Fit remains Fit; manual physical scale and point of interest transfer. The retained current presentation returns immediately. A comparison uses its own already prepared matching Ambient or Black fallback, never the current image's Ambient.
+
+## D-036 — Temporary inspection uses shared configurable hold input
+
+Status: Accepted in R4.
+
+Peek and Blink are configurable hold commands in the shared stable command/gesture system, defaulting to `Z` and `C` without stealing existing customized bindings. One transient inspection mode may own a primary key at a time. Repeat and competing holds are ignored; matching primary-key release ends the hold despite modifier changes; `Esc`, focus loss, persistent commands, sequence replacement, Settings/context-menu transitions, and shutdown restore it safely.

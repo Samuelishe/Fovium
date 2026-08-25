@@ -55,6 +55,8 @@
   "command.fullscreen": "Fullscreen",
   "command.open": "Open",
   "command.settings": "Settings",
+  "command.peek100": "Peek 100% (hold)",
+  "command.blinkCompare": "Blink Compare (hold)",
   "settings.version": "Version {0}",
   "picker.title": "Open JPEG or PNG",
   "picker.imageType": "JPEG / PNG images",

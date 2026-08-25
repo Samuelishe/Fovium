@@ -251,6 +251,53 @@ public sealed class JsonSettingsStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task ExistingV2SettingsReceivePeekAndBlinkDefaultsWithoutSchemaBump()
+    {
+        await WriteAsync(
+            """
+            {
+              "schemaVersion": 2,
+              "shortcuts": {
+                "bindings": {
+                  "viewer.fit": { "key": "0", "modifiers": "None" }
+                }
+              }
+            }
+            """);
+
+        var result = await CreateStore().LoadAsync(CancellationToken.None);
+
+        Assert.Equal(2, result.Settings.SchemaVersion);
+        Assert.Equal(new ShortcutGesture("Z"), result.Settings.Shortcuts.Get(ViewerCommand.Peek100));
+        Assert.Equal(new ShortcutGesture("C"), result.Settings.Shortcuts.Get(ViewerCommand.BlinkCompare));
+        Assert.False(result.RequiresSave);
+    }
+
+    [Fact]
+    public async Task ExistingV2CustomZAndCBindingsWinOverNewHoldDefaults()
+    {
+        await WriteAsync(
+            """
+            {
+              "schemaVersion": 2,
+              "shortcuts": {
+                "bindings": {
+                  "viewer.fit": { "key": "Z", "modifiers": "None" },
+                  "viewer.toggleMatte": { "key": "C", "modifiers": "None" }
+                }
+              }
+            }
+            """);
+
+        var result = await CreateStore().LoadAsync(CancellationToken.None);
+
+        Assert.Equal(new ShortcutGesture("Z"), result.Settings.Shortcuts.Get(ViewerCommand.Fit));
+        Assert.Equal(new ShortcutGesture("C"), result.Settings.Shortcuts.Get(ViewerCommand.ToggleMatte));
+        Assert.Null(result.Settings.Shortcuts.Get(ViewerCommand.Peek100));
+        Assert.Null(result.Settings.Shortcuts.Get(ViewerCommand.BlinkCompare));
+    }
+
+    [Fact]
     public async Task MalformedJsonRecoversToDefaults()
     {
         await WriteAsync("{not-json");

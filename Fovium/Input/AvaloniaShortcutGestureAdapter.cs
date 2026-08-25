@@ -13,7 +13,24 @@ internal static class AvaloniaShortcutGestureAdapter
     public static bool TryCreate(Key key, KeyModifiers modifiers, out ShortcutGesture gesture)
     {
         var normalizedModifiers = ToShortcutModifiers(modifiers);
-        var name = key switch
+        if (!TryGetPrimaryKey(key, out var name))
+        {
+            gesture = default;
+            return false;
+        }
+
+        if (key == Key.OemPlus)
+        {
+            normalizedModifiers &= ~ShortcutModifiers.Shift;
+        }
+
+        gesture = new ShortcutGesture(name, normalizedModifiers);
+        return gesture.IsValid && !gesture.IsReserved;
+    }
+
+    public static bool TryGetPrimaryKey(Key key, out string name)
+    {
+        name = key switch
         {
             Key.Add or Key.OemPlus => "Plus",
             Key.Subtract or Key.OemMinus => "Minus",
@@ -22,13 +39,7 @@ internal static class AvaloniaShortcutGestureAdapter
             Key.OemComma => "Comma",
             _ => key.ToString(),
         };
-        if (key == Key.OemPlus)
-        {
-            normalizedModifiers &= ~ShortcutModifiers.Shift;
-        }
-
-        gesture = new ShortcutGesture(name, normalizedModifiers);
-        return gesture.IsValid && !gesture.IsReserved;
+        return key != Key.None;
     }
 
     public static KeyGesture? ToAvalonia(ShortcutGesture? gesture)

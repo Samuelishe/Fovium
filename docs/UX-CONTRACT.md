@@ -25,10 +25,12 @@ Temporary overlays are acceptable only in response to a direct action and should
 | `0` | Fit (default binding) |
 | `1` | Photographic 100% (default binding) |
 | `M` | Toggle Matte without changing the Stage background (default binding) |
+| Hold `Z` | Peek at whole-viewport photographic 100% around the cursor/source point; release restores the exact prior semantic view (default binding) |
+| Hold `C` | Temporarily show the previous viable image without navigating; release restores the retained current presentation (default binding) |
 | `F11` | Toggle fullscreen (default binding) |
-| `Esc` | Leave fullscreen; otherwise close the viewer |
+| `Esc` | Cancel active Peek/Blink; otherwise leave fullscreen; otherwise close the viewer |
 
-The effective bindings except `Esc` are user-configurable in Settings → Controls. `Esc` is reserved and cancels shortcut capture before applying its fullscreen/close behavior. Fullscreen preserves the same zoom and pan behavior as a normal window. The command model is ready to distinguish future press/hold behavior, but Peek/Blink are not implemented.
+The effective bindings except `Esc` are user-configurable in Settings → Controls. Peek and Blink are hold commands: the resolved full gesture begins the action once, while release of its primary key ends it even if modifiers changed. The first active hold wins; repeat key-down and a second hold are ignored. Any persistent viewer command, focus loss, sequence replacement, Settings/context-menu transition, shutdown, or `Esc` first restores the temporary presentation. Fullscreen preserves ordinary zoom/pan behavior, and Peek/Blink work identically there after any active hold is canceled before a fullscreen transition.
 
 ## View behavior
 
@@ -37,6 +39,8 @@ The effective bindings except `Esc` are user-configurable in Settings → Contro
 **100%** has photographic physical-pixel meaning: approximately one oriented source pixel per physical display pixel. The technical contract is owned by [`RENDERING.md`](RENDERING.md).
 
 **Manual zoom** uses reasonably fine discrete steps. Each wheel step keeps the source point beneath the cursor at the same viewport position. A future setting may adjust step size. Manual zoom may move image bounds outside the viewport; left-drag panning then moves the view over the image.
+
+Peek temporarily sets physical scale to exactly `1.0`. A pointer over the photograph preserves its source point under the same viewport position within natural bounds; a pointer over Stage uses the current point of interest at viewport center. Left-drag may pan the temporary Peek view, while wheel and double-click are ignored; release restores Fit or the exact prior manual physical scale and normalized point of interest. Blink keeps mouse pan, wheel, and double-click inert and maps Fit to Fit or transfers the current manual physical scale and normalized point of interest to the comparison image.
 
 ## Navigation experience
 

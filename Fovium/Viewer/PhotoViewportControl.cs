@@ -15,7 +15,13 @@ internal sealed class PhotoViewportControl : Control
     private readonly ViewportModel _viewport = new();
     private SharedResourceLease<DecodedImage>? _image;
     private DecodedImage.AmbientLease? _ambient;
+    private SharedResourceLease<DecodedImage>? _inspectionImage;
+    private DecodedImage.AmbientLease? _inspectionAmbient;
+    private StageSettings? _inspectionStage;
+    private ViewTransfer? _inspectionRestore;
+    private InspectionMode _inspectionMode;
     private Point? _lastDragPoint;
+    private PointD? _lastPointerPosition;
     private TopLevel? _topLevel;
     private double _wheelAccumulator;
     private StageSettings _stage = StageSettings.Default;
@@ -32,12 +38,15 @@ internal sealed class PhotoViewportControl : Control
 
     public bool HasImage => _image is not null;
 
+    public InspectionMode InspectionMode => _inspectionMode;
+
     public ViewTransfer CaptureViewTransfer() =>
         _image is null ? ViewTransfer.Fit : _viewport.CaptureTransfer();
 
     public void SetImage(SharedResourceLease<DecodedImage> image, ViewTransfer transfer)
     {
         ArgumentNullException.ThrowIfNull(image);
+        DiscardInspection();
         var previous = _image;
         var previousAmbient = _ambient;
         _ambient = null;
@@ -67,6 +76,7 @@ internal sealed class PhotoViewportControl : Control
 
     public void ClearImage()
     {
+        DiscardInspection();
         var previous = _image;
         var previousAmbient = _ambient;
         _image = null;
@@ -111,13 +121,94 @@ internal sealed class PhotoViewportControl : Control
         InvalidateAndReport();
     }
 
+    public bool BeginPeek100()
+    {
+        if (_image is null || _inspectionMode != InspectionMode.None)
+        {
+            return false;
+        }
+
+        _inspectionRestore = _viewport.CaptureTransfer();
+        _inspectionMode = InspectionMode.Peek100;
+        _lastDragPoint = null;
+        _viewport.SetPhotographic100ForInspection(_lastPointerPosition);
+        InvalidateVisual();
+        return true;
+    }
+
+    public bool BeginBlinkCompare()
+    {
+        if (_image is null || _inspectionMode != InspectionMode.None)
+        {
+            return false;
+        }
+
+        _inspectionRestore = _viewport.CaptureTransfer();
+        _inspectionMode = InspectionMode.BlinkCompare;
+        _lastDragPoint = null;
+        return true;
+    }
+
+    public bool ShowBlinkComparison(
+        SharedResourceLease<DecodedImage> image,
+        StageSettings stage,
+        DecodedImage.AmbientLease? ambient)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        ArgumentNullException.ThrowIfNull(stage);
+        if (_inspectionMode != InspectionMode.BlinkCompare || _inspectionRestore is null)
+        {
+            ambient?.Dispose();
+            return false;
+        }
+
+        var previousImage = _inspectionImage;
+        var previousAmbient = _inspectionAmbient;
+        _inspectionImage = image;
+        _inspectionAmbient = ambient;
+        _inspectionStage = stage;
+        _viewport.SetImage(image.Value.Descriptor.OrientedSize, _inspectionRestore.Value);
+        InvalidateVisual();
+        previousImage?.Dispose();
+        previousAmbient?.Dispose();
+        return true;
+    }
+
+    public bool EndInspection()
+    {
+        if (_inspectionMode == InspectionMode.None)
+        {
+            return false;
+        }
+
+        var restore = _inspectionRestore;
+        var comparison = _inspectionImage;
+        var comparisonAmbient = _inspectionAmbient;
+        _inspectionMode = InspectionMode.None;
+        _inspectionRestore = null;
+        _inspectionImage = null;
+        _inspectionAmbient = null;
+        _inspectionStage = null;
+        _lastDragPoint = null;
+        if (_image is not null && restore is not null)
+        {
+            _viewport.SetImage(_image.Value.Descriptor.OrientedSize, restore.Value);
+        }
+
+        InvalidateVisual();
+        comparison?.Dispose();
+        comparisonAmbient?.Dispose();
+        return true;
+    }
+
     public override void Render(DrawingContext context)
     {
         base.Render(context);
-        var fallbackColor = _stage.BackgroundMode switch
+        var presentationStage = _inspectionImage is not null ? _inspectionStage! : _stage;
+        var fallbackColor = presentationStage.BackgroundMode switch
         {
             StageBackgroundMode.Neutral => StageDefaults.NeutralColor,
-            StageBackgroundMode.Custom => _stage.CustomBackgroundColor,
+            StageBackgroundMode.Custom => presentationStage.CustomBackgroundColor,
             _ => StageDefaults.BlackColor,
         };
         IBrush fallback = new SolidColorBrush(Color.FromRgb(
@@ -125,7 +216,7 @@ internal sealed class PhotoViewportControl : Control
             fallbackColor.Green,
             fallbackColor.Blue));
         context.FillRectangle(fallback, new Rect(Bounds.Size));
-        var cachedLease = _image;
+        var cachedLease = _inspectionImage ?? _image;
         if (cachedLease is null)
         {
             return;
@@ -136,7 +227,8 @@ internal sealed class PhotoViewportControl : Control
         try
         {
             renderLease = cachedLease.Value.AcquireRenderLease();
-            ambientLease = _ambient?.Acquire();
+            var ambient = _inspectionImage is not null ? _inspectionAmbient : _ambient;
+            ambientLease = ambient?.Acquire();
             var descriptor = cachedLease.Value.Descriptor;
             context.Custom(new SkiaPhotoDrawOperation(
                 new Rect(Bounds.Size),
@@ -145,7 +237,7 @@ internal sealed class PhotoViewportControl : Control
                 descriptor.Orientation,
                 GetDestination(),
                 _viewport.UsesExactPixelSampling,
-                _stage,
+                presentationStage,
                 _viewport.RenderScaling,
                 ambientLease));
             renderLease = null;
@@ -191,6 +283,12 @@ internal sealed class PhotoViewportControl : Control
     {
         base.OnPointerWheelChanged(e);
         NotifyPointerActivity();
+        UpdatePointerPosition(e);
+        if (_inspectionMode != InspectionMode.None)
+        {
+            e.Handled = true;
+            return;
+        }
         if (_image is null)
         {
             return;
@@ -214,9 +312,22 @@ internal sealed class PhotoViewportControl : Control
     {
         base.OnPointerPressed(e);
         NotifyPointerActivity();
+        UpdatePointerPosition(e);
         var point = e.GetCurrentPoint(this);
         if (!point.Properties.IsLeftButtonPressed || _image is null)
         {
+            return;
+        }
+
+        if (_inspectionMode != InspectionMode.None)
+        {
+            if (_inspectionMode == InspectionMode.Peek100 && e.ClickCount != 2)
+            {
+                _lastDragPoint = e.GetPosition(this);
+                e.Pointer.Capture(this);
+            }
+
+            e.Handled = true;
             return;
         }
 
@@ -239,6 +350,7 @@ internal sealed class PhotoViewportControl : Control
     {
         base.OnPointerMoved(e);
         NotifyPointerActivity();
+        UpdatePointerPosition(e);
         var previous = _lastDragPoint;
         if (previous is null || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
         {
@@ -248,7 +360,14 @@ internal sealed class PhotoViewportControl : Control
         var current = e.GetPosition(this);
         _viewport.PanBy(new PointD(current.X - previous.Value.X, current.Y - previous.Value.Y));
         _lastDragPoint = current;
-        InvalidateAndReport();
+        if (_inspectionMode == InspectionMode.Peek100)
+        {
+            InvalidateVisual();
+        }
+        else
+        {
+            InvalidateAndReport();
+        }
         e.Handled = true;
     }
 
@@ -256,6 +375,7 @@ internal sealed class PhotoViewportControl : Control
     {
         base.OnPointerReleased(e);
         NotifyPointerActivity();
+        UpdatePointerPosition(e);
         if (_lastDragPoint is null)
         {
             return;
@@ -280,6 +400,12 @@ internal sealed class PhotoViewportControl : Control
 
     private void OnScalingChanged(object? sender, EventArgs e) => UpdateViewportMetrics();
 
+    protected override void OnPointerExited(PointerEventArgs e)
+    {
+        base.OnPointerExited(e);
+        _lastPointerPosition = null;
+    }
+
     private void UpdateViewportMetrics()
     {
         var renderScaling = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1;
@@ -298,4 +424,24 @@ internal sealed class PhotoViewportControl : Control
     }
 
     private void RaiseViewStateChanged() => ViewStateChanged?.Invoke(this, EventArgs.Empty);
+
+    private void UpdatePointerPosition(PointerEventArgs e)
+    {
+        var pointer = e.GetPosition(this);
+        _lastPointerPosition = new PointD(pointer.X, pointer.Y);
+    }
+
+    private void DiscardInspection()
+    {
+        var comparison = _inspectionImage;
+        var comparisonAmbient = _inspectionAmbient;
+        _inspectionMode = InspectionMode.None;
+        _inspectionRestore = null;
+        _inspectionImage = null;
+        _inspectionAmbient = null;
+        _inspectionStage = null;
+        _lastDragPoint = null;
+        comparison?.Dispose();
+        comparisonAmbient?.Dispose();
+    }
 }

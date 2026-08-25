@@ -146,6 +146,7 @@ public sealed class ViewportModelTests
 
     [Theory]
     [InlineData(1.0)]
+    [InlineData(2.0)]
     [InlineData(2.25)]
     public void ManualTransferPreservesPhysicalScaleAndNormalizedPointOfInterest(double scale)
     {
@@ -161,6 +162,170 @@ public sealed class ViewportModelTests
         Assert.Equal(scale, restored.PhysicalScale, 12);
         Assert.Equal(transfer.PointOfInterest.X, restored.PointOfInterest.X, 9);
         Assert.Equal(transfer.PointOfInterest.Y, restored.PointOfInterest.Y, 9);
+    }
+
+    [Theory]
+    [InlineData(1.00)]
+    [InlineData(1.25)]
+    [InlineData(1.50)]
+    [InlineData(2.00)]
+    public void Peek100KeepsSourcePointUnderPointerAtEverySupportedRenderScaling(double renderScaling)
+    {
+        var viewport = CreateViewport(
+            new PixelSize(4000, 3000),
+            new LogicalSize(1200, 800),
+            renderScaling);
+        var pointer = new PointD(640, 420);
+        var sourceBefore = viewport.SourcePointAt(pointer);
+
+        viewport.SetPhotographic100ForInspection(pointer);
+
+        var sourceAfter = viewport.SourcePointAt(pointer);
+        Assert.Equal(1, viewport.PhysicalScale, 12);
+        Assert.Equal(sourceBefore.X, sourceAfter.X, 9);
+        Assert.Equal(sourceBefore.Y, sourceAfter.Y, 9);
+    }
+
+    [Theory]
+    [InlineData(0.42)]
+    [InlineData(1.00)]
+    [InlineData(2.00)]
+    public void PeekRestoresManualScaleAndOffCenterPointOfInterest(double scale)
+    {
+        var viewport = CreateViewport(
+            new PixelSize(4000, 3000),
+            new LogicalSize(1200, 800),
+            1.25);
+        viewport.ZoomAt(new PointD(600, 400), scale);
+        viewport.PanBy(new PointD(-175, 90));
+        var before = viewport.CaptureTransfer();
+
+        viewport.SetPhotographic100ForInspection(new PointD(700, 350));
+        viewport.PanBy(new PointD(-80, 40));
+        viewport.SetImage(viewport.SourceSize, before);
+
+        Assert.Equal(before, viewport.CaptureTransfer());
+    }
+
+    [Fact]
+    public void PeekFromFitRestoresSemanticFitAfterViewportGeometryChanges()
+    {
+        var viewport = CreateViewport(
+            new PixelSize(4000, 3000),
+            new LogicalSize(1200, 800),
+            1);
+        var before = viewport.CaptureTransfer();
+
+        viewport.SetPhotographic100ForInspection(new PointD(650, 420));
+        viewport.SetViewport(new LogicalSize(900, 700), 1.5);
+        viewport.SetImage(viewport.SourceSize, before);
+
+        Assert.Equal(ViewTransfer.Fit, viewport.CaptureTransfer());
+        Assert.Equal(ViewportMode.Fit, viewport.Mode);
+        Assert.Equal(0.3375, viewport.PhysicalScale, 12);
+    }
+
+    [Fact]
+    public void PointerOverStageUsesCurrentPointOfInterestAtViewportCenter()
+    {
+        var viewport = CreateViewport(
+            new PixelSize(1000, 1000),
+            new LogicalSize(1600, 900),
+            1);
+        var center = new PointD(800, 450);
+        var centerSourceBefore = viewport.SourcePointAt(center);
+
+        viewport.SetPhotographic100ForInspection(new PointD(20, 450));
+
+        var centerSourceAfter = viewport.SourcePointAt(center);
+        Assert.Equal(centerSourceBefore.X, centerSourceAfter.X, 9);
+        Assert.Equal(centerSourceBefore.Y, centerSourceAfter.Y, 9);
+        var transfer = viewport.CaptureTransfer();
+        Assert.InRange(transfer.PointOfInterest.X, 0, 1);
+        Assert.InRange(transfer.PointOfInterest.Y, 0, 1);
+        Assert.True(double.IsFinite(transfer.PointOfInterest.X));
+        Assert.True(double.IsFinite(transfer.PointOfInterest.Y));
+    }
+
+    [Fact]
+    public void PeekNearBoundaryAppliesNormalOriginClamp()
+    {
+        var viewport = CreateViewport(
+            new PixelSize(4000, 3000),
+            new LogicalSize(800, 600),
+            1);
+        var pointer = new PointD(800, 600);
+
+        viewport.SetPhotographic100ForInspection(pointer);
+
+        Assert.Equal(800 - 4000, viewport.OriginDip.X, 12);
+        Assert.Equal(600 - 3000, viewport.OriginDip.Y, 12);
+        var sourceAtPointer = viewport.SourcePointAt(pointer);
+        Assert.InRange(sourceAtPointer.X, 0, 4000);
+        Assert.InRange(sourceAtPointer.Y, 0, 3000);
+    }
+
+    [Fact]
+    public void OneHundredPeekCyclesRestoreWithoutCoordinateDrift()
+    {
+        var viewport = CreateViewport(
+            new PixelSize(6016, 4016),
+            new LogicalSize(1200, 800),
+            1.5);
+        viewport.ZoomAt(new PointD(600, 400), 0.42);
+        viewport.PanBy(new PointD(-130, -75));
+        var expected = viewport.CaptureTransfer();
+
+        for (var iteration = 0; iteration < 100; iteration++)
+        {
+            viewport.SetPhotographic100ForInspection(new PointD(730, 360));
+            viewport.PanBy(new PointD(-25, 12));
+            viewport.SetImage(viewport.SourceSize, expected);
+        }
+
+        Assert.Equal(expected, viewport.CaptureTransfer());
+    }
+
+    [Theory]
+    [InlineData(0.42)]
+    [InlineData(1.00)]
+    [InlineData(2.00)]
+    public void BlinkTransferPreservesManualScaleAndPoiThenRestoresCurrentExactly(double scale)
+    {
+        var viewport = CreateViewport(
+            new PixelSize(4000, 3000),
+            new LogicalSize(800, 600),
+            1.25);
+        viewport.ZoomAt(new PointD(400, 300), scale);
+        viewport.PanBy(new PointD(-120, -80));
+        var current = viewport.CaptureTransfer();
+
+        viewport.SetImage(new PixelSize(6000, 4000), current);
+        var comparison = viewport.CaptureTransfer();
+
+        Assert.Equal(ViewportMode.Manual, comparison.Mode);
+        Assert.Equal(scale, comparison.PhysicalScale, 12);
+        Assert.Equal(current.PointOfInterest.X, comparison.PointOfInterest.X, 9);
+        Assert.Equal(current.PointOfInterest.Y, comparison.PointOfInterest.Y, 9);
+
+        viewport.SetImage(new PixelSize(4000, 3000), current);
+        Assert.Equal(current, viewport.CaptureTransfer());
+    }
+
+    [Fact]
+    public void BlinkTransferMapsFitToFitAndRestoresFit()
+    {
+        var viewport = CreateViewport(
+            new PixelSize(4000, 3000),
+            new LogicalSize(800, 600),
+            1.5);
+        var current = viewport.CaptureTransfer();
+
+        viewport.SetImage(new PixelSize(3000, 5000), current);
+
+        Assert.Equal(ViewTransfer.Fit, viewport.CaptureTransfer());
+        viewport.SetImage(new PixelSize(4000, 3000), current);
+        Assert.Equal(ViewTransfer.Fit, viewport.CaptureTransfer());
     }
 
     private static ViewportModel CreateViewport(

@@ -137,13 +137,20 @@ internal sealed class ViewportModel
             throw new ArgumentOutOfRangeException(nameof(newPhysicalScale));
         }
 
-        var sourcePoint = SourcePointAt(pointerDip);
-        _physicalScale = ClampManualScale(newPhysicalScale);
-        Mode = ViewportMode.Manual;
-        _originDip = new PointD(
-            pointerDip.X - sourcePoint.X * DipScale,
-            pointerDip.Y - sourcePoint.Y * DipScale);
-        ClampOrigin();
+        PlaceSourcePointAt(SourcePointAt(pointerDip), pointerDip, newPhysicalScale);
+    }
+
+    public void SetPhotographic100ForInspection(PointD? pointerDip)
+    {
+        var viewportAnchor = ViewportCenter();
+        var sourceAnchor = SourcePointAt(viewportAnchor);
+        if (pointerDip is { } pointer && Contains(DestinationDip, pointer))
+        {
+            viewportAnchor = pointer;
+            sourceAnchor = SourcePointAt(pointer);
+        }
+
+        PlaceSourcePointAt(sourceAnchor, viewportAnchor, 1);
     }
 
     public void PanBy(PointD deltaDip)
@@ -194,6 +201,19 @@ internal sealed class ViewportModel
             center.Y - sourcePoint.Y * DipScale);
     }
 
+    private void PlaceSourcePointAt(
+        PointD sourcePoint,
+        PointD viewportPoint,
+        double physicalScale)
+    {
+        _physicalScale = ClampManualScale(physicalScale);
+        Mode = ViewportMode.Manual;
+        _originDip = new PointD(
+            viewportPoint.X - sourcePoint.X * DipScale,
+            viewportPoint.Y - sourcePoint.Y * DipScale);
+        ClampOrigin();
+    }
+
     private void CenterOrigin()
     {
         var destinationWidth = _sourceSize.Width * DipScale;
@@ -220,6 +240,12 @@ internal sealed class ViewportModel
 
     private static bool IsIntegralPhysicalScale(double physicalScale) =>
         Math.Abs(physicalScale - Math.Round(physicalScale)) <= 1e-9;
+
+    private static bool Contains(RectD rect, PointD point) =>
+        point.X >= rect.X &&
+        point.X <= rect.X + rect.Width &&
+        point.Y >= rect.Y &&
+        point.Y <= rect.Y + rect.Height;
 
     private static void ValidateRenderScaling(double renderScaling)
     {
