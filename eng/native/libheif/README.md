@@ -19,7 +19,7 @@ libheif plugin loading and every encoder are disabled. The only external codec i
 
 ## Clean build commands
 
-Prerequisites are a native C/C++ toolchain, CMake 3.28+, Python 3.12+, NASM 2.16+, and network access to the pinned official archives. The wrappers create an ignored virtual environment containing pinned Meson and Ninja versions.
+Prerequisites are a native C/C++ toolchain, CMake 3.28+, Python 3.12+, NASM 2.16+, and network access to the pinned official archives. The wrappers create an ignored virtual environment containing pinned Meson and Ninja versions. macOS builds explicitly target macOS 14.0, the lowest macOS release in the current supported .NET 10 matrix and an Avalonia 12 supported desktop tier; `versions.json` is the single owner of that value.
 
 Windows x64 from PowerShell with Visual Studio C++ tools installed:
 
@@ -53,6 +53,8 @@ The result is named `fovium-libheif-<rid>` and contains:
 - `dependency-audit.txt` from `dumpbin`, `readelf`/`ldd`, or `otool`;
 - `smoke-report.txt` proving the exact loaded libheif path/version, HEVC and AV1 decoder presence, encoder absence, and successful HEIF/AVIF decode.
 
-Linux uses `$ORIGIN` and macOS uses `@loader_path` install/runtime paths. Windows resolves the dependency DLLs beside libheif. The smoke fails if libheif loads outside the artifact runtime directory or if an HEVC/AV1 encoder is available.
+Linux uses `$ORIGIN`. macOS packaging deterministically rewrites the three shipped dylib identities to `@rpath`, rewrites their mutual dependencies to the same app-local identities, and gives every real dylib an `@loader_path` runtime search path. Windows resolves the dependency DLLs beside libheif. The dependency audit runs after relocation and verifies the exact macOS deployment target and RID architecture. The build prefix is then renamed out of reach while the smoke runs, on both Unix platforms and Windows, so a passing decode cannot borrow the original install tree. The smoke also fails if libheif loads outside the artifact runtime directory or if an HEVC/AV1 encoder is available.
+
+Final binary hashes are generated only after relocation, dependency audit, and self-contained smoke. Formal macOS signing/notarization is not part of this prerequisite artifact.
 
 The artifact is additionally packed as a deterministic ZIP on Windows or deterministic tar.gz on Unix. No runtime is published or referenced by the production application in R7-C-N1.

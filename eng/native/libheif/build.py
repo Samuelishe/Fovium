@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import gzip
 import hashlib
 import json
@@ -44,6 +45,12 @@ FORBIDDEN_DEPENDENCY_MARKERS = (
     "/opt/homebrew",
     "/usr/local",
 )
+
+MACOS_LIBRARY_IDENTITIES = {
+    "libheif": "@rpath/libheif.1.dylib",
+    "libde265": "@rpath/libde265.0.dylib",
+    "dav1d": "@rpath/libdav1d.7.dylib",
+}
 
 LIBDE265_OPTIONS = (
     "BUILD_SHARED_LIBS=ON",
@@ -221,6 +228,10 @@ def configure_reproducible_environment(
     rid: str, versions: dict[str, Any]
 ) -> None:
     os.environ["SOURCE_DATE_EPOCH"] = versions["tooling"]["sourceDateEpoch"]
+    if rid.startswith("osx-"):
+        os.environ["MACOSX_DEPLOYMENT_TARGET"] = versions["tooling"][
+            "macosDeploymentTarget"
+        ]
     if rid != "win-x64":
         return
 
@@ -257,7 +268,25 @@ def find_library(prefix: Path, candidates: Iterable[str]) -> Path:
     raise RuntimeError(f"Could not find any of {list(candidates)} below {prefix}")
 
 
-def build_libde265(source: Path, build: Path, prefix: Path, rpath: str) -> None:
+def macos_cmake_arguments(
+    rid: str, macos_deployment_target: str
+) -> list[str]:
+    if not rid.startswith("osx-"):
+        return []
+    return [
+        f"-DCMAKE_OSX_DEPLOYMENT_TARGET={macos_deployment_target}",
+        "-DCMAKE_INSTALL_NAME_DIR=@rpath",
+    ]
+
+
+def build_libde265(
+    source: Path,
+    build: Path,
+    prefix: Path,
+    rid: str,
+    rpath: str,
+    macos_deployment_target: str,
+) -> None:
     arguments = [
         "cmake",
         "-S",
@@ -269,6 +298,7 @@ def build_libde265(source: Path, build: Path, prefix: Path, rpath: str) -> None:
         "-DCMAKE_BUILD_TYPE=Release",
         f"-DCMAKE_INSTALL_PREFIX={prefix}",
         f"-DCMAKE_INSTALL_RPATH={rpath}",
+        *macos_cmake_arguments(rid, macos_deployment_target),
     ]
     arguments.extend(f"-D{option}" for option in LIBDE265_OPTIONS)
     run(arguments)
@@ -276,7 +306,20 @@ def build_libde265(source: Path, build: Path, prefix: Path, rpath: str) -> None:
     run(["cmake", "--install", build, "--config", "Release"])
 
 
-def build_dav1d(source: Path, build: Path, prefix: Path) -> None:
+def build_dav1d(
+    source: Path,
+    build: Path,
+    prefix: Path,
+    rid: str,
+    macos_deployment_target: str,
+) -> None:
+    macos_arguments = []
+    if rid.startswith("osx-"):
+        minimum_flag = f"-mmacosx-version-min={macos_deployment_target}"
+        macos_arguments = [
+            f"-Dc_args=['{minimum_flag}']",
+            f"-Dc_link_args=['{minimum_flag}', '-Wl,-rpath,@loader_path']",
+        ]
     run(
         [
             "meson",
@@ -287,6 +330,7 @@ def build_dav1d(source: Path, build: Path, prefix: Path) -> None:
             "--libdir=lib",
             "--buildtype=release",
             "--default-library=shared",
+            *macos_arguments,
             *(f"-D{option}" for option in DAV1D_OPTIONS),
         ]
     )
@@ -295,7 +339,12 @@ def build_dav1d(source: Path, build: Path, prefix: Path) -> None:
 
 
 def build_libheif(
-    source: Path, build: Path, prefix: Path, rid: str, rpath: str
+    source: Path,
+    build: Path,
+    prefix: Path,
+    rid: str,
+    rpath: str,
+    macos_deployment_target: str,
 ) -> None:
     if rid == "win-x64":
         dav1d_library = find_library(prefix / "lib", ("dav1d.lib", "libdav1d.lib"))
@@ -320,6 +369,7 @@ def build_libheif(
         f"-DCMAKE_PREFIX_PATH={prefix}",
         f"-DCMAKE_INSTALL_RPATH={rpath}",
         "-DCMAKE_BUILD_WITH_INSTALL_RPATH=ON",
+        *macos_cmake_arguments(rid, macos_deployment_target),
         f"-DDAV1D_INCLUDE_DIR={prefix / 'include'}",
         f"-DDAV1D_LIBRARY={dav1d_library}",
         f"-DLIBDE265_INCLUDE_DIR={prefix / 'include'}",
@@ -368,10 +418,99 @@ def copy_runtime_files(prefix: Path, native: Path, rid: str) -> list[Path]:
     components = {classify_runtime_file(path.name) for path in runtime_files}
     if components != {"libheif", "libde265", "dav1d"}:
         raise RuntimeError(f"Incomplete runtime component set: {sorted(components)}")
+    validate_runtime_symlinks(native)
     return runtime_files
 
 
-def compile_smoke(prefix: Path, native: Path, rid: str) -> Path:
+def validate_runtime_symlinks(native: Path) -> None:
+    for path in sorted(native.iterdir()):
+        if not path.is_symlink():
+            continue
+        target = (path.parent / os.readlink(path)).resolve()
+        if native.resolve() not in target.parents or not target.is_file():
+            raise RuntimeError(
+                f"Runtime symlink escapes the artifact or has no target: {path} -> {target}"
+            )
+
+
+def real_runtime_files(native: Path, rid: str) -> list[Path]:
+    binaries: list[Path] = []
+    for path in sorted(native.iterdir()):
+        if not path.is_file() or path.is_symlink():
+            continue
+        if rid == "win-x64":
+            is_library = path.suffix.lower() == ".dll"
+        elif rid.startswith("linux-"):
+            is_library = path.name.startswith("lib") and ".so" in path.name
+        else:
+            is_library = path.name.startswith("lib") and ".dylib" in path.name
+        if is_library and classify_runtime_file(path.name) is not None:
+            binaries.append(path)
+    return binaries
+
+
+def parse_otool_dependencies(output: str) -> list[str]:
+    dependencies: list[str] = []
+    for line in output.splitlines()[1:]:
+        stripped = line.strip()
+        if not stripped:
+            continue
+        dependencies.append(stripped.split(" (compatibility version", 1)[0])
+    return dependencies
+
+
+def parse_macos_rpaths(output: str) -> list[str]:
+    lines = output.splitlines()
+    rpaths: list[str] = []
+    for index, line in enumerate(lines):
+        if line.strip() != "cmd LC_RPATH":
+            continue
+        for candidate in lines[index + 1 : index + 5]:
+            match = re.match(r"\s*path\s+(\S+)\s+\(offset", candidate)
+            if match is not None:
+                rpaths.append(match.group(1))
+                break
+    return rpaths
+
+
+def relocate_macos_runtime(native: Path, rid: str) -> None:
+    """Make the packaged Mach-O closure independent of its build prefix."""
+    binaries = real_runtime_files(native, rid)
+    components = {classify_runtime_file(path.name) for path in binaries}
+    if components != set(MACOS_LIBRARY_IDENTITIES):
+        raise RuntimeError(
+            f"Unexpected macOS real-library component set: {sorted(components)}"
+        )
+
+    for binary in binaries:
+        component = classify_runtime_file(binary.name)
+        if component is None:
+            continue
+        run(["install_name_tool", "-id", MACOS_LIBRARY_IDENTITIES[component], binary])
+
+    for binary in binaries:
+        dependencies = parse_otool_dependencies(run(["otool", "-L", binary]))
+        for dependency in dependencies:
+            dependency_component = classify_runtime_file(Path(dependency).name)
+            if dependency_component is None:
+                continue
+            replacement = MACOS_LIBRARY_IDENTITIES[dependency_component]
+            if dependency != replacement:
+                run(["install_name_tool", "-change", dependency, replacement, binary])
+
+        load_commands = run(["otool", "-l", binary])
+        if "@loader_path" not in parse_macos_rpaths(load_commands):
+            run(["install_name_tool", "-add_rpath", "@loader_path", binary])
+
+    validate_runtime_symlinks(native)
+
+
+def compile_smoke(
+    prefix: Path,
+    native: Path,
+    rid: str,
+    macos_deployment_target: str,
+) -> Path:
     source = SCRIPT_ROOT / "smoke" / "smoke.c"
     if rid == "win-x64":
         import_library = find_library(prefix / "lib", ("heif.lib", "libheif.lib"))
@@ -396,10 +535,16 @@ def compile_smoke(prefix: Path, native: Path, rid: str) -> Path:
         linker_arguments = [f"-Wl,-rpath,{rpath}"]
         if rid.startswith("linux-"):
             linker_arguments.append("-ldl")
+        compiler_arguments = []
+        if rid.startswith("osx-"):
+            compiler_arguments.append(
+                f"-mmacosx-version-min={macos_deployment_target}"
+            )
         run(
             [
                 "cc",
                 "-O2",
+                *compiler_arguments,
                 f"-I{prefix / 'include'}",
                 source,
                 f"-L{native}",
@@ -469,13 +614,153 @@ def run_smoke(
     return output
 
 
-def audit_dependencies(native: Path, rid: str, work: Path) -> str:
-    lines: list[str] = []
-    binaries = [
-        path
-        for path in sorted(native.iterdir())
-        if path.is_file() and classify_runtime_file(path.name) is not None
+@contextlib.contextmanager
+def unavailable_build_prefix(prefix: Path):
+    unavailable = prefix.with_name(f"{prefix.name}-unavailable-for-smoke")
+    require_under_artifacts(unavailable)
+    if unavailable.exists():
+        raise RuntimeError(
+            f"Temporary unavailable-prefix path already exists: {unavailable}"
+        )
+    prefix.rename(unavailable)
+    try:
+        yield unavailable
+    finally:
+        if prefix.exists():
+            raise RuntimeError(
+                f"Build prefix unexpectedly reappeared during smoke: {prefix}"
+            )
+        unavailable.rename(prefix)
+
+
+def run_self_contained_smoke(
+    prefix: Path,
+    executable: Path,
+    native: Path,
+    heif_fixture: Path,
+    avif_fixture: Path,
+    expected_version: str,
+) -> str:
+    with unavailable_build_prefix(prefix):
+        output = run_smoke(
+            executable,
+            native,
+            heif_fixture,
+            avif_fixture,
+            expected_version,
+        )
+        if prefix.exists():
+            raise RuntimeError("Build prefix remained available during smoke")
+        return output + "buildPrefix.availableDuringSmoke=0\n"
+
+
+def normalized_macos_version(value: str) -> tuple[int, int, int]:
+    parts = [int(part) for part in value.split(".")]
+    if len(parts) > 3:
+        raise RuntimeError(f"Unsupported macOS version value: {value}")
+    return tuple((parts + [0, 0, 0])[:3])  # type: ignore[return-value]
+
+
+def parse_macos_minimum_versions(output: str) -> list[str]:
+    versions: list[str] = []
+    active_command: str | None = None
+    for line in output.splitlines():
+        stripped = line.strip()
+        if stripped in {"cmd LC_BUILD_VERSION", "cmd LC_VERSION_MIN_MACOSX"}:
+            active_command = stripped.removeprefix("cmd ")
+            continue
+        if active_command == "LC_BUILD_VERSION" and stripped.startswith("minos "):
+            versions.append(stripped.split(maxsplit=1)[1])
+            active_command = None
+        elif active_command == "LC_VERSION_MIN_MACOSX" and stripped.startswith(
+            "version "
+        ):
+            versions.append(stripped.split(maxsplit=1)[1])
+            active_command = None
+    return versions
+
+
+def audit_macos_binary(
+    binary: Path,
+    rid: str,
+    deployment_target: str,
+    dependencies_output: str,
+    load_commands_output: str,
+) -> list[str]:
+    component = classify_runtime_file(binary.name)
+    if component is None:
+        raise RuntimeError(f"Unclassified macOS runtime binary: {binary}")
+
+    identity_output = run(["otool", "-D", binary])
+    identities = [
+        line.strip()
+        for line in identity_output.splitlines()[1:]
+        if line.strip()
     ]
+    expected_identity = MACOS_LIBRARY_IDENTITIES[component]
+    if identities != [expected_identity]:
+        raise RuntimeError(
+            f"Unexpected Mach-O identity for {binary.name}: {identities}; "
+            f"expected {expected_identity}"
+        )
+
+    dependencies = parse_otool_dependencies(dependencies_output)
+    for dependency in dependencies:
+        dependency_component = classify_runtime_file(Path(dependency).name)
+        if dependency_component is not None:
+            expected = MACOS_LIBRARY_IDENTITIES[dependency_component]
+            if dependency != expected:
+                raise RuntimeError(
+                    f"Non-relocatable packaged dependency in {binary.name}: {dependency}"
+                )
+        elif dependency.startswith("/") and not dependency.startswith(
+            ("/usr/lib/", "/System/Library/Frameworks/")
+        ):
+            raise RuntimeError(
+                f"Unexpected absolute macOS dependency in {binary.name}: {dependency}"
+            )
+
+    rpaths = parse_macos_rpaths(load_commands_output)
+    if "@loader_path" not in rpaths:
+        raise RuntimeError(f"Missing @loader_path LC_RPATH in {binary.name}: {rpaths}")
+
+    minimum_versions = parse_macos_minimum_versions(load_commands_output)
+    expected_version = normalized_macos_version(deployment_target)
+    if not minimum_versions or any(
+        normalized_macos_version(value) != expected_version
+        for value in minimum_versions
+    ):
+        raise RuntimeError(
+            f"Unexpected macOS deployment target in {binary.name}: "
+            f"{minimum_versions}; expected {deployment_target}"
+        )
+
+    expected_architecture = "arm64" if rid == "osx-arm64" else "x86_64"
+    architectures_output = run(["lipo", "-archs", binary])
+    architectures = architectures_output.strip().split()
+    if architectures != [expected_architecture]:
+        raise RuntimeError(
+            f"Unexpected architecture for {binary.name}: {architectures}; "
+            f"expected only {expected_architecture}"
+        )
+    file_output = run(["file", binary])
+    if expected_architecture not in file_output:
+        raise RuntimeError(
+            f"file did not identify {binary.name} as {expected_architecture}"
+        )
+    return [identity_output, architectures_output, file_output]
+
+
+def audit_dependencies(
+    native: Path,
+    rid: str,
+    work: Path,
+    macos_deployment_target: str,
+) -> str:
+    lines: list[str] = []
+    binaries = real_runtime_files(native, rid)
+    if rid.startswith("osx-"):
+        lines.append(f"macos.deploymentTarget={macos_deployment_target}")
     for binary in binaries:
         lines.append(f"## {binary.name}")
         if rid == "win-x64":
@@ -484,8 +769,19 @@ def audit_dependencies(native: Path, rid: str, work: Path) -> str:
             lines.append(run(["readelf", "-d", binary]))
             lines.append(run(["ldd", binary]))
         else:
-            lines.append(run(["otool", "-L", binary]))
-            lines.append(run(["otool", "-l", binary]))
+            dependencies_output = run(["otool", "-L", binary])
+            load_commands_output = run(["otool", "-l", binary])
+            lines.append(dependencies_output)
+            lines.append(load_commands_output)
+            lines.extend(
+                audit_macos_binary(
+                    binary,
+                    rid,
+                    macos_deployment_target,
+                    dependencies_output,
+                    load_commands_output,
+                )
+            )
 
     report = "\n".join(lines)
     if rid.startswith("linux-"):
@@ -574,6 +870,9 @@ def create_manifest(
             "enabledCodecs": ["libde265 HEVC decoder", "dav1d AV1 decoder"],
             "pluginLoading": False,
             "encoders": [],
+            "macosDeploymentTarget": versions["tooling"][
+                "macosDeploymentTarget"
+            ],
             "libde265CMakeOptions": list(LIBDE265_OPTIONS),
             "dav1dMesonOptions": list(DAV1D_OPTIONS),
             "libheifCMakeOptions": list(LIBHEIF_OPTIONS),
@@ -675,6 +974,7 @@ def main() -> int:
         name: download_and_extract(component, downloads, sources_root)
         for name, component in versions["sources"].items()
     }
+    macos_deployment_target = versions["tooling"]["macosDeploymentTarget"]
 
     if rid.startswith("linux-"):
         rpath = "$ORIGIN"
@@ -684,16 +984,40 @@ def main() -> int:
         rpath = ""
 
     build_libde265(
-        source_paths["libde265"], builds_root / "libde265", prefix, rpath
+        source_paths["libde265"],
+        builds_root / "libde265",
+        prefix,
+        rid,
+        rpath,
+        macos_deployment_target,
     )
-    build_dav1d(source_paths["dav1d"], builds_root / "dav1d", prefix)
+    build_dav1d(
+        source_paths["dav1d"],
+        builds_root / "dav1d",
+        prefix,
+        rid,
+        macos_deployment_target,
+    )
     build_libheif(
-        source_paths["libheif"], builds_root / "libheif", prefix, rid, rpath
+        source_paths["libheif"],
+        builds_root / "libheif",
+        prefix,
+        rid,
+        rpath,
+        macos_deployment_target,
     )
 
     copy_runtime_files(prefix, native, rid)
-    smoke_executable = compile_smoke(prefix, native, rid)
-    smoke_report = run_smoke(
+    if rid.startswith("osx-"):
+        relocate_macos_runtime(native, rid)
+    smoke_executable = compile_smoke(
+        prefix, native, rid, macos_deployment_target
+    )
+    dependency_audit = audit_dependencies(
+        native, rid, work, macos_deployment_target
+    )
+    smoke_report = run_self_contained_smoke(
+        prefix,
         smoke_executable,
         native,
         arguments.heif_fixture,
@@ -705,7 +1029,6 @@ def main() -> int:
     if smoke_object.exists():
         smoke_object.unlink()
 
-    dependency_audit = audit_dependencies(native, rid, work)
     (bundle / "smoke-report.txt").write_text(smoke_report, encoding="utf-8")
     (bundle / "dependency-audit.txt").write_text(
         dependency_audit, encoding="utf-8"

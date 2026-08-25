@@ -55,7 +55,7 @@ No external images, icons, fonts, logos, generated image dumps, or test-image co
 
 | Name | Author / organization | License / terms | Purpose | Official source | Version / action line | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| GitHub Actions | GitHub | Hosted service; GitHub Terms apply | Hosted restore/build/test and native-runtime workflows | [Documentation](https://docs.github.com/actions) | Service | Accepted R7-B evidence is green on Windows, Ubuntu, and macOS. The separate R7-C-N1 native build/package/audit/decode matrix has no hosted result until owner push |
+| GitHub Actions | GitHub | Hosted service; GitHub Terms apply | Hosted restore/build/test and native-runtime workflows | [Documentation](https://docs.github.com/actions) | Service | Accepted R7-B evidence is green on Windows, Ubuntu, and macOS. The first R7-C-N1 native run passed Windows/Linux; macOS decoded both fixtures but failed the relocation audit, so the corrected artifact still requires hosted recheck |
 | actions/checkout | GitHub | MIT | Checkout repository contents in CI | [Repository](https://github.com/actions/checkout) | `actions/checkout@v7` | Major action line used by `ci.yml` and `native-libheif.yml` |
 | actions/setup-dotnet | GitHub | MIT | Install .NET 10 GA in CI | [Repository](https://github.com/actions/setup-dotnet) | `actions/setup-dotnet@v6` | Major action line used by `ci.yml` |
 | actions/upload-artifact | GitHub | MIT | Upload per-RID native runtime bundles and evidence | [Repository](https://github.com/actions/upload-artifact) | `actions/upload-artifact@v6` | Used only by `native-libheif.yml`; artifacts are build evidence, not a product release |

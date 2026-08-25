@@ -89,7 +89,7 @@ CI restores, builds, and tests on Windows, Linux, and macOS. The accepted R7-B c
 
 R7-C-N1 still adds no production HEIF/AVIF package or decoder tests. It introduces a separate path-filtered `native-libheif.yml` matrix that builds pinned source, packages and audits the decode-only runtime, loads the exact app-local libheif, verifies HEVC/AV1 decoder presence and encoder absence, and decodes tracked project-authored 8-bit HEIF/AVIF smoke fixtures. The mandatory jobs are `win-x64`, `linux-x64`, and `osx-arm64`; no platform skip is accepted.
 
-Local R7-C-N1 evidence is green for Windows x64 and a clean Ubuntu 24.04 x64 container. The hosted native matrix, especially macOS arm64, remains unconfirmed until the owner pushes and GitHub Actions completes. These native artifacts are prerequisite evidence only; they do not make HEIF/AVIF product formats.
+The first hosted R7-C-N1 run is green for Windows x64 and Linux x64. macOS arm64 built and decoded both tracked fixtures with the intended decoder-only inventory, then failed the strict audit because a dav1d/libheif Mach-O dependency retained the absolute build prefix. R7-C-N1-F1 relocates packaged dylibs, pins/audits macOS 14.0 plus arm64, and makes the original prefix unavailable during smoke. This correction still needs a new hosted run. These native artifacts are prerequisite evidence only; they do not make HEIF/AVIF product formats.
 
 Run a clean native build locally with:
 
@@ -104,4 +104,4 @@ bash eng/native/libheif/build.sh linux-x64
 bash eng/native/libheif/build.sh osx-arm64
 ```
 
-The scripts fail on host/RID mismatch, archive hash mismatch, non-local libheif loading, missing HEVC/AV1 decoders, present HEVC/AV1 encoders, forbidden codec/developer-path dependencies, or fixture decode failure. Per-RID `manifest.json`, `dependency-audit.txt`, and `smoke-report.txt` are the detailed evidence owners.
+The scripts fail on host/RID mismatch, archive hash mismatch, non-local libheif loading, missing HEVC/AV1 decoders, present HEVC/AV1 encoders, forbidden codec/developer-path dependencies, or fixture decode failure. macOS additionally requires exact app-local install names, `@loader_path`, the configured deployment target, and the RID architecture. Smoke runs with the original build prefix renamed out of reach. Per-RID `manifest.json`, `dependency-audit.txt`, and `smoke-report.txt` are the detailed evidence owners.

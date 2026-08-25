@@ -44,6 +44,7 @@
     "minimumPython": "3.12.0",
     "minimumCMake": "3.28.0",
     "minimumNasm": "2.16.0",
+    "macosDeploymentTarget": "14.0",
     "sourceDateEpoch": "1767225600"
   },
   "requiredRids": [
