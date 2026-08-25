@@ -165,6 +165,15 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
 
     private void OnClosed(object? sender, EventArgs e)
     {
+#if DEBUG
+        var ambientFrames = PhotoViewport.GetAmbientRenderFrameMetrics();
+        Console.WriteLine(
+            $"Fovium Ambient rendered frames: black fallback " +
+            $"{ambientFrames.BlackFallbackRenderedFrameCount}, matching " +
+            $"{ambientFrames.MatchingAmbientRenderedFrameCount}, last image " +
+            $"{ambientFrames.LastFrame.ImageIdentity}, last Ambient " +
+            $"{ambientFrames.LastFrame.AmbientIdentity?.ToString() ?? "none"}.");
+#endif
         _lifetimeCancellation.Dispose();
         _visibleCursor.Dispose();
         _hiddenCursor.Dispose();
@@ -474,8 +483,9 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             var path = result.Path
                 ?? throw new InvalidOperationException("Published selection has no source path.");
             var identity = result.Image.Value.Identity;
-            PhotoViewport.SetImage(result.Image, transfer, path);
-            _stageCoordinator.SelectImage(path, identity);
+            using var presentation = _stageCoordinator.BeginImageSelection(path, identity);
+            PhotoViewport.SetPresentation(result.Image, transfer, path, presentation);
+            _stageCoordinator.StartCurrentImageWork();
             return;
         }
 
@@ -587,7 +597,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         }
 
         using var presentation = _stageCoordinator.AcquirePresentation();
-        PhotoViewport.SetStage(presentation.Stage, presentation.TakeAmbient());
+        PhotoViewport.SetStage(presentation);
     }
 
     private static bool IsRecoverableBoundaryException(Exception exception) =>

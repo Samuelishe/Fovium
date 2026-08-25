@@ -249,6 +249,6 @@ Draw operations capture immutable color, source-space width, and opacity; opacit
 
 ## D-041 — Matching current Ambient outranks speculative neighbor work
 
-Status: Accepted in R5-P1.
+Status: Current-first priority accepted in R5-P1; presentation-boundary refinement implemented in R5-P2 pending owner review.
 
-The canonical photograph still publishes before decoration. Once published, its matching current-image Ambient is user-visible presentation work and must start without waiting for the full adjacent-photo preload barrier; only later neighbor Ambient work remains speculative. Cached matching Ambient transfers immediately with its decoded owner, while a genuine miss uses Black rather than a mismatched previous-image derivative. Latest-wins source/blur authority rejects stale publication. Local 10/24 MP evidence did not justify a progressive session hook, placeholder, fade, cache-budget increase, or lower Ambient resolution.
+The canonical photograph still publishes before decoration. Its matching current-image Ambient is user-visible presentation work and never waits for adjacent preload; later neighbor work remains speculative. R5-P2 refines publication so a cached matching Ambient and photograph enter the viewport atomically, while progressively ready neighbors may prepare without a full-neighbor barrier. A genuine miss uses Black rather than a mismatched previous-image derivative, and latest-wins source/blur authority rejects stale publication. No fade, cache-budget increase, lower resolution, or previous-image fallback is introduced. The earlier claim that scheduler latency alone eliminated the owner-visible flash is withdrawn pending R5-P2 review.

@@ -23,6 +23,9 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
     private readonly StageSettings _stage;
     private readonly double _renderScaling;
     private readonly MarkupRenderSnapshot _markup;
+    private readonly long _imageIdentity;
+    private readonly long? _ambientIdentity;
+    private readonly AmbientRenderFrameDiagnostics _frameDiagnostics;
 
     public SkiaPhotoDrawOperation(
         Rect bounds,
@@ -34,7 +37,10 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
         StageSettings stage,
         double renderScaling,
         DecodedImage.AmbientLease? ambientLease,
-        MarkupRenderSnapshot markup)
+        MarkupRenderSnapshot markup,
+        long imageIdentity,
+        long? ambientIdentity,
+        AmbientRenderFrameDiagnostics frameDiagnostics)
     {
         Bounds = bounds;
         _imageLease = imageLease;
@@ -46,6 +52,9 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
         _renderScaling = renderScaling;
         _ambientLease = ambientLease;
         _markup = markup;
+        _imageIdentity = imageIdentity;
+        _ambientIdentity = ambientIdentity;
+        _frameDiagnostics = frameDiagnostics;
     }
 
     public Rect Bounds { get; }
@@ -76,7 +85,10 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
             _renderScaling,
             _stage,
             ambientLease?.Image,
-            ambientLease?.Size);
+            ambientLease?.Size,
+            _imageIdentity,
+            _ambientIdentity,
+            _frameDiagnostics);
         var affine = OrientationAffine.Create(_encodedSize, _orientation);
         var orientedSize = OrientationTransform.GetOrientedSize(_encodedSize, _orientation);
         var scaleX = _destination.Width / orientedSize.Width;

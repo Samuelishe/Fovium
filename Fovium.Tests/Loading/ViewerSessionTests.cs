@@ -7,6 +7,80 @@ namespace Fovium.Tests.Loading;
 public sealed class ViewerSessionTests
 {
     [Fact]
+    public async Task AdjacentProgressPublishesReadyNextBeforeBlockedPreviousCompletes()
+    {
+        var previousStarted = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var previousCompletion = new TaskCompletionSource<ImageLoadResult<FakeImage>>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var loader = new FakeImageLoader((path, allowance, _) =>
+        {
+            if (allowance.IsSpeculative && Path.GetFileName(path) == "A.jpg")
+            {
+                previousStarted.TrySetResult();
+                return previousCompletion.Task;
+            }
+
+            return Task.FromResult(FakeLoadResult.Success(path));
+        });
+        await using var session = CreateSession(loader);
+        var firstProgress = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var progressCount = 0;
+        session.AdjacentPreloadProgressed += (_, _) =>
+        {
+            if (Interlocked.Increment(ref progressCount) == 1)
+            {
+                firstProgress.TrySetResult();
+            }
+        };
+
+        using var opened = (await session.OpenAsync(
+            new ImageSequence(["A.jpg", "B.jpg", "C.jpg"], 1))).Image;
+        await firstProgress.Task;
+        await previousStarted.Task;
+        var fullPreload = session.WaitForAdjacentPreloadAsync(CancellationToken.None);
+
+        try
+        {
+            Assert.False(fullPreload.IsCompleted);
+            Assert.Equal(1, Volatile.Read(ref progressCount));
+            Assert.Contains("C.jpg", loader.Calls);
+        }
+        finally
+        {
+            previousCompletion.TrySetResult(FakeLoadResult.Success("A.jpg"));
+        }
+
+        await fullPreload;
+        Assert.Equal(2, Volatile.Read(ref progressCount));
+    }
+
+    [Theory]
+    [InlineData((int)NavigationDirection.Next, 1, "D.jpg")]
+    [InlineData((int)NavigationDirection.Previous, 2, "A.jpg")]
+    public async Task NavigationDirectionPrioritizesNewUsefulNeighborPreload(
+        int directionValue,
+        int initialIndex,
+        string expectedFirstNewPreload)
+    {
+        var direction = (NavigationDirection)directionValue;
+        var loader = FakeImageLoader.Immediate(path => FakeLoadResult.Success(path));
+        await using var session = CreateSession(loader);
+        var sequence = new ImageSequence(["A.jpg", "B.jpg", "C.jpg", "D.jpg"], initialIndex);
+        using var opened = (await session.OpenAsync(sequence)).Image;
+        await session.WaitForAdjacentPreloadAsync(CancellationToken.None);
+        var callsBeforeNavigation = loader.Calls.Count;
+
+        using var navigated = (await session.NavigateAsync(direction)).Image;
+        await session.WaitForAdjacentPreloadAsync(CancellationToken.None);
+
+        var callsAfterNavigation = loader.Calls.Skip(callsBeforeNavigation).ToArray();
+        Assert.NotEmpty(callsAfterNavigation);
+        Assert.Equal(expectedFirstNewPreload, callsAfterNavigation[0]);
+    }
+
+    [Fact]
     public async Task PublishingCurrentStartsPreviousAndNextNeighborPreload()
     {
         var loader = FakeImageLoader.Immediate(path => FakeLoadResult.Success(path));

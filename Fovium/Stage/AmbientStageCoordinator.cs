@@ -54,6 +54,7 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
     private readonly IAmbientImageRepository _repository;
     private readonly IAmbientStagePreparer _preparer;
     private readonly CancellationTokenSource _lifetimeCancellation = new();
+    private readonly SemaphoreSlim _adjacentPreparationGate = new(1, 1);
     private readonly HashSet<Task> _runningTasks = [];
     private CancellationTokenSource? _workCancellation;
     private string? _currentPath;
@@ -77,6 +78,8 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
     private long _photoPublicationTimestamp;
     private long _photoPublicationGeneration;
     private long _ambientAvailabilityGeneration;
+    private long _currentReadyGeneration;
+    private long _startedSelectionGeneration;
     private int _lastCurrentAmbientWasCacheHit;
     private bool _disposed;
 
@@ -88,6 +91,7 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
         _repository = repository;
         _preparer = preparer;
         _stage = initialStage.Normalize();
+        _repository.AdjacentImageAvailable += OnAdjacentImageAvailable;
     }
 
     public event EventHandler? PresentationChanged;
@@ -118,13 +122,9 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
         ReadPresentationGap(),
         Volatile.Read(ref _lastCurrentAmbientWasCacheHit) != 0);
 
-    public void SelectImage(string path, long imageIdentity)
+    public StagePresentation BeginImageSelection(string path, long imageIdentity)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        long generation;
-        double blur;
-        CancellationToken token;
-        bool shouldPrepare;
         lock (_sync)
         {
             ThrowIfDisposed();
@@ -132,34 +132,61 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
             _currentPath = path;
             _currentIdentity = imageIdentity;
             _transitionalAmbientIdentity = null;
-            generation = ++_sourceGeneration;
-            shouldPrepare = _stage.BackgroundMode.RequiresAmbient();
-            blur = _stage.AmbientBlur;
-            _photoPublicationTimestamp = Stopwatch.GetTimestamp();
-            _photoPublicationGeneration = generation;
+            _sourceGeneration++;
+            _startedSelectionGeneration = 0;
+            _photoPublicationTimestamp = 0;
+            _photoPublicationGeneration = 0;
             _ambientAvailabilityGeneration = 0;
+            _currentReadyGeneration = 0;
             Interlocked.Exchange(ref _lastPhotoToAmbientPresentationGapTicks, -1);
             Interlocked.Exchange(ref _lastCurrentAmbientPreparationTicks, 0);
             Volatile.Write(ref _lastCurrentAmbientWasCacheHit, 0);
-            token = shouldPrepare ? CreateWorkTokenUnsafe() : CancellationToken.None;
         }
 
-        if (shouldPrepare && HasMatchingAmbient(path, imageIdentity, blur))
+        return AcquirePresentation();
+    }
+
+    public void StartCurrentImageWork()
+    {
+        string? path;
+        long identity;
+        long generation;
+        double blur;
+        CancellationToken token;
+        lock (_sync)
+        {
+            ThrowIfDisposed();
+            if (!_stage.BackgroundMode.RequiresAmbient() ||
+                _currentPath is null ||
+                _currentIdentity is null ||
+                _startedSelectionGeneration == _sourceGeneration)
+            {
+                return;
+            }
+
+            path = _currentPath;
+            identity = _currentIdentity.Value;
+            generation = _sourceGeneration;
+            blur = _stage.AmbientBlur;
+            _startedSelectionGeneration = generation;
+            _photoPublicationTimestamp = Stopwatch.GetTimestamp();
+            _photoPublicationGeneration = generation;
+            token = CreateWorkTokenUnsafe();
+        }
+
+        if (HasMatchingAmbient(path, identity, blur))
         {
             RecordCurrentAmbientAvailability(
                 generation,
                 path,
-                imageIdentity,
+                identity,
                 blur,
                 wasCacheHit: true,
                 preparationDuration: TimeSpan.Zero);
+            MarkCurrentReady(generation, path, identity, blur);
         }
 
-        NotifyPresentationChanged();
-        if (shouldPrepare)
-        {
-            StartWork(generation, path, imageIdentity, blur, debounce: false, token);
-        }
+        StartWork(generation, path, identity, blur, debounce: false, token);
     }
 
     public void ClearImage()
@@ -172,8 +199,10 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
             _currentIdentity = null;
             _transitionalAmbientIdentity = null;
             _sourceGeneration++;
+            _startedSelectionGeneration = 0;
             _photoPublicationGeneration = 0;
             _ambientAvailabilityGeneration = 0;
+            _currentReadyGeneration = 0;
             Interlocked.Exchange(ref _lastPhotoToAmbientPresentationGapTicks, -1);
             Interlocked.Exchange(ref _lastCurrentAmbientPreparationTicks, 0);
             Volatile.Write(ref _lastCurrentAmbientWasCacheHit, 0);
@@ -210,13 +239,16 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
             {
                 CancelWorkUnsafe();
                 _sourceGeneration++;
+                _startedSelectionGeneration = 0;
                 _transitionalAmbientIdentity = null;
             }
             else if ((!previouslyRequiredAmbient || blurChanged) && path is not null && identity is not null)
             {
                 CancelWorkUnsafe();
                 generation = ++_sourceGeneration;
+                _startedSelectionGeneration = generation;
                 _transitionalAmbientIdentity = blurChanged ? identity : null;
+                _currentReadyGeneration = 0;
                 token = CreateWorkTokenUnsafe();
                 shouldStart = true;
                 debounce = previouslyRequiredAmbient && blurChanged;
@@ -308,6 +340,7 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
             }
 
             _disposed = true;
+            _repository.AdjacentImageAvailable -= OnAdjacentImageAvailable;
             _lifetimeCancellation.Cancel();
             CancelWorkUnsafe();
             running = _runningTasks.ToArray();
@@ -322,6 +355,7 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
         }
 
         _workCancellation?.Dispose();
+        _adjacentPreparationGate.Dispose();
         _lifetimeCancellation.Dispose();
     }
 
@@ -389,8 +423,91 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
 
             PrepareOne(path, identity, generation, blur, publishIfCurrent: true, cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
-            await _repository.WaitForAdjacentPreloadAsync(cancellationToken).ConfigureAwait(false);
-            if (!IsAuthorized(generation, path, identity, blur))
+            await PrepareAvailableAdjacentAsync(generation, blur, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception exception)
+        {
+            Interlocked.Increment(ref _preparationFailureCount);
+            lock (_sync)
+            {
+                _transitionalAmbientIdentity = null;
+                _lastDiagnostic = new AmbientStageDiagnostic(
+                    "Ambient preparation failed; a matching previous Ambient or Black fallback remains active.",
+                    exception);
+            }
+
+            Debug.WriteLine($"Fovium Ambient preparation failed: {exception}");
+            NotifyPresentationChanged();
+        }
+    }
+
+    private void OnAdjacentImageAvailable(object? sender, EventArgs e)
+    {
+        long generation;
+        double blur;
+        CancellationToken token;
+        lock (_sync)
+        {
+            if (_disposed ||
+                !_stage.BackgroundMode.RequiresAmbient() ||
+                _startedSelectionGeneration != _sourceGeneration ||
+                _currentReadyGeneration != _sourceGeneration ||
+                _workCancellation is null)
+            {
+                return;
+            }
+
+            generation = _sourceGeneration;
+            blur = _stage.AmbientBlur;
+            token = _workCancellation.Token;
+        }
+
+        StartAdjacentWork(generation, blur, token);
+    }
+
+    private void StartAdjacentWork(long generation, double blur, CancellationToken cancellationToken)
+    {
+        Task task;
+        lock (_sync)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            task = Task.Run(
+                () => PrepareAvailableAdjacentAsync(generation, blur, cancellationToken),
+                CancellationToken.None);
+            _runningTasks.Add(task);
+            Interlocked.Increment(ref _scheduledWorkCount);
+        }
+
+        _ = task.ContinueWith(
+            completed =>
+            {
+                lock (_sync)
+                {
+                    _runningTasks.Remove(completed);
+                }
+            },
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
+    }
+
+    private async Task PrepareAvailableAdjacentAsync(
+        long generation,
+        double blur,
+        CancellationToken cancellationToken)
+    {
+        await _adjacentPreparationGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            if (!IsAuthorized(generation, blur))
             {
                 return;
             }
@@ -419,22 +536,9 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
                 }
             }
         }
-        catch (OperationCanceledException)
+        finally
         {
-        }
-        catch (Exception exception)
-        {
-            Interlocked.Increment(ref _preparationFailureCount);
-            lock (_sync)
-            {
-                _transitionalAmbientIdentity = null;
-                _lastDiagnostic = new AmbientStageDiagnostic(
-                    "Ambient preparation failed; a matching previous Ambient or Black fallback remains active.",
-                    exception);
-            }
-
-            Debug.WriteLine($"Fovium Ambient preparation failed: {exception}");
-            NotifyPresentationChanged();
+            _adjacentPreparationGate.Release();
         }
     }
 
@@ -461,6 +565,7 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
             {
                 if (publishIfCurrent && image.Identity == identity && image.HasAmbientForBlur(blur))
                 {
+                    MarkCurrentReady(generation, path, identity, blur);
                     var becameAvailable = RecordCurrentAmbientAvailability(
                         generation,
                         path,
@@ -508,6 +613,7 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
                     }
                 }
 
+                MarkCurrentReady(generation, path, identity, blur);
                 _ = RecordCurrentAmbientAvailability(
                     generation,
                     path,
@@ -604,6 +710,17 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
             $"blur {blur:F1}, preparation {preparationDuration.TotalMilliseconds:F2} ms, " +
             $"photo-to-Ambient {gap.TotalMilliseconds:F2} ms.");
         return true;
+    }
+
+    private void MarkCurrentReady(long generation, string path, long identity, double blur)
+    {
+        lock (_sync)
+        {
+            if (IsAuthorizedUnsafe(generation, path, identity, blur))
+            {
+                _currentReadyGeneration = generation;
+            }
+        }
     }
 
     private bool IsAuthorizedUnsafe(long generation, string path, long identity, double blur) =>

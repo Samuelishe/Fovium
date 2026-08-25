@@ -35,7 +35,7 @@ See the canonical [UX contract](docs/UX-CONTRACT.md), [rendering contract](docs/
 
 ## Current status
 
-The current project checkpoint is **`0.0.0.0013`**. R5-P1 makes matching current-image Ambient presentation outrank speculative neighbor work, removing the visible Black edge flash from normal sequential 24 MP navigation while keeping photograph publication first. Markup remains image-bound, session-local, memory-only, and never changes or writes the source photograph.
+The current corrective build is **`0.0.0.0013`**. R5-P1 retained current-first Ambient scheduling but owner review still found a compositor-visible Black transition; R5-P2 now installs a cached matching Ambient atomically with the photograph, prepares ready neighbors progressively, and measures fallback at the actual Stage-render boundary. This build remains pending owner visual acceptance. Markup remains image-bound, session-local, memory-only, and never changes or writes the source photograph.
 
 This remains an early vertical slice, not a release claim. Full monitor-aware ICC, broad codecs, metadata, platform associations, markup export/object editing, and selected-reference A/B comparison are not implemented. The next stage requires owner review rather than automatic continuation. The canonical handoff is [PROJECT-STATE.md](docs/PROJECT-STATE.md); bounded R0 evidence remains in the [experiment report](docs/experiments/R0-RENDERING-PROBE.md).
 

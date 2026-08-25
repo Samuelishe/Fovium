@@ -1,6 +1,8 @@
 using Fovium.Imaging;
 using Fovium.Loading;
+using Fovium.Rendering;
 using Fovium.Stage;
+using Fovium.Viewer;
 
 namespace Fovium.Tests.Stage;
 
@@ -28,7 +30,8 @@ public sealed class AmbientStageCoordinatorTests
                 MatteEnabled = matteEnabled,
             });
 
-        coordinator.SelectImage("photo", image.Identity);
+        SelectAndStart(coordinator, "photo", image.Identity);
+        repository.RaiseAdjacentImageAvailable();
         await coordinator.WaitForIdleAsync();
 
         Assert.Equal(0, preparer.CallCount);
@@ -46,7 +49,7 @@ public sealed class AmbientStageCoordinatorTests
         var preparer = new RecordingPreparer();
         var initial = StageSettings.Default with { BackgroundMode = StageBackgroundMode.Ambient };
         await using var coordinator = new AmbientStageCoordinator(repository, preparer, initial);
-        coordinator.SelectImage("photo", image.Identity);
+        SelectAndStart(coordinator, "photo", image.Identity);
         await coordinator.WaitForIdleAsync();
         using var before = coordinator.AcquirePresentation();
 
@@ -80,7 +83,7 @@ public sealed class AmbientStageCoordinatorTests
         var preparer = new RecordingPreparer();
         var initial = StageSettings.Default with { BackgroundMode = StageBackgroundMode.Ambient };
         await using var coordinator = new AmbientStageCoordinator(repository, preparer, initial);
-        coordinator.SelectImage("photo", image.Identity);
+        SelectAndStart(coordinator, "photo", image.Identity);
         await coordinator.WaitForIdleAsync();
         using var before = coordinator.AcquirePresentation();
 
@@ -104,7 +107,7 @@ public sealed class AmbientStageCoordinatorTests
         var preparer = new RecordingPreparer();
         var initial = StageSettings.Default with { BackgroundMode = StageBackgroundMode.Ambient };
         await using var coordinator = new AmbientStageCoordinator(repository, preparer, initial);
-        coordinator.SelectImage("photo", image.Identity);
+        SelectAndStart(coordinator, "photo", image.Identity);
         await coordinator.WaitForIdleAsync();
         var navigationMetrics = coordinator.GetMetrics();
 
@@ -128,7 +131,7 @@ public sealed class AmbientStageCoordinatorTests
     [Fact]
     public async Task OldBlurMayBridgeCurrentImageButNeverPublishesForNewImage()
     {
-        using var repository = new TestRepository(delayPreload: true);
+        using var repository = new TestRepository();
         var first = StageTestImages.CreateDecoded("first.png");
         var second = StageTestImages.CreateDecoded("second.png");
         Assert.True(first.TryAttachAmbient(StageTestImages.CreateAmbient(blur: 18)));
@@ -140,16 +143,15 @@ public sealed class AmbientStageCoordinatorTests
             repository,
             new RecordingPreparer(),
             initial);
-        coordinator.SelectImage("first", first.Identity);
+        SelectAndStart(coordinator, "first", first.Identity);
 
         coordinator.SetStage(initial with { AmbientBlur = 24 });
         using var transitional = coordinator.AcquirePresentation();
-        coordinator.SelectImage("second", second.Identity);
+        SelectAndStart(coordinator, "second", second.Identity);
         using var newImage = coordinator.AcquirePresentation();
 
         Assert.Equal(18, transitional.Ambient?.Blur);
         Assert.Null(newImage.Ambient);
-        repository.CompletePreload();
         await coordinator.WaitForIdleAsync();
         using var prepared = coordinator.AcquirePresentation();
         Assert.Equal(24, prepared.Ambient?.Blur);
@@ -164,7 +166,7 @@ public sealed class AmbientStageCoordinatorTests
         var preparer = new BlockingPreparer();
         var stage = StageSettings.Default with { BackgroundMode = StageBackgroundMode.Ambient };
         await using var coordinator = new AmbientStageCoordinator(repository, preparer, stage);
-        coordinator.SelectImage("photo", image.Identity);
+        SelectAndStart(coordinator, "photo", image.Identity);
         await preparer.Started.Task;
 
         coordinator.ClearImage();
@@ -192,9 +194,9 @@ public sealed class AmbientStageCoordinatorTests
             preparer,
             StageSettings.Default with { BackgroundMode = StageBackgroundMode.Ambient });
 
-        coordinator.SelectImage("first", first.Identity);
+        SelectAndStart(coordinator, "first", first.Identity);
         await preparer.FirstStarted.Task;
-        coordinator.SelectImage("latest", latest.Identity);
+        SelectAndStart(coordinator, "latest", latest.Identity);
         await preparer.LatestCompleted.Task;
         preparer.CompleteFirst();
         await coordinator.WaitForIdleAsync();
@@ -220,7 +222,7 @@ public sealed class AmbientStageCoordinatorTests
             new ThrowingPreparer(),
             StageSettings.Default with { BackgroundMode = StageBackgroundMode.Ambient });
 
-        coordinator.SelectImage("photo", image.Identity);
+        SelectAndStart(coordinator, "photo", image.Identity);
         await coordinator.WaitForIdleAsync();
         using var presentation = coordinator.AcquirePresentation();
 
@@ -232,9 +234,9 @@ public sealed class AmbientStageCoordinatorTests
     }
 
     [Fact]
-    public async Task CurrentAmbientPreparationStartsBeforeBlockedAdjacentPreload()
+    public async Task CurrentAmbientPreparationDoesNotDependOnAdjacentAvailability()
     {
-        using var repository = new TestRepository(delayPreload: true);
+        using var repository = new TestRepository();
         var current = StageTestImages.CreateDecoded("current.png");
         repository.Add("current", current, protect: true);
         var preparer = new BlockingPreparer();
@@ -243,28 +245,26 @@ public sealed class AmbientStageCoordinatorTests
             preparer,
             StageSettings.Default with { BackgroundMode = StageBackgroundMode.Ambient });
 
-        coordinator.SelectImage("current", current.Identity);
-        var firstSignal = await Task.WhenAny(preparer.Started.Task, repository.AdjacentWaitStarted.Task);
+        SelectAndStart(coordinator, "current", current.Identity);
+        await preparer.Started.Task;
 
         try
         {
-            Assert.Same(preparer.Started.Task, firstSignal);
-            Assert.False(repository.AdjacentWaitStarted.Task.IsCompleted);
+            Assert.False(current.HasAmbient);
         }
         finally
         {
             preparer.Complete();
         }
 
-        await repository.AdjacentWaitStarted.Task;
-        repository.CompletePreload();
         await coordinator.WaitForIdleAsync();
+        Assert.True(current.HasAmbientForBlur(18));
     }
 
     [Fact]
-    public async Task CurrentAmbientPublishesBeforeBlockedAdjacentPreloadIsReleased()
+    public async Task CurrentAmbientPublishesWithoutAnyAdjacentProgressSignal()
     {
-        using var repository = new TestRepository(delayPreload: true);
+        using var repository = new TestRepository();
         var current = StageTestImages.CreateDecoded("current.png");
         repository.Add("current", current, protect: true);
         var preparer = new RecordingPreparer();
@@ -285,14 +285,11 @@ public sealed class AmbientStageCoordinatorTests
             }
         };
 
-        coordinator.SelectImage("current", current.Identity);
-        var firstSignal = await Task.WhenAny(ambientPublished.Task, repository.AdjacentWaitStarted.Task);
+        SelectAndStart(coordinator, "current", current.Identity);
+        await ambientPublished.Task;
 
         try
         {
-            Assert.Same(ambientPublished.Task, firstSignal);
-            Assert.False(repository.AdjacentWaitStarted.Task.IsCompleted);
-            Assert.False(repository.AdjacentPreloadCompleted);
             var metrics = coordinator.GetMetrics();
             Assert.Equal(1, metrics.CurrentAmbientPrepareCount);
             Assert.Equal(0, metrics.CurrentAmbientCacheHitCount);
@@ -308,9 +305,69 @@ public sealed class AmbientStageCoordinatorTests
             allowPublicationToContinue.Set();
         }
 
-        await repository.AdjacentWaitStarted.Task;
-        repository.CompletePreload();
         await coordinator.WaitForIdleAsync();
+    }
+
+    [Fact]
+    public async Task ReadyNeighborAmbientPreparesProgressivelyWithoutWaitingForAnotherNeighbor()
+    {
+        using var repository = new TestRepository();
+        var current = StageTestImages.CreateDecoded("current.png");
+        var next = StageTestImages.CreateDecoded("next.png");
+        repository.Add("current", current, protect: true);
+        var preparer = new RecordingPreparer();
+        await using var coordinator = new AmbientStageCoordinator(
+            repository,
+            preparer,
+            StageSettings.Default with { BackgroundMode = StageBackgroundMode.Ambient });
+
+        SelectAndStart(coordinator, "current", current.Identity);
+        await coordinator.WaitForIdleAsync();
+        Assert.Equal(1, preparer.CallCount);
+
+        repository.Add("next", next, protect: false);
+        repository.AdjacentPaths.Add("next");
+        repository.RaiseAdjacentImageAvailable();
+        await coordinator.WaitForIdleAsync();
+
+        Assert.True(next.HasAmbientForBlur(18));
+        Assert.Equal(2, preparer.CallCount);
+        Assert.Equal(1, coordinator.GetMetrics().AdjacentAmbientPreparedCount);
+    }
+
+    [Fact]
+    public async Task CachedMatchingAmbientAndPhotoInstallAsOneViewportPresentation()
+    {
+        using var repository = new TestRepository();
+        var target = StageTestImages.CreateDecoded("target.png");
+        Assert.True(target.TryAttachAmbient(StageTestImages.CreateAmbient()));
+        repository.Add("target", target, protect: true);
+        await using var coordinator = new AmbientStageCoordinator(
+            repository,
+            new RecordingPreparer(),
+            StageSettings.Default with { BackgroundMode = StageBackgroundMode.Ambient });
+        Assert.True(repository.TryAcquire("target", out var targetLease));
+        var viewport = new PhotoViewportControl();
+        var publicationCount = 0;
+        coordinator.PresentationChanged += (_, _) => publicationCount++;
+
+        using (var initial = coordinator.BeginImageSelection("target", target.Identity))
+        {
+            Assert.NotNull(initial.Ambient);
+            Assert.Equal(0, publicationCount);
+            viewport.SetPresentation(targetLease!, ViewTransfer.Fit, "target", initial);
+        }
+
+        var state = viewport.CaptureAmbientPresentationState();
+        Assert.Equal(target.Identity, state.ImageIdentity);
+        Assert.Equal(target.Identity, state.AmbientIdentity);
+        Assert.True(state.HasMatchingAmbient);
+        Assert.Equal(0, viewport.GetAmbientRenderFrameMetrics().BlackFallbackRenderedFrameCount);
+
+        coordinator.StartCurrentImageWork();
+        await coordinator.WaitForIdleAsync();
+        Assert.Equal(0, publicationCount);
+        viewport.ClearImage();
     }
 
     [Fact]
@@ -328,14 +385,14 @@ public sealed class AmbientStageCoordinatorTests
             preparer,
             StageSettings.Default with { BackgroundMode = StageBackgroundMode.Ambient });
 
-        coordinator.SelectImage("first", first.Identity);
+        SelectAndStart(coordinator, "first", first.Identity);
         await coordinator.WaitForIdleAsync();
         Assert.Equal(2, preparer.CallCount);
         Assert.True(target.HasAmbientForBlur(18));
 
         repository.AdjacentPaths.Clear();
         repository.AdjacentPaths.Add("first");
-        coordinator.SelectImage("target", target.Identity);
+        SelectAndStart(coordinator, "target", target.Identity);
         using var presentation = coordinator.AcquirePresentation();
         var metrics = coordinator.GetMetrics();
 
@@ -354,14 +411,12 @@ public sealed class AmbientStageCoordinatorTests
     }
 
     [Fact]
-    public async Task AdjacentAmbientUsesCurrentBlurAfterPhotoPreloadCompletes()
+    public async Task AdjacentAmbientUsesCurrentBlurWhenNeighborBecomesAvailable()
     {
-        using var repository = new TestRepository(delayPreload: true);
+        using var repository = new TestRepository();
         var current = StageTestImages.CreateDecoded("current.png");
         var adjacent = StageTestImages.CreateDecoded("next.png");
         repository.Add("current", current, protect: true);
-        repository.Add("next", adjacent, protect: false);
-        repository.AdjacentPaths.Add("next");
         var preparer = new RecordingPreparer();
         await using var coordinator = new AmbientStageCoordinator(
             repository,
@@ -372,18 +427,29 @@ public sealed class AmbientStageCoordinatorTests
                 AmbientBlur = 26,
             });
 
-        coordinator.SelectImage("current", current.Identity);
-        await repository.AdjacentWaitStarted.Task;
+        SelectAndStart(coordinator, "current", current.Identity);
+        await coordinator.WaitForIdleAsync();
         Assert.Equal(1, preparer.CallCount);
         Assert.True(current.HasAmbientForBlur(26));
         Assert.False(adjacent.HasAmbientForBlur(26));
-        repository.CompletePreload();
+        repository.Add("next", adjacent, protect: false);
+        repository.AdjacentPaths.Add("next");
+        repository.RaiseAdjacentImageAvailable();
         await coordinator.WaitForIdleAsync();
 
         Assert.Equal(2, preparer.CallCount);
         Assert.All(preparer.Blurs, blur => Assert.Equal(26, blur));
         Assert.True(current.HasAmbientForBlur(26));
         Assert.True(adjacent.HasAmbientForBlur(26));
+    }
+
+    private static void SelectAndStart(
+        AmbientStageCoordinator coordinator,
+        string path,
+        long identity)
+    {
+        using var initial = coordinator.BeginImageSelection(path, identity);
+        coordinator.StartCurrentImageWork();
     }
 
     private sealed class RecordingPreparer : IAmbientStagePreparer
@@ -527,24 +593,10 @@ public sealed class AmbientStageCoordinatorTests
     private sealed class TestRepository : IAmbientImageRepository, IDisposable
     {
         private readonly ByteBudgetCache<string, DecodedImage> _cache = new(1_000_000, StringComparer.Ordinal);
-        private readonly TaskCompletionSource _preload = new(
-            TaskCreationOptions.RunContinuationsAsynchronously);
-        private readonly TaskCompletionSource _adjacentWaitStarted = new(
-            TaskCreationOptions.RunContinuationsAsynchronously);
 
-        public TestRepository(bool delayPreload = false)
-        {
-            if (!delayPreload)
-            {
-                _preload.TrySetResult();
-            }
-        }
+        public event EventHandler? AdjacentImageAvailable;
 
         public List<string> AdjacentPaths { get; } = [];
-
-        public TaskCompletionSource AdjacentWaitStarted => _adjacentWaitStarted;
-
-        public bool AdjacentPreloadCompleted => _preload.Task.IsCompleted;
 
         public void Add(string path, DecodedImage image, bool protect) =>
             Assert.True(_cache.Add(path, image, protect));
@@ -554,12 +606,6 @@ public sealed class AmbientStageCoordinatorTests
 
         public bool RefreshRetainedCost(string path, DecodedImage image) =>
             _cache.RefreshCost(path, image);
-
-        public Task WaitForAdjacentPreloadAsync(CancellationToken cancellationToken)
-        {
-            _adjacentWaitStarted.TrySetResult();
-            return _preload.Task.WaitAsync(cancellationToken);
-        }
 
         public IReadOnlyList<CachedResourceLease<DecodedImage>> AcquireAdjacent()
         {
@@ -575,7 +621,8 @@ public sealed class AmbientStageCoordinatorTests
             return leases;
         }
 
-        public void CompletePreload() => _preload.TrySetResult();
+        public void RaiseAdjacentImageAvailable() =>
+            AdjacentImageAvailable?.Invoke(this, EventArgs.Empty);
 
         public void Dispose() => _cache.Dispose();
     }

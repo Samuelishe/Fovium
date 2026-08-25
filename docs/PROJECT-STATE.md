@@ -7,13 +7,13 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R5-P1 is complete. The project version is `0.0.0.0013`; its semantics and accepted checkpoint history are owned by [`VERSIONING.md`](VERSIONING.md).
+R5-P2 is implemented for owner review on corrective build `0.0.0.0013`. R5-P1's current-first scheduling improvement is retained, but its Black-flash elimination claim was not owner-accepted. The last owner-accepted product checkpoint remains R5-F2 / `0.0.0.0012`; version semantics are owned by [`VERSIONING.md`](VERSIONING.md).
 
 The retained R0 probe remains experimental evidence under `experiments/Fovium.RenderProbe`. Production code is the single `Fovium` assembly and does not depend on the experiment. Local Windows acceptance used one `RenderScaling = 1.00` display; no GitHub-hosted CI or Linux/macOS runtime result is claimed by this stage.
 
 ## Current focus
 
-Owner review of current-first Ambient transition behavior on representative sequential browsing. The expected next bounded stage is R5-F3 for contextual drawing shortcuts and presentation UI polish only after acceptance; do not begin it or metadata/context-menu work automatically.
+Owner visual review of atomic Ambient presentation on representative sequential browsing. R5-F3 remains next only after explicit acceptance; do not begin it or metadata/context-menu work automatically.
 
 ## Implemented application functionality
 
@@ -28,8 +28,8 @@ Owner review of current-first Ambient transition behavior on representative sequ
 - Dark Settings window with implemented Viewing, Stage, Presentation, Controls, and About sections; schema-v2 JSON autosave; explicit v1 migration; and malformed-file fallback.
 - Persisted Stage background, custom/matte colors, independent Matte, and configurable Ambient brightness/saturation/blur with synchronized Settings and context-menu surfaces.
 - Persisted Matte physical width and Solid, Rounded, Soft, and Angular outer presentation styles; all styles retain an opaque rectangular backing beneath alpha photographs without changing photo geometry.
-- Bounded asynchronous blur-only Ambient preparation from the oriented decoded photograph; current-first scheduling after photograph publication; render-time brightness/saturation; adjacent preparation; byte-accounted cache ownership; and matching-identity publication.
-- Identity-aware current Ambient diagnostics distinguish cached readiness from generated readiness and measure the coordinator's photo-publication-to-matching-Ambient publication gap.
+- Bounded asynchronous blur-only Ambient preparation from the oriented decoded photograph; current-first scheduling after photograph publication; progressive direction-prioritized adjacent readiness; render-time brightness/saturation; byte-accounted cache ownership; and matching-identity publication.
+- Atomic cached photo+Stage installation plus identity-aware coordinator and actual render-frame diagnostics distinguish generated/cache readiness and count matching versus Black-fallback Ambient frames.
 - Persistent command shortcuts with locale-independent identifiers, conflict confirmation, unassigned state, reset, and reserved `Esc` behavior. Defaults add `+`, `-`, `0`, `1`, and `M` viewer controls.
 - Whole-viewport Peek 100% on configurable hold `Z`, anchored to the source point beneath the cursor with deterministic Stage fallback, temporary pan, and exact semantic Fit/manual restoration.
 - Non-navigating Blink Compare on configurable hold `Shift+C`, acquiring the previous viable image through retained inspection leases while preserving canonical sequence/index/generation state.
@@ -56,6 +56,6 @@ Markup save/export, text, dedicated Highlighter, contextual tool-selection short
 - GitHub Actions portability is configured but cannot be claimed as passing until the workflow runs remotely.
 - R4 runtime inspection evidence is Windows-only at `RenderScaling = 1.00`; precise cold non-cached Blink latency and real fractional-DPI interaction still need representative owner hardware evidence.
 - R5 through R5-F2 pointer, eraser, constrained-drawing, opacity, and rendering evidence is Windows-only at `RenderScaling = 1.00`; fractional-DPI, Linux, and macOS runtime feel remain unvalidated.
-- R5-P1 transition evidence is single-machine Windows owner-corpus evidence; deliberately outrunning preload can still use the safe matching Black fallback, while cross-platform frame presentation remains unmeasured.
+- R5-P1 reduced coordinator-side current Ambient latency from roughly `134 ms` to `15 ms`, but owner review still observed a compositor-visible Black transition. R5-P2 local Windows diagnostics measured zero additional fallback-rendered frames across 20 natural 24 MP transitions, but the product defect remains open until owner visual acceptance; fractional-DPI and cross-platform frame presentation remain unmeasured.
 
 Open technical risks are tracked in [`KNOWN-PROBLEMS.md`](KNOWN-PROBLEMS.md). Directional stages are in [`ROADMAP.md`](ROADMAP.md). Git remains the authority for branch, HEAD, and worktree status.

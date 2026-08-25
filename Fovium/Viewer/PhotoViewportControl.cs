@@ -11,13 +11,22 @@ using Fovium.Stage;
 
 namespace Fovium.Viewer;
 
+internal readonly record struct ViewportAmbientPresentationState(
+    long? ImageIdentity,
+    long? AmbientIdentity,
+    StageBackgroundMode BackgroundMode,
+    bool HasMatchingAmbient);
+
 internal sealed class PhotoViewportControl : Control
 {
     private readonly ViewportModel _viewport = new();
+    private readonly AmbientRenderFrameDiagnostics _ambientFrameDiagnostics = new();
     private SharedResourceLease<DecodedImage>? _image;
     private DecodedImage.AmbientLease? _ambient;
+    private long? _ambientImageIdentity;
     private SharedResourceLease<DecodedImage>? _inspectionImage;
     private DecodedImage.AmbientLease? _inspectionAmbient;
+    private long? _inspectionAmbientImageIdentity;
     private StageSettings? _inspectionStage;
     private string? _inspectionImageIdentity;
     private ViewTransfer? _inspectionRestore;
@@ -58,6 +67,19 @@ internal sealed class PhotoViewportControl : Control
     public ViewTransfer CaptureViewTransfer() =>
         _image is null ? ViewTransfer.Fit : _viewport.CaptureTransfer();
 
+    internal AmbientRenderFrameMetrics GetAmbientRenderFrameMetrics() =>
+        _ambientFrameDiagnostics.GetMetrics();
+
+    internal ViewportAmbientPresentationState CaptureAmbientPresentationState()
+    {
+        var imageIdentity = _image?.Value.Identity;
+        return new ViewportAmbientPresentationState(
+            imageIdentity,
+            _ambientImageIdentity,
+            _stage.BackgroundMode,
+            imageIdentity is not null && imageIdentity == _ambientImageIdentity && _ambient is not null);
+    }
+
     public void ConfigurePresentation(
         PresentationOverlaySession presentation,
         Cursor? visibleViewerCursor = null,
@@ -95,6 +117,7 @@ internal sealed class PhotoViewportControl : Control
         var previous = _image;
         var previousAmbient = _ambient;
         _ambient = null;
+        _ambientImageIdentity = null;
         _image = image;
         _canonicalImageIdentity = imageIdentity;
         _presentation?.SelectImage(imageIdentity);
@@ -105,18 +128,59 @@ internal sealed class PhotoViewportControl : Control
         RaiseViewStateChanged();
     }
 
-    public void SetStage(StageSettings stage, DecodedImage.AmbientLease? ambient)
+    public void SetPresentation(
+        SharedResourceLease<DecodedImage> image,
+        ViewTransfer transfer,
+        string imageIdentity,
+        StagePresentation presentation)
     {
-        ArgumentNullException.ThrowIfNull(stage);
-        if (!stage.BackgroundMode.RequiresAmbient())
+        ArgumentNullException.ThrowIfNull(image);
+        ArgumentException.ThrowIfNullOrWhiteSpace(imageIdentity);
+        ArgumentNullException.ThrowIfNull(presentation);
+        if (presentation.ImageIdentity != image.Value.Identity)
+        {
+            throw new InvalidOperationException("Stage presentation identity does not match the photograph.");
+        }
+
+        var ambient = presentation.TakeAmbient();
+        if (!presentation.Stage.BackgroundMode.RequiresAmbient())
+        {
+            ambient?.Dispose();
+            ambient = null;
+        }
+
+        DiscardInspection();
+        var previousImage = _image;
+        var previousAmbient = _ambient;
+        _image = image;
+        _canonicalImageIdentity = imageIdentity;
+        _stage = presentation.Stage;
+        _ambient = ambient;
+        _ambientImageIdentity = ambient is null ? null : presentation.ImageIdentity;
+        _presentation?.SelectImage(imageIdentity);
+        _viewport.SetImage(image.Value.Descriptor.OrientedSize, transfer);
+        InvalidateVisual();
+        previousImage?.Dispose();
+        previousAmbient?.Dispose();
+        RaiseViewStateChanged();
+    }
+
+    public void SetStage(StagePresentation presentation)
+    {
+        ArgumentNullException.ThrowIfNull(presentation);
+        var ambient = presentation.TakeAmbient();
+        var currentIdentity = _image?.Value.Identity;
+        if (!presentation.Stage.BackgroundMode.RequiresAmbient() ||
+            presentation.ImageIdentity != currentIdentity)
         {
             ambient?.Dispose();
             ambient = null;
         }
 
         var previous = _ambient;
-        _stage = stage;
+        _stage = presentation.Stage;
         _ambient = ambient;
+        _ambientImageIdentity = ambient is null ? null : presentation.ImageIdentity;
         InvalidateVisual();
         previous?.Dispose();
     }
@@ -130,6 +194,7 @@ internal sealed class PhotoViewportControl : Control
         _canonicalImageIdentity = null;
         _presentation?.SelectImage(null);
         _ambient = null;
+        _ambientImageIdentity = null;
         InvalidateVisual();
         previous?.Dispose();
         previousAmbient?.Dispose();
@@ -218,6 +283,7 @@ internal sealed class PhotoViewportControl : Control
         _inspectionImage = image;
         _inspectionImageIdentity = imageIdentity;
         _inspectionAmbient = ambient;
+        _inspectionAmbientImageIdentity = ambient is null ? null : image.Value.Identity;
         _inspectionStage = stage;
         _viewport.SetImage(image.Value.Descriptor.OrientedSize, _inspectionRestore.Value);
         InvalidateVisual();
@@ -241,6 +307,7 @@ internal sealed class PhotoViewportControl : Control
         _inspectionImage = null;
         _inspectionImageIdentity = null;
         _inspectionAmbient = null;
+        _inspectionAmbientImageIdentity = null;
         _inspectionStage = null;
         _lastDragPoint = null;
         if (_image is not null && restore is not null)
@@ -278,7 +345,14 @@ internal sealed class PhotoViewportControl : Control
             {
                 renderLease = cachedLease.Value.AcquireRenderLease();
                 var ambient = _inspectionImage is not null ? _inspectionAmbient : _ambient;
-                ambientLease = ambient?.Acquire();
+                var presentedNumericIdentity = cachedLease.Value.Identity;
+                var ambientIdentity = _inspectionImage is not null
+                    ? _inspectionAmbientImageIdentity
+                    : _ambientImageIdentity;
+                if (ambientIdentity == presentedNumericIdentity)
+                {
+                    ambientLease = ambient?.Acquire();
+                }
                 var descriptor = cachedLease.Value.Descriptor;
                 var presentationIdentity = _inspectionImage is not null
                     ? _inspectionImageIdentity
@@ -295,7 +369,10 @@ internal sealed class PhotoViewportControl : Control
                     presentationStage,
                     _viewport.RenderScaling,
                     ambientLease,
-                    markup));
+                    markup,
+                    presentedNumericIdentity,
+                    ambientLease is null ? null : ambientIdentity,
+                    _ambientFrameDiagnostics));
                 renderLease = null;
                 ambientLease = null;
             }
@@ -584,6 +661,7 @@ internal sealed class PhotoViewportControl : Control
         _inspectionImage = null;
         _inspectionImageIdentity = null;
         _inspectionAmbient = null;
+        _inspectionAmbientImageIdentity = null;
         _inspectionStage = null;
         _lastDragPoint = null;
         comparison?.Dispose();

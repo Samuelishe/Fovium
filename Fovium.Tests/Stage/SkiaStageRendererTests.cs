@@ -6,6 +6,76 @@ namespace Fovium.Tests.Stage;
 
 public sealed class SkiaStageRendererTests
 {
+    [Fact]
+    public void ActualStageDrawRecordsFallbackAndMatchingAmbientFramesByIdentity()
+    {
+        using var surface = SKSurface.Create(new SKImageInfo(64, 48));
+        using var ambientBitmap = new SKBitmap(new SKImageInfo(16, 8));
+        ambientBitmap.Erase(SKColors.DarkSlateBlue);
+        using var ambient = SKImage.FromBitmap(ambientBitmap);
+        var diagnostics = new AmbientRenderFrameDiagnostics();
+        var stage = StageSettings.Default with { BackgroundMode = StageBackgroundMode.Ambient };
+
+        SkiaStageRenderer.Draw(
+            surface.Canvas,
+            new RectD(0, 0, 64, 48),
+            new RectD(8, 8, 48, 32),
+            1,
+            stage,
+            null,
+            null,
+            imageIdentity: 41,
+            ambientIdentity: null,
+            frameDiagnostics: diagnostics);
+        SkiaStageRenderer.Draw(
+            surface.Canvas,
+            new RectD(0, 0, 64, 48),
+            new RectD(8, 8, 48, 32),
+            1,
+            stage,
+            ambient,
+            new PixelSize(16, 8),
+            imageIdentity: 42,
+            ambientIdentity: 42,
+            frameDiagnostics: diagnostics);
+
+        var metrics = diagnostics.GetMetrics();
+        Assert.Equal(1, metrics.BlackFallbackRenderedFrameCount);
+        Assert.Equal(1, metrics.MatchingAmbientRenderedFrameCount);
+        Assert.Equal(42, metrics.LastFrame.ImageIdentity);
+        Assert.Equal(42, metrics.LastFrame.AmbientIdentity);
+        Assert.False(metrics.LastFrame.UsedBlackFallback);
+        Assert.True(metrics.LastFrame.Timestamp > 0);
+    }
+
+    [Fact]
+    public void MismatchedAmbientIdentityRendersBlackFallbackInsteadOfWrongImageStage()
+    {
+        using var surface = SKSurface.Create(new SKImageInfo(32, 24));
+        using var ambientBitmap = new SKBitmap(new SKImageInfo(8, 8));
+        ambientBitmap.Erase(SKColors.Magenta);
+        using var ambient = SKImage.FromBitmap(ambientBitmap);
+        var diagnostics = new AmbientRenderFrameDiagnostics();
+
+        SkiaStageRenderer.Draw(
+            surface.Canvas,
+            new RectD(0, 0, 32, 24),
+            new RectD(8, 6, 16, 12),
+            1,
+            StageSettings.Default with { BackgroundMode = StageBackgroundMode.Ambient },
+            ambient,
+            new PixelSize(8, 8),
+            imageIdentity: 52,
+            ambientIdentity: 51,
+            frameDiagnostics: diagnostics);
+        using var result = surface.Snapshot();
+        using var pixels = SKBitmap.FromImage(result);
+
+        Assert.Equal(SKColors.Black, pixels.GetPixel(0, 0));
+        Assert.Equal(1, diagnostics.GetMetrics().BlackFallbackRenderedFrameCount);
+        Assert.Equal(0, diagnostics.GetMetrics().MatchingAmbientRenderedFrameCount);
+    }
+
     [Theory]
     [InlineData((int)StageBackgroundMode.Black, 0x00, 0x00, 0x00)]
     [InlineData((int)StageBackgroundMode.Neutral, 0x50, 0x50, 0x50)]

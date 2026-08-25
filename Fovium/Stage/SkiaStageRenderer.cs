@@ -12,10 +12,20 @@ internal static class SkiaStageRenderer
         double renderScaling,
         StageSettings stage,
         SKImage? ambientImage,
-        PixelSize? ambientSize)
+        PixelSize? ambientSize,
+        long imageIdentity = 0,
+        long? ambientIdentity = null,
+        AmbientRenderFrameDiagnostics? frameDiagnostics = null)
     {
         ArgumentNullException.ThrowIfNull(canvas);
         ArgumentNullException.ThrowIfNull(stage);
+        var ambientPresent = ambientImage is not null && ambientSize is { IsValid: true };
+        var matchingAmbient = ambientPresent && (imageIdentity == 0 || ambientIdentity == imageIdentity);
+        frameDiagnostics?.Record(
+            imageIdentity,
+            stage.BackgroundMode,
+            matchingAmbient ? ambientIdentity : null,
+            matchingAmbient);
         var logicalViewport = new LogicalSize(viewport.Width, viewport.Height);
         var geometry = StageGeometry.CalculateRenderGeometry(
             stage,
@@ -30,7 +40,8 @@ internal static class SkiaStageRenderer
         };
         canvas.DrawRect(ToSkRect(viewport), backgroundPaint);
 
-        if (ambientImage is not null &&
+        if (matchingAmbient &&
+            ambientImage is not null &&
             ambientSize is { IsValid: true } size &&
             geometry.AmbientDestination is { } cover)
         {

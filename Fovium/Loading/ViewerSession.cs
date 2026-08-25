@@ -92,6 +92,8 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
         _memoryPolicy = memoryPolicy;
     }
 
+    public event EventHandler? AdjacentPreloadProgressed;
+
     public long StaleResultDisposals => Interlocked.Read(ref _staleResultDisposals);
 
     public long CacheHits => Interlocked.Read(ref _cacheHits);
@@ -414,7 +416,12 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
                     }
 
                     Interlocked.Increment(ref _cacheHits);
-                    StartAdjacentPreload(sequence, index, sessionIdentity, generation);
+                    StartAdjacentPreload(
+                        sequence,
+                        index,
+                        sessionIdentity,
+                        generation,
+                        direction);
                     return new SelectionResult<T>(
                         SelectionStatus.Published,
                         path,
@@ -440,7 +447,8 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
                     loaded.Image!,
                     sessionIdentity,
                     generation,
-                    stopwatch.Elapsed);
+                    stopwatch.Elapsed,
+                    direction);
             }
 
             lock (_sync)
@@ -575,7 +583,12 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
         {
             if (interruptedPreload)
             {
-                StartAdjacentPreload(sequence, currentIndex, sessionIdentity, generation);
+                StartAdjacentPreload(
+                    sequence,
+                    currentIndex,
+                    sessionIdentity,
+                    generation,
+                    preferredDirection: null);
             }
         }
     }
@@ -609,7 +622,8 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
         T image,
         long sessionIdentity,
         long generation,
-        TimeSpan latency)
+        TimeSpan latency,
+        NavigationDirection? preferredDirection = null)
     {
         SharedResourceLease<T>? lease;
         lock (_sync)
@@ -639,7 +653,12 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
             _requestedIndex = index;
         }
 
-        StartAdjacentPreload(sequence, index, sessionIdentity, generation);
+        StartAdjacentPreload(
+            sequence,
+            index,
+            sessionIdentity,
+            generation,
+            preferredDirection);
         Debug.WriteLine($"Fovium publish {Path.GetFileName(path)} in {latency.TotalMilliseconds:F2} ms; cache {_cache.RetainedBytes} bytes.");
         return new SelectionResult<T>(
             SelectionStatus.Published,
@@ -678,7 +697,8 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
         ImageSequence sequence,
         int currentIndex,
         long sessionIdentity,
-        long generation)
+        long generation,
+        NavigationDirection? preferredDirection)
     {
         lock (_sync)
         {
@@ -697,6 +717,7 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
                 sequence,
                 currentIndex,
                 sessionIdentity,
+                preferredDirection,
                 _preloadCancellation.Token);
             RegisterTaskUnsafe(_preloadTask);
         }
@@ -706,20 +727,25 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
         ImageSequence sequence,
         int currentIndex,
         long sessionIdentity,
+        NavigationDirection? preferredDirection,
         CancellationToken cancellationToken)
     {
         try
         {
+            var firstDirection = preferredDirection ?? NavigationDirection.Next;
+            var secondDirection = firstDirection == NavigationDirection.Next
+                ? NavigationDirection.Previous
+                : NavigationDirection.Next;
             await PreloadViableAsync(
                 sequence,
-                currentIndex - 1,
-                NavigationDirection.Previous,
+                currentIndex + (int)firstDirection,
+                firstDirection,
                 sessionIdentity,
                 cancellationToken).ConfigureAwait(false);
             await PreloadViableAsync(
                 sequence,
-                currentIndex + 1,
-                NavigationDirection.Next,
+                currentIndex + (int)secondDirection,
+                secondDirection,
                 sessionIdentity,
                 cancellationToken).ConfigureAwait(false);
         }
@@ -742,6 +768,7 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
             if (_cache.TryAcquire(path, out var existing))
             {
                 existing!.Dispose();
+                NotifyAdjacentPreloadProgressed();
                 return;
             }
 
@@ -752,6 +779,7 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
                 continue;
             }
 
+            var added = false;
             lock (_sync)
             {
                 if (_disposed || !ReferenceEquals(_sequence, sequence) || sessionIdentity != _sessionIdentity)
@@ -760,12 +788,20 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
                     return;
                 }
 
-                _cache.Add(path, loaded.Image!, protect: false);
+                added = _cache.Add(path, loaded.Image!, protect: false);
+            }
+
+            if (added)
+            {
+                NotifyAdjacentPreloadProgressed();
             }
 
             return;
         }
     }
+
+    private void NotifyAdjacentPreloadProgressed() =>
+        AdjacentPreloadProgressed?.Invoke(this, EventArgs.Empty);
 
     private bool IsCurrent(long sessionIdentity, long generation)
     {
