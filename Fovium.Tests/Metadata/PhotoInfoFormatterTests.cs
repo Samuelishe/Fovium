@@ -29,8 +29,9 @@ public sealed class PhotoInfoFormatterTests
     [Fact]
     public void BaseInfoUsesOrientedDimensionsBasenameEncodedLengthAndFormat()
     {
+        var sourcePath = Path.Combine(Path.GetTempPath(), "private", "portrait.jpg");
         var state = new PhotoInfoState(
-            new PhotoInfoBase(7, @"C:\private\portrait.jpg", "Jpeg", new PixelSize(4000, 6000), 15_519_744),
+            new PhotoInfoBase(7, sourcePath, "Jpeg", new PixelSize(4000, 6000), 15_519_744),
             PhotoMetadataSummary.Empty,
             IsMetadataLoading: false);
 

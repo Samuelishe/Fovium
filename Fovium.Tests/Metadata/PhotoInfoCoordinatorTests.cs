@@ -28,13 +28,15 @@ public sealed class PhotoInfoCoordinatorTests
     public async Task TogglePublishesBaseImmediatelyAndReopenUsesBoundedCache()
     {
         using var source = new TestPresentedImageSource();
-        source.Set(CreateImage(7, @"C:\private\portrait.jpg", new PixelSize(6000, 4000)));
+        var sourcePath = Path.Combine(Path.GetTempPath(), "private", "portrait.jpg");
+        source.Set(CreateImage(7, sourcePath, new PixelSize(6000, 4000)));
         var reader = new ControllableReader();
         using var coordinator = new PhotoInfoCoordinator(source, reader);
 
         coordinator.SetVisible(true);
 
         var initial = Assert.IsType<PhotoInfoState>(coordinator.CurrentState);
+        Assert.Equal(sourcePath, initial.Base.SourcePath);
         Assert.Equal("portrait.jpg", Path.GetFileName(initial.Base.SourcePath));
         Assert.Equal(new PixelSize(6000, 4000), initial.Base.OrientedSize);
         Assert.Equal(1, initial.Base.EncodedBytes);
