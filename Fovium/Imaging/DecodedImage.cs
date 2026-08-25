@@ -14,7 +14,7 @@ internal enum SourceColorState
 
 internal sealed record ImageDescriptor(
     string SourcePath,
-    string EncodedFormat,
+    ImageFormatId EncodedFormat,
     PixelSize EncodedSize,
     PixelSize OrientedSize,
     ExifOrientation Orientation,

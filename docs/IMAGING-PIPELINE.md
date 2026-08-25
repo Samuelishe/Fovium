@@ -17,7 +17,7 @@ The intended flow is:
 6. Extract optional metadata without coupling it to correct display.
 7. Prepare a display representation through the rendering/color path.
 
-R0 accepted controlled Skia `SKCodec` probing/decoding as the initial JPEG/PNG foundation. R1 implements that path behind a project-owned asynchronous loader and result boundary. The production source representation owns encoded bytes, detected format, encoded/oriented dimensions, orientation, frame count, normalized color state, pixel format, reduced-decode capability, cost estimates, timings, and deterministic native-image ownership. It does not depend on RenderProbe types.
+R0 accepted controlled Skia `SKCodec` probing/decoding as the initial JPEG/PNG foundation. R7-A extends that same backend to static WebP behind a project-owned capability and asynchronous loader/result boundary. The production source representation owns encoded bytes, Fovium-detected format identity, encoded/oriented dimensions, orientation, frame count, normalized color state, pixel format, reduced-decode capability, cost estimates, timings, and deterministic native-image ownership. It does not depend on RenderProbe types.
 
 ## Header probe and decode plan
 
@@ -40,6 +40,8 @@ Approximate cost should include dimensions, bytes per pixel or channel layout, f
 
 Orientation is part of baseline display correctness. Downstream dimensions, viewport math, and 100% semantics refer to the **oriented** source image. The pipeline must apply or carry the orientation exactly once and make that choice unambiguous. R1 maps all eight SKCodec encoded origins to an explicit orientation transform, retains encoded dimensions separately, and renders through oriented coordinates; pure tests cover every orientation.
 
+JPEG orientation continues through that path. A controlled WebP EXIF-orientation fixture showed SkiaSharp 3.119.4 returning the normal origin, so WebP orientation metadata is not currently applied to presentation. The lazy metadata adapter can read useful WebP EXIF fields, but it is deliberately not pulled into foreground decode as a second orientation parser. This is a documented correctness limitation, not a claim that WebP orientation is supported.
+
 EXIF, XMP, IPTC, and other descriptive metadata are useful but optional to ordinary display. Their extraction may be lazy and independently fallible. Metadata parsing must not block navigation unnecessarily. Source ICC/profile data is not optional UI metadata: it must survive to the color boundary even before the full color pipeline exists.
 
 R6-A implements the optional descriptive path through a focused managed `MetadataExtractor` adapter. It reads the exact encoded byte array already retained by `DecodedImage` through a non-copying memory stream, maps useful EXIF values into immutable Fovium types, and contains malformed/no-metadata results without changing decode success. External directory, tag, and rational types do not cross the adapter. Parsing is lazy while Photo Info is visible, background-run, cancellable at publication authority, and count-cached for the current sequence. ICC discoveries remain informational and do not alter rendering.
@@ -48,7 +50,7 @@ R6-B adds a separate read-only pixel-analysis path. A retained pixel lease share
 
 ## Decoder registry direction
 
-A project-owned registry may route probes and decodes among multiple libraries or native/specialized codecs. Backends should expose capabilities and failures in common terms, preserve resource ownership, and honor cancellation when the underlying API allows it. A backend addition must not require navigation, viewport, cache, or renderer redesign.
+A project-owned registry may route probes and decodes among multiple libraries or native/specialized codecs. R7-A establishes the first small capability table for JPEG, PNG, and WebP plus a narrow Skia detected-format mapping. Extensions remain discovery/picker hints; `SKCodec.EncodedFormat` is mapped to Fovium identity before descriptor publication. Backends should expose capabilities and failures in common terms, preserve resource ownership, and honor cancellation when the underlying API allows it. A backend addition must not require navigation, viewport, cache, or renderer redesign.
 
 This registry is internal composition, not a plugin system or third-party extension API.
 
@@ -62,6 +64,6 @@ Limits come from current available resources, actual representations, concurrent
 
 ## Format-support philosophy
 
-Likely areas include JPEG, PNG, WebP, TIFF, HEIF/HEIC, AVIF, JPEG XL, JPEG 2000, PSD previews, OpenEXR, and embedded RAW previews. This is a research set, not an initial support promise.
+Current per-format truth is owned by [`FORMAT-SUPPORT.md`](FORMAT-SUPPORT.md). Future areas include TIFF, HEIF/HEIC, AVIF, JPEG XL, JPEG 2000, PSD previews, OpenEXR, and embedded RAW previews. This is a research set, not a support promise.
 
-R1 advertises JPEG/JPG/PNG candidates and validates actual content through SKCodec. A directly supplied unusual extension is attempted rather than trusted or rejected solely by name. Broader codecs can arrive incrementally without changing core viewer semantics. Candidate technologies are tracked as evaluations in [`THIRD-PARTY.md`](THIRD-PARTY.md).
+R7-A advertises JPEG/JPG/PNG/WebP candidates and validates actual content through SKCodec. A directly supplied unusual extension is attempted rather than trusted or rejected solely by name. The current pipeline is static-only: any supported payload whose codec reports more than one frame is rejected recoverably, covering animated WebP and APNG when detected. Broader codecs can arrive incrementally without changing core viewer semantics. Candidate technologies are tracked as evaluations in [`THIRD-PARTY.md`](THIRD-PARTY.md).

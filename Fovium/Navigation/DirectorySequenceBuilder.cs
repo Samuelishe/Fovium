@@ -1,11 +1,9 @@
+using Fovium.Imaging;
+
 namespace Fovium.Navigation;
 
 internal sealed class DirectorySequenceBuilder
 {
-    private static readonly HashSet<string> CandidateExtensions = new(
-        [".jpg", ".jpeg", ".png"],
-        StringComparer.OrdinalIgnoreCase);
-
     public Task<ImageSequence> BuildAsync(string selectedPath, CancellationToken cancellationToken) =>
         Task.Run(() => Build(selectedPath, cancellationToken), cancellationToken);
 
@@ -25,7 +23,7 @@ internal sealed class DirectorySequenceBuilder
             foreach (var path in Directory.EnumerateFiles(directory, "*", SearchOption.TopDirectoryOnly))
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                if (CandidateExtensions.Contains(Path.GetExtension(path)))
+                if (ImageFormatCapabilities.IsCandidateExtension(Path.GetExtension(path)))
                 {
                     candidates.Add(Path.GetFullPath(path));
                 }

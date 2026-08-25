@@ -30,7 +30,7 @@ Use ordinary composition and explicit ownership. Do not use a Service Locator, m
 - Navigation identifies candidates and selection generations; it does not know Skia, pixels, or renderer details.
 - Probing and decoding consume a selected source and produce project-owned imaging results; they do not drive navigation or UI.
 - Rendering consumes prepared display data plus viewport state; it never chooses the next file.
-- The UI/coordinator requests work and publishes the newest valid result; it does not decode JPEGs or perform ICC transforms itself.
+- The UI/coordinator requests work and publishes the newest valid result; it does not decode formats or perform ICC transforms itself.
 - Platform-specific implementations sit behind narrow boundaries at the edge. Platform details must not leak throughout application code.
 - Settings storage owns typed persisted preferences; the viewer coordinator resolves image-change policy into a `ViewTransfer`. Renderer and viewport math never query settings.
 - Stage policy and asynchronous Ambient preparation are coordinated above rendering. Selection first resolves any cached matching Stage presentation; the viewport then installs photograph, identity, view transfer, Stage settings, and that retained Ambient as one render-visible transition before current missing work starts. Current Ambient remains immediate presentation work; each progressively ready adjacent decode may trigger speculative matching preparation without a full-neighbor barrier. The renderer receives one identity-coherent snapshot and rejects mismatched Ambient; it materializes backend paths without reading settings, scheduling background work, or modifying viewport state.
@@ -46,7 +46,7 @@ Dependencies should point toward small project-owned contracts and pure models o
 
 ## Imaging extensibility
 
-Multiple decoder backends may coexist behind a project-owned probe/decode contract. Adding a codec backend must not require rewriting navigation, viewport math, cache policy, or rendering. This is backend extensibility, not a user plugin system. R1 uses a narrow project-owned asynchronous loader contract with controlled SKCodec JPEG/PNG probing and decode; navigation and loading depend on typed results rather than SKCodec details.
+Multiple decoder backends may coexist behind a project-owned probe/decode contract. Adding a codec backend must not require rewriting navigation, viewport math, cache policy, or rendering. This is backend extensibility, not a user plugin system. R7-A adds one immutable project-owned capability authority for stable format identity, candidate extensions, picker hints, detected Skia mapping, alpha, and static/animation policy. Navigation consumes only candidate capability; the decoder consumes content-detected capability; `ImageDescriptor` carries Fovium format identity rather than a Skia enum or arbitrary string. The current single Skia backend handles JPEG, PNG, and static WebP.
 
 The production direct-Skia adapter is confined to `SkiaPhotoDrawOperation`, hosted by a focused composition custom-draw boundary whose compositor-managed bitmap cache prevents unrelated overlay damage from re-entering photographic Skia drawing. Stage composition uses a focused Skia stage renderer called by that adapter; Skia types do not leak into navigation or render-independent viewport math, and Avalonia's unstable lease remains at the platform/render edge.
 

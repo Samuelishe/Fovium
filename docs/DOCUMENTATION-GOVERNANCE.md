@@ -17,6 +17,7 @@ Each durable subject has one owner. Other documents may summarize and link but m
 | User-visible interaction | [`UX-CONTRACT.md`](UX-CONTRACT.md) |
 | Responsibility and dependency boundaries | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
 | Probe, decode, formats, orientation, source representation | [`IMAGING-PIPELINE.md`](IMAGING-PIPELINE.md) |
+| Current supported formats and per-format capability matrix | [`FORMAT-SUPPORT.md`](FORMAT-SUPPORT.md) |
 | Viewport, DPI, physical-pixel 100%, sampling research | [`RENDERING.md`](RENDERING.md) |
 | Source/destination color and transform direction | [`COLOR-MANAGEMENT.md`](COLOR-MANAGEMENT.md) |
 | Loading, cache, concurrency, limits, performance measurement | [`PERFORMANCE.md`](PERFORMANCE.md) |

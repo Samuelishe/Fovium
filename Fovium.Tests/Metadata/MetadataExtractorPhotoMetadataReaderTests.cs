@@ -1,4 +1,5 @@
 using Fovium.Metadata;
+using Fovium.Tests.Imaging;
 
 namespace Fovium.Tests.Metadata;
 
@@ -22,6 +23,27 @@ public sealed class MetadataExtractorPhotoMetadataReaderTests
         var captured = Assert.IsType<PhotoCaptureTime>(result.Summary.CaptureDateTime);
         Assert.Equal(new DateTime(2026, 8, 25, 18, 42, 0), captured.UnspecifiedClockTime);
         Assert.Equal(DateTimeKind.Unspecified, captured.UnspecifiedClockTime.Kind);
+    }
+
+    [Fact]
+    public async Task GeneratedWebpExifFixtureMapsThroughExistingMetadataBoundary()
+    {
+        var jpeg = MetadataTestImages.CreateJpegWithExif();
+        var segmentLength = (jpeg[4] << 8) | jpeg[5];
+        var exifPayload = jpeg.AsSpan(6, segmentLength - 2).ToArray();
+        var webp = EncodedImageTestData.CreateWebpWithExif(exifPayload);
+        var reader = new MetadataExtractorPhotoMetadataReader();
+
+        var result = await reader.ReadAsync(webp, CancellationToken.None);
+
+        Assert.Equal(PhotoMetadataReadStatus.Success, result.Status);
+        Assert.Equal("TESTMAKE", result.Summary.CameraMake);
+        Assert.Equal("TESTMODEL", result.Summary.CameraModel);
+        Assert.Equal("TEST 85mm", result.Summary.LensModel);
+        Assert.Equal(85, result.Summary.FocalLengthMillimeters);
+        Assert.Equal(2, result.Summary.Aperture);
+        Assert.Equal(new PhotoRational(1, 320), result.Summary.ExposureTime);
+        Assert.Equal(400, result.Summary.Iso);
     }
 
     [Fact]

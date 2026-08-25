@@ -282,3 +282,9 @@ Photo Info is a requested, movable, zero-layout overlay defaulting to configurab
 Status: Accepted in R6-B.
 
 Histogram is an on-demand movable zero-layout overlay defaulting to configurable `G`; visibility is session-local and starts hidden, while normalized bottom-right placement persists. It observes the retained actually presented canonical/Blink image and ignores Peek/zoom/pan because it describes whole-image decoded RGB values rather than viewport, Stage, markup, or display-output pixels. One cancellable worker acquires the existing decoded native payload without re-read, re-decode, or full-image copy. BGRA8888/Premul samples exclude alpha zero and unpremultiply partial alpha; large images use a deterministic whole-image grid bounded to two million locations. A 128-entry session LRU and latest-wins generation prevent repeat work and stale publication. The initial plot uses one linear shared R/G/B maximum; it is not an editing control or an sRGB/monitor-output correctness claim.
+
+## D-047 — Format capability and content truth are project-owned
+
+Status: Accepted in R7-A.
+
+Fovium owns stable format identity and one immutable capability authority independent of decoder-backend enums. Directory discovery and file-picker patterns derive known extension hints from it, while actual encoded content detected by the decoder determines format truth. The accepted table is JPEG, PNG, and static lossy/lossless/alpha WebP through the existing Skia backend. The pipeline is static-only: supported content reporting more than one frame is rejected recoverably rather than displaying frame zero as complete support. Format knowledge does not leak into navigation, Stage, markup, Photo Info, or Histogram, and this is backend composition rather than a decoder plugin system.

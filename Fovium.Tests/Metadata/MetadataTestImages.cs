@@ -55,7 +55,7 @@ internal static class MetadataTestImages
         var image = SKImage.FromBitmap(bitmap);
         var descriptor = new ImageDescriptor(
             path,
-            "Jpeg",
+            ImageFormatId.Jpeg,
             size,
             OrientationTransform.GetOrientedSize(size, orientation),
             orientation,

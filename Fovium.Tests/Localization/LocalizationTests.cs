@@ -53,6 +53,20 @@ public sealed class LocalizationTests
     }
 
     [Theory]
+    [InlineData("en-US", "Open image", "Supported images")]
+    [InlineData("ru-RU", "Открыть изображение", "Поддерживаемые изображения")]
+    public void FilePickerUsesFormatAgnosticLocalizedLabels(
+        string cultureName,
+        string title,
+        string imageType)
+    {
+        var localizer = Localizer.Create(CultureInfo.GetCultureInfo(cultureName));
+
+        Assert.Equal(title, localizer[UiStrings.PickerTitle]);
+        Assert.Equal(imageType, localizer[UiStrings.PickerImageType]);
+    }
+
+    [Theory]
     [InlineData("en-US", "Scale when changing images", "Keep current scale", "Fit each image")]
     [InlineData("ru-RU", "Масштаб при смене изображения", "Сохранять текущий масштаб", "Вписывать каждое изображение")]
     public void ViewingSettingsCatalogsContainPolicyLabels(

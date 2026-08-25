@@ -12,6 +12,7 @@ Not authoritative for: The subjects summarized by linked documents.
 | [`UX-CONTRACT.md`](UX-CONTRACT.md) | Observable interaction and zero-UI behavior | Changing input, menus, window behavior, or settings UX |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Responsibility boundaries, dependency direction, and minimal architecture rules | Designing components or dependencies |
 | [`IMAGING-PIPELINE.md`](IMAGING-PIPELINE.md) | Probe, orientation, decoding, metadata boundary, formats, and large-image safety | Working on image ingestion or codecs |
+| [`FORMAT-SUPPORT.md`](FORMAT-SUPPORT.md) | Current supported formats and per-format decode/alpha/animation/metadata status | Checking or changing format-level capability |
 | [`RENDERING.md`](RENDERING.md) | Viewport semantics, DPI, physical-pixel 100%, zoom, pan, and R0 rendering evidence | Working on display or viewport behavior |
 | [`COLOR-MANAGEMENT.md`](COLOR-MANAGEMENT.md) | Source/destination profiles, transforms, multi-monitor behavior, and research boundary | Working on color or display profiles |
 | [`PERFORMANCE.md`](PERFORMANCE.md) | Responsiveness, preload/cache policy, concurrency, limits, and measurement | Working on loading, navigation latency, memory, or diagnostics |

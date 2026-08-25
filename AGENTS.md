@@ -34,7 +34,8 @@ Do not load every document by default. If documents conflict, follow the owner n
 | Product, feature, or UX | [`docs/PROJECT-VISION.md`](docs/PROJECT-VISION.md) + [`docs/UX-CONTRACT.md`](docs/UX-CONTRACT.md) |
 | Avalonia or view interaction | [`docs/UX-CONTRACT.md`](docs/UX-CONTRACT.md) + [`docs/RENDERING.md`](docs/RENDERING.md) |
 | Zoom, DPI, viewport, or rendering | [`docs/RENDERING.md`](docs/RENDERING.md) |
-| Decode, formats, or orientation | [`docs/IMAGING-PIPELINE.md`](docs/IMAGING-PIPELINE.md) |
+| Decode or orientation | [`docs/IMAGING-PIPELINE.md`](docs/IMAGING-PIPELINE.md) |
+| Supported formats or per-format capabilities | [`docs/FORMAT-SUPPORT.md`](docs/FORMAT-SUPPORT.md) + [`docs/IMAGING-PIPELINE.md`](docs/IMAGING-PIPELINE.md) |
 | Cache, preload, limits, or concurrency | [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md) + relevant imaging owner |
 | ICC, color, or display profiles | [`docs/COLOR-MANAGEMENT.md`](docs/COLOR-MANAGEMENT.md) + [`docs/RENDERING.md`](docs/RENDERING.md) |
 | Architecture or dependencies | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |

@@ -43,7 +43,7 @@ internal sealed class SkiaImageDecoder : IImageLoader<DecodedImage>
             PixelSize encodedSize;
             PixelSize orientedSize;
             ExifOrientation orientation;
-            string encodedFormat;
+            ImageFormatCapability formatCapability;
             int frameCount;
             SourceColorState colorState;
             bool reducedDecodeAdvertised;
@@ -52,8 +52,9 @@ internal sealed class SkiaImageDecoder : IImageLoader<DecodedImage>
             long estimatedRetainedBytes;
 
             using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete))
-            using (var codec = SKCodec.Create(stream, out var creationResult))
             {
+                encodedLength = stream.Length;
+                using var codec = SKCodec.Create(stream, out var creationResult);
                 if (codec is null)
                 {
                     return Failure(
@@ -63,12 +64,15 @@ internal sealed class SkiaImageDecoder : IImageLoader<DecodedImage>
                         $"SKCodec probe failed: {creationResult}.");
                 }
 
-                if (codec.EncodedFormat is not SKEncodedImageFormat.Jpeg and not SKEncodedImageFormat.Png)
+                if (!ImageFormatCapabilities.TryGetDetected(codec.EncodedFormat, out var detectedCapability) ||
+                    detectedCapability is null)
                 {
                     return Failure(
                         ImageLoadErrorKind.Unsupported,
-                        $"R1 does not support detected format {codec.EncodedFormat}.");
+                        $"Fovium does not support detected format {codec.EncodedFormat}.");
                 }
+
+                formatCapability = detectedCapability;
 
                 var info = codec.Info;
                 encodedSize = new PixelSize(info.Width, info.Height);
@@ -79,8 +83,13 @@ internal sealed class SkiaImageDecoder : IImageLoader<DecodedImage>
 
                 orientation = ToExifOrientation(codec.EncodedOrigin);
                 orientedSize = OrientationTransform.GetOrientedSize(encodedSize, orientation);
-                encodedFormat = codec.EncodedFormat.ToString();
                 frameCount = Math.Max(codec.FrameCount, 1);
+                if (!ImageFormatCapabilities.SupportsFrameCount(formatCapability, frameCount))
+                {
+                    return Failure(
+                        ImageLoadErrorKind.Unsupported,
+                        $"Animated or multi-frame {formatCapability.DisplayName} is not supported yet.");
+                }
                 using var sourceColorSpace = info.ColorSpace;
                 colorState = sourceColorSpace is null
                     ? SourceColorState.AssumedSrgb
@@ -90,7 +99,6 @@ internal sealed class SkiaImageDecoder : IImageLoader<DecodedImage>
                 var reducedDimensions = codec.GetScaledDimensions(0.5f);
                 reducedDecodeAdvertised = reducedDimensions.Width < encodedSize.Width ||
                                           reducedDimensions.Height < encodedSize.Height;
-                encodedLength = stream.Length;
                 estimatedWorkingBytes = DecodeMemoryEstimator.EstimateWorkingBytes(
                     encodedSize.Width,
                     encodedSize.Height,
@@ -154,7 +162,7 @@ internal sealed class SkiaImageDecoder : IImageLoader<DecodedImage>
                 preparationWatch.Stop();
                 var descriptor = new ImageDescriptor(
                     Path.GetFullPath(path),
-                    encodedFormat,
+                    formatCapability.Id,
                     encodedSize,
                     orientedSize,
                     orientation,

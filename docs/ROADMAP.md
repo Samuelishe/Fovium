@@ -79,7 +79,11 @@ Accepted outcome at `0.1.0.0002`: focused read-only metadata adapter and project
 
 Accepted outcome at `0.1.0.0003`: lazy identity-safe whole-image decoded-RGB analysis from retained native pixels, deterministic two-million-location large-image sampling, transparent-pixel-safe 256-bin channels, bounded session cache, and a configurable `G` movable Histogram panel that follows canonical/Blink presentation without changing Peek or navigation. Luminance modes, clipping warnings, editing, waveform/vectorscope, and ICC behavior were not added.
 
-The next bounded product stage requires explicit owner selection after R6-B review. Do not begin automatically.
+## R7-A — Format capability foundation and static WebP
+
+Accepted outcome at `0.1.0.0004`: one project-owned JPEG/PNG/WebP capability authority supplies directory/picker hints and maps detected Skia content into stable Fovium identity. Static lossy/lossless/alpha WebP joins the existing decode/cache/Ambient/inspection/Photo Info/Histogram/markup path; multi-frame content is rejected recoverably under one static-image policy. No dedicated libwebp backend, animation, TIFF, HEIF/HEIC, AVIF, RAW, association, thumbnail, or ICC implementation was added.
+
+The next bounded product stage requires explicit owner selection after R7-A review. Do not begin another format automatically.
 
 ## Later / separate platform milestones
 

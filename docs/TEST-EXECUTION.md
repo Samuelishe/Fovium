@@ -65,6 +65,12 @@ Run the production logic and boundary tests while iterating:
 dotnet test Fovium.Tests/Fovium.Tests.csproj --filter "FullyQualifiedName~Fovium.Tests.Application|FullyQualifiedName~Fovium.Tests.Navigation|FullyQualifiedName~Fovium.Tests.Loading|FullyQualifiedName~Fovium.Tests.Imaging|FullyQualifiedName~Fovium.Tests.Input|FullyQualifiedName~Fovium.Tests.Rendering|FullyQualifiedName~Fovium.Tests.Viewer|FullyQualifiedName~Fovium.Tests.Settings|FullyQualifiedName~Fovium.Tests.Localization|FullyQualifiedName~Fovium.Tests.Stage|FullyQualifiedName~Fovium.Tests.Versioning"
 ```
 
+Run format capability, discovery, static WebP, Photo Info, Histogram, and Stage integration tests:
+
+```powershell
+dotnet test Fovium.Tests/Fovium.Tests.csproj --filter "FullyQualifiedName~Fovium.Tests.Imaging|FullyQualifiedName~Fovium.Tests.Navigation|FullyQualifiedName~Fovium.Tests.Metadata|FullyQualifiedName~Fovium.Tests.Histogram|FullyQualifiedName~Fovium.Tests.Stage"
+```
+
 ## Scope
 
 Focused tests are preferred during implementation; run the full solution before handoff when shared tooling or project configuration changes. The xUnit suite covers repository tooling and retained R0 logic plus production activation, navigation, decoding, viewport/view-policy transfer, settings persistence, loading ownership, cache, memory policy, localization, Stage geometry/preparation/publication/lifetime, DPI-aware Matte geometry and offscreen alpha composition, version metadata, and native render-lease lifetime.
@@ -75,4 +81,6 @@ R6-A adds a self-authored runtime JPEG/EXIF APP1 fixture and adapter mapping tes
 
 R6-B adds deterministic BGRA channel/alpha fixtures, transparent exclusion and unpremultiplication assertions, exact-versus-bounded deterministic sampling, retained-pixel lifetime, shared plot normalization, 128-entry LRU, hidden/toggle/cancel/latest-wins/new-sequence coordinator behavior, Blink-like identity swap/cache restoration, Peek stability, additive `G` conflict preservation, bottom-right placement, EN/RU chrome, and a non-threshold 24 MP exact/sampled engineering timing smoke. Private photographs remain manual-only visual/performance evidence.
 
-CI restores, builds, and tests on Windows, Linux, and macOS. The workflow's presence is not evidence of a hosted passing run, and build/test success does not prove the Avalonia viewer's runtime rendering on those systems.
+R7-A adds exact capability-table/extension/Skia-mapping invariants; mixed JPEG/PNG/WebP discovery and case-insensitive extension checks; generated lossy/lossless/alpha/static/animated/oriented WebP containers; content-extension mismatch; malformed/resource-limit/static-frame policy; retained Photo Info/metadata/Histogram/Ambient/Matte integration; and non-threshold generated WebP probe/decode/preparation evidence. No private image is a test fixture.
+
+CI restores, builds, and tests on Windows, Linux, and macOS. The accepted R6-B-F1 commit `8c1fdbc` completed all three hosted restore-build-test jobs successfully. This proves the current solution/test contract at that checkpoint, not manual Avalonia/Skia viewer behavior on Linux/macOS; a new R7-A hosted result must not be claimed before owner push and matrix completion.

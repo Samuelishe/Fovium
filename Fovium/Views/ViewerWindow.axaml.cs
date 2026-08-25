@@ -601,8 +601,8 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
                 [
                     new FilePickerFileType(_localizer[UiStrings.PickerImageType])
                     {
-                        Patterns = ["*.jpg", "*.jpeg", "*.png"],
-                        MimeTypes = ["image/jpeg", "image/png"],
+                        Patterns = [.. ImageFormatCapabilities.FilePickerPatterns],
+                        MimeTypes = [.. ImageFormatCapabilities.FilePickerMimeTypes],
                     },
                 ],
             });

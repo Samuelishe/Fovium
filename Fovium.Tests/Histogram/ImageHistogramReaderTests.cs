@@ -162,7 +162,7 @@ public sealed class ImageHistogramReaderTests
             [],
             new ImageDescriptor(
                 "memory",
-                "Raw",
+                ImageFormatId.Png,
                 size,
                 size,
                 ExifOrientation.Normal,

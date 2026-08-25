@@ -78,7 +78,7 @@ Do not claim identical capabilities, APIs, packaging, or thumbnail behavior acro
 
 ## Format capability model
 
-A future central Fovium-owned capability description must be able to answer, per format and where relevant per platform:
+R7-A establishes a central Fovium-owned capability description for current decode/navigation/picker facts. Future platform work can extend or compose it to answer, per format and where relevant per platform:
 
 ```text
 CanDecode
@@ -135,6 +135,8 @@ Required policy:
 For future RAW browsing, prefer a suitable embedded JPEG preview before full RAW processing. Fovium remains a viewer, not a RAW processor.
 
 Thumbnail reuse may eventually justify a reusable imaging assembly, but only after production imaging evidence exists. Do not create `Fovium.Imaging` solely for this hypothetical integration.
+
+Candidate extensions and picker patterns now derive from this authority, including static WebP. Explicit command-line/Open With-style activation is content-probed through the same decoder path; installed association registration remains future work. Current format truth belongs to [`FORMAT-SUPPORT.md`](FORMAT-SUPPORT.md).
 
 ## Packaging and current status
 

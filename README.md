@@ -29,16 +29,16 @@ Zero-UI is intentional: normal viewing removes persistent chrome rather than sur
 - session-local presenter tools with image-bound markup, Ellipse, per-stroke opacity, constrained drawing, true partial erasing, per-image Undo/Redo, contextual controls, accurate drawing cursors, and a configurable cursor highlight;
 - a deliberate photographic **Stage** with Black, Neutral, Custom, or Ambient backgrounds plus an independent Matte;
 - on-demand movable Photo Info and decoded-RGB Histogram overlays that follow the actually presented photograph, including Blink;
-- color-management foundations and broader image-format support over time;
+- JPEG, PNG, and static WebP through one content-detected format-capability foundation;
 - no database, import workflow, or plugin platform.
 
 See the canonical [UX contract](docs/UX-CONTRACT.md), [rendering contract](docs/RENDERING.md), and [imaging direction](docs/IMAGING-PIPELINE.md) for details.
 
 ## Current status
 
-The current checkpoint is **`0.1.0.0003`**. R6-B adds an on-demand movable RGB Histogram overlay backed by lazy, cancellable, identity-safe sampling of the decoded pixels already retained with the photograph. R6-A Photo Info, R5-F3-P1 interaction isolation, and owner-accepted R5-P1/P2/P3 Ambient hardening remain retained. Deliberately outrunning speculative readiness at roughly 5–6+ distinct 24 MP photographs per second may still expose a brief matching Black fallback. Markup remains image-bound, session-local, memory-only, and never changes or writes the source photograph.
+The current checkpoint is **`0.1.0.0004`**. R7-A adds a project-owned format capability registry and static lossy/lossless/alpha WebP through the existing content-detected Skia pipeline. R6-B Histogram, R6-A Photo Info, R5-F3-P1 interaction isolation, and owner-accepted Ambient hardening remain retained. Deliberately outrunning speculative readiness at roughly 5–6+ distinct 24 MP photographs per second may still expose a brief matching Black fallback. Markup remains image-bound, session-local, memory-only, and never changes or writes the source photograph.
 
-This is an alpha milestone, not a feature-complete or stable release claim. Advanced Metadata, luminance/clipping histogram modes, metadata writing, full monitor-aware ICC, broad codecs, platform associations, markup export/object editing, and selected-reference A/B comparison are not implemented. The canonical handoff is [PROJECT-STATE.md](docs/PROJECT-STATE.md); bounded R0 evidence remains in the [experiment report](docs/experiments/R0-RENDERING-PROBE.md).
+This is an alpha milestone, not a feature-complete or stable release claim. Animated WebP/APNG, TIFF, HEIF/HEIC, AVIF, RAW, Advanced Metadata, luminance/clipping histogram modes, metadata writing, full monitor-aware ICC, platform associations, markup export/object editing, and selected-reference A/B comparison are not implemented. The current matrix is [FORMAT-SUPPORT.md](docs/FORMAT-SUPPORT.md); the canonical handoff is [PROJECT-STATE.md](docs/PROJECT-STATE.md).
 
 English/Russian catalogs and the Dark secondary-UI baseline are implemented; language/theme selection remains future work. See [VERSIONING.md](docs/VERSIONING.md) and the [documentation index](docs/INDEX.md) for the canonical owners.
 
@@ -47,7 +47,7 @@ English/Russian catalogs and the Dark secondary-UI baseline are implemented; lan
 - C# and .NET 10;
 - Avalonia 12.1.1 as the accepted initial cross-platform UI host;
 - an isolated direct-Skia photographic path with SkiaSharp 3.119.4;
-- controlled SKCodec probing/decoding as the initial JPEG/PNG foundation;
+- controlled SKCodec probing/decoding for JPEG, PNG, and static WebP behind Fovium-owned format identity;
 - xUnit for repository, experiment, and production logic tests.
 
 Full monitor-aware ICC, broad codec coverage, and huge/tiled image handling remain future work.

@@ -49,7 +49,7 @@ public sealed class HistogramPerformanceSmokeTests(ITestOutputHelper output)
             [],
             new ImageDescriptor(
                 "memory",
-                "Raw",
+                ImageFormatId.Png,
                 size,
                 size,
                 ExifOrientation.Normal,

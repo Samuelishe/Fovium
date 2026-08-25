@@ -1,4 +1,5 @@
 using System.Globalization;
+using Fovium.Imaging;
 using Fovium.Rendering;
 
 namespace Fovium.Metadata;
@@ -6,7 +7,7 @@ namespace Fovium.Metadata;
 internal sealed record PhotoInfoBase(
     long ImageIdentity,
     string SourcePath,
-    string EncodedFormat,
+    ImageFormatId EncodedFormat,
     PixelSize OrientedSize,
     long EncodedBytes);
 
@@ -95,7 +96,7 @@ internal static class PhotoInfoFormatter
         var size = info.EncodedBytes >= 1024 * 1024
             ? $"{(info.EncodedBytes / (1024d * 1024)).ToString("0.#", culture)} MB"
             : $"{Math.Max(1, Math.Round(info.EncodedBytes / 1024d)).ToString("0", culture)} KB";
-        var format = info.EncodedFormat.Trim().ToUpperInvariant();
+        var format = ImageFormatCapabilities.Get(info.EncodedFormat).DisplayName;
         return $"{Path.GetFileName(info.SourcePath)} · {format} · {size}";
     }
 

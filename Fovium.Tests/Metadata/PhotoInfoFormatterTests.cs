@@ -1,4 +1,5 @@
 using System.Globalization;
+using Fovium.Imaging;
 using Fovium.Metadata;
 using Fovium.Rendering;
 
@@ -31,7 +32,7 @@ public sealed class PhotoInfoFormatterTests
     {
         var sourcePath = Path.Combine(Path.GetTempPath(), "private", "portrait.jpg");
         var state = new PhotoInfoState(
-            new PhotoInfoBase(7, sourcePath, "Jpeg", new PixelSize(4000, 6000), 15_519_744),
+            new PhotoInfoBase(7, sourcePath, ImageFormatId.Jpeg, new PixelSize(4000, 6000), 15_519_744),
             PhotoMetadataSummary.Empty,
             IsMetadataLoading: false);
 
@@ -55,7 +56,7 @@ public sealed class PhotoInfoFormatterTests
             Iso = 400,
         };
         var state = new PhotoInfoState(
-            new PhotoInfoBase(1, "photo.jpg", "Jpeg", new PixelSize(6048, 4024), 1024),
+            new PhotoInfoBase(1, "photo.jpg", ImageFormatId.Jpeg, new PixelSize(6048, 4024), 1024),
             metadata,
             IsMetadataLoading: false);
 
@@ -75,7 +76,7 @@ public sealed class PhotoInfoFormatterTests
             CaptureDateTime = new PhotoCaptureTime(recorded, TimeSpan.FromHours(3)),
         };
         var state = new PhotoInfoState(
-            new PhotoInfoBase(1, "photo.jpg", "Jpeg", new PixelSize(2, 2), 2048),
+            new PhotoInfoBase(1, "photo.jpg", ImageFormatId.Jpeg, new PixelSize(2, 2), 2048),
             metadata,
             IsMetadataLoading: false);
 

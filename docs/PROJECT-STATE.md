@@ -7,18 +7,19 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R6-B is complete at `0.1.0.0003`. The viewer now has a lazy, cancellable decoded-RGB Histogram overlay that follows the actually presented canonical or Blink image and reuses the accepted floating-overlay/render-isolation foundation. R6-A Photo Info, R5-F3-P1 interaction isolation, and owner-accepted R5-P1/P2/P3 Ambient hardening remain retained. Version semantics are owned by [`VERSIONING.md`](VERSIONING.md).
+R7-A is complete at `0.1.0.0004`. The viewer now has one Fovium-owned format capability authority and static lossy/lossless/alpha WebP through the existing content-detected Skia decode/cache/render pipeline. R6-B Histogram, R6-A Photo Info, R5-F3-P1 interaction isolation, and owner-accepted R5-P1/P2/P3 Ambient hardening remain retained. Version semantics are owned by [`VERSIONING.md`](VERSIONING.md); current format truth is owned by [`FORMAT-SUPPORT.md`](FORMAT-SUPPORT.md).
 
-The retained R0 probe remains experimental evidence under `experiments/Fovium.RenderProbe`. Production code is the single `Fovium` assembly and does not depend on the experiment. Local Windows acceptance used one `RenderScaling = 1.00` display; no GitHub-hosted CI or Linux/macOS runtime result is claimed by this stage.
+The retained R0 probe remains experimental evidence under `experiments/Fovium.RenderProbe`. Production code is the single `Fovium` assembly and does not depend on the experiment. The accepted R6-B-F1 hosted matrix restored, built, and tested successfully on Windows, Ubuntu, and macOS at commit `8c1fdbc`; this is portability evidence for the .NET solution, not manual Linux/macOS viewer/render validation. Local visual acceptance remains Windows at `RenderScaling = 1.00`.
 
 ## Current focus
 
-The next product stage requires owner review/selection. Do not begin Advanced Metadata, histogram editing aids, codec/platform, or ICC work automatically.
+The next product stage requires owner review/selection. Do not begin another format, animation, Advanced Metadata, platform integration, or ICC work automatically.
 
 ## Implemented application functionality
 
 - Runnable zero-UI Avalonia desktop viewer with Black, Neutral, Custom, or Ambient Stage backgrounds and an independent optional Matte.
-- JPEG/PNG content probing and decode with EXIF orientation.
+- Central JPEG/PNG/WebP capability registry: candidate extensions and picker hints derive from one authority, while Skia-detected content determines actual format.
+- Static JPEG, PNG, and lossy/lossless/alpha WebP decode into the shared BGRA8888/Premul representation; multi-frame encoded images are rejected recoverably by one static-image policy.
 - Fit, physical-pixel 100%, cursor-anchored wheel zoom, pan, and view-state preservation.
 - Same-directory single-file activation and ordered explicit multi-file activation.
 - Natural filename ordering, failure skipping, adjacent preload, latest-wins publication, and a byte-bounded cache.
@@ -58,15 +59,16 @@ The next product stage requires owner review/selection. Do not begin Advanced Me
 - Peek renders the canonical image's overlay; Blink selects only the comparison image's own overlay and cannot leak current markup onto it.
 - Traversal-excluded local imaging corpus policy plus hardened async session shutdown/cache release.
 
-Markup save/export, text, dedicated Highlighter, edit handles/layers, selected-reference A/B comparison, language/theme selection, Advanced Metadata, luminance/clipping histogram modes, metadata writing, broad codecs, file associations/thumbnails, and full monitor-aware ICC are not implemented.
+Markup save/export, text, dedicated Highlighter, edit handles/layers, selected-reference A/B comparison, language/theme selection, Advanced Metadata, luminance/clipping histogram modes, metadata writing, animated WebP/APNG, TIFF, HEIF/HEIC, AVIF, RAW, file associations/thumbnails, and full monitor-aware ICC are not implemented.
 
 ## Active blockers
 
 - Avalonia's direct-Skia lease used by the accepted initial renderer is explicitly unstable and must remain isolated.
 - Physical-pixel 100% is validated by pure tests at 1.00/1.25/1.50/2.00, but production runtime evidence exists only at `RenderScaling = 1.00`; per-monitor transitions still need real hardware coverage.
 - The monitor-aware color pipeline and raw embedded-profile extraction boundary have not been selected.
-- Broader codec support and a huge/tiled-image strategy remain unselected.
-- GitHub Actions portability is configured but cannot be claimed as passing until the workflow runs remotely.
+- Codec support beyond JPEG/PNG/static WebP and a huge/tiled-image strategy remain unselected.
+- WebP EXIF orientation is not currently surfaced by SkiaSharp 3.119.4 `SKCodec.EncodedOrigin` in the controlled fixture; Fovium retains encoded geometry rather than adding a second eager orientation parser.
+- Hosted restore-build-test is confirmed on Windows/Linux/macOS for the accepted R6-B-F1 commit, but manual Linux/macOS Avalonia/Skia runtime behavior remains unvalidated.
 - R4 runtime inspection evidence is Windows-only at `RenderScaling = 1.00`; precise cold non-cached Blink latency and real fractional-DPI interaction still need representative owner hardware evidence.
 - R5 through R5-F2 pointer, eraser, constrained-drawing, opacity, and rendering evidence is Windows-only at `RenderScaling = 1.00`; fractional-DPI, Linux, and macOS runtime feel remain unvalidated.
 - R5-P1 reduced coordinator-side current Ambient latency from roughly `134 ms` to `15 ms`; R5-P2 removed cached-handoff intermediate state; R5-P3 explained the delayed long-sequence failure at cache saturation and restored continuous bounded LRU replacement. Owner review accepts normal human browsing around 3–4 distinct 24 MP photographs per second. Deliberately browsing roughly 5–6+ per second can outrun speculative photo/Ambient readiness and briefly expose matching Black fallback; stale or mismatched Ambient remains forbidden. Fractional-DPI and cross-platform presentation remain unmeasured.

@@ -23,7 +23,7 @@ internal static class StageTestImages
         var image = SKImage.FromBitmap(bitmap);
         var descriptor = new ImageDescriptor(
             path,
-            "Png",
+            ImageFormatId.Png,
             encoded,
             OrientationTransform.GetOrientedSize(encoded, orientation),
             orientation,

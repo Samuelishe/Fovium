@@ -37,6 +37,8 @@ R6-A performs zero routine metadata parsing while Photo Info is hidden. When vis
 
 R6-B performs zero histogram work while its panel is hidden. One cancellable worker reads the already decoded native pixels; images above two million pixels use a deterministic whole-image grid capped at `2,000,000` locations, and a 128-entry session LRU avoids repeat scans for navigation/Blink returns. Local synthetic 6000×4000 evidence measured approximately `11.91 ms` for 1.5 million sampled locations versus `45.70 ms` for an exact 24 million-location scan after test-process startup. A real Release 24 MP cold request, including scheduling/JIT/publication, measured approximately `374 ms` in background; photograph publication and interaction remained responsive. These are local engineering observations, not universal latency promises.
 
+R7-A changes no cache/decode concurrency or memory formula. Static WebP uses the same retained encoded bytes plus full BGRA estimate as JPEG/PNG, so high compression cannot bypass decoded-memory admission. Controlled Release fixtures measured a 1200×800 lossy WebP at approximately `11.44/13.38/0.87 ms` probe/decode/preparation and a 3936×2624 lossy WebP at approximately `1.86/137.69/5.60 ms`; encoding was outside the measurement. These are single-machine generated-pattern observations, not codec rankings or product thresholds.
+
 ## Cache and memory budget
 
 Use a bounded cache with explicit cost accounting and eviction. Costs should include all retained managed/native source and display representations, color-converted surfaces, and other significant prepared data rather than only encoded bytes.
