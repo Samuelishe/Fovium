@@ -288,3 +288,9 @@ Histogram is an on-demand movable zero-layout overlay defaulting to configurable
 Status: Accepted in R7-A.
 
 Fovium owns stable format identity and one immutable capability authority independent of decoder-backend enums. Directory discovery and file-picker patterns derive known extension hints from it, while actual encoded content detected by the decoder determines format truth. The accepted table is JPEG, PNG, and static lossy/lossless/alpha WebP through the existing Skia backend. The pipeline is static-only: supported content reporting more than one frame is rejected recoverably rather than displaying frame zero as complete support. Format knowledge does not leak into navigation, Stage, markup, Photo Info, or Histogram, and this is backend composition rather than a decoder plugin system.
+
+## D-048 — Decoder backends share one bounded gate and TIFF is fidelity-bounded
+
+Status: Accepted in R7-B.
+
+One project-owned dispatcher owns the existing two expensive-decode slots and common result semantics across backends. Skia remains the JPEG/PNG/static-WebP backend; focused managed LibTiff.NET handles content-signature-detected classic TIFF without leaking backend types beyond imaging. TIFF support is single-image unsigned 8-bit contiguous grayscale/RGB/explicit-alpha only for the proven storage/compression subset. BigTIFF, multiple pages, high-bit-depth, floating-point, unknown alpha, and specialist photometrics are rejected rather than silently degraded. Scanline/tile working memory is temporary; the viewer retains only exact encoded bytes plus the common `DecodedImage` raster and derivatives.

@@ -5,7 +5,7 @@ namespace Fovium.Tests.Navigation;
 public sealed class DirectorySequenceBuilderTests
 {
     [Fact]
-    public void DirectorySnapshotIncludesMixedJpegPngWebpCandidatesAndNaturalSortsThem()
+    public void DirectorySnapshotIncludesMixedSupportedCandidatesAndNaturalSortsThem()
     {
         var directory = Directory.CreateTempSubdirectory("Fovium.DirectorySequence.Tests.");
         try
@@ -14,6 +14,8 @@ public sealed class DirectorySequenceBuilderTests
                      {
                          "photo10.WEBP",
                          "photo3.png",
+                         "photo4.TIF",
+                         "photo5.tiff",
                          "photo2.webp",
                          "photo1.jpg",
                          "notes.txt",
@@ -26,7 +28,7 @@ public sealed class DirectorySequenceBuilderTests
             var sequence = new DirectorySequenceBuilder().Build(selected, CancellationToken.None);
 
             Assert.Equal(
-                ["photo1.jpg", "photo2.webp", "photo3.png", "photo10.WEBP"],
+                ["photo1.jpg", "photo2.webp", "photo3.png", "photo4.TIF", "photo5.tiff", "photo10.WEBP"],
                 sequence.Paths.Select(Path.GetFileName));
             Assert.Equal(1, sequence.InitialIndex);
         }

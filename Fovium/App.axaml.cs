@@ -32,7 +32,7 @@ internal sealed partial class App : Avalonia.Application
                 memoryPolicy.CacheBudgetBytes,
                 pathComparer);
             var session = new ViewerSession<DecodedImage>(
-                new SkiaImageDecoder(),
+                ImageDecoder.CreateDefault(),
                 cache,
                 memoryPolicy);
             var activation = new ActivationService(new DirectorySequenceBuilder());

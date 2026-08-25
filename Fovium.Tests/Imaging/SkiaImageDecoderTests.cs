@@ -4,7 +4,7 @@ using SkiaSharp;
 
 namespace Fovium.Tests.Imaging;
 
-public sealed class SkiaImageDecoderTests
+public sealed class ImageDecoderTests
 {
     [Theory]
     [InlineData(SKEncodedImageFormat.Jpeg, "photo.jpg", (int)ImageFormatId.Jpeg)]
@@ -24,7 +24,7 @@ public sealed class SkiaImageDecoderTests
         {
             await File.WriteAllBytesAsync(path, EncodedImageTestData.Create(format));
 
-            var result = await new SkiaImageDecoder().LoadAsync(
+            var result = await ImageDecoder.CreateDefault().LoadAsync(
                 path,
                 new ImageLoadAllowance(long.MaxValue, long.MaxValue, false),
                 CancellationToken.None);
@@ -57,7 +57,7 @@ public sealed class SkiaImageDecoderTests
         {
             await File.WriteAllBytesAsync(path, EncodedImageTestData.CreateWebp(compression));
 
-            var result = await new SkiaImageDecoder().LoadAsync(
+            var result = await ImageDecoder.CreateDefault().LoadAsync(
                 path,
                 new ImageLoadAllowance(long.MaxValue, long.MaxValue, false),
                 CancellationToken.None);
@@ -86,7 +86,7 @@ public sealed class SkiaImageDecoderTests
                 path,
                 EncodedImageTestData.CreateWebp(SKWebpEncoderCompression.Lossless, withAlpha: true));
 
-            var result = await new SkiaImageDecoder().LoadAsync(
+            var result = await ImageDecoder.CreateDefault().LoadAsync(
                 path,
                 new ImageLoadAllowance(long.MaxValue, long.MaxValue, false),
                 CancellationToken.None);
@@ -114,7 +114,7 @@ public sealed class SkiaImageDecoderTests
         {
             await File.WriteAllBytesAsync(path, [0xFF, 0xD8, 0x00, 0x01]);
 
-            var result = await new SkiaImageDecoder().LoadAsync(
+            var result = await ImageDecoder.CreateDefault().LoadAsync(
                 path,
                 new ImageLoadAllowance(long.MaxValue, long.MaxValue, false),
                 CancellationToken.None);
@@ -137,7 +137,7 @@ public sealed class SkiaImageDecoderTests
         {
             await File.WriteAllBytesAsync(path, "RIFF\0\0\0\0WEBPbroken"u8.ToArray());
 
-            var result = await new SkiaImageDecoder().LoadAsync(
+            var result = await ImageDecoder.CreateDefault().LoadAsync(
                 path,
                 new ImageLoadAllowance(long.MaxValue, long.MaxValue, false),
                 CancellationToken.None);
@@ -171,7 +171,7 @@ public sealed class SkiaImageDecoderTests
             ];
             await File.WriteAllBytesAsync(path, gif);
 
-            var result = await new SkiaImageDecoder().LoadAsync(
+            var result = await ImageDecoder.CreateDefault().LoadAsync(
                 path,
                 new ImageLoadAllowance(long.MaxValue, long.MaxValue, false),
                 CancellationToken.None);
@@ -196,7 +196,7 @@ public sealed class SkiaImageDecoderTests
         {
             await File.WriteAllBytesAsync(path, EncodedImageTestData.CreateAnimatedWebp());
 
-            var result = await new SkiaImageDecoder().LoadAsync(
+            var result = await ImageDecoder.CreateDefault().LoadAsync(
                 path,
                 new ImageLoadAllowance(long.MaxValue, long.MaxValue, false),
                 CancellationToken.None);
@@ -221,7 +221,7 @@ public sealed class SkiaImageDecoderTests
         {
             await File.WriteAllBytesAsync(path, EncodedImageTestData.CreateOrientedWebp());
 
-            var result = await new SkiaImageDecoder().LoadAsync(
+            var result = await ImageDecoder.CreateDefault().LoadAsync(
                 path,
                 new ImageLoadAllowance(long.MaxValue, long.MaxValue, false),
                 CancellationToken.None);
@@ -249,7 +249,7 @@ public sealed class SkiaImageDecoderTests
         {
             await File.WriteAllBytesAsync(path, EncodedImageTestData.Create(format));
 
-            var result = await new SkiaImageDecoder().LoadAsync(
+            var result = await ImageDecoder.CreateDefault().LoadAsync(
                 path,
                 new ImageLoadAllowance(1, 1, false),
                 CancellationToken.None);
@@ -272,7 +272,7 @@ public sealed class SkiaImageDecoderTests
         try
         {
             await File.WriteAllBytesAsync(path, EncodedImageTestData.Create(SKEncodedImageFormat.Png));
-            var result = await new SkiaImageDecoder().LoadAsync(
+            var result = await ImageDecoder.CreateDefault().LoadAsync(
                 path,
                 new ImageLoadAllowance(long.MaxValue, long.MaxValue, false),
                 CancellationToken.None);

@@ -10,6 +10,7 @@ internal enum SourceColorState
     AssumedSrgb,
     NormalizedSrgb,
     NormalizedNonSrgb,
+    EmbeddedProfileUnpreserved,
 }
 
 internal sealed record ImageDescriptor(

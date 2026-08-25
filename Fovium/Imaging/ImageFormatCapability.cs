@@ -8,6 +8,7 @@ internal enum ImageFormatId
     Jpeg,
     Png,
     Webp,
+    Tiff,
 }
 
 internal enum ImageAlphaCapability
@@ -91,6 +92,15 @@ internal static class ImageFormatCapabilities
                 "WEBP",
                 [".webp"],
                 ["image/webp"],
+                staticDecodeSupported: true,
+                ImageAlphaCapability.Supported,
+                ImageAnimationPolicy.StaticOnly),
+            new ImageFormatCapability(
+                ImageFormatId.Tiff,
+                "tiff",
+                "TIFF",
+                [".tif", ".tiff"],
+                ["image/tiff"],
                 staticDecodeSupported: true,
                 ImageAlphaCapability.Supported,
                 ImageAnimationPolicy.StaticOnly),

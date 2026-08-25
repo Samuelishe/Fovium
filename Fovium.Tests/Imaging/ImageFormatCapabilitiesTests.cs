@@ -6,7 +6,7 @@ namespace Fovium.Tests.Imaging;
 public sealed class ImageFormatCapabilitiesTests
 {
     [Fact]
-    public void RegistryContainsOnlyAcceptedJpegPngAndStaticWebpCapabilities()
+    public void RegistryContainsAcceptedJpegPngStaticWebpAndBoundedTiffCapabilities()
     {
         Assert.Collection(
             ImageFormatCapabilities.All,
@@ -30,15 +30,28 @@ public sealed class ImageFormatCapabilitiesTests
                 "webp",
                 "WEBP",
                 [".webp"],
+                ImageAlphaCapability.Supported),
+            tiff => AssertCapability(
+                tiff,
+                ImageFormatId.Tiff,
+                "tiff",
+                "TIFF",
+                [".tif", ".tiff"],
                 ImageAlphaCapability.Supported));
     }
 
     [Fact]
     public void CandidateExtensionsAndPickerHintsComeFromRegistryWithoutDuplicates()
     {
-        Assert.Equal([".jpg", ".jpeg", ".png", ".webp"], ImageFormatCapabilities.CandidateExtensions);
-        Assert.Equal(["*.jpg", "*.jpeg", "*.png", "*.webp"], ImageFormatCapabilities.FilePickerPatterns);
-        Assert.Equal(["image/jpeg", "image/png", "image/webp"], ImageFormatCapabilities.FilePickerMimeTypes);
+        Assert.Equal(
+            [".jpg", ".jpeg", ".png", ".webp", ".tif", ".tiff"],
+            ImageFormatCapabilities.CandidateExtensions);
+        Assert.Equal(
+            ["*.jpg", "*.jpeg", "*.png", "*.webp", "*.tif", "*.tiff"],
+            ImageFormatCapabilities.FilePickerPatterns);
+        Assert.Equal(
+            ["image/jpeg", "image/png", "image/webp", "image/tiff"],
+            ImageFormatCapabilities.FilePickerMimeTypes);
         Assert.Equal(
             ImageFormatCapabilities.CandidateExtensions.Count,
             ImageFormatCapabilities.CandidateExtensions.Distinct(StringComparer.OrdinalIgnoreCase).Count());
@@ -47,6 +60,8 @@ public sealed class ImageFormatCapabilitiesTests
             ImageFormatCapabilities.All.Select(capability => capability.StableId)
                 .Distinct(StringComparer.Ordinal).Count());
         Assert.True(ImageFormatCapabilities.IsCandidateExtension(".WEBP"));
+        Assert.True(ImageFormatCapabilities.IsCandidateExtension(".TIF"));
+        Assert.True(ImageFormatCapabilities.IsCandidateExtension(".TIFF"));
         Assert.False(ImageFormatCapabilities.IsCandidateExtension(".foo"));
     }
 

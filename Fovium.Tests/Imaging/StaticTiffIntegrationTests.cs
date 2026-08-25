@@ -8,12 +8,12 @@ using SkiaSharp;
 
 namespace Fovium.Tests.Imaging;
 
-public sealed class StaticWebpIntegrationTests
+public sealed class StaticTiffIntegrationTests
 {
     [Fact]
-    public async Task RetainedAlphaWebpFeedsPhotoInfoHistogramAndAmbientWithoutFormatBranches()
+    public async Task RetainedTiffFeedsPhotoInfoHistogramAmbientAndMetadataBoundaries()
     {
-        using var decoded = await DecodeAlphaWebpAsync();
+        using var decoded = await DecodeAsync(TiffTestData.CreateRgb(), "rgb.tif");
 
         var photoInfo = PhotoInfoFormatter.Format(
             new PhotoInfoState(
@@ -26,6 +26,9 @@ public sealed class StaticWebpIntegrationTests
                 PhotoMetadataSummary.Empty,
                 IsMetadataLoading: false),
             CultureInfo.InvariantCulture);
+        var metadata = await new MetadataExtractorPhotoMetadataReader().ReadAsync(
+            decoded.EncodedSource,
+            CancellationToken.None);
         var histogramResult = await new SkiaDecodedHistogramReader().ReadAsync(
             decoded,
             CancellationToken.None);
@@ -35,36 +38,33 @@ public sealed class StaticWebpIntegrationTests
             CancellationToken.None);
 
         var histogram = Assert.IsType<HistogramData>(histogramResult.Data);
-        Assert.Contains("alpha.webp · WEBP ·", photoInfo.File, StringComparison.Ordinal);
-        Assert.Equal(new PixelSize(12, 8), decoded.Descriptor.OrientedSize);
-        Assert.Equal(48, histogram.SampleCount);
-        Assert.Equal(histogram.SampleCount, histogram.Red.Sum());
-        Assert.Equal(histogram.SampleCount, histogram.Green.Sum());
-        Assert.Equal(histogram.SampleCount, histogram.Blue.Sum());
-        Assert.Equal(new PixelSize(12, 8), ambient.Size);
+        Assert.Contains("rgb.tif · TIFF ·", photoInfo.File, StringComparison.Ordinal);
+        Assert.Equal("3 × 2 · 0 MP", photoInfo.Dimensions);
+        Assert.NotEqual(PhotoMetadataReadStatus.Failed, metadata.Status);
+        Assert.Equal(6, histogram.SampleCount);
+        Assert.Equal(new PixelSize(3, 2), ambient.Size);
         Assert.True(ambient.RetainedBytes > 0);
     }
 
     [Fact]
-    public async Task TransparentWebpPixelsRevealMatteAndOpaquePixelsRemainPhotographic()
+    public async Task TransparentTiffPixelsRevealMatteAndOpaquePixelsRemainPhotographic()
     {
-        using var decoded = await DecodeAlphaWebpAsync();
+        using var decoded = await DecodeAsync(TiffTestData.CreateRgba(associated: false), "alpha.tiff");
         using var surface = SKSurface.Create(new SKImageInfo(
-            64,
-            48,
+            60,
+            20,
             SKColorType.Bgra8888,
             SKAlphaType.Premul));
-        var destination = new RectD(8, 8, 48, 32);
+        var destination = new RectD(0, 0, 60, 20);
         var matteColor = new StageColor(0x66, 0x55, 0x44);
         SkiaStageRenderer.Draw(
             surface.Canvas,
-            new RectD(0, 0, 64, 48),
+            destination,
             destination,
             1,
             StageSettings.Default with
             {
-                BackgroundMode = StageBackgroundMode.Custom,
-                CustomBackgroundColor = new StageColor(0x11, 0x22, 0x33),
+                BackgroundMode = StageBackgroundMode.Black,
                 MatteEnabled = true,
                 MatteColor = matteColor,
             },
@@ -74,35 +74,32 @@ public sealed class StaticWebpIntegrationTests
         {
             surface.Canvas.DrawImage(
                 lease.Image,
-                new SKRect(0, 0, 12, 8),
-                new SKRect(8, 8, 56, 40),
+                new SKRect(0, 0, 3, 1),
+                new SKRect(0, 0, 60, 20),
                 new SKSamplingOptions(SKFilterMode.Nearest, SKMipmapMode.None));
         }
 
         using var snapshot = surface.Snapshot();
         using var pixels = SKBitmap.FromImage(snapshot);
-        var transparentSide = pixels.GetPixel(16, 24);
-        var opaqueSide = pixels.GetPixel(48, 24);
+        var opaque = pixels.GetPixel(10, 10);
+        var transparent = pixels.GetPixel(50, 10);
 
-        Assert.Equal(new SKColor(matteColor.Red, matteColor.Green, matteColor.Blue), transparentSide);
-        Assert.NotEqual(transparentSide, opaqueSide);
-        Assert.Equal(byte.MaxValue, opaqueSide.Alpha);
+        Assert.Equal(new SKColor(255, 0, 0), opaque);
+        Assert.Equal(new SKColor(matteColor.Red, matteColor.Green, matteColor.Blue), transparent);
     }
 
-    private static async Task<DecodedImage> DecodeAlphaWebpAsync()
+    private static async Task<DecodedImage> DecodeAsync(byte[] encoded, string fileName)
     {
-        var directory = Directory.CreateTempSubdirectory("Fovium.Webp.Integration.");
-        var path = Path.Combine(directory.FullName, "alpha.webp");
+        var directory = Directory.CreateTempSubdirectory("Fovium.Tiff.Integration.");
+        var path = Path.Combine(directory.FullName, fileName);
         try
         {
-            await File.WriteAllBytesAsync(
-                path,
-                EncodedImageTestData.CreateWebp(SKWebpEncoderCompression.Lossless, withAlpha: true));
-            var result = await ImageDecoder.CreateDefault().LoadAsync(
+            await File.WriteAllBytesAsync(path, encoded);
+            using var decoder = ImageDecoder.CreateDefault();
+            var result = await decoder.LoadAsync(
                 path,
                 new ImageLoadAllowance(long.MaxValue, long.MaxValue, false),
                 CancellationToken.None);
-
             Assert.True(result.IsSuccess, result.Error?.TechnicalDetail);
             return Assert.IsType<DecodedImage>(result.Image);
         }

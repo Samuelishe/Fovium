@@ -25,7 +25,7 @@ public sealed class WebpDecodePerformanceSmokeTests(ITestOutputHelper output)
                     width: width,
                     height: height));
 
-            var result = await new SkiaImageDecoder().LoadAsync(
+            var result = await ImageDecoder.CreateDefault().LoadAsync(
                 path,
                 new ImageLoadAllowance(long.MaxValue, long.MaxValue, false),
                 CancellationToken.None);

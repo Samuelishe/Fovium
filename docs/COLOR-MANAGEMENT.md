@@ -43,6 +43,8 @@ R6-B Histogram counts the RGB channel values in the currently owned decoded repr
 
 R7-A routes static WebP through the same `SKCodec.Info.ColorSpace` and BGRA8888/Premul source-state policy as JPEG/PNG. This preserves the existing normalized-sRGB/non-sRGB distinction when Skia exposes it, but it is not evidence of raw WebP ICC preservation or monitor-aware correctness.
 
+R7-B inspects the standard TIFF ICC profile tag at its backend boundary. When Skia can normalize the embedded bytes, the final bitmap carries that normalized color space and the descriptor records sRGB/non-sRGB state; unusable embedded bytes are recorded as known-but-unpreserved rather than falsely reported as untagged assumed sRGB. Exact source bytes remain retained. This is a truthful source-state bridge, not broad TIFF profile validation or monitor-aware output correctness.
+
 LittleCMS, native platform color APIs, ImageSharp ICC facilities, and other suitable libraries remain research candidates. No final ICC engine or destination-monitor integration is selected.
 
 The initial runnable viewer is SDR-first and retains encoded source data so a future profile extractor/transform path is not blocked by the R1 decoded bitmap boundary. HDR output is future work; current boundaries must avoid presenting R1's 8-bit BGRA display representation as the only possible source representation.

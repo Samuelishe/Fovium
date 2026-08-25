@@ -136,7 +136,7 @@ For future RAW browsing, prefer a suitable embedded JPEG preview before full RAW
 
 Thumbnail reuse may eventually justify a reusable imaging assembly, but only after production imaging evidence exists. Do not create `Fovium.Imaging` solely for this hypothetical integration.
 
-Candidate extensions and picker patterns now derive from this authority, including static WebP. Explicit command-line/Open With-style activation is content-probed through the same decoder path; installed association registration remains future work. Current format truth belongs to [`FORMAT-SUPPORT.md`](FORMAT-SUPPORT.md).
+Candidate extensions and picker patterns now derive from this authority, including static WebP and bounded TIFF. Explicit command-line/Open With-style activation is content-probed through the shared decoder dispatcher; installed association registration remains future work. Current format truth belongs to [`FORMAT-SUPPORT.md`](FORMAT-SUPPORT.md).
 
 ## Packaging and current status
 

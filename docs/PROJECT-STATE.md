@@ -7,19 +7,20 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R7-A is complete at `0.1.0.0004`. The viewer now has one Fovium-owned format capability authority and static lossy/lossless/alpha WebP through the existing content-detected Skia decode/cache/render pipeline. R6-B Histogram, R6-A Photo Info, R5-F3-P1 interaction isolation, and owner-accepted R5-P1/P2/P3 Ambient hardening remain retained. Version semantics are owned by [`VERSIONING.md`](VERSIONING.md); current format truth is owned by [`FORMAT-SUPPORT.md`](FORMAT-SUPPORT.md).
+R7-B is complete at `0.1.0.0005`. One project-owned, two-slot decoder dispatcher now owns backend selection and expensive decode concurrency. Skia remains isolated to JPEG/PNG/static WebP; a focused managed LibTiff.NET backend adds content-detected, single-image classic 8-bit TIFF for the proven grayscale/RGB/declared-alpha, endian, storage, orientation, and compression subset. Unsupported TIFF variants fail recoverably rather than being silently reduced. R6-B Histogram, R6-A Photo Info, R5-F3-P1 interaction isolation, and owner-accepted R5-P1/P2/P3 Ambient hardening remain retained. Version semantics are owned by [`VERSIONING.md`](VERSIONING.md); current format truth is owned by [`FORMAT-SUPPORT.md`](FORMAT-SUPPORT.md).
 
-The retained R0 probe remains experimental evidence under `experiments/Fovium.RenderProbe`. Production code is the single `Fovium` assembly and does not depend on the experiment. The accepted R6-B-F1 hosted matrix restored, built, and tested successfully on Windows, Ubuntu, and macOS at commit `8c1fdbc`; this is portability evidence for the .NET solution, not manual Linux/macOS viewer/render validation. Local visual acceptance remains Windows at `RenderScaling = 1.00`.
+The retained R0 probe remains experimental evidence under `experiments/Fovium.RenderProbe`. Production code is the single `Fovium` assembly and does not depend on the experiment. The accepted R7-A-F1 hosted matrix restored, built, and tested successfully on Windows, Ubuntu, and macOS at commit `e780450`; this is portability evidence for the .NET solution, not manual Linux/macOS viewer/render validation. R7-B hosted evidence remains pending owner push. Local visual acceptance remains Windows at `RenderScaling = 1.00`.
 
 ## Current focus
 
-The next product stage requires owner review/selection. Do not begin another format, animation, Advanced Metadata, platform integration, or ICC work automatically.
+R7-B is ready for owner review. Do not begin another format, animation, Advanced Metadata, platform integration, or ICC work automatically.
 
 ## Implemented application functionality
 
 - Runnable zero-UI Avalonia desktop viewer with Black, Neutral, Custom, or Ambient Stage backgrounds and an independent optional Matte.
-- Central JPEG/PNG/WebP capability registry: candidate extensions and picker hints derive from one authority, while Skia-detected content determines actual format.
-- Static JPEG, PNG, and lossy/lossless/alpha WebP decode into the shared BGRA8888/Premul representation; multi-frame encoded images are rejected recoverably by one static-image policy.
+- Central JPEG/PNG/WebP/TIFF capability registry: candidate extensions and picker hints derive from one authority, while backend content probes determine actual format.
+- One shared bounded decoder dispatcher with a Skia JPEG/PNG/static-WebP backend and a focused managed TIFF backend; extension remains only a discovery hint.
+- Static JPEG, PNG, lossy/lossless/alpha WebP, and bounded classic 8-bit TIFF decode into the shared BGRA8888/Premul representation. Multi-frame encoded images, multipage TIFF, BigTIFF, >8-bit/floating TIFF, and unsupported TIFF photometrics are rejected recoverably.
 - Fit, physical-pixel 100%, cursor-anchored wheel zoom, pan, and view-state preservation.
 - Same-directory single-file activation and ordered explicit multi-file activation.
 - Natural filename ordering, failure skipping, adjacent preload, latest-wins publication, and a byte-bounded cache.
@@ -59,20 +60,21 @@ The next product stage requires owner review/selection. Do not begin another for
 - Peek renders the canonical image's overlay; Blink selects only the comparison image's own overlay and cannot leak current markup onto it.
 - Traversal-excluded local imaging corpus policy plus hardened async session shutdown/cache release.
 
-Markup save/export, text, dedicated Highlighter, edit handles/layers, selected-reference A/B comparison, language/theme selection, Advanced Metadata, luminance/clipping histogram modes, metadata writing, animated WebP/APNG, TIFF, HEIF/HEIC, AVIF, RAW, file associations/thumbnails, and full monitor-aware ICC are not implemented.
+Markup save/export, text, dedicated Highlighter, edit handles/layers, selected-reference A/B comparison, language/theme selection, Advanced Metadata, luminance/clipping histogram modes, metadata writing, animated WebP/APNG, high-bit-depth/floating/multipage TIFF, HEIF/HEIC, AVIF, RAW, file associations/thumbnails, and full monitor-aware ICC are not implemented.
 
 ## Active blockers
 
 - Avalonia's direct-Skia lease used by the accepted initial renderer is explicitly unstable and must remain isolated.
 - Physical-pixel 100% is validated by pure tests at 1.00/1.25/1.50/2.00, but production runtime evidence exists only at `RenderScaling = 1.00`; per-monitor transitions still need real hardware coverage.
 - The monitor-aware color pipeline and raw embedded-profile extraction boundary have not been selected.
-- Codec support beyond JPEG/PNG/static WebP and a huge/tiled-image strategy remain unselected.
+- Codec support beyond JPEG/PNG/static WebP/bounded 8-bit TIFF and a huge/region-rendered-image strategy remain unselected.
 - WebP EXIF orientation is not currently surfaced by SkiaSharp 3.119.4 `SKCodec.EncodedOrigin` in the controlled fixture; Fovium retains encoded geometry rather than adding a second eager orientation parser.
-- Hosted restore-build-test is confirmed on Windows/Linux/macOS for the accepted R6-B-F1 commit, but manual Linux/macOS Avalonia/Skia runtime behavior remains unvalidated.
+- Hosted restore-build-test is confirmed on Windows/Linux/macOS for the accepted R7-A-F1 commit, but the new R7-B TIFF backend still requires a post-push hosted matrix and manual Linux/macOS Avalonia/Skia runtime behavior remains unvalidated.
 - R4 runtime inspection evidence is Windows-only at `RenderScaling = 1.00`; precise cold non-cached Blink latency and real fractional-DPI interaction still need representative owner hardware evidence.
 - R5 through R5-F2 pointer, eraser, constrained-drawing, opacity, and rendering evidence is Windows-only at `RenderScaling = 1.00`; fractional-DPI, Linux, and macOS runtime feel remain unvalidated.
 - R5-P1 reduced coordinator-side current Ambient latency from roughly `134 ms` to `15 ms`; R5-P2 removed cached-handoff intermediate state; R5-P3 explained the delayed long-sequence failure at cache saturation and restored continuous bounded LRU replacement. Owner review accepts normal human browsing around 3–4 distinct 24 MP photographs per second. Deliberately browsing roughly 5–6+ per second can outrun speculative photo/Ambient readiness and briefly expose matching Black fallback; stale or mismatched Ambient remains forbidden. Fractional-DPI and cross-platform presentation remain unmeasured.
 - R5-F3-P1 pointer/cursor, compositor-cache, drawing, and floating-panel runtime evidence is Windows-only at `RenderScaling = 1.00`; pure geometry covers 1.00/1.25/1.50/2.00, but real fractional-DPI, Linux, and macOS interaction feel and cached exact-pixel presentation remain unvalidated.
 - R6-B Histogram runtime evidence is Windows-only. The linear shared-maximum RGB plot and two-million-location deterministic sample are accepted initial presentation/performance choices, not proof that every photographic distribution or future decoded color representation is optimally summarized.
+- R7-B TIFF scope is intentionally 8-bit and fully decoded. Valid embedded ICC can enter the existing normalized source-color boundary, but broad TIFF ICC fidelity and monitor output remain unvalidated; huge TIFF region/tile rendering is not implemented.
 
 Open technical risks are tracked in [`KNOWN-PROBLEMS.md`](KNOWN-PROBLEMS.md). Directional stages are in [`ROADMAP.md`](ROADMAP.md). Git remains the authority for branch, HEAD, and worktree status.

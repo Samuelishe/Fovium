@@ -65,7 +65,7 @@ Run the production logic and boundary tests while iterating:
 dotnet test Fovium.Tests/Fovium.Tests.csproj --filter "FullyQualifiedName~Fovium.Tests.Application|FullyQualifiedName~Fovium.Tests.Navigation|FullyQualifiedName~Fovium.Tests.Loading|FullyQualifiedName~Fovium.Tests.Imaging|FullyQualifiedName~Fovium.Tests.Input|FullyQualifiedName~Fovium.Tests.Rendering|FullyQualifiedName~Fovium.Tests.Viewer|FullyQualifiedName~Fovium.Tests.Settings|FullyQualifiedName~Fovium.Tests.Localization|FullyQualifiedName~Fovium.Tests.Stage|FullyQualifiedName~Fovium.Tests.Versioning"
 ```
 
-Run format capability, discovery, static WebP, Photo Info, Histogram, and Stage integration tests:
+Run format capability, discovery, static WebP, bounded TIFF, Photo Info, Histogram, and Stage integration tests:
 
 ```powershell
 dotnet test Fovium.Tests/Fovium.Tests.csproj --filter "FullyQualifiedName~Fovium.Tests.Imaging|FullyQualifiedName~Fovium.Tests.Navigation|FullyQualifiedName~Fovium.Tests.Metadata|FullyQualifiedName~Fovium.Tests.Histogram|FullyQualifiedName~Fovium.Tests.Stage"
@@ -83,4 +83,6 @@ R6-B adds deterministic BGRA channel/alpha fixtures, transparent exclusion and u
 
 R7-A adds exact capability-table/extension/Skia-mapping invariants; mixed JPEG/PNG/WebP discovery and case-insensitive extension checks; generated lossy/lossless/alpha/static/animated/oriented WebP containers; content-extension mismatch; malformed/resource-limit/static-frame policy; retained Photo Info/metadata/Histogram/Ambient/Matte integration; and non-threshold generated WebP probe/decode/preparation evidence. No private image is a test fixture.
 
-CI restores, builds, and tests on Windows, Linux, and macOS. The accepted R6-B-F1 commit `8c1fdbc` completed all three hosted restore-build-test jobs successfully. This proves the current solution/test contract at that checkpoint, not manual Avalonia/Skia viewer behavior on Linux/macOS; a new R7-A hosted result must not be claimed before owner push and matrix completion.
+R7-B adds an independent minimal uncompressed classic-TIFF byte fixture plus focused library-generated evidence. Tests cover little/big endian, strips/tiles, None/LZW/Deflate/PackBits, grayscale polarity, associated/unassociated alpha, all eight orientation tags, exact BGRA pixels, ICC-state truth, content-extension mismatch, BigTIFF/multipage/high-bit/floating/specialist/unknown-extra rejection, corrupt/resource-bomb recovery, shared cross-backend concurrency, mixed TIFF/Skia parallel stress, and generic Photo Info/MetadataExtractor/Histogram/Ambient/Matte integration. Private/local TIFF photographs remain manual-only evidence.
+
+CI restores, builds, and tests on Windows, Linux, and macOS. The accepted R7-A-F1 commit `e780450` completed all three hosted restore-build-test jobs successfully. This proves that solution/test contract, not manual Avalonia/Skia viewer behavior on Linux/macOS; a new R7-B hosted result must not be claimed before owner push and matrix completion.

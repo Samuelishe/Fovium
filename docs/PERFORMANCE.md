@@ -39,6 +39,10 @@ R6-B performs zero histogram work while its panel is hidden. One cancellable wor
 
 R7-A changes no cache/decode concurrency or memory formula. Static WebP uses the same retained encoded bytes plus full BGRA estimate as JPEG/PNG, so high compression cannot bypass decoded-memory admission. Controlled Release fixtures measured a 1200×800 lossy WebP at approximately `11.44/13.38/0.87 ms` probe/decode/preparation and a 3936×2624 lossy WebP at approximately `1.86/137.69/5.60 ms`; encoding was outside the measurement. These are single-machine generated-pattern observations, not codec rankings or product thresholds.
 
+R7-B moves the existing two decode slots to the high-level dispatcher so Skia and TIFF cannot create independent allocation concurrency. TIFF admission reads dimensions/layout first and retains the same encoded-plus-BGRA cost; conservative working cost continues to reserve two BGRA-sized representations even though the focused implementation uses only the final bitmap plus one bounded scanline or tile buffer. A highly compressed TIFF therefore cannot bypass decoded-memory admission. The backend does not retain a second TIFF raster after publication and does not introduce huge-image region rendering.
+
+A local Release generated-pattern probe measured a `3936×2624` LZW TIFF (17.3 MB encoded) at approximately `5.49/158.00/6.54 ms` probe/decode/preparation and a `6000×4000` LZW TIFF (41.2 MB encoded) at approximately `0.09/226.18/14.33 ms`. The observed process working/private deltas were about `103/101 MB` and `233/234 MB`, consistent with encoded bytes, the final BGRA raster, native preparation, and transient process effects rather than traversal-count growth. Fixture generation was excluded from those decoder timings. These are single-machine engineering observations, not product thresholds or cross-platform evidence.
+
 ## Cache and memory budget
 
 Use a bounded cache with explicit cost accounting and eviction. Costs should include all retained managed/native source and display representations, color-converted surfaces, and other significant prepared data rather than only encoded bytes.

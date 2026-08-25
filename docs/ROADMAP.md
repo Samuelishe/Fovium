@@ -83,7 +83,11 @@ Accepted outcome at `0.1.0.0003`: lazy identity-safe whole-image decoded-RGB ana
 
 Accepted outcome at `0.1.0.0004`: one project-owned JPEG/PNG/WebP capability authority supplies directory/picker hints and maps detected Skia content into stable Fovium identity. Static lossy/lossless/alpha WebP joins the existing decode/cache/Ambient/inspection/Photo Info/Histogram/markup path; multi-frame content is rejected recoverably under one static-image policy. No dedicated libwebp backend, animation, TIFF, HEIF/HEIC, AVIF, RAW, association, thumbnail, or ICC implementation was added.
 
-The next bounded product stage requires explicit owner selection after R7-A review. Do not begin another format automatically.
+## R7-B — Decoder backend boundary and bounded static TIFF
+
+Accepted outcome at `0.1.0.0005`: one shared two-slot decoder dispatcher separates not-my-format from unsupported/corrupt/resource failures, retains Skia for JPEG/PNG/static WebP, and adds a focused managed TIFF backend. Product TIFF scope is classic single-image unsigned 8-bit contiguous grayscale/RGB/declared-alpha for the proven endian/storage/compression subset. High-bit-depth, floating-point, multipage, BigTIFF, specialist photometrics, and huge-image region rendering remain explicit non-goals.
+
+The next bounded product stage requires explicit owner selection after R7-B review. Do not begin another format automatically.
 
 ## Later / separate platform milestones
 
