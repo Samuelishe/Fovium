@@ -35,6 +35,8 @@ R5-F1 presenter rendering adds no decode, file I/O, Ambient preparation, photo-c
 
 R6-A performs zero routine metadata parsing while Photo Info is hidden. When visible, immediate base facts come from the retained descriptor/encoded length and one background reader consumes the existing encoded bytes without another disk read or byte-array copy. A 192-entry count-bounded session LRU stores successful, empty, and contained failure results; new-sequence reset clears it. Latest-wins generation prevents slow old results from updating the panel. Photo Info drag uses the shared transform-only floating path and does not invalidate photograph or markup.
 
+R6-B performs zero histogram work while its panel is hidden. One cancellable worker reads the already decoded native pixels; images above two million pixels use a deterministic whole-image grid capped at `2,000,000` locations, and a 128-entry session LRU avoids repeat scans for navigation/Blink returns. Local synthetic 6000×4000 evidence measured approximately `11.91 ms` for 1.5 million sampled locations versus `45.70 ms` for an exact 24 million-location scan after test-process startup. A real Release 24 MP cold request, including scheduling/JIT/publication, measured approximately `374 ms` in background; photograph publication and interaction remained responsive. These are local engineering observations, not universal latency promises.
+
 ## Cache and memory budget
 
 Use a bounded cache with explicit cost accounting and eviction. Costs should include all retained managed/native source and display representations, color-converted surfaces, and other significant prepared data rather than only encoded bytes.

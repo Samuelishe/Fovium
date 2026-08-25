@@ -7,13 +7,13 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R6-A is complete at `0.1.0.0002`. The viewer now has lazy read-only photographic metadata and a movable Photo Info overlay that follows the actually presented canonical or Blink image. The `0.1.0.0000` first substantial usable Fovium alpha milestone remains historical; R5-F3-P1 interaction isolation and owner-accepted R5-P1/P2/P3 Ambient hardening remain retained. Version semantics are owned by [`VERSIONING.md`](VERSIONING.md).
+R6-B is complete at `0.1.0.0003`. The viewer now has a lazy, cancellable decoded-RGB Histogram overlay that follows the actually presented canonical or Blink image and reuses the accepted floating-overlay/render-isolation foundation. R6-A Photo Info, R5-F3-P1 interaction isolation, and owner-accepted R5-P1/P2/P3 Ambient hardening remain retained. Version semantics are owned by [`VERSIONING.md`](VERSIONING.md).
 
 The retained R0 probe remains experimental evidence under `experiments/Fovium.RenderProbe`. Production code is the single `Fovium` assembly and does not depend on the experiment. Local Windows acceptance used one `RenderScaling = 1.00` display; no GitHub-hosted CI or Linux/macOS runtime result is claimed by this stage.
 
 ## Current focus
 
-The next intended stage is R6-B, an identity-safe Histogram floating overlay. Do not begin it automatically.
+The next product stage requires owner review/selection. Do not begin Advanced Metadata, histogram editing aids, codec/platform, or ICC work automatically.
 
 ## Implemented application functionality
 
@@ -53,10 +53,12 @@ The next intended stage is R6-B, an identity-safe Histogram floating overlay. Do
 - Grouped Controls generated from command metadata plus standard icon-and-text context menus with checked, shared-state Cursor Highlight and Markup Tools toggles.
 - Read-only `MetadataExtractor` adapter behind project-owned typed photographic metadata, parsing retained encoded bytes lazily off the UI thread with bounded session cache and latest-wins presented-image authority.
 - Session-local Photo Info toggle on configurable `I`, checked Overlays menu entry, immediate oriented dimensions/MP/filename/format/encoded-size data, sparse camera/lens/exposure/capture details, and normalized persisted bottom-left floating placement.
+- Session-local Histogram toggle on configurable `G`, checked Overlays menu entry, normalized persisted bottom-right placement, and a lightweight 256-bin RGB plot using one shared channel scale.
+- Lazy retained-pixel histogram acquisition with exact BGRA8888/Premul counting below the work limit, deterministic whole-image sampling up to two million locations above it, transparent-pixel exclusion, partial-alpha unpremultiplication, cooperative cancellation, latest-wins publication, and a 128-entry session LRU.
 - Peek renders the canonical image's overlay; Blink selects only the comparison image's own overlay and cannot leak current markup onto it.
 - Traversal-excluded local imaging corpus policy plus hardened async session shutdown/cache release.
 
-Markup save/export, text, dedicated Highlighter, edit handles/layers, selected-reference A/B comparison, language/theme selection, Advanced Metadata/Histogram, metadata writing, broad codecs, file associations/thumbnails, and full monitor-aware ICC are not implemented.
+Markup save/export, text, dedicated Highlighter, edit handles/layers, selected-reference A/B comparison, language/theme selection, Advanced Metadata, luminance/clipping histogram modes, metadata writing, broad codecs, file associations/thumbnails, and full monitor-aware ICC are not implemented.
 
 ## Active blockers
 
@@ -69,5 +71,6 @@ Markup save/export, text, dedicated Highlighter, edit handles/layers, selected-r
 - R5 through R5-F2 pointer, eraser, constrained-drawing, opacity, and rendering evidence is Windows-only at `RenderScaling = 1.00`; fractional-DPI, Linux, and macOS runtime feel remain unvalidated.
 - R5-P1 reduced coordinator-side current Ambient latency from roughly `134 ms` to `15 ms`; R5-P2 removed cached-handoff intermediate state; R5-P3 explained the delayed long-sequence failure at cache saturation and restored continuous bounded LRU replacement. Owner review accepts normal human browsing around 3–4 distinct 24 MP photographs per second. Deliberately browsing roughly 5–6+ per second can outrun speculative photo/Ambient readiness and briefly expose matching Black fallback; stale or mismatched Ambient remains forbidden. Fractional-DPI and cross-platform presentation remain unmeasured.
 - R5-F3-P1 pointer/cursor, compositor-cache, drawing, and floating-panel runtime evidence is Windows-only at `RenderScaling = 1.00`; pure geometry covers 1.00/1.25/1.50/2.00, but real fractional-DPI, Linux, and macOS interaction feel and cached exact-pixel presentation remain unvalidated.
+- R6-B Histogram runtime evidence is Windows-only. The linear shared-maximum RGB plot and two-million-location deterministic sample are accepted initial presentation/performance choices, not proof that every photographic distribution or future decoded color representation is optimally summarized.
 
 Open technical risks are tracked in [`KNOWN-PROBLEMS.md`](KNOWN-PROBLEMS.md). Directional stages are in [`ROADMAP.md`](ROADMAP.md). Git remains the authority for branch, HEAD, and worktree status.

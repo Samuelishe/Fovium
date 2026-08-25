@@ -32,14 +32,22 @@ internal sealed class DecodedImage : IRetainedResource
 {
     private static long _nextIdentity;
 
-    internal sealed class NativePayload(SKBitmap bitmap, SKImage image) : IDisposable
+    internal sealed class NativePayload : IDisposable
     {
-        public SKImage Image { get; } = image;
+        public NativePayload(SKBitmap bitmap, SKImage image)
+        {
+            Bitmap = bitmap;
+            Image = image;
+        }
+
+        public SKBitmap Bitmap { get; }
+
+        public SKImage Image { get; }
 
         public void Dispose()
         {
             Image.Dispose();
-            bitmap.Dispose();
+            Bitmap.Dispose();
         }
     }
 
@@ -108,6 +116,15 @@ internal sealed class DecodedImage : IRetainedResource
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
             return new RenderLease(_native.Acquire());
+        }
+    }
+
+    public PixelLease AcquirePixelLease()
+    {
+        lock (_ownershipSync)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            return new PixelLease(_native.Acquire());
         }
     }
 
@@ -209,6 +226,37 @@ internal sealed class DecodedImage : IRetainedResource
 
         private SharedResourceLease<NativePayload> GetLease() =>
             Volatile.Read(ref _lease) ?? throw new ObjectDisposedException(nameof(RenderLease));
+    }
+
+    internal sealed class PixelLease : IDisposable
+    {
+        private SharedResourceLease<NativePayload>? _lease;
+
+        internal PixelLease(SharedResourceLease<NativePayload> lease)
+        {
+            _lease = lease;
+        }
+
+        public int Width => GetBitmap().Width;
+
+        public int Height => GetBitmap().Height;
+
+        public int RowBytes => GetBitmap().RowBytes;
+
+        public SKColorType ColorType => GetBitmap().ColorType;
+
+        public SKAlphaType AlphaType => GetBitmap().AlphaType;
+
+        public ReadOnlySpan<byte> PixelBytes => GetBitmap().GetPixelSpan();
+
+        public PixelLease Acquire() => new(GetLease().Acquire());
+
+        public void Dispose() => Interlocked.Exchange(ref _lease, null)?.Dispose();
+
+        private SKBitmap GetBitmap() => GetLease().Value.Bitmap;
+
+        private SharedResourceLease<NativePayload> GetLease() =>
+            Volatile.Read(ref _lease) ?? throw new ObjectDisposedException(nameof(PixelLease));
     }
 
     internal sealed class AmbientLease : IDisposable

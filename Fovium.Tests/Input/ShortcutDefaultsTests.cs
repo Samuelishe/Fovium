@@ -20,6 +20,7 @@ public sealed class ShortcutDefaultsTests
     [InlineData((int)ViewerCommand.ToggleHighlight, "H", (int)ShortcutModifiers.None)]
     [InlineData((int)ViewerCommand.ToggleMarkupTools, "P", (int)ShortcutModifiers.None)]
     [InlineData((int)ViewerCommand.TogglePhotoInfo, "I", (int)ShortcutModifiers.None)]
+    [InlineData((int)ViewerCommand.ToggleHistogram, "G", (int)ShortcutModifiers.None)]
     [InlineData((int)ViewerCommand.MarkupUndo, "Z", (int)ShortcutModifiers.Control)]
     [InlineData((int)ViewerCommand.MarkupRedo, "Y", (int)ShortcutModifiers.Control)]
     [InlineData((int)ViewerCommand.ClearMarkup, "C", (int)ShortcutModifiers.None)]
@@ -67,6 +68,7 @@ public sealed class ShortcutDefaultsTests
         Assert.Equal("viewer.toggleHighlight", ViewerCommands.GetId(ViewerCommand.ToggleHighlight));
         Assert.Equal("viewer.toggleMarkupTools", ViewerCommands.GetId(ViewerCommand.ToggleMarkupTools));
         Assert.Equal("viewer.togglePhotoInfo", ViewerCommands.GetId(ViewerCommand.TogglePhotoInfo));
+        Assert.Equal("viewer.toggleHistogram", ViewerCommands.GetId(ViewerCommand.ToggleHistogram));
         Assert.Equal("viewer.markupUndo", ViewerCommands.GetId(ViewerCommand.MarkupUndo));
         Assert.Equal("viewer.markupRedo", ViewerCommands.GetId(ViewerCommand.MarkupRedo));
         Assert.Equal("viewer.clearMarkup", ViewerCommands.GetId(ViewerCommand.ClearMarkup));
@@ -142,6 +144,12 @@ public sealed class ShortcutDefaultsTests
         Assert.Equal(
             ViewerCommandScope.Global,
             ViewerCommands.GetDefinition(ViewerCommand.TogglePhotoInfo).Scope);
+        Assert.Equal(
+            ViewerCommandGroup.Presentation,
+            ViewerCommands.GetDefinition(ViewerCommand.ToggleHistogram).Group);
+        Assert.Equal(
+            ViewerCommandScope.Global,
+            ViewerCommands.GetDefinition(ViewerCommand.ToggleHistogram).Scope);
     }
 
     [Fact]
@@ -155,6 +163,19 @@ public sealed class ShortcutDefaultsTests
 
         Assert.Equal(new ShortcutGesture("I"), normalized.Get(ViewerCommand.Fit));
         Assert.Null(normalized.Get(ViewerCommand.TogglePhotoInfo));
+    }
+
+    [Fact]
+    public void ExistingGlobalGShortcutWinsOverAdditiveHistogramDefault()
+    {
+        var oldBindings = ShortcutDefaults.CreateBindings();
+        oldBindings.Remove(ViewerCommands.GetId(ViewerCommand.ToggleHistogram));
+        oldBindings[ViewerCommands.GetId(ViewerCommand.Fit)] = new ShortcutGesture("G");
+
+        var normalized = new ShortcutSettings { Bindings = oldBindings }.Normalize();
+
+        Assert.Equal(new ShortcutGesture("G"), normalized.Get(ViewerCommand.Fit));
+        Assert.Null(normalized.Get(ViewerCommand.ToggleHistogram));
     }
 
     [Fact]

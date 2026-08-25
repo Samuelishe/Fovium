@@ -28,6 +28,7 @@ Zero-UI is intentional: normal viewing removes persistent chrome rather than sur
 - photographer-oriented inspection with whole-viewport **Peek 100%** and non-navigating **Blink Compare**;
 - session-local presenter tools with image-bound markup, Ellipse, per-stroke opacity, constrained drawing, true partial erasing, per-image Undo/Redo, contextual controls, accurate drawing cursors, and a configurable cursor highlight;
 - a deliberate photographic **Stage** with Black, Neutral, Custom, or Ambient backgrounds plus an independent Matte;
+- on-demand movable Photo Info and decoded-RGB Histogram overlays that follow the actually presented photograph, including Blink;
 - color-management foundations and broader image-format support over time;
 - no database, import workflow, or plugin platform.
 
@@ -35,9 +36,9 @@ See the canonical [UX contract](docs/UX-CONTRACT.md), [rendering contract](docs/
 
 ## Current status
 
-The current checkpoint is **`0.1.0.0002`**. R6-A adds an on-demand movable Photo Info overlay backed by lazy, read-only, identity-safe metadata extraction from the encoded bytes already retained with the decoded photograph. The `0.1.0.0000` first-alpha milestone remains historical; R5-F3-P1 interaction isolation and owner-accepted R5-P1/P2/P3 Ambient hardening remain retained. Deliberately outrunning speculative readiness at roughly 5–6+ distinct 24 MP photographs per second may still expose a brief matching Black fallback. Markup remains image-bound, session-local, memory-only, and never changes or writes the source photograph.
+The current checkpoint is **`0.1.0.0003`**. R6-B adds an on-demand movable RGB Histogram overlay backed by lazy, cancellable, identity-safe sampling of the decoded pixels already retained with the photograph. R6-A Photo Info, R5-F3-P1 interaction isolation, and owner-accepted R5-P1/P2/P3 Ambient hardening remain retained. Deliberately outrunning speculative readiness at roughly 5–6+ distinct 24 MP photographs per second may still expose a brief matching Black fallback. Markup remains image-bound, session-local, memory-only, and never changes or writes the source photograph.
 
-This is an alpha milestone, not a feature-complete or stable release claim. Advanced Metadata, Histogram, metadata writing, full monitor-aware ICC, broad codecs, platform associations, markup export/object editing, and selected-reference A/B comparison are not implemented. The canonical handoff is [PROJECT-STATE.md](docs/PROJECT-STATE.md); bounded R0 evidence remains in the [experiment report](docs/experiments/R0-RENDERING-PROBE.md).
+This is an alpha milestone, not a feature-complete or stable release claim. Advanced Metadata, luminance/clipping histogram modes, metadata writing, full monitor-aware ICC, broad codecs, platform associations, markup export/object editing, and selected-reference A/B comparison are not implemented. The canonical handoff is [PROJECT-STATE.md](docs/PROJECT-STATE.md); bounded R0 evidence remains in the [experiment report](docs/experiments/R0-RENDERING-PROBE.md).
 
 English/Russian catalogs and the Dark secondary-UI baseline are implemented; language/theme selection remains future work. See [VERSIONING.md](docs/VERSIONING.md) and the [documentation index](docs/INDEX.md) for the canonical owners.
 

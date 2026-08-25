@@ -276,3 +276,9 @@ Photographic Stage/photo presentation, image-bound markup, pointer feedback, and
 Status: Accepted in R6-A.
 
 Photo Info is a requested, movable, zero-layout overlay defaulting to configurable `I`; visibility is session-local and starts hidden, while normalized client-relative placement persists. Metadata parsing is lazy, background, read-only, and independently fallible. A focused MetadataExtractor adapter maps exact retained encoded bytes into immutable Fovium camera/lens/exposure/date models; third-party directory/tag types never escape. A bounded session LRU and request generation prevent reparsing and stale publication. The overlay observes/acquires the photograph actually presented, so Blink switches identity while Peek does not. Metadata never reopens or writes the source, creates sidecars, changes decode validity, or alters ICC/rendering policy.
+
+## D-046 — Histogram is lazy whole-image decoded-RGB analysis
+
+Status: Accepted in R6-B.
+
+Histogram is an on-demand movable zero-layout overlay defaulting to configurable `G`; visibility is session-local and starts hidden, while normalized bottom-right placement persists. It observes the retained actually presented canonical/Blink image and ignores Peek/zoom/pan because it describes whole-image decoded RGB values rather than viewport, Stage, markup, or display-output pixels. One cancellable worker acquires the existing decoded native payload without re-read, re-decode, or full-image copy. BGRA8888/Premul samples exclude alpha zero and unpremultiply partial alpha; large images use a deterministic whole-image grid bounded to two million locations. A 128-entry session LRU and latest-wins generation prevent repeat work and stale publication. The initial plot uses one linear shared R/G/B maximum; it is not an editing control or an sRGB/monitor-output correctness claim.

@@ -206,6 +206,7 @@ public sealed class SettingsServiceTests
             DefaultMarkupOpacity = 0.35,
             MarkupDockPlacement = new FloatingOverlayPlacement(0.73, 0.21),
             PhotoInfoPlacement = new FloatingOverlayPlacement(0.14, 0.76),
+            HistogramPlacement = new FloatingOverlayPlacement(0.86, 0.79),
         };
 
         await service.SetPresentationAsync(presentation);

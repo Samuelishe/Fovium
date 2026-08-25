@@ -105,6 +105,7 @@ internal static class ShortcutDefaults
         [ViewerCommands.GetId(ViewerCommand.ToggleHighlight)] = new("H"),
         [ViewerCommands.GetId(ViewerCommand.ToggleMarkupTools)] = new("P"),
         [ViewerCommands.GetId(ViewerCommand.TogglePhotoInfo)] = new("I"),
+        [ViewerCommands.GetId(ViewerCommand.ToggleHistogram)] = new("G"),
         [ViewerCommands.GetId(ViewerCommand.MarkupUndo)] = new("Z", ShortcutModifiers.Control),
         [ViewerCommands.GetId(ViewerCommand.MarkupRedo)] = new("Y", ShortcutModifiers.Control),
         [ViewerCommands.GetId(ViewerCommand.ClearMarkup)] = CurrentClearMarkup,

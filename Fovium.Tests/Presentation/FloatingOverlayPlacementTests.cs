@@ -27,6 +27,16 @@ public sealed class FloatingOverlayPlacementTests
     }
 
     [Fact]
+    public void HistogramDefaultIsBottomRightInsideClientInset()
+    {
+        var point = FloatingOverlayPlacement.BottomRight.Resolve(
+            new FloatingOverlaySize(1000, 700),
+            new FloatingOverlaySize(320, 210));
+
+        Assert.Equal(new FloatingOverlayPoint(668, 478), point);
+    }
+
+    [Fact]
     public void DragBeyondEveryEdgeClampsNormalizedPlacement()
     {
         var client = new FloatingOverlaySize(1000, 700);

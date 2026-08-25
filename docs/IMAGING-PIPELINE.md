@@ -44,6 +44,8 @@ EXIF, XMP, IPTC, and other descriptive metadata are useful but optional to ordin
 
 R6-A implements the optional descriptive path through a focused managed `MetadataExtractor` adapter. It reads the exact encoded byte array already retained by `DecodedImage` through a non-copying memory stream, maps useful EXIF values into immutable Fovium types, and contains malformed/no-metadata results without changing decode success. External directory, tag, and rational types do not cross the adapter. Parsing is lazy while Photo Info is visible, background-run, cancellable at publication authority, and count-cached for the current sequence. ICC discoveries remain informational and do not alter rendering.
 
+R6-B adds a separate read-only pixel-analysis path. A retained pixel lease shares `DecodedImage` native ownership for the duration of sequential BGRA8888/Premul access; no source reopen, re-decode, or full-image copy occurs. Transparent pixels are excluded and partial-alpha channels are unpremultiplied before binning. EXIF orientation does not require another oriented copy because rotation does not change channel counts.
+
 ## Decoder registry direction
 
 A project-owned registry may route probes and decodes among multiple libraries or native/specialized codecs. Backends should expose capabilities and failures in common terms, preserve resource ownership, and honor cancellation when the underlying API allows it. A backend addition must not require navigation, viewport, cache, or renderer redesign.

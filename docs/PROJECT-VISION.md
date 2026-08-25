@@ -48,6 +48,8 @@ Both use the shared shortcut system, allow one transient mode at a time, and add
 
 **Photo Info** is an on-demand zero-layout aid: configurable `I` shows a restrained movable panel for the photograph actually being presented, then hides it without changing the photograph. It summarizes useful photographic facts rather than dumping raw tags. Metadata is read-only, partial, session-local, and independently fallible; it is not a catalog, editor, sidecar, rating, or tagging system.
 
+**Histogram** is an on-demand zero-layout aid: configurable `G` shows a movable 256-bin RGB distribution for the whole decoded photograph actually being presented. It excludes Stage, viewport crop, markup, and display-output transforms; it is analysis for viewing, not an exposure-editing control.
+
 ## Non-goals
 
 Fovium must not drift into a:

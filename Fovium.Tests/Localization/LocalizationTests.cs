@@ -180,4 +180,20 @@ public sealed class LocalizationTests
         Assert.Equal(title, localizer[UiStrings.PhotoInfoTitle]);
         Assert.Equal(close, localizer[UiStrings.PhotoInfoClose]);
     }
+
+    [Theory]
+    [InlineData("en-US", "Histogram", "Histogram", "Close Histogram")]
+    [InlineData("ru-RU", "Гистограмма", "Гистограмма", "Закрыть гистограмму")]
+    public void HistogramCatalogContainsCommandAndPanelChrome(
+        string cultureName,
+        string command,
+        string title,
+        string close)
+    {
+        var localizer = Localizer.Create(CultureInfo.GetCultureInfo(cultureName));
+
+        Assert.Equal(command, localizer[UiStrings.CommandToggleHistogram]);
+        Assert.Equal(title, localizer[UiStrings.HistogramTitle]);
+        Assert.Equal(close, localizer[UiStrings.HistogramClose]);
+    }
 }

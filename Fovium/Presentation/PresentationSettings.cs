@@ -73,6 +73,9 @@ internal sealed record PresentationSettings
     public FloatingOverlayPlacement PhotoInfoPlacement { get; init; } =
         FloatingOverlayPlacement.BottomLeft;
 
+    public FloatingOverlayPlacement HistogramPlacement { get; init; } =
+        FloatingOverlayPlacement.BottomRight;
+
     public static PresentationSettings Default { get; } = new();
 
     public PresentationSettings AdjustHighlightRadius(double deltaPhysicalPixels)
@@ -115,6 +118,7 @@ internal sealed record PresentationSettings
             MaximumMarkupOpacity),
         MarkupDockPlacement = MarkupDockPlacement.Normalize(),
         PhotoInfoPlacement = PhotoInfoPlacement.Normalize(FloatingOverlayPlacement.BottomLeft),
+        HistogramPlacement = HistogramPlacement.Normalize(FloatingOverlayPlacement.BottomRight),
     };
 
     private static double NormalizeFinite(double value, double fallback, double minimum, double maximum) =>

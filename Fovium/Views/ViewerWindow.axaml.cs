@@ -9,6 +9,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Fovium.Application;
 using Fovium.Diagnostics;
+using Fovium.Histogram;
 using Fovium.Imaging;
 using Fovium.Input;
 using Fovium.Loading;
@@ -48,14 +49,17 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
     private readonly ViewerHoldController _holdController;
     private readonly PresentationOverlaySession _presentation;
     private readonly PhotoInfoCoordinator _photoInfo;
+    private readonly HistogramCoordinator _histogram;
     private readonly FloatingOverlayInteraction _markupFloatingOverlay;
     private readonly FloatingOverlayInteraction _photoInfoFloatingOverlay;
+    private readonly FloatingOverlayInteraction _histogramFloatingOverlay;
     private readonly Dictionary<ViewerCommand, MenuItem> _commandMenuItems = [];
     private readonly MenuItem _previousMenuItem;
     private readonly MenuItem _nextMenuItem;
     private readonly IReadOnlyDictionary<StageBackgroundMode, MenuItem> _stageBackgroundMenuItems;
     private readonly MenuItem _matteMenuItem;
     private readonly MenuItem _photoInfoMenuItem;
+    private readonly MenuItem _histogramMenuItem;
     private readonly MenuItem _highlightMenuItem;
     private readonly MenuItem _markupMenuItem;
     private PresentationColor? _appliedMarkupColor;
@@ -109,6 +113,10 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             PhotoViewport,
             new MetadataExtractorPhotoMetadataReader());
         _photoInfo.StateChanged += OnPhotoInfoStateChanged;
+        _histogram = new HistogramCoordinator(
+            PhotoViewport,
+            new SkiaDecodedHistogramReader());
+        _histogram.StateChanged += OnHistogramStateChanged;
         _markupFloatingOverlay = new FloatingOverlayInteraction(
             ViewerRoot,
             MarkupToolsPanel,
@@ -121,8 +129,15 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             PhotoInfoDragHandle,
             settings.Current.Presentation.PhotoInfoPlacement,
             _interactionDiagnostics);
+        _histogramFloatingOverlay = new FloatingOverlayInteraction(
+            ViewerRoot,
+            HistogramPanel,
+            HistogramDragHandle,
+            settings.Current.Presentation.HistogramPlacement,
+            _interactionDiagnostics);
         _markupFloatingOverlay.PlacementCommitted += OnMarkupPlacementCommitted;
         _photoInfoFloatingOverlay.PlacementCommitted += OnPhotoInfoPlacementCommitted;
+        _histogramFloatingOverlay.PlacementCommitted += OnHistogramPlacementCommitted;
         _commandExecutor = new ViewerCommandExecutor(this);
         _inspectionCoordinator = new ViewerInspectionCoordinator(PhotoViewport, session, settings);
         _holdController = new ViewerHoldController(new ViewerHoldActionRouter(
@@ -130,6 +145,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             new MarkupTemporaryHandHoldAction(_presentation)));
         ConfigureMarkupTools();
         ConfigurePhotoInfo();
+        ConfigureHistogram();
         _previousMenuItem = CreateCommandMenuItem(
             UiStrings.MenuPrevious,
             ViewerCommand.PreviousImage,
@@ -144,6 +160,10 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             UiStrings.CommandTogglePhotoInfo,
             ViewerCommand.TogglePhotoInfo,
             FoviumIcon.Info);
+        _histogramMenuItem = CreateOverlayToggleMenuItem(
+            UiStrings.CommandToggleHistogram,
+            ViewerCommand.ToggleHistogram,
+            FoviumIcon.Histogram);
         _highlightMenuItem = CreateOverlayToggleMenuItem(
             UiStrings.CommandToggleHighlight,
             ViewerCommand.ToggleHighlight,
@@ -221,6 +241,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         _lifetimeCancellation.Cancel();
         CompleteAmbientSoakTransition();
         _photoInfo.Dispose();
+        _histogram.Dispose();
         PhotoViewport.ClearImage();
         try
         {
@@ -260,12 +281,27 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
                 $"longestPointerIntervalMs={metrics.LongestPointerEventInterval.TotalMilliseconds:F2}.");
         }
 
+        if (string.Equals(
+            Environment.GetEnvironmentVariable("FOVIUM_HISTOGRAM_DIAGNOSTICS"),
+            "1",
+            StringComparison.Ordinal))
+        {
+            var metrics = _histogram.Metrics;
+            Console.WriteLine(
+                $"Fovium histogram: started={metrics.ComputationsStarted}, " +
+                $"completed={metrics.ComputationsCompleted}, cacheHits={metrics.CacheHits}, " +
+                $"canceled={metrics.Canceled}, stale={metrics.StaleResults}, " +
+                $"failures={metrics.Failures}, lastMs={metrics.LastComputeDuration.TotalMilliseconds:F2}, " +
+                $"lastSamples={metrics.LastSampleCount}, sampled={metrics.LastWasSampled}.");
+        }
+
         _lifetimeCancellation.Dispose();
         _visibleCursor.Dispose();
         _hiddenCursor.Dispose();
         _handCursor.Dispose();
         _settings.SettingsChanged -= OnSettingsChanged;
         _photoInfo.StateChanged -= OnPhotoInfoStateChanged;
+        _histogram.StateChanged -= OnHistogramStateChanged;
         _stageCoordinator.PresentationChanged -= OnStagePresentationChanged;
         _ambientSoakTrace.Dispose();
         _settings.Dispose();
@@ -363,6 +399,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
                     ItemsSource = new Control[]
                     {
                         _photoInfoMenuItem,
+                        _histogramMenuItem,
                         _highlightMenuItem,
                         _markupMenuItem,
                     },
@@ -410,8 +447,10 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             var overlays = ViewerOverlayMenuState.Capture(
                 _presentation,
                 _photoInfo.IsVisible,
+                _histogram.IsVisible,
                 _settings.Current.Shortcuts);
             _photoInfoMenuItem.IsChecked = overlays.PhotoInfoChecked;
+            _histogramMenuItem.IsChecked = overlays.HistogramChecked;
             _highlightMenuItem.IsChecked = overlays.HighlightChecked;
             _markupMenuItem.IsChecked = overlays.MarkupChecked;
             UpdateCommandGestures();
@@ -594,6 +633,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         var result = await _session.OpenAsync(sequence, _lifetimeCancellation.Token);
         _presentation.StartNewSequence();
         _photoInfo.BeginNewSequence();
+        _histogram.BeginNewSequence();
         ApplySelection(result, ImageChangeViewPolicyResolver.ForNewSequence(), showFailure: true);
     }
 
@@ -717,6 +757,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         UpdateMarkupToolTips();
         _markupFloatingOverlay.SetPlacement(settings.Presentation.MarkupDockPlacement);
         _photoInfoFloatingOverlay.SetPlacement(settings.Presentation.PhotoInfoPlacement);
+        _histogramFloatingOverlay.SetPlacement(settings.Presentation.HistogramPlacement);
     }
 
     private void ApplyStage(StageSettings stage)
@@ -863,6 +904,12 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         _photoInfoFloatingOverlay.ApplyPlacement();
     }
 
+    void IViewerCommandTarget.ToggleHistogram()
+    {
+        _histogram.Toggle();
+        _histogramFloatingOverlay.ApplyPlacement();
+    }
+
     void IViewerCommandTarget.UndoMarkup() => _presentation.UndoCurrent();
 
     void IViewerCommandTarget.RedoMarkup() => _presentation.RedoCurrent();
@@ -931,6 +978,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             _interactionDiagnostics.RecordViewerLayoutSizeChange();
             _markupFloatingOverlay.ApplyPlacement();
             _photoInfoFloatingOverlay.ApplyPlacement();
+            _histogramFloatingOverlay.ApplyPlacement();
         };
 
         MarkupHandButton.Content = FoviumIconCatalog.Create(FoviumIcon.Hand);
@@ -1119,6 +1167,54 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         textBlock.IsVisible = !string.IsNullOrEmpty(value);
     }
 
+    private void ConfigureHistogram()
+    {
+        HistogramTitleText.Text = _localizer[UiStrings.HistogramTitle];
+        HistogramCloseButton.Content = FoviumIconCatalog.Create(FoviumIcon.Close, 14);
+        ToolTip.SetTip(HistogramDragHandle, _localizer[UiStrings.PresentationMovePanel]);
+        ToolTip.SetTip(HistogramCloseButton, _localizer[UiStrings.HistogramClose]);
+        HistogramCloseButton.Click += (_, _) =>
+        {
+            _histogram.SetVisible(false);
+            PhotoViewport.Focus();
+        };
+        HistogramPanel.AddHandler(
+            PointerPressedEvent,
+            OnMarkupPanelPointerPressed,
+            RoutingStrategies.Tunnel);
+        ApplyHistogramUi();
+    }
+
+    private void OnHistogramStateChanged(object? sender, EventArgs e)
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            ApplyHistogramUi();
+            return;
+        }
+
+        Dispatcher.UIThread.Post(ApplyHistogramUi);
+    }
+
+    private void ApplyHistogramUi()
+    {
+        if (!IsInitialized || _closed)
+        {
+            return;
+        }
+
+        HistogramPanel.IsVisible = _histogram.IsVisible;
+        var state = _histogram.CurrentState;
+        HistogramPlot.SetState(state?.Data, state?.IsLoading == true);
+        if (_histogram.IsVisible)
+        {
+            _histogramFloatingOverlay.ApplyPlacement();
+            Dispatcher.UIThread.Post(
+                _histogramFloatingOverlay.ApplyPlacement,
+                DispatcherPriority.Loaded);
+        }
+    }
+
     private async void OnMarkupPlacementCommitted(FloatingOverlayPlacement placement)
     {
         await PersistOverlayPlacementAsync(
@@ -1129,6 +1225,12 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
     {
         await PersistOverlayPlacementAsync(
             _settings.Current.Presentation with { PhotoInfoPlacement = placement });
+    }
+
+    private async void OnHistogramPlacementCommitted(FloatingOverlayPlacement placement)
+    {
+        await PersistOverlayPlacementAsync(
+            _settings.Current.Presentation with { HistogramPlacement = placement });
     }
 
     private async Task PersistOverlayPlacementAsync(PresentationSettings presentation)

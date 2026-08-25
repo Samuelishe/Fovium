@@ -17,6 +17,7 @@ public sealed class PresentationSettingsTests
         Assert.Equal(1, settings.DefaultMarkupOpacity);
         Assert.Equal(FloatingOverlayPlacement.Default, settings.MarkupDockPlacement);
         Assert.Equal(FloatingOverlayPlacement.BottomLeft, settings.PhotoInfoPlacement);
+        Assert.Equal(FloatingOverlayPlacement.BottomRight, settings.HistogramPlacement);
         Assert.Equal("#FFD54F", settings.HighlightColor.ToHex());
         Assert.Equal("#FF4545", settings.DefaultMarkupColor.ToHex());
     }
@@ -65,6 +66,7 @@ public sealed class PresentationSettingsTests
             HighlightRadiusPhysicalPixels = -10,
             DefaultMarkupStrokePhysicalPixels = double.NaN,
             DefaultMarkupOpacity = double.PositiveInfinity,
+            HistogramPlacement = new FloatingOverlayPlacement(double.NaN, double.PositiveInfinity),
         }).Normalize();
 
         Assert.Equal(PresentationSettings.MaximumHighlightOpacity, normalized.HighlightOpacity);
@@ -75,6 +77,7 @@ public sealed class PresentationSettingsTests
             PresentationSettings.Default.DefaultMarkupStrokePhysicalPixels,
             normalized.DefaultMarkupStrokePhysicalPixels);
         Assert.Equal(PresentationSettings.Default.DefaultMarkupOpacity, normalized.DefaultMarkupOpacity);
+        Assert.Equal(FloatingOverlayPlacement.BottomRight, normalized.HistogramPlacement);
     }
 
     [Fact]

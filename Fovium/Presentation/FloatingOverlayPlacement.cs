@@ -12,6 +12,8 @@ internal readonly record struct FloatingOverlayPlacement(double NormalizedX, dou
 
     public static FloatingOverlayPlacement BottomLeft { get; } = new(0, 1);
 
+    public static FloatingOverlayPlacement BottomRight { get; } = new(1, 1);
+
     public FloatingOverlayPlacement Normalize() => Normalize(Default);
 
     public FloatingOverlayPlacement Normalize(FloatingOverlayPlacement fallback) => new(

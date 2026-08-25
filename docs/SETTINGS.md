@@ -59,9 +59,11 @@ Controls is generated from typed command metadata and grouped as Navigation, Vie
 
 R6-A adds Global Presentation command `viewer.togglePhotoInfo`, default `I`, through the same conflict-safe additive normalization: an existing customized Global `I` wins and leaves Photo Info unassigned. Schema v2 also stores normalized client-relative Photo Info placement, default bottom-left. Visibility is deliberately session-local and always starts false; no Settings tab or persisted visibility flag is introduced.
 
+R6-B adds Global Presentation command `viewer.toggleHistogram`, default `G`, with the same additive conflict preservation. Schema v2 stores normalized Histogram placement, default bottom-right. Histogram visibility is session-local and starts false; no appearance settings or new Settings section are introduced.
+
 ### Presentation
 
-The implemented section owns the markup-tools permission plus cursor-highlight color/opacity/physical radius and default markup color/stroke size/opacity. Default markup opacity is `1.00`, accepts `0.05–1.00`, and initializes the active dock style; physical markup size accepts `1–128 px` without changing existing values. Highlight-radius commands persist through the same debounced settings owner. Normalized client-relative placements default to top-center for the markup dock and bottom-left for Photo Info, survive restart, and clamp against current client bounds; no desktop coordinates are stored. Photo Info visibility itself is not persisted. Presentation settings configure viewer aids, not annotations or metadata writes: image-bound markup remains memory-only and source metadata remains read-only.
+The implemented section owns the markup-tools permission plus cursor-highlight color/opacity/physical radius and default markup color/stroke size/opacity. Default markup opacity is `1.00`, accepts `0.05–1.00`, and initializes the active dock style; physical markup size accepts `1–128 px` without changing existing values. Highlight-radius commands persist through the same debounced settings owner. Normalized client-relative placements default to top-center for the markup dock, bottom-left for Photo Info, and bottom-right for Histogram, survive restart, and clamp against current client bounds; no desktop coordinates are stored. Informational-overlay visibility is not persisted. Presentation settings configure viewer aids, not annotations or metadata writes: image-bound markup remains memory-only and source metadata remains read-only.
 
 ### Color
 

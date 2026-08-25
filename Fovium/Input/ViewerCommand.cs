@@ -34,6 +34,7 @@ internal enum ViewerCommand
     SelectEllipseTool,
     SelectArrowTool,
     TemporaryMarkupHand,
+    ToggleHistogram,
 }
 
 internal enum ViewerCommandTrigger
@@ -150,6 +151,7 @@ internal static class ViewerCommands
             ViewerCommandScope.Markup,
             ViewerCommandTrigger.Hold),
         new(ViewerCommand.TogglePhotoInfo, "viewer.togglePhotoInfo", ViewerCommandGroup.Presentation),
+        new(ViewerCommand.ToggleHistogram, "viewer.toggleHistogram", ViewerCommandGroup.Presentation),
     ];
 
     private static readonly IReadOnlyDictionary<ViewerCommand, ViewerCommandDefinition> ByCommand =

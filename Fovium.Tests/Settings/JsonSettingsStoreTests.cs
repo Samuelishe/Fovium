@@ -103,6 +103,7 @@ public sealed class JsonSettingsStoreTests : IDisposable
                 DefaultMarkupOpacity = 0.65,
                 MarkupDockPlacement = new FloatingOverlayPlacement(0.22, 0.84),
                 PhotoInfoPlacement = new FloatingOverlayPlacement(0.17, 0.68),
+                HistogramPlacement = new FloatingOverlayPlacement(0.82, 0.71),
             },
         };
 
@@ -448,6 +449,9 @@ public sealed class JsonSettingsStoreTests : IDisposable
         Assert.Equal(
             FloatingOverlayPlacement.BottomLeft,
             result.Settings.Presentation.PhotoInfoPlacement);
+        Assert.Equal(
+            FloatingOverlayPlacement.BottomRight,
+            result.Settings.Presentation.HistogramPlacement);
         Assert.False(result.RequiresSave);
     }
 

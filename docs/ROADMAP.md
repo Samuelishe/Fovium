@@ -77,7 +77,9 @@ Accepted outcome at `0.1.0.0002`: focused read-only metadata adapter and project
 
 ## R6-B — Histogram floating overlay
 
-Next intended bounded stage: an identity-safe Histogram overlay. It remains separate from R6-A and must not expand presenter markup into editing/export work. Do not begin automatically.
+Accepted outcome at `0.1.0.0003`: lazy identity-safe whole-image decoded-RGB analysis from retained native pixels, deterministic two-million-location large-image sampling, transparent-pixel-safe 256-bin channels, bounded session cache, and a configurable `G` movable Histogram panel that follows canonical/Blink presentation without changing Peek or navigation. Luminance modes, clipping warnings, editing, waveform/vectorscope, and ICC behavior were not added.
+
+The next bounded product stage requires explicit owner selection after R6-B review. Do not begin automatically.
 
 ## Later / separate platform milestones
 

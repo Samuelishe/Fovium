@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:viewer="using:Fovium.Viewer"
+        xmlns:views="using:Fovium.Views"
         x:Class="Fovium.Views.ViewerWindow"
         Title="Fovium"
         Background="Black"
@@ -120,6 +121,47 @@
         <TextBlock x:Name="PhotoInfoDimensionsText" Opacity="0.85" />
         <TextBlock x:Name="PhotoInfoDateText" Margin="0,3,0,0" Opacity="0.85" />
         <TextBlock x:Name="PhotoInfoFileText" Opacity="0.75" TextTrimming="CharacterEllipsis" />
+      </StackPanel>
+    </Border>
+    <Border x:Name="HistogramPanel"
+            IsVisible="False"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Top"
+            Width="320"
+            Height="212"
+            Padding="10,8,10,10"
+            CornerRadius="8"
+            Background="#E6202020"
+            BorderBrush="#604A4A4A"
+            BorderThickness="1">
+      <StackPanel Spacing="6">
+        <Grid ColumnDefinitions="Auto,*,Auto" Height="26">
+          <Border x:Name="HistogramDragHandle"
+                  Grid.Column="0"
+                  Width="22"
+                  Cursor="SizeAll"
+                  Background="Transparent"
+                  CornerRadius="3">
+            <TextBlock Text="⠿"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Opacity="0.65" />
+          </Border>
+          <TextBlock x:Name="HistogramTitleText"
+                     Grid.Column="1"
+                     VerticalAlignment="Center"
+                     FontWeight="SemiBold"
+                     Opacity="0.88" />
+          <Button x:Name="HistogramCloseButton"
+                  Grid.Column="2"
+                  Width="26"
+                  Height="26"
+                  Padding="5"
+                  Focusable="False" />
+        </Grid>
+        <views:HistogramPlotControl x:Name="HistogramPlot"
+                                    Height="160"
+                                    ClipToBounds="True" />
       </StackPanel>
     </Border>
     <Border x:Name="ErrorSurface"
