@@ -20,6 +20,7 @@ Not authoritative for: The subjects summarized by linked documents.
 | [`TEST-EXECUTION.md`](TEST-EXECUTION.md) | Local/CI test commands and evidence boundaries | Running, filtering, or interpreting tests |
 | [`PROJECT-STATS.md`](PROJECT-STATS.md) | Repository diagnostics usage, exclusions, metrics, and limits | Running or changing ProjectStats |
 | [`experiments/R0-RENDERING-PROBE.md`](experiments/R0-RENDERING-PROBE.md) | R0 setup, observations, comparisons, limitations, and recommendation | Implementing from or re-evaluating R0 evidence |
+| [`experiments/R7-C-HEIF-AVIF-BACKEND-PROBE.md`](experiments/R7-C-HEIF-AVIF-BACKEND-PROBE.md) | HEIF/AVIF backend and native-runtime packaging feasibility evidence | Re-evaluating the gated R7-C codec direction |
 | [`VERSIONING.md`](VERSIONING.md) | Display/numeric version semantics, checkpoint increments, and version metadata direction | Changing a project checkpoint or exposing a version |
 | [`SETTINGS.md`](SETTINGS.md) | Settings sections, preference ownership, persistence, migration, and reset policy | Designing settings or stored preferences |
 | [`LOCALIZATION.md`](LOCALIZATION.md) | Supported locales, locale resolution, fallback, and translation boundaries | Adding or changing localized UI text |

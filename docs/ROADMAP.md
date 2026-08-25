@@ -87,7 +87,11 @@ Accepted outcome at `0.1.0.0004`: one project-owned JPEG/PNG/WebP capability aut
 
 Accepted outcome at `0.1.0.0005`: one shared two-slot decoder dispatcher separates not-my-format from unsupported/corrupt/resource failures, retains Skia for JPEG/PNG/static WebP, and adds a focused managed TIFF backend. Product TIFF scope is classic single-image unsigned 8-bit contiguous grayscale/RGB/declared-alpha for the proven endian/storage/compression subset. High-bit-depth, floating-point, multipage, BigTIFF, specialist photometrics, and huge-image region rendering remain explicit non-goals.
 
-The next bounded product stage requires explicit owner selection after R7-B review. Do not begin another format automatically.
+## R7-C — HEIF/AVIF backend and native packaging gate
+
+Investigated after R7-B but not productized. Controlled 8-bit HEIF and AVIF proved the focused libheif managed adapter viable on Windows, while the available focused runtime lacked macOS assets. All-RID alternatives either lacked required HEVC/AV1 decoding or added unsuitable encoder/broad-stack baggage. Version remains `0.1.0.0005`; HEIF/HEIC and AVIF are not supported formats.
+
+The prerequisite to resume R7-C is a reproducible application-owned decode-only libheif runtime with proven Windows x64, Linux x64, and macOS arm64 assets, complete provenance, and no system-library dependency. Retained evidence and the proposed packaging direction are in [`experiments/R7-C-HEIF-AVIF-BACKEND-PROBE.md`](experiments/R7-C-HEIF-AVIF-BACKEND-PROBE.md). Do not begin another format automatically.
 
 ## Later / separate platform milestones
 

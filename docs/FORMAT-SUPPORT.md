@@ -32,4 +32,6 @@ JPEG, PNG, static WebP, and accepted TIFF share the same BGRA8888/Premul decoded
 
 Animated WebP/APNG playback, broader/high-bit-depth/multipage TIFF, HEIF/HEIC, AVIF, RAW, JPEG XL, JPEG 2000, PSD, OpenEXR, and other specialized formats are not current decode claims. File associations and thumbnail providers are also separate platform work.
 
+The gated R7-C probe confirmed that the current Skia stack cannot decode the controlled HEIF/AVIF files and that no evaluated native package simultaneously supplied decode-capable HEVC/AV1 assets for Windows x64, Linux x64, and macOS arm64 within the accepted decode-only dependency boundary. HEIF/HEIC and AVIF therefore remain unsupported; Windows-only adapter feasibility is not a product claim. See [`experiments/R7-C-HEIF-AVIF-BACKEND-PROBE.md`](experiments/R7-C-HEIF-AVIF-BACKEND-PROBE.md).
+
 Pipeline mechanics belong to [`IMAGING-PIPELINE.md`](IMAGING-PIPELINE.md); library provenance belongs to [`THIRD-PARTY.md`](THIRD-PARTY.md); future direction belongs to [`ROADMAP.md`](ROADMAP.md).
