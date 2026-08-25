@@ -72,6 +72,24 @@ public sealed class ViewerCommandExecutorTests
     }
 
     [Theory]
+    [InlineData((int)ViewerCommand.DecreaseMarkupThickness, -1, 0)]
+    [InlineData((int)ViewerCommand.IncreaseMarkupThickness, 1, 0)]
+    [InlineData((int)ViewerCommand.DecreaseMarkupOpacity, 0, -0.05)]
+    [InlineData((int)ViewerCommand.IncreaseMarkupOpacity, 0, 0.05)]
+    public async Task MarkupStyleCommandsUseExactSteps(
+        int commandValue,
+        double expectedThickness,
+        double expectedOpacity)
+    {
+        var target = new RecordingTarget();
+
+        await new ViewerCommandExecutor(target).ExecuteAsync((ViewerCommand)commandValue);
+
+        Assert.Equal(expectedThickness, target.ThicknessAdjustment);
+        Assert.Equal(expectedOpacity, target.OpacityAdjustment, 8);
+    }
+
+    [Theory]
     [InlineData((int)ViewerCommand.Peek100)]
     [InlineData((int)ViewerCommand.BlinkCompare)]
     public async Task HoldCommandsCannotRunThroughOneShotExecutor(int commandValue)
@@ -93,6 +111,10 @@ public sealed class ViewerCommandExecutorTests
         public int PresentationToggleCount { get; private set; }
 
         public List<string> MarkupActions { get; } = [];
+
+        public double ThicknessAdjustment { get; private set; }
+
+        public double OpacityAdjustment { get; private set; }
 
         public Task PreviousAsync() => Task.CompletedTask;
 
@@ -125,5 +147,10 @@ public sealed class ViewerCommandExecutorTests
         public void RedoMarkup() => MarkupActions.Add("redo");
 
         public void ClearMarkup() => MarkupActions.Add("clear");
+
+        public void AdjustMarkupThickness(double deltaPhysicalPixels) =>
+            ThicknessAdjustment += deltaPhysicalPixels;
+
+        public void AdjustMarkupOpacity(double delta) => OpacityAdjustment += delta;
     }
 }

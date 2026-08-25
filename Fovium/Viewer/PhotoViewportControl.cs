@@ -428,7 +428,10 @@ internal sealed class PhotoViewportControl : Control
         {
             var pointer = e.GetPosition(this);
             var source = TryGetSourcePoint(pointer);
-            if (source is not null && presentation.BeginDrawing(source.Value, _viewport.PhysicalScale))
+            if (source is not null && presentation.BeginDrawing(
+                    source.Value,
+                    _viewport.PhysicalScale,
+                    _viewport.SourceSize))
             {
                 _drawingPointer = e.Pointer;
                 e.Pointer.Capture(this);
@@ -463,7 +466,9 @@ internal sealed class PhotoViewportControl : Control
             e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
         {
             var pointer = e.GetPosition(this);
-            presentation.ContinueDrawing(GetClampedSourcePoint(pointer));
+            presentation.ContinueDrawing(
+                GetClampedSourcePoint(pointer),
+                ToDrawingModifiers(e.KeyModifiers));
             e.Handled = true;
             return;
         }
@@ -495,7 +500,9 @@ internal sealed class PhotoViewportControl : Control
         UpdatePointerPosition(e);
         if (_drawingPointer == e.Pointer && _presentation is { IsDrawing: true } presentation)
         {
-            presentation.EndDrawing(GetClampedSourcePoint(e.GetPosition(this)));
+            presentation.EndDrawing(
+                GetClampedSourcePoint(e.GetPosition(this)),
+                ToDrawingModifiers(e.KeyModifiers));
             _drawingPointer = null;
             e.Pointer.Capture(null);
             e.Handled = true;
@@ -627,4 +634,9 @@ internal sealed class PhotoViewportControl : Control
             Math.Clamp(source.X, 0, size.Width),
             Math.Clamp(source.Y, 0, size.Height));
     }
+
+    private static MarkupDrawingModifiers ToDrawingModifiers(KeyModifiers modifiers) =>
+        modifiers.HasFlag(KeyModifiers.Shift)
+            ? MarkupDrawingModifiers.Constrain
+            : MarkupDrawingModifiers.None;
 }

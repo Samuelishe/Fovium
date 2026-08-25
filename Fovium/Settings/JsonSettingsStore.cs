@@ -80,7 +80,13 @@ internal sealed class JsonSettingsStore(string path) : ISettingsStore
 
             var settings = document.Deserialize<FoviumSettings>(SerializerOptions)
                 ?? throw new JsonException("The settings document is empty.");
-            return new SettingsLoadResult(settings.Normalize(), null);
+            var normalized = settings.Normalize();
+            var shortcuts = (settings.Shortcuts ?? ShortcutSettings.Default)
+                .NormalizePersistedDefaults(out var evolvedPreviousDefaults);
+            return new SettingsLoadResult(
+                normalized with { Shortcuts = shortcuts },
+                null,
+                RequiresSave: evolvedPreviousDefaults);
         }
         catch (FileNotFoundException)
         {

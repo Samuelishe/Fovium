@@ -32,6 +32,8 @@ internal static class ShortcutGestureFormatter
             "Plus" => "+",
             "Minus" => "−",
             "Comma" => ",",
+            "OpenBracket" => "[",
+            "CloseBracket" => "]",
             _ => gesture.Value.Key,
         });
         return string.Join('+', parts);

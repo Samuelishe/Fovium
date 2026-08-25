@@ -24,6 +24,7 @@
         <Button x:Name="MarkupEraserButton" MinWidth="64" Focusable="False" />
         <Button x:Name="MarkupLineButton" MinWidth="58" Focusable="False" />
         <Button x:Name="MarkupRectangleButton" MinWidth="82" Focusable="False" />
+        <Button x:Name="MarkupEllipseButton" MinWidth="64" Focusable="False" />
         <Button x:Name="MarkupArrowButton" MinWidth="64" Focusable="False" />
         <Button x:Name="MarkupColorButton" MinWidth="64" Focusable="False">
           <StackPanel Orientation="Horizontal" Spacing="6">
@@ -43,6 +44,18 @@
                 TickFrequency="1" />
         <TextBlock x:Name="MarkupStrokeValue"
                    Width="24"
+                   VerticalAlignment="Center" />
+        <TextBlock x:Name="MarkupOpacityText"
+                   VerticalAlignment="Center"
+                   Margin="4,0,0,0" />
+        <Slider x:Name="MarkupOpacitySlider"
+                Focusable="False"
+                Width="82"
+                Minimum="5"
+                Maximum="100"
+                TickFrequency="5" />
+        <TextBlock x:Name="MarkupOpacityValue"
+                   Width="38"
                    VerticalAlignment="Center" />
         <Button x:Name="MarkupUndoButton" MinWidth="58" Focusable="False" />
         <Button x:Name="MarkupRedoButton" MinWidth="58" Focusable="False" />

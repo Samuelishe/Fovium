@@ -29,6 +29,10 @@ internal interface IViewerCommandTarget
     void RedoMarkup();
 
     void ClearMarkup();
+
+    void AdjustMarkupThickness(double deltaPhysicalPixels);
+
+    void AdjustMarkupOpacity(double delta);
 }
 
 internal sealed class ViewerCommandExecutor(IViewerCommandTarget target)
@@ -57,6 +61,14 @@ internal sealed class ViewerCommandExecutor(IViewerCommandTarget target)
             ViewerCommand.MarkupUndo => Execute(target.UndoMarkup),
             ViewerCommand.MarkupRedo => Execute(target.RedoMarkup),
             ViewerCommand.ClearMarkup => Execute(target.ClearMarkup),
+            ViewerCommand.DecreaseMarkupThickness => Execute(
+                () => target.AdjustMarkupThickness(-1)),
+            ViewerCommand.IncreaseMarkupThickness => Execute(
+                () => target.AdjustMarkupThickness(1)),
+            ViewerCommand.DecreaseMarkupOpacity => Execute(
+                () => target.AdjustMarkupOpacity(-0.05)),
+            ViewerCommand.IncreaseMarkupOpacity => Execute(
+                () => target.AdjustMarkupOpacity(0.05)),
             _ => throw new ArgumentOutOfRangeException(nameof(command)),
         };
     }

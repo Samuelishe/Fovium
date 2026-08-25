@@ -40,6 +40,7 @@ internal sealed class PresentationOverlaySession
         ValidateLimits(_limits);
         ActiveColor = _settings.DefaultMarkupColor;
         ActiveStrokePhysicalPixels = _settings.DefaultMarkupStrokePhysicalPixels;
+        ActiveOpacity = _settings.DefaultMarkupOpacity;
     }
 
     public event EventHandler? Changed;
@@ -57,6 +58,8 @@ internal sealed class PresentationOverlaySession
     public PresentationColor ActiveColor { get; private set; }
 
     public double ActiveStrokePhysicalPixels { get; private set; }
+
+    public double ActiveOpacity { get; private set; }
 
     public bool IsDrawing => _draft is not null;
 
@@ -76,9 +79,24 @@ internal sealed class PresentationOverlaySession
             return;
         }
 
+        var previous = _settings;
         _settings = normalized;
-        ActiveColor = normalized.DefaultMarkupColor;
-        ActiveStrokePhysicalPixels = normalized.DefaultMarkupStrokePhysicalPixels;
+        if (normalized.DefaultMarkupColor != previous.DefaultMarkupColor)
+        {
+            ActiveColor = normalized.DefaultMarkupColor;
+        }
+
+        if (!normalized.DefaultMarkupStrokePhysicalPixels.Equals(
+                previous.DefaultMarkupStrokePhysicalPixels))
+        {
+            ActiveStrokePhysicalPixels = normalized.DefaultMarkupStrokePhysicalPixels;
+        }
+
+        if (!normalized.DefaultMarkupOpacity.Equals(previous.DefaultMarkupOpacity))
+        {
+            ActiveOpacity = normalized.DefaultMarkupOpacity;
+        }
+
         if (!normalized.MarkupToolsEnabled)
         {
             MarkupToolsVisible = false;
@@ -175,7 +193,56 @@ internal sealed class PresentationOverlaySession
         RaiseChanged();
     }
 
+    public void SetActiveOpacity(double opacity)
+    {
+        var normalized = double.IsFinite(opacity)
+            ? Math.Clamp(
+                opacity,
+                PresentationSettings.MinimumMarkupOpacity,
+                PresentationSettings.MaximumMarkupOpacity)
+            : _settings.DefaultMarkupOpacity;
+        if (ActiveOpacity.Equals(normalized))
+        {
+            return;
+        }
+
+        ActiveOpacity = normalized;
+        RaiseChanged();
+    }
+
+    public bool AdjustActiveStrokePhysicalPixels(double delta)
+    {
+        if (!MarkupToolsVisible || !double.IsFinite(delta) || delta == 0)
+        {
+            return false;
+        }
+
+        var previous = ActiveStrokePhysicalPixels;
+        SetActiveStrokePhysicalPixels(previous + delta);
+        return !ActiveStrokePhysicalPixels.Equals(previous);
+    }
+
+    public bool AdjustActiveOpacity(double delta)
+    {
+        if (!MarkupToolsVisible || !double.IsFinite(delta) || delta == 0)
+        {
+            return false;
+        }
+
+        var previous = ActiveOpacity;
+        SetActiveOpacity(previous + delta);
+        return !ActiveOpacity.Equals(previous);
+    }
+
+    public bool ClearCurrentFromCommand() => MarkupToolsVisible && ClearCurrent();
+
     public bool BeginDrawing(PointD sourcePoint, double physicalScale)
+        => BeginDrawing(sourcePoint, physicalScale, null);
+
+    public bool BeginDrawing(
+        PointD sourcePoint,
+        double physicalScale,
+        PixelSize? sourceSize)
     {
         if (!MarkupToolsVisible ||
             CurrentImageIdentity is null ||
@@ -190,33 +257,39 @@ internal sealed class PresentationOverlaySession
             CurrentImageIdentity,
             ActiveTool,
             ActiveColor,
+            ActiveOpacity,
             ActiveStrokePhysicalPixels / physicalScale,
             sourcePoint,
+            sourceSize,
             _limits.MaximumPointsPerStroke);
         RaiseChanged();
         return true;
     }
 
-    public bool ContinueDrawing(PointD sourcePoint)
+    public bool ContinueDrawing(
+        PointD sourcePoint,
+        MarkupDrawingModifiers modifiers = MarkupDrawingModifiers.None)
     {
         if (_draft is null)
         {
             return false;
         }
 
-        _draft.Move(sourcePoint);
+        _draft.Move(sourcePoint, modifiers);
         RaiseChanged();
         return true;
     }
 
-    public bool EndDrawing(PointD sourcePoint)
+    public bool EndDrawing(
+        PointD sourcePoint,
+        MarkupDrawingModifiers modifiers = MarkupDrawingModifiers.None)
     {
         if (_draft is not { } draft)
         {
             return false;
         }
 
-        draft.Move(sourcePoint);
+        draft.Move(sourcePoint, modifiers);
         _draft = null;
         var operation = draft.CreateOperation();
         var committed = operation is not null && TryCommit(draft.Identity, operation);
@@ -458,24 +531,31 @@ internal sealed class PresentationOverlaySession
     {
         private readonly MarkupTool _tool;
         private readonly PresentationColor _color;
+        private readonly double _opacity;
         private readonly double _strokeWidthSource;
         private readonly PointD _start;
+        private readonly PixelSize? _sourceSize;
         private readonly StrokePointBuilder? _strokePoints;
         private PointD _current;
+        private MarkupDrawingModifiers _modifiers;
 
         public DrawingDraft(
             string identity,
             MarkupTool tool,
             PresentationColor color,
+            double opacity,
             double strokeWidthSource,
             PointD start,
+            PixelSize? sourceSize,
             int maximumPoints)
         {
             Identity = identity;
             _tool = tool;
             _color = color;
+            _opacity = opacity;
             _strokeWidthSource = strokeWidthSource;
             _start = start;
+            _sourceSize = sourceSize;
             _current = start;
             if (tool is MarkupTool.Brush or MarkupTool.Eraser)
             {
@@ -485,26 +565,50 @@ internal sealed class PresentationOverlaySession
 
         public string Identity { get; }
 
-        public void Move(PointD point)
+        public void Move(PointD point, MarkupDrawingModifiers modifiers)
         {
             _current = point;
+            _modifiers = modifiers;
             _strokePoints?.Add(point);
         }
 
-        public MarkupOperation? CreateOperation() => _tool switch
+        public MarkupOperation? CreateOperation()
         {
-            MarkupTool.Brush => new DrawMarkupOperation(
-                new BrushMarkup(_color, _strokeWidthSource, _strokePoints!.Snapshot())),
-            MarkupTool.Eraser => new EraseMarkupOperation(
-                _strokeWidthSource,
-                _strokePoints!.Snapshot()),
-            MarkupTool.Line when _start != _current => new DrawMarkupOperation(
-                new LineMarkup(_color, _strokeWidthSource, _start, _current)),
-            MarkupTool.Rectangle when _start != _current => new DrawMarkupOperation(
-                new RectangleMarkup(_color, _strokeWidthSource, _start, _current)),
-            MarkupTool.Arrow when _start != _current => new DrawMarkupOperation(
-                new ArrowMarkup(_color, _strokeWidthSource, _start, _current)),
-            _ => null,
-        };
+            var constrained = _modifiers.HasFlag(MarkupDrawingModifiers.Constrain) &&
+                _tool != MarkupTool.Eraser;
+            var endpoint = constrained
+                ? _tool is MarkupTool.Rectangle or MarkupTool.Ellipse
+                    ? MarkupConstraintGeometry.SquareEndpoint(_start, _current)
+                    : MarkupConstraintGeometry.SnapEndpointTo45Degrees(_start, _current)
+                : _current;
+            if (constrained && _sourceSize is { } sourceSize)
+            {
+                endpoint = MarkupConstraintGeometry.ClipEndpointAlongRay(_start, endpoint, sourceSize);
+            }
+
+            return _tool switch
+            {
+                MarkupTool.Brush when constrained => new DrawMarkupOperation(
+                    new BrushMarkup(
+                        _color,
+                        _strokeWidthSource,
+                        MarkupStrokePoints.From(_start, endpoint),
+                        _opacity)),
+                MarkupTool.Brush => new DrawMarkupOperation(
+                    new BrushMarkup(_color, _strokeWidthSource, _strokePoints!.Snapshot(), _opacity)),
+                MarkupTool.Eraser => new EraseMarkupOperation(
+                    _strokeWidthSource,
+                    _strokePoints!.Snapshot()),
+                MarkupTool.Line when _start != endpoint => new DrawMarkupOperation(
+                    new LineMarkup(_color, _strokeWidthSource, _start, endpoint, _opacity)),
+                MarkupTool.Rectangle when _start != endpoint => new DrawMarkupOperation(
+                    new RectangleMarkup(_color, _strokeWidthSource, _start, endpoint, _opacity)),
+                MarkupTool.Ellipse when _start != endpoint => new DrawMarkupOperation(
+                    new EllipseMarkup(_color, _strokeWidthSource, _start, endpoint, _opacity)),
+                MarkupTool.Arrow when _start != endpoint => new DrawMarkupOperation(
+                    new ArrowMarkup(_color, _strokeWidthSource, _start, endpoint, _opacity)),
+                _ => null,
+            };
+        }
     }
 }

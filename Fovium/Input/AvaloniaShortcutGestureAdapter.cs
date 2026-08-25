@@ -37,6 +37,8 @@ internal static class AvaloniaShortcutGestureAdapter
             Key.D0 or Key.NumPad0 => "0",
             Key.D1 or Key.NumPad1 => "1",
             Key.OemComma => "Comma",
+            Key.OemOpenBrackets => "OpenBracket",
+            Key.OemCloseBrackets => "CloseBracket",
             _ => key.ToString(),
         };
         return key != Key.None;
@@ -64,6 +66,8 @@ internal static class AvaloniaShortcutGestureAdapter
             "0" => Key.D0,
             "1" => Key.D1,
             "Comma" => Key.OemComma,
+            "OpenBracket" => Key.OemOpenBrackets,
+            "CloseBracket" => Key.OemCloseBrackets,
             _ when Enum.TryParse<Key>(value, out var parsed) => parsed,
             _ => Key.None,
         };

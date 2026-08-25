@@ -16,12 +16,16 @@ public sealed class ShortcutDefaultsTests
     [InlineData((int)ViewerCommand.Open, "O", (int)ShortcutModifiers.Control)]
     [InlineData((int)ViewerCommand.Settings, "Comma", (int)ShortcutModifiers.Control)]
     [InlineData((int)ViewerCommand.Peek100, "Z", (int)ShortcutModifiers.None)]
-    [InlineData((int)ViewerCommand.BlinkCompare, "C", (int)ShortcutModifiers.None)]
+    [InlineData((int)ViewerCommand.BlinkCompare, "C", (int)ShortcutModifiers.Shift)]
     [InlineData((int)ViewerCommand.ToggleHighlight, "H", (int)ShortcutModifiers.None)]
     [InlineData((int)ViewerCommand.ToggleMarkupTools, "P", (int)ShortcutModifiers.None)]
     [InlineData((int)ViewerCommand.MarkupUndo, "Z", (int)ShortcutModifiers.Control)]
     [InlineData((int)ViewerCommand.MarkupRedo, "Y", (int)ShortcutModifiers.Control)]
-    [InlineData((int)ViewerCommand.ClearMarkup, "Delete", (int)ShortcutModifiers.Control)]
+    [InlineData((int)ViewerCommand.ClearMarkup, "C", (int)ShortcutModifiers.None)]
+    [InlineData((int)ViewerCommand.DecreaseMarkupThickness, "OpenBracket", (int)ShortcutModifiers.None)]
+    [InlineData((int)ViewerCommand.IncreaseMarkupThickness, "CloseBracket", (int)ShortcutModifiers.None)]
+    [InlineData((int)ViewerCommand.DecreaseMarkupOpacity, "OpenBracket", (int)ShortcutModifiers.Control)]
+    [InlineData((int)ViewerCommand.IncreaseMarkupOpacity, "CloseBracket", (int)ShortcutModifiers.Control)]
     public void ExactDefaultBindingsUseProjectOwnedGestures(
         int commandValue,
         string key,
@@ -54,11 +58,40 @@ public sealed class ShortcutDefaultsTests
         Assert.Equal("viewer.markupUndo", ViewerCommands.GetId(ViewerCommand.MarkupUndo));
         Assert.Equal("viewer.markupRedo", ViewerCommands.GetId(ViewerCommand.MarkupRedo));
         Assert.Equal("viewer.clearMarkup", ViewerCommands.GetId(ViewerCommand.ClearMarkup));
+        Assert.Equal(
+            "viewer.markupThicknessDown",
+            ViewerCommands.GetId(ViewerCommand.DecreaseMarkupThickness));
+        Assert.Equal(
+            "viewer.markupThicknessUp",
+            ViewerCommands.GetId(ViewerCommand.IncreaseMarkupThickness));
+        Assert.Equal(
+            "viewer.markupOpacityDown",
+            ViewerCommands.GetId(ViewerCommand.DecreaseMarkupOpacity));
+        Assert.Equal(
+            "viewer.markupOpacityUp",
+            ViewerCommands.GetId(ViewerCommand.IncreaseMarkupOpacity));
         Assert.Equal(ViewerCommandTrigger.Hold, ViewerCommands.GetDefinition(ViewerCommand.Peek100).Trigger);
         Assert.Equal(ViewerCommandTrigger.Hold, ViewerCommands.GetDefinition(ViewerCommand.BlinkCompare).Trigger);
         Assert.All(
             ViewerCommands.Definitions.Where(definition =>
                 definition.Command is not ViewerCommand.Peek100 and not ViewerCommand.BlinkCompare),
             definition => Assert.Equal(ViewerCommandTrigger.Press, definition.Trigger));
+    }
+
+    [Fact]
+    public void RuntimeNormalizationDoesNotRewriteDeliberatelyAssignedPreviousPair()
+    {
+        var settings = ShortcutSettings.Default
+            .WithBinding(ViewerCommand.BlinkCompare, ShortcutDefaults.PreviousBlinkCompare)
+            .WithBinding(ViewerCommand.ClearMarkup, ShortcutDefaults.PreviousClearMarkup);
+
+        var normalized = settings.Normalize();
+
+        Assert.Equal(
+            ShortcutDefaults.PreviousBlinkCompare,
+            normalized.Get(ViewerCommand.BlinkCompare));
+        Assert.Equal(
+            ShortcutDefaults.PreviousClearMarkup,
+            normalized.Get(ViewerCommand.ClearMarkup));
     }
 }

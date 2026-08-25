@@ -8,6 +8,7 @@ namespace Fovium.Tests.Presentation;
 public sealed class SkiaMarkupOverlayRendererTests(ITestOutputHelper output)
 {
     private static readonly PresentationColor Red = new(0xFF, 0x10, 0x10);
+    private static readonly PresentationColor Blue = new(0x10, 0x40, 0xFF);
     private static readonly SKColor PhotoColor = new(0x17, 0x45, 0x73);
 
     [Fact]
@@ -178,6 +179,110 @@ public sealed class SkiaMarkupOverlayRendererTests(ITestOutputHelper output)
         Assert.Equal(PhotoColor, bitmap.GetPixel(95, 40));
     }
 
+    [Fact]
+    public void EllipseRendersExpectedOutlineWithoutFill()
+    {
+        using var bitmap = Render(Draw(new EllipseMarkup(
+            Red,
+            8,
+            new PointD(20, 15),
+            new PointD(100, 65))));
+
+        AssertMarkupRed(bitmap, 60, 15);
+        AssertMarkupRed(bitmap, 20, 40);
+        AssertMarkupRed(bitmap, 100, 40);
+        AssertMarkupRed(bitmap, 60, 65);
+        Assert.Equal(PhotoColor, bitmap.GetPixel(60, 40));
+    }
+
+    [Fact]
+    public void EllipsePartialEraseRemovesOnlyCrossedArcAndRevealsPhoto()
+    {
+        using var bitmap = Render(
+            Draw(new EllipseMarkup(Red, 8, new PointD(20, 15), new PointD(100, 65))),
+            Erase(14, new PointD(60, 4), new PointD(60, 27)));
+
+        Assert.Equal(PhotoColor, bitmap.GetPixel(60, 15));
+        AssertMarkupRed(bitmap, 20, 40);
+        AssertMarkupRed(bitmap, 100, 40);
+        AssertMarkupRed(bitmap, 60, 65);
+    }
+
+    [Fact]
+    public void SemiTransparentEllipseDoesNotBleedOutsidePhoto()
+    {
+        using var surface = SKSurface.Create(new SKImageInfo(140, 100));
+        surface.Canvas.Clear(SKColors.Green);
+        using (var photoPaint = new SKPaint { Color = PhotoColor })
+        {
+            surface.Canvas.DrawRect(new SKRect(20, 10, 120, 90), photoPaint);
+        }
+
+        SkiaMarkupOverlayRenderer.Draw(
+            surface.Canvas,
+            new RectD(20, 10, 100, 80),
+            new PixelSize(100, 80),
+            new MarkupRenderSnapshot(
+                [Draw(new EllipseMarkup(Red, 12, new PointD(0, 0), new PointD(100, 80), 0.5))],
+                null),
+            new RectD(0, 0, 140, 100));
+        using var image = surface.Snapshot();
+        using var bitmap = SKBitmap.FromImage(image);
+
+        Assert.Equal(SKColors.Green, bitmap.GetPixel(18, 50));
+        Assert.Equal(SKColors.Green, bitmap.GetPixel(122, 50));
+        AssertComposite(bitmap.GetPixel(20, 50), PhotoColor, Red, 0.5);
+    }
+
+    [Theory]
+    [InlineData(1.0)]
+    [InlineData(0.5)]
+    [InlineData(0.1)]
+    public void StoredOpacityUsesSourceOverAlpha(double opacity)
+    {
+        using var bitmap = Render(Draw(new LineMarkup(
+            Red,
+            10,
+            new PointD(10, 40),
+            new PointD(110, 40),
+            opacity)));
+
+        AssertComposite(bitmap.GetPixel(60, 40), PhotoColor, Red, opacity);
+    }
+
+    [Fact]
+    public void EraserFullyClearsTranslucentMarkupWithoutResidualAlpha()
+    {
+        using var bitmap = Render(
+            Draw(new LineMarkup(Red, 10, new PointD(10, 40), new PointD(110, 40), 0.30)),
+            Erase(16, new PointD(60, 15), new PointD(60, 65)));
+
+        AssertComposite(bitmap.GetPixel(30, 40), PhotoColor, Red, 0.30);
+        Assert.Equal(PhotoColor, bitmap.GetPixel(60, 40));
+        AssertComposite(bitmap.GetPixel(90, 40), PhotoColor, Red, 0.30);
+    }
+
+    [Fact]
+    public void ChronologicalOpacitySurvivesEraseAndUndoSnapshots()
+    {
+        var red = Draw(new LineMarkup(Red, 10, new PointD(10, 40), new PointD(110, 40), 0.5));
+        var erase = Erase(16, new PointD(60, 15), new PointD(60, 65));
+        var blue = Draw(new LineMarkup(Blue, 8, new PointD(60, 20), new PointD(60, 60), 0.5));
+
+        using (var all = Render(red, erase, blue))
+        {
+            AssertComposite(all.GetPixel(60, 40), PhotoColor, Blue, 0.5);
+        }
+
+        using (var undoBlue = Render(red, erase))
+        {
+            Assert.Equal(PhotoColor, undoBlue.GetPixel(60, 40));
+        }
+
+        using var undoErase = Render(red);
+        AssertComposite(undoErase.GetPixel(60, 40), PhotoColor, Red, 0.5);
+    }
+
     [Theory]
     [InlineData(80, 5, 6)]
     [InlineData(80, 64, 6)]
@@ -227,18 +332,34 @@ public sealed class SkiaMarkupOverlayRendererTests(ITestOutputHelper output)
     {
         using var surface = SKSurface.Create(new SKImageInfo(320, 240));
         var modest = Enumerable.Range(0, 8)
-            .Select(index => (MarkupOperation)Draw(new LineMarkup(
-                Red,
-                4,
-                new PointD(10, 20 + index * 10),
-                new PointD(300, 20 + index * 10))))
+            .Select(index => (MarkupOperation)Draw(index % 2 == 0
+                ? new LineMarkup(
+                    Red,
+                    4,
+                    new PointD(10, 20 + index * 10),
+                    new PointD(300, 20 + index * 10),
+                    0.64)
+                : new EllipseMarkup(
+                    Red,
+                    4,
+                    new PointD(20 + index * 10, 20),
+                    new PointD(80 + index * 10, 80),
+                    0.64)))
             .ToArray();
         var many = Enumerable.Range(0, 512)
-            .Select(index => (MarkupOperation)Draw(new LineMarkup(
-                Red,
-                3,
-                new PointD(5, index % 220 + 10),
-                new PointD(315, index % 220 + 10))))
+            .Select(index => (MarkupOperation)Draw(index % 2 == 0
+                ? new LineMarkup(
+                    Red,
+                    3,
+                    new PointD(5, index % 220 + 10),
+                    new PointD(315, index % 220 + 10),
+                    0.64)
+                : new EllipseMarkup(
+                    Red,
+                    3,
+                    new PointD(index % 260 + 5, index % 180 + 5),
+                    new PointD(index % 260 + 45, index % 180 + 35),
+                    0.64)))
             .ToArray();
 
         var emptyElapsed = Measure(surface.Canvas, MarkupRenderSnapshot.Empty, 200);
@@ -299,5 +420,21 @@ public sealed class SkiaMarkupOverlayRendererTests(ITestOutputHelper output)
         var pixel = bitmap.GetPixel(x, y);
         Assert.True(pixel.Red > 180, $"Expected red markup at ({x}, {y}), got {pixel}.");
         Assert.True(pixel.Red > pixel.Blue, $"Expected red-dominant markup at ({x}, {y}), got {pixel}.");
+    }
+
+    private static void AssertComposite(
+        SKColor actual,
+        SKColor background,
+        PresentationColor foreground,
+        double opacity)
+    {
+        var alpha = Math.Round(opacity * byte.MaxValue, MidpointRounding.AwayFromZero) / byte.MaxValue;
+        var expectedRed = foreground.Red * alpha + background.Red * (1 - alpha);
+        var expectedGreen = foreground.Green * alpha + background.Green * (1 - alpha);
+        var expectedBlue = foreground.Blue * alpha + background.Blue * (1 - alpha);
+        Assert.InRange(actual.Red, Math.Floor(expectedRed) - 2, Math.Ceiling(expectedRed) + 2);
+        Assert.InRange(actual.Green, Math.Floor(expectedGreen) - 2, Math.Ceiling(expectedGreen) + 2);
+        Assert.InRange(actual.Blue, Math.Floor(expectedBlue) - 2, Math.Ceiling(expectedBlue) + 2);
+        Assert.Equal(byte.MaxValue, actual.Alpha);
     }
 }

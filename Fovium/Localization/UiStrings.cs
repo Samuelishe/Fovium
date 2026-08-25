@@ -63,6 +63,10 @@ internal static class UiStrings
     public const string CommandMarkupUndo = "command.markupUndo";
     public const string CommandMarkupRedo = "command.markupRedo";
     public const string CommandClearMarkup = "command.clearMarkup";
+    public const string CommandDecreaseMarkupThickness = "command.markupThicknessDown";
+    public const string CommandIncreaseMarkupThickness = "command.markupThicknessUp";
+    public const string CommandDecreaseMarkupOpacity = "command.markupOpacityDown";
+    public const string CommandIncreaseMarkupOpacity = "command.markupOpacityUp";
     public const string PresentationEnableMarkup = "presentation.enableMarkup";
     public const string PresentationHighlight = "presentation.highlight";
     public const string PresentationHighlightColor = "presentation.highlightColor";
@@ -75,8 +79,10 @@ internal static class UiStrings
     public const string PresentationEraser = "presentation.eraser";
     public const string PresentationLine = "presentation.line";
     public const string PresentationRectangle = "presentation.rectangle";
+    public const string PresentationEllipse = "presentation.ellipse";
     public const string PresentationArrow = "presentation.arrow";
     public const string PresentationColor = "presentation.color";
+    public const string PresentationOpacity = "presentation.opacity";
     public const string PresentationClear = "presentation.clear";
     public const string PresentationUndo = "presentation.undo";
     public const string PresentationRedo = "presentation.redo";

@@ -19,6 +19,10 @@ internal enum ViewerCommand
     MarkupUndo,
     MarkupRedo,
     ClearMarkup,
+    DecreaseMarkupThickness,
+    IncreaseMarkupThickness,
+    DecreaseMarkupOpacity,
+    IncreaseMarkupOpacity,
 }
 
 internal enum ViewerCommandTrigger
@@ -53,6 +57,10 @@ internal static class ViewerCommands
         new(ViewerCommand.MarkupUndo, "viewer.markupUndo"),
         new(ViewerCommand.MarkupRedo, "viewer.markupRedo"),
         new(ViewerCommand.ClearMarkup, "viewer.clearMarkup"),
+        new(ViewerCommand.DecreaseMarkupThickness, "viewer.markupThicknessDown"),
+        new(ViewerCommand.IncreaseMarkupThickness, "viewer.markupThicknessUp"),
+        new(ViewerCommand.DecreaseMarkupOpacity, "viewer.markupOpacityDown"),
+        new(ViewerCommand.IncreaseMarkupOpacity, "viewer.markupOpacityUp"),
     ];
 
     private static readonly IReadOnlyDictionary<ViewerCommand, ViewerCommandDefinition> ByCommand =

@@ -13,6 +13,7 @@ public sealed class PresentationSettingsTests
         Assert.Equal(0.30, settings.HighlightOpacity);
         Assert.Equal(42, settings.HighlightRadiusPhysicalPixels);
         Assert.Equal(4, settings.DefaultMarkupStrokePhysicalPixels);
+        Assert.Equal(1, settings.DefaultMarkupOpacity);
         Assert.Equal("#FFD54F", settings.HighlightColor.ToHex());
         Assert.Equal("#FF4545", settings.DefaultMarkupColor.ToHex());
     }
@@ -25,6 +26,7 @@ public sealed class PresentationSettingsTests
             HighlightOpacity = 5,
             HighlightRadiusPhysicalPixels = -10,
             DefaultMarkupStrokePhysicalPixels = double.NaN,
+            DefaultMarkupOpacity = double.PositiveInfinity,
         }).Normalize();
 
         Assert.Equal(PresentationSettings.MaximumHighlightOpacity, normalized.HighlightOpacity);
@@ -34,6 +36,7 @@ public sealed class PresentationSettingsTests
         Assert.Equal(
             PresentationSettings.Default.DefaultMarkupStrokePhysicalPixels,
             normalized.DefaultMarkupStrokePhysicalPixels);
+        Assert.Equal(PresentationSettings.Default.DefaultMarkupOpacity, normalized.DefaultMarkupOpacity);
     }
 
     [Fact]
@@ -44,6 +47,7 @@ public sealed class PresentationSettingsTests
             HighlightOpacity = -1,
             HighlightRadiusPhysicalPixels = 999,
             DefaultMarkupStrokePhysicalPixels = 999,
+            DefaultMarkupOpacity = -1,
         }).Normalize();
 
         Assert.Equal(PresentationSettings.MinimumHighlightOpacity, normalized.HighlightOpacity);
@@ -53,5 +57,6 @@ public sealed class PresentationSettingsTests
         Assert.Equal(
             PresentationSettings.MaximumMarkupStrokePhysicalPixels,
             normalized.DefaultMarkupStrokePhysicalPixels);
+        Assert.Equal(PresentationSettings.MinimumMarkupOpacity, normalized.DefaultMarkupOpacity);
     }
 }

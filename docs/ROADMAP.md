@@ -57,7 +57,11 @@ Accepted outcome: replace append-only primitives with bounded per-image ordered 
 
 ## R5-F2 — Markup shapes, opacity, and Shift constraints
 
-Expected next bounded stage after explicit R5-F1 owner acceptance. Ellipse, shared opacity, and drawing constraints require their own scope; do not start automatically or fold in toolbar redesign, text, selection/editing, export, sidecars, or layers.
+Accepted outcome: add Ellipse/Shift-circle, immutable per-draw opacity, Shift constraints for Line/Arrow/Rectangle/Ellipse/Brush, contextual bracket-key thickness/opacity adjustment, and conflict-safe Clear/Blink default evolution without adding a dedicated Highlighter or persistent markup data.
+
+## R5-F3 — Contextual drawing shortcuts and presentation UI polish
+
+Expected next bounded stage after explicit R5-F2 owner acceptance. It may address contextual tool shortcuts plus compact dock/Controls grouping and iconography; do not start automatically or fold in text, selection/editing, export, sidecars, or layers.
 
 ## R6 — Metadata / context-menu polish
 

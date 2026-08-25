@@ -85,7 +85,13 @@ internal static class SkiaMarkupOverlayRenderer
         using var paint = new SKPaint
         {
             IsAntialias = true,
-            Color = new SKColor(element.Color.Red, element.Color.Green, element.Color.Blue),
+            Color = new SKColor(
+                element.Color.Red,
+                element.Color.Green,
+                element.Color.Blue,
+                (byte)Math.Round(
+                    Math.Clamp(element.Opacity, 0, 1) * byte.MaxValue,
+                    MidpointRounding.AwayFromZero)),
             Style = SKPaintStyle.Stroke,
             StrokeCap = SKStrokeCap.Round,
             StrokeJoin = SKStrokeJoin.Round,
@@ -105,6 +111,11 @@ internal static class SkiaMarkupOverlayRenderer
                 canvas.DrawRect(NormalizeRect(
                     transform.SourceToViewport(rectangle.Start),
                     transform.SourceToViewport(rectangle.End)), paint);
+                break;
+            case EllipseMarkup ellipse:
+                canvas.DrawOval(NormalizeRect(
+                    transform.SourceToViewport(ellipse.Start),
+                    transform.SourceToViewport(ellipse.End)), paint);
                 break;
             case ArrowMarkup arrow:
                 DrawArrow(canvas, transform, arrow, paint);

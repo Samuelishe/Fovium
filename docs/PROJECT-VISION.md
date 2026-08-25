@@ -40,11 +40,11 @@ An optional persisted **Matte** is an independent modifier over any background. 
 
 **Peek 100%** is a whole-viewport press-and-hold action: hold `Z` to inspect exact photographic 100% around the cursor/source point, then release to restore the prior semantic view. Its purpose is immediate sharpness checking without a loupe, overlay, or persistent viewport mutation.
 
-**Blink Compare** is a press-and-hold action: hold `C` to see the previous viable image with Fit or the current physical scale and point of interest, then release to return immediately to the retained current presentation. Comparison never navigates or changes canonical selection.
+**Blink Compare** is a press-and-hold action: hold `Shift+C` to see the previous viable image with Fit or the current physical scale and point of interest, then release to return immediately to the retained current presentation. Comparison never navigates or changes canonical selection.
 
 Both use the shared shortcut system, allow one transient mode at a time, and add no persistent viewport UI. Selected-reference A/B and combined compare-at-100 remain future possibilities requiring evidence from real use.
 
-**Presenter overlay** is an explicitly requested, temporary presentation aid: `H` toggles a translucent cursor highlight and `P` toggles a compact drawing dock. Brush, Line, Rectangle, Arrow, and true partial Eraser operations are bound to oriented photograph coordinates for the current in-memory session. Per-image Undo/Redo and undoable Clear replay that bounded operation history. They are not source edits, annotation documents, sidecars, layers, object-editing tools, or exportable content; hiding the dock preserves marks.
+**Presenter overlay** is an explicitly requested, temporary presentation aid: `H` toggles a translucent cursor highlight and `P` toggles a compact drawing dock. Brush, Line, Rectangle, Ellipse, Arrow, and true partial Eraser operations are bound to oriented photograph coordinates for the current in-memory session. Draw operations capture color, physical stroke size, and opacity; Shift constrains familiar shapes and can temporarily preview Brush as a straight 45-degree-snapped stroke. Per-image Undo/Redo and undoable Clear replay that bounded operation history. They are not source edits, annotation documents, sidecars, layers, object-editing tools, or exportable content; hiding the dock preserves marks.
 
 ## Non-goals
 

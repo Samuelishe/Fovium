@@ -240,3 +240,9 @@ Cursor Highlight and Markup Tools are shared configurable press commands default
 Status: Accepted in R5-F1.
 
 Each image-bound memory-only markup document has one bounded chronological operation history and one cursor; active rendering replays Draw, Erase, and Clear operations before that cursor. A freehand Eraser uses Clear blending only inside a destination-bounded isolated transparent markup layer, so it removes crossed markup pixels without mutating photograph, Stage, or Matte. One continuous draw/erase gesture is one history step, Clear is an undoable operation, Undo/Redo remain per image, and a new edit after Undo releases the redo tail. This foundation does not introduce source writes, sidecars, export, object editing, layers, or a general annotation document format.
+
+## D-040 — Markup opacity and constraints are captured drawing semantics
+
+Status: Accepted in R5-F2.
+
+Draw operations capture immutable color, source-space width, and opacity; opacity applies to Brush, Line, Rectangle, Ellipse, and Arrow but never weakens Eraser. Ellipse is a two-control-point oriented-source shape. A project-owned pure geometry helper constrains Line/Arrow/Brush to 45-degree directions and Rectangle/Ellipse to square/circle geometry; Shift is translated only at the Avalonia boundary, and releasing it can restore the collected freehand Brush draft before commit. Contextual `[`/`]` and `Ctrl+[`/`Ctrl+]` commands adjust active dock thickness/opacity, Clear defaults to `C`, and Blink moves to `Shift+C`, leaving `Ctrl+C` available for a future conventional Copy command. No dedicated Highlighter, contextual tool-selection scheme, or toolbar redesign is introduced.

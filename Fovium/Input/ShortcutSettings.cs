@@ -9,8 +9,23 @@ internal sealed record ShortcutSettings
     public ShortcutGesture? Get(ViewerCommand command) =>
         Bindings.TryGetValue(ViewerCommands.GetId(command), out var gesture) ? gesture : null;
 
-    public ShortcutSettings Normalize()
+    public ShortcutSettings Normalize() => NormalizeCore(
+        evolvePreviousDefaults: false,
+        out _);
+
+    internal ShortcutSettings NormalizePersistedDefaults(out bool evolvedPreviousDefaults) =>
+        NormalizeCore(evolvePreviousDefaults: true, out evolvedPreviousDefaults);
+
+    private ShortcutSettings NormalizeCore(
+        bool evolvePreviousDefaults,
+        out bool evolvedPreviousDefaults)
     {
+        evolvedPreviousDefaults = evolvePreviousDefaults &&
+            Bindings is not null &&
+            Bindings.TryGetValue(ViewerCommands.GetId(ViewerCommand.BlinkCompare), out var blink) &&
+            blink == ShortcutDefaults.PreviousBlinkCompare &&
+            Bindings.TryGetValue(ViewerCommands.GetId(ViewerCommand.ClearMarkup), out var clear) &&
+            clear == ShortcutDefaults.PreviousClearMarkup;
         var normalized = ShortcutDefaults.CreateBindings();
         if (Bindings is null)
         {
@@ -28,6 +43,14 @@ internal sealed record ShortcutSettings
                 AvaloniaShortcutGestureAdapter.IsRepresentable(value)
                 ? gesture
                 : null;
+        }
+
+        if (evolvedPreviousDefaults)
+        {
+            normalized[ViewerCommands.GetId(ViewerCommand.BlinkCompare)] =
+                ShortcutDefaults.CurrentBlinkCompare;
+            normalized[ViewerCommands.GetId(ViewerCommand.ClearMarkup)] =
+                ShortcutDefaults.CurrentClearMarkup;
         }
 
         var used = new HashSet<ShortcutGesture>();
@@ -55,6 +78,16 @@ internal sealed record ShortcutSettings
 
 internal static class ShortcutDefaults
 {
+    internal static ShortcutGesture PreviousBlinkCompare { get; } = new("C");
+
+    internal static ShortcutGesture PreviousClearMarkup { get; } =
+        new("Delete", ShortcutModifiers.Control);
+
+    internal static ShortcutGesture CurrentBlinkCompare { get; } =
+        new("C", ShortcutModifiers.Shift);
+
+    internal static ShortcutGesture CurrentClearMarkup { get; } = new("C");
+
     public static Dictionary<string, ShortcutGesture?> CreateBindings() => new(StringComparer.Ordinal)
     {
         [ViewerCommands.GetId(ViewerCommand.PreviousImage)] = new("Left"),
@@ -68,11 +101,17 @@ internal static class ShortcutDefaults
         [ViewerCommands.GetId(ViewerCommand.Open)] = new("O", ShortcutModifiers.Control),
         [ViewerCommands.GetId(ViewerCommand.Settings)] = new("Comma", ShortcutModifiers.Control),
         [ViewerCommands.GetId(ViewerCommand.Peek100)] = new("Z"),
-        [ViewerCommands.GetId(ViewerCommand.BlinkCompare)] = new("C"),
+        [ViewerCommands.GetId(ViewerCommand.BlinkCompare)] = CurrentBlinkCompare,
         [ViewerCommands.GetId(ViewerCommand.ToggleHighlight)] = new("H"),
         [ViewerCommands.GetId(ViewerCommand.ToggleMarkupTools)] = new("P"),
         [ViewerCommands.GetId(ViewerCommand.MarkupUndo)] = new("Z", ShortcutModifiers.Control),
         [ViewerCommands.GetId(ViewerCommand.MarkupRedo)] = new("Y", ShortcutModifiers.Control),
-        [ViewerCommands.GetId(ViewerCommand.ClearMarkup)] = new("Delete", ShortcutModifiers.Control),
+        [ViewerCommands.GetId(ViewerCommand.ClearMarkup)] = CurrentClearMarkup,
+        [ViewerCommands.GetId(ViewerCommand.DecreaseMarkupThickness)] = new("OpenBracket"),
+        [ViewerCommands.GetId(ViewerCommand.IncreaseMarkupThickness)] = new("CloseBracket"),
+        [ViewerCommands.GetId(ViewerCommand.DecreaseMarkupOpacity)] =
+            new("OpenBracket", ShortcutModifiers.Control),
+        [ViewerCommands.GetId(ViewerCommand.IncreaseMarkupOpacity)] =
+            new("CloseBracket", ShortcutModifiers.Control),
     };
 }

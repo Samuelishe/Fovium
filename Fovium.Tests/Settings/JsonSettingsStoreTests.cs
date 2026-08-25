@@ -100,6 +100,7 @@ public sealed class JsonSettingsStoreTests : IDisposable
                 HighlightRadiusPhysicalPixels = 88,
                 DefaultMarkupColor = new PresentationColor(0xAB, 0xCD, 0xEF),
                 DefaultMarkupStrokePhysicalPixels = 9,
+                DefaultMarkupOpacity = 0.65,
             },
         };
 
@@ -283,7 +284,9 @@ public sealed class JsonSettingsStoreTests : IDisposable
 
         Assert.Equal(2, result.Settings.SchemaVersion);
         Assert.Equal(new ShortcutGesture("Z"), result.Settings.Shortcuts.Get(ViewerCommand.Peek100));
-        Assert.Equal(new ShortcutGesture("C"), result.Settings.Shortcuts.Get(ViewerCommand.BlinkCompare));
+        Assert.Equal(
+            new ShortcutGesture("C", ShortcutModifiers.Shift),
+            result.Settings.Shortcuts.Get(ViewerCommand.BlinkCompare));
         Assert.False(result.RequiresSave);
     }
 
@@ -308,7 +311,10 @@ public sealed class JsonSettingsStoreTests : IDisposable
         Assert.Equal(new ShortcutGesture("Z"), result.Settings.Shortcuts.Get(ViewerCommand.Fit));
         Assert.Equal(new ShortcutGesture("C"), result.Settings.Shortcuts.Get(ViewerCommand.ToggleMatte));
         Assert.Null(result.Settings.Shortcuts.Get(ViewerCommand.Peek100));
-        Assert.Null(result.Settings.Shortcuts.Get(ViewerCommand.BlinkCompare));
+        Assert.Equal(
+            new ShortcutGesture("C", ShortcutModifiers.Shift),
+            result.Settings.Shortcuts.Get(ViewerCommand.BlinkCompare));
+        Assert.Null(result.Settings.Shortcuts.Get(ViewerCommand.ClearMarkup));
     }
 
     [Fact]
@@ -372,7 +378,7 @@ public sealed class JsonSettingsStoreTests : IDisposable
             new ShortcutGesture("Y", ShortcutModifiers.Control),
             result.Settings.Shortcuts.Get(ViewerCommand.MarkupRedo));
         Assert.Equal(
-            new ShortcutGesture("Delete", ShortcutModifiers.Control),
+            new ShortcutGesture("C"),
             result.Settings.Shortcuts.Get(ViewerCommand.ClearMarkup));
     }
 
@@ -405,7 +411,176 @@ public sealed class JsonSettingsStoreTests : IDisposable
             result.Settings.Shortcuts.Get(ViewerCommand.ToggleHighlight));
         Assert.Null(result.Settings.Shortcuts.Get(ViewerCommand.MarkupUndo));
         Assert.Null(result.Settings.Shortcuts.Get(ViewerCommand.MarkupRedo));
-        Assert.Null(result.Settings.Shortcuts.Get(ViewerCommand.ClearMarkup));
+        Assert.Equal(new ShortcutGesture("C"), result.Settings.Shortcuts.Get(ViewerCommand.ClearMarkup));
+    }
+
+    [Fact]
+    public async Task ExistingV2WithoutMarkupOpacityDefaultsToOpaqueWithoutLosingPresentation()
+    {
+        await WriteAsync("""
+            {
+              "schemaVersion": 2,
+              "presentation": {
+                "markupToolsEnabled": false,
+                "highlightColor": "#010203",
+                "highlightOpacity": 0.4,
+                "highlightRadiusPhysicalPixels": 70,
+                "defaultMarkupColor": "#AABBCC",
+                "defaultMarkupStrokePhysicalPixels": 11
+              }
+            }
+            """);
+
+        var result = await CreateStore().LoadAsync(CancellationToken.None);
+
+        Assert.False(result.Settings.Presentation.MarkupToolsEnabled);
+        Assert.Equal(new PresentationColor(1, 2, 3), result.Settings.Presentation.HighlightColor);
+        Assert.Equal(new PresentationColor(0xAA, 0xBB, 0xCC), result.Settings.Presentation.DefaultMarkupColor);
+        Assert.Equal(11, result.Settings.Presentation.DefaultMarkupStrokePhysicalPixels);
+        Assert.Equal(1, result.Settings.Presentation.DefaultMarkupOpacity);
+        Assert.False(result.RequiresSave);
+    }
+
+    [Fact]
+    public async Task PreviousDefaultBlinkAndClearPairMigrates()
+    {
+        await WriteAsync("""
+            {
+              "schemaVersion": 2,
+              "shortcuts": {
+                "bindings": {
+                  "viewer.blinkCompare": { "key": "C", "modifiers": "None" },
+                  "viewer.clearMarkup": { "key": "Delete", "modifiers": "Control" }
+                }
+              }
+            }
+            """);
+
+        var result = await CreateStore().LoadAsync(CancellationToken.None);
+
+        Assert.Equal(
+            new ShortcutGesture("C", ShortcutModifiers.Shift),
+            result.Settings.Shortcuts.Get(ViewerCommand.BlinkCompare));
+        Assert.Equal(new ShortcutGesture("C"), result.Settings.Shortcuts.Get(ViewerCommand.ClearMarkup));
+        Assert.True(result.RequiresSave);
+    }
+
+    [Fact]
+    public async Task EvolvedBlinkAndClearDefaultsAreIdempotent()
+    {
+        await WriteAsync("""
+            {
+              "schemaVersion": 2,
+              "shortcuts": {
+                "bindings": {
+                  "viewer.blinkCompare": { "key": "C", "modifiers": "Shift" },
+                  "viewer.clearMarkup": { "key": "C", "modifiers": "None" }
+                }
+              }
+            }
+            """);
+
+        var result = await CreateStore().LoadAsync(CancellationToken.None);
+
+        Assert.Equal(
+            new ShortcutGesture("C", ShortcutModifiers.Shift),
+            result.Settings.Shortcuts.Get(ViewerCommand.BlinkCompare));
+        Assert.Equal(new ShortcutGesture("C"), result.Settings.Shortcuts.Get(ViewerCommand.ClearMarkup));
+        Assert.False(result.RequiresSave);
+    }
+
+    [Fact]
+    public async Task CustomizedBlinkIsPreservedWithoutEvolvingClear()
+    {
+        await WriteAsync("""
+            {
+              "schemaVersion": 2,
+              "shortcuts": {
+                "bindings": {
+                  "viewer.blinkCompare": { "key": "B", "modifiers": "None" },
+                  "viewer.clearMarkup": { "key": "Delete", "modifiers": "Control" }
+                }
+              }
+            }
+            """);
+
+        var result = await CreateStore().LoadAsync(CancellationToken.None);
+
+        Assert.Equal(new ShortcutGesture("B"), result.Settings.Shortcuts.Get(ViewerCommand.BlinkCompare));
+        Assert.Equal(
+            new ShortcutGesture("Delete", ShortcutModifiers.Control),
+            result.Settings.Shortcuts.Get(ViewerCommand.ClearMarkup));
+        Assert.False(result.RequiresSave);
+    }
+
+    [Fact]
+    public async Task CustomizedClearIsPreservedWithoutEvolvingBlink()
+    {
+        await WriteAsync("""
+            {
+              "schemaVersion": 2,
+              "shortcuts": {
+                "bindings": {
+                  "viewer.blinkCompare": { "key": "C", "modifiers": "None" },
+                  "viewer.clearMarkup": { "key": "X", "modifiers": "None" }
+                }
+              }
+            }
+            """);
+
+        var result = await CreateStore().LoadAsync(CancellationToken.None);
+
+        Assert.Equal(new ShortcutGesture("C"), result.Settings.Shortcuts.Get(ViewerCommand.BlinkCompare));
+        Assert.Equal(new ShortcutGesture("X"), result.Settings.Shortcuts.Get(ViewerCommand.ClearMarkup));
+        Assert.False(result.RequiresSave);
+    }
+
+    [Fact]
+    public async Task NewBracketDefaultsAreAssignedWhenFree()
+    {
+        await WriteAsync("""{ "schemaVersion": 2, "shortcuts": { "bindings": {} } }""");
+
+        var result = await CreateStore().LoadAsync(CancellationToken.None);
+
+        Assert.Equal(
+            new ShortcutGesture("OpenBracket"),
+            result.Settings.Shortcuts.Get(ViewerCommand.DecreaseMarkupThickness));
+        Assert.Equal(
+            new ShortcutGesture("CloseBracket"),
+            result.Settings.Shortcuts.Get(ViewerCommand.IncreaseMarkupThickness));
+        Assert.Equal(
+            new ShortcutGesture("OpenBracket", ShortcutModifiers.Control),
+            result.Settings.Shortcuts.Get(ViewerCommand.DecreaseMarkupOpacity));
+        Assert.Equal(
+            new ShortcutGesture("CloseBracket", ShortcutModifiers.Control),
+            result.Settings.Shortcuts.Get(ViewerCommand.IncreaseMarkupOpacity));
+    }
+
+    [Fact]
+    public async Task OccupiedBracketDefaultsBecomeUnassigned()
+    {
+        await WriteAsync("""
+            {
+              "schemaVersion": 2,
+              "shortcuts": {
+                "bindings": {
+                  "viewer.fit": { "key": "OpenBracket", "modifiers": "None" },
+                  "viewer.toggleMatte": { "key": "CloseBracket", "modifiers": "None" },
+                  "viewer.toggleHighlight": { "key": "OpenBracket", "modifiers": "Control" },
+                  "viewer.toggleMarkupTools": { "key": "CloseBracket", "modifiers": "Control" }
+                }
+              }
+            }
+            """);
+
+        var result = await CreateStore().LoadAsync(CancellationToken.None);
+
+        Assert.Equal(new ShortcutGesture("OpenBracket"), result.Settings.Shortcuts.Get(ViewerCommand.Fit));
+        Assert.Equal(new ShortcutGesture("CloseBracket"), result.Settings.Shortcuts.Get(ViewerCommand.ToggleMatte));
+        Assert.Null(result.Settings.Shortcuts.Get(ViewerCommand.DecreaseMarkupThickness));
+        Assert.Null(result.Settings.Shortcuts.Get(ViewerCommand.IncreaseMarkupThickness));
+        Assert.Null(result.Settings.Shortcuts.Get(ViewerCommand.DecreaseMarkupOpacity));
+        Assert.Null(result.Settings.Shortcuts.Get(ViewerCommand.IncreaseMarkupOpacity));
     }
 
     [Fact]

@@ -50,6 +50,42 @@ public sealed class AvaloniaShortcutGestureAdapterTests
     }
 
     [Theory]
+    [InlineData((int)Key.OemOpenBrackets, (int)KeyModifiers.None, "OpenBracket")]
+    [InlineData((int)Key.OemCloseBrackets, (int)KeyModifiers.None, "CloseBracket")]
+    [InlineData((int)Key.OemOpenBrackets, (int)KeyModifiers.Control, "OpenBracket")]
+    [InlineData((int)Key.OemCloseBrackets, (int)KeyModifiers.Control, "CloseBracket")]
+    public void PhysicalOemBracketKeysNormalizeWithoutProducedCharacter(
+        int keyValue,
+        int modifiersValue,
+        string expectedKey)
+    {
+        Assert.True(AvaloniaShortcutGestureAdapter.TryCreate(
+            (Key)keyValue,
+            (KeyModifiers)modifiersValue,
+            out var gesture));
+
+        Assert.Equal(expectedKey, gesture.Key);
+        var expectedModifiers = ((KeyModifiers)modifiersValue).HasFlag(KeyModifiers.Control)
+            ? ShortcutModifiers.Control
+            : ShortcutModifiers.None;
+        Assert.Equal(expectedModifiers, gesture.Modifiers);
+        var roundTrip = Assert.IsType<KeyGesture>(AvaloniaShortcutGestureAdapter.ToAvalonia(gesture));
+        Assert.Equal((Key)keyValue, roundTrip.Key);
+        Assert.Equal((KeyModifiers)modifiersValue, roundTrip.KeyModifiers);
+    }
+
+    [Fact]
+    public void BracketGesturesFormatAsFamiliarSymbols()
+    {
+        Assert.Equal("[", ShortcutGestureFormatter.Format(new ShortcutGesture("OpenBracket"), "none"));
+        Assert.Equal(
+            "Ctrl+]",
+            ShortcutGestureFormatter.Format(
+                new ShortcutGesture("CloseBracket", ShortcutModifiers.Control),
+                "none"));
+    }
+
+    [Theory]
     [InlineData((int)Key.Z, "Z")]
     [InlineData((int)Key.C, "C")]
     [InlineData((int)Key.NumPad1, "1")]

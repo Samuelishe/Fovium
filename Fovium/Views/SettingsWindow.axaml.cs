@@ -43,9 +43,11 @@ internal sealed partial class SettingsWindow : Window
     private readonly Slider _highlightOpacitySlider;
     private readonly Slider _highlightRadiusSlider;
     private readonly Slider _defaultStrokeSlider;
+    private readonly Slider _defaultMarkupOpacitySlider;
     private readonly TextBlock _highlightOpacityValue;
     private readonly TextBlock _highlightRadiusValue;
     private readonly TextBlock _defaultStrokeValue;
+    private readonly TextBlock _defaultMarkupOpacityValue;
     private readonly Dictionary<ViewerCommand, Button> _shortcutButtons = [];
     private ViewerCommand? _capturingCommand;
     private bool _initializing = true;
@@ -87,9 +89,11 @@ internal sealed partial class SettingsWindow : Window
         _highlightOpacitySlider = FindRequired<Slider>("HighlightOpacitySlider");
         _highlightRadiusSlider = FindRequired<Slider>("HighlightRadiusSlider");
         _defaultStrokeSlider = FindRequired<Slider>("DefaultStrokeSlider");
+        _defaultMarkupOpacitySlider = FindRequired<Slider>("DefaultMarkupOpacitySlider");
         _highlightOpacityValue = FindRequired<TextBlock>("HighlightOpacityValue");
         _highlightRadiusValue = FindRequired<TextBlock>("HighlightRadiusValue");
         _defaultStrokeValue = FindRequired<TextBlock>("DefaultStrokeValue");
+        _defaultMarkupOpacityValue = FindRequired<TextBlock>("DefaultMarkupOpacityValue");
 
         Title = localizer[UiStrings.SettingsTitle];
         viewingTab.Header = localizer[UiStrings.SettingsViewing];
@@ -109,6 +113,8 @@ internal sealed partial class SettingsWindow : Window
         FindRequired<TextBlock>("MarkupDefaultsHeading").Text = localizer[UiStrings.PresentationMarkupDefaults];
         FindRequired<TextBlock>("MarkupColorLabel").Text = localizer[UiStrings.PresentationMarkupColor];
         FindRequired<TextBlock>("DefaultStrokeLabel").Text = localizer[UiStrings.PresentationStroke];
+        FindRequired<TextBlock>("DefaultMarkupOpacityLabel").Text =
+            localizer[UiStrings.PresentationOpacity];
         FindRequired<TextBlock>("BrightnessLabel").Text = localizer[UiStrings.StageAmbientBrightness];
         FindRequired<TextBlock>("SaturationLabel").Text = localizer[UiStrings.StageAmbientSaturation];
         FindRequired<TextBlock>("BlurLabel").Text = localizer[UiStrings.StageAmbientBlur];
@@ -186,6 +192,7 @@ internal sealed partial class SettingsWindow : Window
         _highlightOpacitySlider.ValueChanged += OnPresentationSliderChanged;
         _highlightRadiusSlider.ValueChanged += OnPresentationSliderChanged;
         _defaultStrokeSlider.ValueChanged += OnPresentationSliderChanged;
+        _defaultMarkupOpacitySlider.ValueChanged += OnPresentationSliderChanged;
         FindRequired<Button>("EditHighlightColorButton").Click += async (_, _) =>
             await EditPresentationColorAsync(highlight: true);
         FindRequired<Button>("EditDefaultMarkupColorButton").Click += async (_, _) =>
@@ -427,6 +434,7 @@ internal sealed partial class SettingsWindow : Window
         _highlightOpacitySlider.Value = settings.Presentation.HighlightOpacity * 100;
         _highlightRadiusSlider.Value = settings.Presentation.HighlightRadiusPhysicalPixels;
         _defaultStrokeSlider.Value = settings.Presentation.DefaultMarkupStrokePhysicalPixels;
+        _defaultMarkupOpacitySlider.Value = settings.Presentation.DefaultMarkupOpacity * 100;
         SetSwatch(_highlightColorSwatch, settings.Presentation.HighlightColor);
         SetSwatch(_defaultMarkupColorSwatch, settings.Presentation.DefaultMarkupColor);
         UpdatePresentationValueText(settings.Presentation);
@@ -483,6 +491,10 @@ internal sealed partial class SettingsWindow : Window
         ViewerCommand.MarkupUndo => UiStrings.CommandMarkupUndo,
         ViewerCommand.MarkupRedo => UiStrings.CommandMarkupRedo,
         ViewerCommand.ClearMarkup => UiStrings.CommandClearMarkup,
+        ViewerCommand.DecreaseMarkupThickness => UiStrings.CommandDecreaseMarkupThickness,
+        ViewerCommand.IncreaseMarkupThickness => UiStrings.CommandIncreaseMarkupThickness,
+        ViewerCommand.DecreaseMarkupOpacity => UiStrings.CommandDecreaseMarkupOpacity,
+        ViewerCommand.IncreaseMarkupOpacity => UiStrings.CommandIncreaseMarkupOpacity,
         _ => throw new ArgumentOutOfRangeException(nameof(command)),
     }];
 
@@ -510,6 +522,7 @@ internal sealed partial class SettingsWindow : Window
             HighlightOpacity = _highlightOpacitySlider.Value / 100,
             HighlightRadiusPhysicalPixels = Math.Round(_highlightRadiusSlider.Value),
             DefaultMarkupStrokePhysicalPixels = Math.Round(_defaultStrokeSlider.Value),
+            DefaultMarkupOpacity = _defaultMarkupOpacitySlider.Value / 100,
         };
         UpdatePresentationValueText(presentation);
         await _settings.SetPresentationAsync(presentation);
@@ -548,6 +561,7 @@ internal sealed partial class SettingsWindow : Window
         _highlightOpacityValue.Text = $"{presentation.HighlightOpacity:P0}";
         _highlightRadiusValue.Text = $"{presentation.HighlightRadiusPhysicalPixels:0} px";
         _defaultStrokeValue.Text = $"{presentation.DefaultMarkupStrokePhysicalPixels:0} px";
+        _defaultMarkupOpacityValue.Text = $"{presentation.DefaultMarkupOpacity:P0}";
     }
 
     private T FindRequired<T>(string name)

@@ -9,6 +9,7 @@ public sealed class PresentationOverlaySessionTests
     [InlineData((int)MarkupTool.Brush, typeof(BrushMarkup))]
     [InlineData((int)MarkupTool.Line, typeof(LineMarkup))]
     [InlineData((int)MarkupTool.Rectangle, typeof(RectangleMarkup))]
+    [InlineData((int)MarkupTool.Ellipse, typeof(EllipseMarkup))]
     [InlineData((int)MarkupTool.Arrow, typeof(ArrowMarkup))]
     public void DrawToolsCommitSelectedColorAndSourceStroke(
         int toolValue,
@@ -19,6 +20,7 @@ public sealed class PresentationOverlaySessionTests
         session.SetActiveTool((MarkupTool)toolValue);
         session.SetActiveColor(color);
         session.SetActiveStrokePhysicalPixels(6);
+        session.SetActiveOpacity(0.65);
 
         Assert.True(session.BeginDrawing(new PointD(10, 20), physicalScale: 2));
         Assert.True(session.ContinueDrawing(new PointD(30, 40)));
@@ -29,6 +31,7 @@ public sealed class PresentationOverlaySessionTests
         Assert.IsType(expectedType, draw.Element);
         Assert.Equal(color, draw.Element.Color);
         Assert.Equal(3, draw.Element.StrokeWidthSource);
+        Assert.Equal(0.65, draw.Element.Opacity);
     }
 
     [Fact]
@@ -453,6 +456,291 @@ public sealed class PresentationOverlaySessionTests
 
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             new PresentationOverlaySession(PresentationSettings.Default, limits: invalid));
+    }
+
+    [Fact]
+    public void EllipseCreatesImageBoundOperationAndParticipatesInUndoRedo()
+    {
+        var session = CreateReadySession("A");
+        session.SetActiveTool(MarkupTool.Ellipse);
+
+        Assert.True(session.BeginDrawing(new PointD(10, 15), 1));
+        Assert.True(session.EndDrawing(new PointD(70, 55)));
+
+        var draw = Assert.IsType<DrawMarkupOperation>(
+            Assert.Single(session.GetRenderSnapshot("A").Operations));
+        var ellipse = Assert.IsType<EllipseMarkup>(draw.Element);
+        Assert.Equal(new PointD(10, 15), ellipse.Start);
+        Assert.Equal(new PointD(70, 55), ellipse.End);
+        Assert.Equal(2, session.GetRetainedPointCount("A"));
+
+        Assert.True(session.UndoCurrent());
+        Assert.Empty(session.GetRenderSnapshot("A").Operations);
+        Assert.True(session.RedoCurrent());
+        Assert.Same(draw, Assert.Single(session.GetRenderSnapshot("A").Operations));
+    }
+
+    [Fact]
+    public void DrawOpacityIsCapturedAndUndoRedoPreservesOriginalValues()
+    {
+        var session = CreateReadySession("A");
+        session.SetActiveOpacity(1);
+        DrawLine(session, 10);
+        session.SetActiveOpacity(0.30);
+        DrawLine(session, 30);
+        session.SetActiveOpacity(0.75);
+
+        var elements = session.GetRenderSnapshot("A").Operations
+            .Cast<DrawMarkupOperation>()
+            .Select(operation => operation.Element)
+            .ToArray();
+        Assert.Equal(1, elements[0].Opacity);
+        Assert.Equal(0.30, elements[1].Opacity);
+
+        Assert.True(session.UndoCurrent());
+        Assert.True(session.RedoCurrent());
+        elements = session.GetRenderSnapshot("A").Operations
+            .Cast<DrawMarkupOperation>()
+            .Select(operation => operation.Element)
+            .ToArray();
+        Assert.Equal([1, 0.30], elements.Select(element => element.Opacity));
+    }
+
+    [Fact]
+    public void GestureCapturesColorOpacityAndStrokeAtBegin()
+    {
+        var session = CreateReadySession("A");
+        var capturedColor = new PresentationColor(10, 20, 30);
+        session.SetActiveTool(MarkupTool.Line);
+        session.SetActiveColor(capturedColor);
+        session.SetActiveStrokePhysicalPixels(8);
+        session.SetActiveOpacity(0.60);
+        session.BeginDrawing(new PointD(10, 10), physicalScale: 2);
+
+        session.SetActiveColor(new PresentationColor(90, 80, 70));
+        session.SetActiveStrokePhysicalPixels(20);
+        session.SetActiveOpacity(0.20);
+        session.EndDrawing(new PointD(40, 10));
+
+        var element = Assert.IsType<LineMarkup>(
+            Assert.IsType<DrawMarkupOperation>(
+                Assert.Single(session.GetRenderSnapshot("A").Operations)).Element);
+        Assert.Equal(capturedColor, element.Color);
+        Assert.Equal(4, element.StrokeWidthSource);
+        Assert.Equal(0.60, element.Opacity);
+    }
+
+    [Fact]
+    public void UnrelatedPresentationSettingsDoNotResetActiveDrawingStyle()
+    {
+        var session = CreateReadySession("A");
+        var activeColor = new PresentationColor(1, 2, 3);
+        session.SetActiveColor(activeColor);
+        session.SetActiveStrokePhysicalPixels(17);
+        session.SetActiveOpacity(0.45);
+
+        session.ApplySettings(PresentationSettings.Default with
+        {
+            HighlightRadiusPhysicalPixels = 100,
+            HighlightColor = new PresentationColor(9, 8, 7),
+        });
+
+        Assert.Equal(activeColor, session.ActiveColor);
+        Assert.Equal(17, session.ActiveStrokePhysicalPixels);
+        Assert.Equal(0.45, session.ActiveOpacity);
+    }
+
+    [Fact]
+    public void DeliberateDefaultStyleChangesUpdateOnlyTheirActiveValues()
+    {
+        var session = CreateReadySession("A");
+        var color = new PresentationColor(10, 20, 30);
+
+        session.ApplySettings(PresentationSettings.Default with
+        {
+            DefaultMarkupColor = color,
+            DefaultMarkupStrokePhysicalPixels = 12,
+            DefaultMarkupOpacity = 0.55,
+        });
+
+        Assert.Equal(color, session.ActiveColor);
+        Assert.Equal(12, session.ActiveStrokePhysicalPixels);
+        Assert.Equal(0.55, session.ActiveOpacity);
+    }
+
+    [Theory]
+    [InlineData((int)MarkupTool.Line)]
+    [InlineData((int)MarkupTool.Arrow)]
+    public void ShiftConstrainsLineAndArrowToNearest45Degrees(int toolValue)
+    {
+        var session = CreateReadySession("A");
+        session.SetActiveTool((MarkupTool)toolValue);
+        var start = new PointD(20, 20);
+
+        session.BeginDrawing(start, 1, new PixelSize(100, 100));
+        session.ContinueDrawing(new PointD(50, 30), MarkupDrawingModifiers.Constrain);
+        var preview = Assert.IsType<DrawMarkupOperation>(session.GetRenderSnapshot("A").Draft);
+        var previewEnd = preview.Element switch
+        {
+            LineMarkup line => line.End,
+            ArrowMarkup arrow => arrow.End,
+            _ => throw new Xunit.Sdk.XunitException("Expected constrained line-like draft."),
+        };
+
+        Assert.Equal(20, previewEnd.Y, 8);
+        Assert.Equal(20 + Math.Sqrt(1000), previewEnd.X, 8);
+        Assert.True(session.EndDrawing(
+            new PointD(50, 30),
+            MarkupDrawingModifiers.Constrain));
+        Assert.Single(session.GetRenderSnapshot("A").Operations);
+    }
+
+    [Theory]
+    [InlineData((int)MarkupTool.Rectangle)]
+    [InlineData((int)MarkupTool.Ellipse)]
+    public void ShiftConstrainsRectangleAndEllipseToEqualBounds(int toolValue)
+    {
+        var session = CreateReadySession("A");
+        session.SetActiveTool((MarkupTool)toolValue);
+        var start = new PointD(20, 20);
+
+        session.BeginDrawing(start, 1, new PixelSize(100, 100));
+        session.EndDrawing(new PointD(50, 30), MarkupDrawingModifiers.Constrain);
+
+        var element = Assert.IsType<DrawMarkupOperation>(
+            Assert.Single(session.GetRenderSnapshot("A").Operations)).Element;
+        var end = element switch
+        {
+            RectangleMarkup rectangle => rectangle.End,
+            EllipseMarkup ellipse => ellipse.End,
+            _ => throw new Xunit.Sdk.XunitException("Expected constrained bounded shape."),
+        };
+        Assert.Equal(new PointD(50, 50), end);
+    }
+
+    [Fact]
+    public void ConstrainedShapeClipsAlongRayAndRetainsSquareAtSourceBoundary()
+    {
+        var session = CreateReadySession("A");
+        session.SetActiveTool(MarkupTool.Ellipse);
+        session.BeginDrawing(new PointD(80, 70), 1, new PixelSize(100, 80));
+
+        session.EndDrawing(new PointD(100, 20), MarkupDrawingModifiers.Constrain);
+
+        var ellipse = Assert.IsType<EllipseMarkup>(
+            Assert.IsType<DrawMarkupOperation>(
+                Assert.Single(session.GetRenderSnapshot("A").Operations)).Element);
+        Assert.Equal(new PointD(100, 50), ellipse.End);
+        Assert.Equal(
+            Math.Abs(ellipse.End.X - ellipse.Start.X),
+            Math.Abs(ellipse.End.Y - ellipse.Start.Y));
+    }
+
+    [Fact]
+    public void ConstrainedBrushPreviewAndCommitUseTwoPointSnappedBrush()
+    {
+        var session = CreateReadySession("A");
+        session.SetActiveTool(MarkupTool.Brush);
+        session.BeginDrawing(new PointD(10, 10), 1);
+        session.ContinueDrawing(new PointD(18, 13));
+        session.ContinueDrawing(new PointD(30, 30), MarkupDrawingModifiers.Constrain);
+
+        var preview = Assert.IsType<BrushMarkup>(
+            Assert.IsType<DrawMarkupOperation>(session.GetRenderSnapshot("A").Draft).Element);
+        Assert.Equal(2, preview.Points.Count);
+        Assert.Equal(new PointD(10, 10), preview.Points[0]);
+        Assert.Equal(30, preview.Points[1].X, 8);
+        Assert.Equal(30, preview.Points[1].Y, 8);
+
+        Assert.True(session.EndDrawing(
+            new PointD(30, 30),
+            MarkupDrawingModifiers.Constrain));
+        var committed = Assert.IsType<BrushMarkup>(
+            Assert.IsType<DrawMarkupOperation>(
+                Assert.Single(session.GetRenderSnapshot("A").Operations)).Element);
+        Assert.Equal(2, committed.Points.Count);
+        Assert.Equal(1, session.GetActiveOperationCount("A"));
+    }
+
+    [Fact]
+    public void ReleasingShiftRestoresCollectedFreehandBrushDraftBeforeCommit()
+    {
+        var session = CreateReadySession("A");
+        session.SetActiveTool(MarkupTool.Brush);
+        session.BeginDrawing(new PointD(10, 10), 1);
+        session.ContinueDrawing(new PointD(14, 12));
+        session.ContinueDrawing(new PointD(20, 20), MarkupDrawingModifiers.Constrain);
+        session.ContinueDrawing(new PointD(23, 18), MarkupDrawingModifiers.None);
+
+        var preview = Assert.IsType<BrushMarkup>(
+            Assert.IsType<DrawMarkupOperation>(session.GetRenderSnapshot("A").Draft).Element);
+        Assert.Equal(4, preview.Points.Count);
+        Assert.Equal(new PointD(20, 20), preview.Points[2]);
+
+        Assert.True(session.EndDrawing(new PointD(28, 21), MarkupDrawingModifiers.None));
+        var committed = Assert.IsType<BrushMarkup>(
+            Assert.IsType<DrawMarkupOperation>(
+                Assert.Single(session.GetRenderSnapshot("A").Operations)).Element);
+        Assert.Equal(5, committed.Points.Count);
+        Assert.Equal(new PointD(28, 21), committed.Points[^1]);
+    }
+
+    [Fact]
+    public void EraserIgnoresShiftAndRemainsFreehand()
+    {
+        var session = CreateReadySession("A");
+        session.SetActiveTool(MarkupTool.Eraser);
+        session.BeginDrawing(new PointD(10, 10), 1);
+        session.ContinueDrawing(new PointD(14, 18), MarkupDrawingModifiers.Constrain);
+        session.EndDrawing(new PointD(20, 15), MarkupDrawingModifiers.Constrain);
+
+        var erase = Assert.IsType<EraseMarkupOperation>(
+            Assert.Single(session.GetRenderSnapshot("A").Operations));
+        Assert.Equal(3, erase.Points.Count);
+        Assert.Equal(new PointD(14, 18), erase.Points[1]);
+        Assert.Equal(new PointD(20, 15), erase.Points[2]);
+    }
+
+    [Fact]
+    public void MarkupStyleCommandsClampAndDoNothingWhileDockIsHidden()
+    {
+        var session = new PresentationOverlaySession(PresentationSettings.Default);
+        session.SelectImage("A");
+
+        Assert.False(session.AdjustActiveStrokePhysicalPixels(1));
+        Assert.False(session.AdjustActiveOpacity(-0.05));
+        Assert.Equal(4, session.Settings.DefaultMarkupStrokePhysicalPixels);
+        Assert.Equal(1, session.Settings.DefaultMarkupOpacity);
+        Assert.Equal(4, session.ActiveStrokePhysicalPixels);
+        Assert.Equal(1, session.ActiveOpacity);
+
+        Assert.True(session.ToggleMarkupTools());
+        Assert.True(session.AdjustActiveStrokePhysicalPixels(1));
+        Assert.True(session.AdjustActiveOpacity(-0.05));
+        Assert.Equal(5, session.ActiveStrokePhysicalPixels);
+        Assert.Equal(0.95, session.ActiveOpacity, 8);
+
+        session.SetActiveStrokePhysicalPixels(PresentationSettings.MaximumMarkupStrokePhysicalPixels);
+        session.SetActiveOpacity(PresentationSettings.MinimumMarkupOpacity);
+        Assert.False(session.AdjustActiveStrokePhysicalPixels(1));
+        Assert.False(session.AdjustActiveOpacity(-0.05));
+    }
+
+    [Fact]
+    public void ClearCommandRequiresVisibleMarkupToolsButDelegatesToUndoableClear()
+    {
+        var session = CreateReadySession("A");
+        DrawLine(session);
+        Assert.False(session.ToggleMarkupTools());
+
+        Assert.False(session.ClearCurrentFromCommand());
+        Assert.Single(session.GetRenderSnapshot("A").Operations);
+
+        Assert.True(session.ToggleMarkupTools());
+        Assert.True(session.ClearCurrentFromCommand());
+        Assert.IsType<ClearMarkupOperation>(session.GetRenderSnapshot("A").Operations[^1]);
+        Assert.True(session.UndoCurrent());
+        Assert.Single(session.GetRenderSnapshot("A").Operations);
     }
 
     private static PresentationOverlaySession CreateReadySession(

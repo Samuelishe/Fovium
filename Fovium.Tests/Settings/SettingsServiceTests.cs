@@ -139,14 +139,18 @@ public sealed class SettingsServiceTests
     }
 
     [Fact]
-    public async Task ResetShortcutsRestoresMarkupHistoryDefaults()
+    public async Task ResetShortcutsRestoresR5F2Defaults()
     {
         var store = new RecordingSettingsStore();
         using var service = new SettingsService(store);
         await service.SetShortcutsAsync(ShortcutSettings.Default
             .WithBinding(ViewerCommand.MarkupUndo, null)
             .WithBinding(ViewerCommand.MarkupRedo, null)
-            .WithBinding(ViewerCommand.ClearMarkup, null));
+            .WithBinding(ViewerCommand.ClearMarkup, null)
+            .WithBinding(ViewerCommand.DecreaseMarkupThickness, null)
+            .WithBinding(ViewerCommand.IncreaseMarkupThickness, null)
+            .WithBinding(ViewerCommand.DecreaseMarkupOpacity, null)
+            .WithBinding(ViewerCommand.IncreaseMarkupOpacity, null));
 
         await service.ResetShortcutsAsync();
 
@@ -157,8 +161,23 @@ public sealed class SettingsServiceTests
             new ShortcutGesture("Y", ShortcutModifiers.Control),
             service.Current.Shortcuts.Get(ViewerCommand.MarkupRedo));
         Assert.Equal(
-            new ShortcutGesture("Delete", ShortcutModifiers.Control),
+            new ShortcutGesture("C"),
             service.Current.Shortcuts.Get(ViewerCommand.ClearMarkup));
+        Assert.Equal(
+            new ShortcutGesture("C", ShortcutModifiers.Shift),
+            service.Current.Shortcuts.Get(ViewerCommand.BlinkCompare));
+        Assert.Equal(
+            new ShortcutGesture("OpenBracket"),
+            service.Current.Shortcuts.Get(ViewerCommand.DecreaseMarkupThickness));
+        Assert.Equal(
+            new ShortcutGesture("CloseBracket"),
+            service.Current.Shortcuts.Get(ViewerCommand.IncreaseMarkupThickness));
+        Assert.Equal(
+            new ShortcutGesture("OpenBracket", ShortcutModifiers.Control),
+            service.Current.Shortcuts.Get(ViewerCommand.DecreaseMarkupOpacity));
+        Assert.Equal(
+            new ShortcutGesture("CloseBracket", ShortcutModifiers.Control),
+            service.Current.Shortcuts.Get(ViewerCommand.IncreaseMarkupOpacity));
     }
 
     [Fact]
@@ -173,6 +192,7 @@ public sealed class SettingsServiceTests
             HighlightRadiusPhysicalPixels = 77,
             DefaultMarkupColor = new PresentationColor(40, 50, 60),
             DefaultMarkupStrokePhysicalPixels = 7,
+            DefaultMarkupOpacity = 0.35,
         };
 
         await service.SetPresentationAsync(presentation);

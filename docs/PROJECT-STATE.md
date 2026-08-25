@@ -7,13 +7,13 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R5-F1 is complete. The project version is `0.0.0.0011`; its semantics and accepted checkpoint history are owned by [`VERSIONING.md`](VERSIONING.md).
+R5-F2 is complete. The project version is `0.0.0.0012`; its semantics and accepted checkpoint history are owned by [`VERSIONING.md`](VERSIONING.md).
 
 The retained R0 probe remains experimental evidence under `experiments/Fovium.RenderProbe`. Production code is the single `Fovium` assembly and does not depend on the experiment. Local Windows acceptance used one `RenderScaling = 1.00` display; no GitHub-hosted CI or Linux/macOS runtime result is claimed by this stage.
 
 ## Current focus
 
-Owner review of true partial erasing and per-image markup history. The expected next bounded stage is R5-F2 for markup shapes, opacity, and Shift constraints only after acceptance; do not begin it or metadata/context-menu work automatically.
+Owner review of markup shapes, opacity, and constrained drawing. The expected next bounded stage is R5-F3 for contextual drawing shortcuts and presentation UI polish only after acceptance; do not begin it or metadata/context-menu work automatically.
 
 ## Implemented application functionality
 
@@ -31,18 +31,20 @@ Owner review of true partial erasing and per-image markup history. The expected 
 - Bounded asynchronous blur-only Ambient preparation from the oriented decoded photograph; render-time brightness/saturation; adjacent preparation; byte-accounted cache ownership; and matching-identity publication.
 - Persistent command shortcuts with locale-independent identifiers, conflict confirmation, unassigned state, reset, and reserved `Esc` behavior. Defaults add `+`, `-`, `0`, `1`, and `M` viewer controls.
 - Whole-viewport Peek 100% on configurable hold `Z`, anchored to the source point beneath the cursor with deterministic Stage fallback, temporary pan, and exact semantic Fit/manual restoration.
-- Non-navigating Blink Compare on configurable hold `C`, acquiring the previous viable image through retained inspection leases while preserving canonical sequence/index/generation state.
+- Non-navigating Blink Compare on configurable hold `Shift+C`, acquiring the previous viable image through retained inspection leases while preserving canonical sequence/index/generation state.
 - One application-level transient inspection mode, primary-key release ownership, repeat suppression, persistent-command/Esc/focus-loss cancellation, and stale-result rejection.
 - Temporary Blink Stage presentation with unchanged solid backgrounds and Matte, matching prepared comparison Ambient when available, and Black fallback rather than mismatched Ambient.
 - Configurable cursor highlight on `H`, rendered as a physical-radius translucent circle over photograph or Stage while hiding the system cursor only inside the viewport.
-- Configurable presenter dock on `P` with Brush, true partial Eraser, Line, Rectangle, Arrow, color, shared stroke/eraser size, Undo, Redo, and undoable Clear; its mouse-only controls do not steal viewer shortcut focus.
+- Configurable presenter dock on `P` with Brush, true partial Eraser, Line, Rectangle, Ellipse, Arrow, color, immutable per-draw opacity, shared stroke/eraser size, Undo, Redo, and undoable Clear; its mouse-only controls do not steal viewer shortcut focus.
 - Bounded per-image ordered markup-operation history in oriented source coordinates, transformed by the current Fit/manual/100%/pan/fullscreen geometry and retained only for the current in-memory sequence session.
 - An isolated destination-bounded transparent markup compositor whose Clear-blended erase operations affect markup only, never the photograph, Stage, or Matte.
-- Configurable `Ctrl+Z`, `Ctrl+Y`, and `Ctrl+Delete` commands for per-image Undo, Redo, and undoable Clear, with conflict-safe additive defaults for existing schema-v2 settings.
+- Project-owned Shift constraints: Line/Arrow/Brush snap to the nearest 45-degree direction, Rectangle becomes a square, and Ellipse becomes a circle without storing viewport coordinates.
+- Contextual `[`/`]` thickness and `Ctrl+[`/`Ctrl+]` opacity adjustments while the presenter dock is visible; Clear defaults to `C`, and its previous untouched `Ctrl+Delete`/Blink `C` pair evolves idempotently to Clear `C`/Blink `Shift+C`.
+- Configurable `Ctrl+Z` and `Ctrl+Y` commands for per-image Undo/Redo plus conflict-safe schema-v2 additive defaults and customization preservation for all new/evolved shortcuts.
 - Peek renders the canonical image's overlay; Blink selects only the comparison image's own overlay and cannot leak current markup onto it.
 - Traversal-excluded local imaging corpus policy plus hardened async session shutdown/cache release.
 
-Markup save/export, text/ellipse/highlighter/opacity/Shift constraints/contextual tool shortcuts/edit handles/layers, selected-reference A/B comparison, language/theme selection, metadata UI, broad codecs, file associations/thumbnails, and full monitor-aware ICC are not implemented.
+Markup save/export, text, dedicated Highlighter, contextual tool-selection shortcuts, dock/Controls grouping polish, edit handles/layers, selected-reference A/B comparison, language/theme selection, metadata UI, broad codecs, file associations/thumbnails, and full monitor-aware ICC are not implemented.
 
 ## Active blockers
 
@@ -52,6 +54,6 @@ Markup save/export, text/ellipse/highlighter/opacity/Shift constraints/contextua
 - Broader codec support and a huge/tiled-image strategy remain unselected.
 - GitHub Actions portability is configured but cannot be claimed as passing until the workflow runs remotely.
 - R4 runtime inspection evidence is Windows-only at `RenderScaling = 1.00`; precise cold non-cached Blink latency and real fractional-DPI interaction still need representative owner hardware evidence.
-- R5/R5-F1 pointer, eraser, and rendering evidence is Windows-only at `RenderScaling = 1.00`; fractional-DPI, Linux, and macOS runtime feel remain unvalidated.
+- R5 through R5-F2 pointer, eraser, constrained-drawing, opacity, and rendering evidence is Windows-only at `RenderScaling = 1.00`; fractional-DPI, Linux, and macOS runtime feel remain unvalidated.
 
 Open technical risks are tracked in [`KNOWN-PROBLEMS.md`](KNOWN-PROBLEMS.md). Directional stages are in [`ROADMAP.md`](ROADMAP.md). Git remains the authority for branch, HEAD, and worktree status.

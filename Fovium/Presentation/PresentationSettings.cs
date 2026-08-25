@@ -50,6 +50,8 @@ internal sealed record PresentationSettings
     public const double MaximumHighlightRadiusPhysicalPixels = 256;
     public const double MinimumMarkupStrokePhysicalPixels = 1;
     public const double MaximumMarkupStrokePhysicalPixels = 32;
+    public const double MinimumMarkupOpacity = 0.05;
+    public const double MaximumMarkupOpacity = 1;
 
     public bool MarkupToolsEnabled { get; init; } = true;
 
@@ -62,6 +64,8 @@ internal sealed record PresentationSettings
     public PresentationColor DefaultMarkupColor { get; init; } = new(0xFF, 0x45, 0x45);
 
     public double DefaultMarkupStrokePhysicalPixels { get; init; } = 4;
+
+    public double DefaultMarkupOpacity { get; init; } = 1;
 
     public static PresentationSettings Default { get; } = new();
 
@@ -82,6 +86,11 @@ internal sealed record PresentationSettings
             Default.DefaultMarkupStrokePhysicalPixels,
             MinimumMarkupStrokePhysicalPixels,
             MaximumMarkupStrokePhysicalPixels),
+        DefaultMarkupOpacity = NormalizeFinite(
+            DefaultMarkupOpacity,
+            Default.DefaultMarkupOpacity,
+            MinimumMarkupOpacity,
+            MaximumMarkupOpacity),
     };
 
     private static double NormalizeFinite(double value, double fallback, double minimum, double maximum) =>

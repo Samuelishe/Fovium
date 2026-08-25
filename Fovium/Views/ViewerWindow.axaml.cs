@@ -674,7 +674,13 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
 
     void IViewerCommandTarget.RedoMarkup() => _presentation.RedoCurrent();
 
-    void IViewerCommandTarget.ClearMarkup() => _presentation.ClearCurrent();
+    void IViewerCommandTarget.ClearMarkup() => _presentation.ClearCurrentFromCommand();
+
+    void IViewerCommandTarget.AdjustMarkupThickness(double deltaPhysicalPixels) =>
+        _presentation.AdjustActiveStrokePhysicalPixels(deltaPhysicalPixels);
+
+    void IViewerCommandTarget.AdjustMarkupOpacity(double delta) =>
+        _presentation.AdjustActiveOpacity(delta);
 
     private void ConfigureMarkupTools()
     {
@@ -682,6 +688,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         MarkupEraserButton.Click += (_, _) => SelectMarkupTool(MarkupTool.Eraser);
         MarkupLineButton.Click += (_, _) => SelectMarkupTool(MarkupTool.Line);
         MarkupRectangleButton.Click += (_, _) => SelectMarkupTool(MarkupTool.Rectangle);
+        MarkupEllipseButton.Click += (_, _) => SelectMarkupTool(MarkupTool.Ellipse);
         MarkupArrowButton.Click += (_, _) => SelectMarkupTool(MarkupTool.Arrow);
         MarkupColorButton.Click += async (_, _) => await EditMarkupColorAsync();
         MarkupStrokeSlider.ValueChanged += (_, _) =>
@@ -689,6 +696,11 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             _presentation.SetActiveStrokePhysicalPixels(MarkupStrokeSlider.Value);
             MarkupStrokeValue.Text = Math.Round(MarkupStrokeSlider.Value)
                 .ToString(System.Globalization.CultureInfo.InvariantCulture);
+        };
+        MarkupOpacitySlider.ValueChanged += (_, _) =>
+        {
+            _presentation.SetActiveOpacity(MarkupOpacitySlider.Value / 100);
+            MarkupOpacityValue.Text = $"{_presentation.ActiveOpacity:P0}";
         };
         MarkupUndoButton.Click += (_, _) => _presentation.UndoCurrent();
         MarkupRedoButton.Click += (_, _) => _presentation.RedoCurrent();
@@ -699,9 +711,11 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         MarkupEraserButton.Content = _localizer[UiStrings.PresentationEraser];
         MarkupLineButton.Content = _localizer[UiStrings.PresentationLine];
         MarkupRectangleButton.Content = _localizer[UiStrings.PresentationRectangle];
+        MarkupEllipseButton.Content = _localizer[UiStrings.PresentationEllipse];
         MarkupArrowButton.Content = _localizer[UiStrings.PresentationArrow];
         MarkupColorText.Text = _localizer[UiStrings.PresentationColor];
         MarkupStrokeText.Text = _localizer[UiStrings.PresentationStroke];
+        MarkupOpacityText.Text = _localizer[UiStrings.PresentationOpacity];
         MarkupClearButton.Content = _localizer[UiStrings.PresentationClear];
         MarkupUndoButton.Content = _localizer[UiStrings.PresentationUndo];
         MarkupRedoButton.Content = _localizer[UiStrings.PresentationRedo];
@@ -742,6 +756,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         MarkupEraserButton.Classes.Set("accent", _presentation.ActiveTool == MarkupTool.Eraser);
         MarkupLineButton.Classes.Set("accent", _presentation.ActiveTool == MarkupTool.Line);
         MarkupRectangleButton.Classes.Set("accent", _presentation.ActiveTool == MarkupTool.Rectangle);
+        MarkupEllipseButton.Classes.Set("accent", _presentation.ActiveTool == MarkupTool.Ellipse);
         MarkupArrowButton.Classes.Set("accent", _presentation.ActiveTool == MarkupTool.Arrow);
         MarkupUndoButton.IsEnabled = _presentation.CanUndo;
         MarkupRedoButton.IsEnabled = _presentation.CanRedo;
@@ -755,5 +770,11 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
 
         MarkupStrokeValue.Text = Math.Round(_presentation.ActiveStrokePhysicalPixels)
             .ToString(System.Globalization.CultureInfo.InvariantCulture);
+        if (Math.Abs(MarkupOpacitySlider.Value - _presentation.ActiveOpacity * 100) > 0.001)
+        {
+            MarkupOpacitySlider.Value = _presentation.ActiveOpacity * 100;
+        }
+
+        MarkupOpacityValue.Text = $"{_presentation.ActiveOpacity:P0}";
     }
 }
