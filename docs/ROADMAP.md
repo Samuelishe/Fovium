@@ -47,9 +47,13 @@ Accepted outcome: add persisted DPI-aware Matte width plus Solid, Rounded, Soft,
 
 Accepted outcome: add configurable press-and-hold whole-viewport Peek 100% and previous-viable Blink Compare on the shared viewport/session models. Peek preserves cursor/source anchoring and restores semantic view state; Blink uses retained read-only acquisition without changing canonical navigation, and both cancel safely on lost hold authority.
 
-## R5 — Settings / metadata / context-menu polish
+## R5 — Presenter overlay and cursor highlight
 
-Add unobtrusive metadata access, coherent context-menu polish, broader Settings controls, performance policy controls, and requested temporary diagnostics without persistent viewport chrome.
+Accepted outcome: add configurable cursor highlight plus an on-demand Brush/Line/Rectangle/Arrow dock. Markup is bounded, image-bound in oriented source space, session-local, memory-only, compatible with viewport changes and Peek/Blink, and never writes source or sidecar data.
+
+## R6 — Metadata / context-menu polish
+
+Potential next bounded stage: unobtrusive metadata access and coherent context-menu polish. It requires explicit owner acceptance after R5 review; do not expand presenter markup into editing/export work.
 
 ## Later / separate platform milestones
 

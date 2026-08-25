@@ -7,13 +7,13 @@ public sealed class FoviumVersionTests
     [Fact]
     public void InformationalVersionPreservesFourDigitBuild()
     {
-        Assert.Equal("0.0.0.0009", FoviumVersion.Display);
+        Assert.Equal("0.0.0.0010", FoviumVersion.Display);
     }
 
     [Fact]
     public void AssemblyAndFileVersionsUseNumericBuild()
     {
-        Assert.Equal("0.0.0.9", FoviumVersion.AssemblyNumeric);
-        Assert.Equal("0.0.0.9", FoviumVersion.FileNumeric);
+        Assert.Equal("0.0.0.10", FoviumVersion.AssemblyNumeric);
+        Assert.Equal("0.0.0.10", FoviumVersion.FileNumeric);
     }
 }

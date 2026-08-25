@@ -17,6 +17,8 @@ public sealed class ShortcutDefaultsTests
     [InlineData((int)ViewerCommand.Settings, "Comma", (int)ShortcutModifiers.Control)]
     [InlineData((int)ViewerCommand.Peek100, "Z", (int)ShortcutModifiers.None)]
     [InlineData((int)ViewerCommand.BlinkCompare, "C", (int)ShortcutModifiers.None)]
+    [InlineData((int)ViewerCommand.ToggleHighlight, "H", (int)ShortcutModifiers.None)]
+    [InlineData((int)ViewerCommand.ToggleMarkupTools, "P", (int)ShortcutModifiers.None)]
     public void ExactDefaultBindingsUseProjectOwnedGestures(
         int commandValue,
         string key,
@@ -44,6 +46,8 @@ public sealed class ShortcutDefaultsTests
         Assert.Equal("viewer.settings", ViewerCommands.GetId(ViewerCommand.Settings));
         Assert.Equal("viewer.peek100", ViewerCommands.GetId(ViewerCommand.Peek100));
         Assert.Equal("viewer.blinkCompare", ViewerCommands.GetId(ViewerCommand.BlinkCompare));
+        Assert.Equal("viewer.toggleHighlight", ViewerCommands.GetId(ViewerCommand.ToggleHighlight));
+        Assert.Equal("viewer.toggleMarkupTools", ViewerCommands.GetId(ViewerCommand.ToggleMarkupTools));
         Assert.Equal(ViewerCommandTrigger.Hold, ViewerCommands.GetDefinition(ViewerCommand.Peek100).Trigger);
         Assert.Equal(ViewerCommandTrigger.Hold, ViewerCommands.GetDefinition(ViewerCommand.BlinkCompare).Trigger);
         Assert.All(

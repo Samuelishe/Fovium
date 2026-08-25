@@ -1,6 +1,7 @@
 namespace Fovium.Settings;
 
 using Fovium.Input;
+using Fovium.Presentation;
 using Fovium.Stage;
 
 internal enum ImageChangeViewPolicy
@@ -22,6 +23,8 @@ internal sealed record FoviumSettings
 
     public ShortcutSettings Shortcuts { get; init; } = ShortcutSettings.Default;
 
+    public PresentationSettings Presentation { get; init; } = PresentationSettings.Default;
+
     public static FoviumSettings Default { get; } = new();
 
     public FoviumSettings Normalize() => this with
@@ -32,5 +35,6 @@ internal sealed record FoviumSettings
             : ImageChangeViewPolicy.KeepCurrentScale,
         Stage = (Stage ?? StageSettings.Default).Normalize(),
         Shortcuts = (Shortcuts ?? ShortcutSettings.Default).Normalize(),
+        Presentation = (Presentation ?? PresentationSettings.Default).Normalize(),
     };
 }

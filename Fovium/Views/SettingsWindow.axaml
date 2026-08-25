@@ -71,6 +71,46 @@
         </StackPanel>
       </ScrollViewer>
     </TabItem>
+    <TabItem x:Name="PresentationTab">
+      <ScrollViewer>
+        <StackPanel Margin="12,18" Spacing="12">
+          <CheckBox x:Name="EnableMarkupOption" />
+          <Separator Margin="0,4" />
+          <TextBlock x:Name="HighlightHeading" FontSize="18" FontWeight="SemiBold" />
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14" RowDefinitions="Auto,Auto,Auto" RowSpacing="12">
+            <TextBlock x:Name="HighlightColorLabel" VerticalAlignment="Center" />
+            <Grid Grid.Column="1" ColumnDefinitions="Auto,Auto" ColumnSpacing="10" HorizontalAlignment="Left">
+              <Border x:Name="HighlightColorSwatch" Width="40" Height="24" CornerRadius="3" BorderThickness="1" />
+              <Button x:Name="EditHighlightColorButton" Grid.Column="1" Width="34" Height="28" Content="…" />
+            </Grid>
+            <TextBlock x:Name="HighlightOpacityLabel" Grid.Row="1" VerticalAlignment="Center" />
+            <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+              <Slider x:Name="HighlightOpacitySlider" MinWidth="220" Minimum="5" Maximum="90" TickFrequency="1" />
+              <TextBlock x:Name="HighlightOpacityValue" Grid.Column="1" Width="48" TextAlignment="Right" VerticalAlignment="Center" />
+            </Grid>
+            <TextBlock x:Name="HighlightRadiusLabel" Grid.Row="2" VerticalAlignment="Center" />
+            <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+              <Slider x:Name="HighlightRadiusSlider" MinWidth="220" Minimum="8" Maximum="256" TickFrequency="1" />
+              <TextBlock x:Name="HighlightRadiusValue" Grid.Column="1" Width="58" TextAlignment="Right" VerticalAlignment="Center" />
+            </Grid>
+          </Grid>
+          <Separator Margin="0,4" />
+          <TextBlock x:Name="MarkupDefaultsHeading" FontSize="18" FontWeight="SemiBold" />
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14" RowDefinitions="Auto,Auto" RowSpacing="12">
+            <TextBlock x:Name="MarkupColorLabel" VerticalAlignment="Center" />
+            <Grid Grid.Column="1" ColumnDefinitions="Auto,Auto" ColumnSpacing="10" HorizontalAlignment="Left">
+              <Border x:Name="DefaultMarkupColorSwatch" Width="40" Height="24" CornerRadius="3" BorderThickness="1" />
+              <Button x:Name="EditDefaultMarkupColorButton" Grid.Column="1" Width="34" Height="28" Content="…" />
+            </Grid>
+            <TextBlock x:Name="DefaultStrokeLabel" Grid.Row="1" VerticalAlignment="Center" />
+            <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+              <Slider x:Name="DefaultStrokeSlider" MinWidth="220" Minimum="1" Maximum="32" TickFrequency="1" />
+              <TextBlock x:Name="DefaultStrokeValue" Grid.Column="1" Width="58" TextAlignment="Right" VerticalAlignment="Center" />
+            </Grid>
+          </Grid>
+        </StackPanel>
+      </ScrollViewer>
+    </TabItem>
     <TabItem x:Name="ControlsTab">
       <ScrollViewer>
         <StackPanel Margin="12,18" Spacing="14">

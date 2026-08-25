@@ -47,6 +47,18 @@ public sealed class ViewerCommandExecutorTests
     }
 
     [Theory]
+    [InlineData((int)ViewerCommand.ToggleHighlight)]
+    [InlineData((int)ViewerCommand.ToggleMarkupTools)]
+    public async Task PresentationToggleCommandsUseSharedExecutor(int commandValue)
+    {
+        var target = new RecordingTarget();
+
+        await new ViewerCommandExecutor(target).ExecuteAsync((ViewerCommand)commandValue);
+
+        Assert.Equal(1, target.PresentationToggleCount);
+    }
+
+    [Theory]
     [InlineData((int)ViewerCommand.Peek100)]
     [InlineData((int)ViewerCommand.BlinkCompare)]
     public async Task HoldCommandsCannotRunThroughOneShotExecutor(int commandValue)
@@ -64,6 +76,8 @@ public sealed class ViewerCommandExecutorTests
         public int FitCount { get; private set; }
 
         public int ActualSizeCount { get; private set; }
+
+        public int PresentationToggleCount { get; private set; }
 
         public Task PreviousAsync() => Task.CompletedTask;
 
@@ -86,5 +100,9 @@ public sealed class ViewerCommandExecutorTests
         public void ShowSettings()
         {
         }
+
+        public void ToggleHighlight() => PresentationToggleCount++;
+
+        public void ToggleMarkupTools() => PresentationToggleCount++;
     }
 }

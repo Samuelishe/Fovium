@@ -15,6 +15,7 @@ The initial logical sections are:
 General
 Viewing
 Stage
+Presentation
 Appearance
 Controls
 Color
@@ -54,7 +55,11 @@ Owns application UI theme selection: Dark or Light. It does not alter Stage or p
 
 ### Controls
 
-Controls implements configurable bindings for previous/next, zoom in/out, Fit, 100%, Toggle Matte, fullscreen, Open, Settings, Peek 100%, and Blink Compare. Peek/Blink are visibly named hold commands and default to `Z`/`C`; they use the same locale-independent IDs, gesture capture, conflict confirmation, unassigned state, and reset table as press commands. Capture rejects bare modifiers and reserved `Esc`. Replacement assigns the new command and leaves the former owner unassigned rather than swapping. Reset shortcuts restores this section only.
+Controls implements configurable bindings for previous/next, zoom in/out, Fit, 100%, Toggle Matte, fullscreen, Open, Settings, Peek 100%, Blink Compare, Cursor Highlight, and Markup Tools. Peek/Blink are visibly named hold commands and default to `Z`/`C`; highlight/markup are press toggles defaulting to `H`/`P`. All use the same locale-independent IDs, gesture capture, conflict confirmation, unassigned state, and reset table. Capture rejects bare modifiers and reserved `Esc`. Replacement assigns the new command and leaves the former owner unassigned rather than swapping. Reset shortcuts restores this section only.
+
+### Presentation
+
+The implemented section owns the markup-tools permission plus cursor-highlight color/opacity/physical radius and default markup color/stroke size. It configures presenter behavior, not persisted annotations: image-bound markup remains memory-only for the viewer session and is never serialized.
 
 ### Color
 
@@ -85,7 +90,7 @@ Copied diagnostics may include only genuinely known values such as Fovium versio
 
 Ordinary preferences use platform-appropriate per-user application-data storage. They do not require a database, catalog, or project-local file.
 
-The readable JSON document now uses `schemaVersion = 2` in the platform-appropriate per-user application-data directory. Its explicit v1→v2 migration maps the former four-value Stage enum to background plus independent Matte while preserving image-change policy. R3-F2's additive Matte style/width fields and R4's additive hold-command IDs do not change the schema. Older v2 documents receive `Z`/`C` defaults only when those gestures are not already owned by an existing command; existing customization wins and the colliding new command becomes Unassigned. It writes through a same-directory temporary file and replacement, tolerates unknown properties/command IDs, and falls back to deterministic defaults on missing, malformed, inaccessible, or unsupported-schema input. Extend this direct migration path only when a real incompatible change exists; do not build a generic migration framework.
+The readable JSON document now uses `schemaVersion = 2` in the platform-appropriate per-user application-data directory. Its explicit v1→v2 migration maps the former four-value Stage enum to background plus independent Matte while preserving image-change policy. R3-F2 Matte geometry, R4 hold commands, and R5 Presentation settings/press-command IDs are additive and do not change the schema. Older v2 documents receive new `Z`/`C`/`H`/`P` defaults only when those gestures are not already owned by an existing command; existing customization wins and the colliding new command becomes Unassigned. It writes through a same-directory temporary file and replacement, tolerates unknown properties/command IDs, and falls back to deterministic defaults on missing, malformed, inaccessible, or unsupported-schema input. Extend this direct migration path only when a real incompatible change exists; do not build a generic migration framework.
 
 Settings normally autosave after a valid non-destructive preference change. Do not require Save or Apply buttons without evidence that deferred application is necessary. Destructive or system-owned actions remain explicit.
 
@@ -98,4 +103,4 @@ Reset all settings
 
 Reset all restores a known default state and removes obsolete stored values rather than retaining hidden legacy configuration. A reset operation should be recoverable where practical and must not remove user photographs or unrelated platform data.
 
-The implemented Settings surface contains only meaningful `Viewing`, `Stage`, `Controls`, and `About` sections. It does not create empty future tabs, Save/Apply buttons, a language selector, theme selection, or Performance controls.
+The implemented Settings surface contains only meaningful `Viewing`, `Stage`, `Presentation`, `Controls`, and `About` sections. It does not create empty future tabs, Save/Apply buttons, a language selector, theme selection, or Performance controls.

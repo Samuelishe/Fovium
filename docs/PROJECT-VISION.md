@@ -44,6 +44,8 @@ An optional persisted **Matte** is an independent modifier over any background. 
 
 Both use the shared shortcut system, allow one transient mode at a time, and add no persistent viewport UI. Selected-reference A/B and combined compare-at-100 remain future possibilities requiring evidence from real use.
 
+**Presenter overlay** is an explicitly requested, temporary presentation aid: `H` toggles a translucent cursor highlight and `P` toggles a compact drawing dock. Brush, Line, Rectangle, and Arrow marks are bound to oriented photograph coordinates for the current in-memory session. They are not source edits, annotation documents, sidecars, or exportable content; hiding the dock preserves marks and Clear affects only the current image.
+
 ## Non-goals
 
 Fovium must not drift into a:
@@ -55,6 +57,7 @@ Fovium must not drift into a:
 - plugin platform;
 - hardware benchmarking utility;
 - generic AI photo product.
+- paint, annotation-authoring, or collaboration system.
 
 ## Feature-creep test
 

@@ -141,7 +141,13 @@ internal sealed class ViewerInspectionCoordinator(
             }
 
             using var presentation = TemporaryStagePresentation.Create(stage, image.Value);
-            if (!viewport.ShowBlinkComparison(image, presentation.Stage, presentation.TakeAmbient()))
+            var identity = result.Path
+                ?? throw new InvalidOperationException("Acquired inspection image has no source path.");
+            if (!viewport.ShowBlinkComparison(
+                    image,
+                    identity,
+                    presentation.Stage,
+                    presentation.TakeAmbient()))
             {
                 return;
             }

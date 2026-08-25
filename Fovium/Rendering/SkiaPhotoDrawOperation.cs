@@ -4,6 +4,7 @@ using Avalonia.Platform;
 using Avalonia.Rendering.SceneGraph;
 using Avalonia.Skia;
 using Fovium.Imaging;
+using Fovium.Presentation;
 using Fovium.Stage;
 using SkiaSharp;
 
@@ -21,6 +22,7 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
     private readonly bool _exactPixelSampling;
     private readonly StageSettings _stage;
     private readonly double _renderScaling;
+    private readonly MarkupRenderSnapshot _markup;
 
     public SkiaPhotoDrawOperation(
         Rect bounds,
@@ -31,7 +33,8 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
         bool exactPixelSampling,
         StageSettings stage,
         double renderScaling,
-        DecodedImage.AmbientLease? ambientLease)
+        DecodedImage.AmbientLease? ambientLease,
+        MarkupRenderSnapshot markup)
     {
         Bounds = bounds;
         _imageLease = imageLease;
@@ -42,6 +45,7 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
         _stage = stage;
         _renderScaling = renderScaling;
         _ambientLease = ambientLease;
+        _markup = markup;
     }
 
     public Rect Bounds { get; }
@@ -102,6 +106,8 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
         {
             canvas.Restore();
         }
+
+        SkiaMarkupOverlayRenderer.Draw(canvas, _destination, orientedSize, _markup);
     }
 
     public bool Equals(ICustomDrawOperation? other) => false;

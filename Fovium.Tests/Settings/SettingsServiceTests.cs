@@ -1,4 +1,5 @@
 using Fovium.Input;
+using Fovium.Presentation;
 using Fovium.Settings;
 using Fovium.Stage;
 
@@ -135,6 +136,27 @@ public sealed class SettingsServiceTests
 
         Assert.Equal(new ShortcutGesture("K"), service.Current.Shortcuts.Get(ViewerCommand.ToggleMatte));
         Assert.Equal(new ShortcutGesture("K"), store.Saved?.Shortcuts.Get(ViewerCommand.ToggleMatte));
+    }
+
+    [Fact]
+    public async Task PresentationSettingsRoundTripThroughSharedService()
+    {
+        var store = new RecordingSettingsStore();
+        using var service = new SettingsService(store);
+        var presentation = PresentationSettings.Default with
+        {
+            HighlightColor = new PresentationColor(10, 20, 30),
+            HighlightOpacity = 0.62,
+            HighlightRadiusPhysicalPixels = 77,
+            DefaultMarkupColor = new PresentationColor(40, 50, 60),
+            DefaultMarkupStrokePhysicalPixels = 7,
+        };
+
+        await service.SetPresentationAsync(presentation);
+
+        Assert.Equal(presentation, service.Current.Presentation);
+        Assert.Equal(presentation, store.Saved?.Presentation);
+        Assert.Equal(StageSettings.Default, service.Current.Stage);
     }
 
     private sealed class RecordingSettingsStore(bool failSave = false) : ISettingsStore

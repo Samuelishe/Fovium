@@ -27,10 +27,16 @@ Temporary overlays are acceptable only in response to a direct action and should
 | `M` | Toggle Matte without changing the Stage background (default binding) |
 | Hold `Z` | Peek at whole-viewport photographic 100% around the cursor/source point; release restores the exact prior semantic view (default binding) |
 | Hold `C` | Temporarily show the previous viable image without navigating; release restores the retained current presentation (default binding) |
+| `H` | Toggle the configured translucent cursor highlight inside the viewer viewport (default binding) |
+| `P` | Show/hide the compact markup tools dock without clearing existing marks (default binding) |
 | `F11` | Toggle fullscreen (default binding) |
 | `Esc` | Cancel active Peek/Blink; otherwise leave fullscreen; otherwise close the viewer |
 
 The effective bindings except `Esc` are user-configurable in Settings → Controls. Peek and Blink are hold commands: the resolved full gesture begins the action once, while release of its primary key ends it even if modifiers changed. The first active hold wins; repeat key-down and a second hold are ignored. Any persistent viewer command, focus loss, sequence replacement, Settings/context-menu transition, shutdown, or `Esc` first restores the temporary presentation. Fullscreen preserves ordinary zoom/pan behavior, and Peek/Blink work identically there after any active hold is canceled before a fullscreen transition.
+
+When highlight is active, a translucent configured circle follows the pointer over photograph and Stage and the system cursor is hidden only while it is inside the photo viewport. The highlight does not alter navigation, viewport state, Peek, Blink, or drawing input.
+
+The markup dock is visible only after `P`. Its Brush, Line, Rectangle, Arrow, color, stroke-size, and Clear controls are mouse-operated without taking viewer shortcut focus. Left drag over the photograph draws with the selected tool while the dock is open; wheel zoom remains available. Hiding the dock prevents new drawing but leaves committed marks visible. With the dock hidden, left drag returns to ordinary pan. Clear removes only the current image's marks.
 
 ## View behavior
 

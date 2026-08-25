@@ -222,3 +222,15 @@ Blink compares the current canonical image with the nearest previous viable imag
 Status: Accepted in R4.
 
 Peek and Blink are configurable hold commands in the shared stable command/gesture system, defaulting to `Z` and `C` without stealing existing customized bindings. One transient inspection mode may own a primary key at a time. Repeat and competing holds are ignored; matching primary-key release ends the hold despite modifier changes; `Esc`, focus loss, persistent commands, sequence replacement, Settings/context-menu transitions, and shutdown restore it safely.
+
+## D-037 — Presenter markup is image-bound session state
+
+Status: Accepted in R5.
+
+Brush, Line, Rectangle, and Arrow primitives live only in bounded managed memory keyed by image identity and use oriented source coordinates. Rendering transforms them through the existing destination after the photograph; Peek keeps current identity and Blink selects comparison identity. Hiding tools preserves marks, Clear removes only the current image, and new sequence/session clears all. No source write, sidecar, save/export, document format, undo/editing/layers, or second compositor is introduced.
+
+## D-038 — Presenter controls remain explicit temporary chrome
+
+Status: Accepted in R5.
+
+Cursor Highlight and Markup Tools are shared configurable press commands defaulting to `H` and `P` without stealing occupied gestures. Highlight is viewport-space, physical-radius, and hides the system cursor only over the viewer. The compact markup dock appears only on request and its mouse controls do not take viewer keyboard focus; it is not a persistent toolbar or general annotation UI.

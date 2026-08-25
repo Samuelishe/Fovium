@@ -19,6 +19,10 @@ internal interface IViewerCommandTarget
     Task OpenAsync();
 
     void ShowSettings();
+
+    void ToggleHighlight();
+
+    void ToggleMarkupTools();
 }
 
 internal sealed class ViewerCommandExecutor(IViewerCommandTarget target)
@@ -42,6 +46,8 @@ internal sealed class ViewerCommandExecutor(IViewerCommandTarget target)
             ViewerCommand.Fullscreen => Execute(target.ToggleFullscreen),
             ViewerCommand.Open => target.OpenAsync(),
             ViewerCommand.Settings => Execute(target.ShowSettings),
+            ViewerCommand.ToggleHighlight => Execute(target.ToggleHighlight),
+            ViewerCommand.ToggleMarkupTools => Execute(target.ToggleMarkupTools),
             _ => throw new ArgumentOutOfRangeException(nameof(command)),
         };
     }

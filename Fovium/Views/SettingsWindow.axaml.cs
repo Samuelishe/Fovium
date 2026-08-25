@@ -7,6 +7,7 @@ using Avalonia.Media;
 using Fovium.Application;
 using Fovium.Input;
 using Fovium.Localization;
+using Fovium.Presentation;
 using Fovium.Settings;
 using Fovium.Stage;
 
@@ -36,6 +37,15 @@ internal sealed partial class SettingsWindow : Window
     private readonly TextBlock _blurValue;
     private readonly TextBlock _shortcutValidationText;
     private readonly Expander _ambientOptions;
+    private readonly CheckBox _enableMarkupOption;
+    private readonly Border _highlightColorSwatch;
+    private readonly Border _defaultMarkupColorSwatch;
+    private readonly Slider _highlightOpacitySlider;
+    private readonly Slider _highlightRadiusSlider;
+    private readonly Slider _defaultStrokeSlider;
+    private readonly TextBlock _highlightOpacityValue;
+    private readonly TextBlock _highlightRadiusValue;
+    private readonly TextBlock _defaultStrokeValue;
     private readonly Dictionary<ViewerCommand, Button> _shortcutButtons = [];
     private ViewerCommand? _capturingCommand;
     private bool _initializing = true;
@@ -48,6 +58,7 @@ internal sealed partial class SettingsWindow : Window
 
         var viewingTab = FindRequired<TabItem>("ViewingTab");
         var stageTab = FindRequired<TabItem>("StageTab");
+        var presentationTab = FindRequired<TabItem>("PresentationTab");
         var controlsTab = FindRequired<TabItem>("ControlsTab");
         var aboutTab = FindRequired<TabItem>("AboutTab");
         _keepCurrentScaleOption = FindRequired<RadioButton>("KeepCurrentScaleOption");
@@ -70,16 +81,34 @@ internal sealed partial class SettingsWindow : Window
         _blurValue = FindRequired<TextBlock>("BlurValue");
         _shortcutValidationText = FindRequired<TextBlock>("ShortcutValidationText");
         _ambientOptions = FindRequired<Expander>("AmbientOptions");
+        _enableMarkupOption = FindRequired<CheckBox>("EnableMarkupOption");
+        _highlightColorSwatch = FindRequired<Border>("HighlightColorSwatch");
+        _defaultMarkupColorSwatch = FindRequired<Border>("DefaultMarkupColorSwatch");
+        _highlightOpacitySlider = FindRequired<Slider>("HighlightOpacitySlider");
+        _highlightRadiusSlider = FindRequired<Slider>("HighlightRadiusSlider");
+        _defaultStrokeSlider = FindRequired<Slider>("DefaultStrokeSlider");
+        _highlightOpacityValue = FindRequired<TextBlock>("HighlightOpacityValue");
+        _highlightRadiusValue = FindRequired<TextBlock>("HighlightRadiusValue");
+        _defaultStrokeValue = FindRequired<TextBlock>("DefaultStrokeValue");
 
         Title = localizer[UiStrings.SettingsTitle];
         viewingTab.Header = localizer[UiStrings.SettingsViewing];
         stageTab.Header = localizer[UiStrings.SettingsStage];
+        presentationTab.Header = localizer[UiStrings.SettingsPresentation];
         controlsTab.Header = localizer[UiStrings.SettingsControls];
         aboutTab.Header = localizer[UiStrings.SettingsAbout];
         FindRequired<TextBlock>("ScaleHeading").Text = localizer[UiStrings.SettingsScaleOnImageChange];
         FindRequired<TextBlock>("BackgroundHeading").Text = localizer[UiStrings.StageBackground];
         FindRequired<TextBlock>("MatteHeading").Text = localizer[UiStrings.StageMatte];
         FindRequired<TextBlock>("ControlsHeading").Text = localizer[UiStrings.SettingsControls];
+        _enableMarkupOption.Content = localizer[UiStrings.PresentationEnableMarkup];
+        FindRequired<TextBlock>("HighlightHeading").Text = localizer[UiStrings.PresentationHighlight];
+        FindRequired<TextBlock>("HighlightColorLabel").Text = localizer[UiStrings.PresentationHighlightColor];
+        FindRequired<TextBlock>("HighlightOpacityLabel").Text = localizer[UiStrings.PresentationHighlightOpacity];
+        FindRequired<TextBlock>("HighlightRadiusLabel").Text = localizer[UiStrings.PresentationHighlightRadius];
+        FindRequired<TextBlock>("MarkupDefaultsHeading").Text = localizer[UiStrings.PresentationMarkupDefaults];
+        FindRequired<TextBlock>("MarkupColorLabel").Text = localizer[UiStrings.PresentationMarkupColor];
+        FindRequired<TextBlock>("DefaultStrokeLabel").Text = localizer[UiStrings.PresentationStroke];
         FindRequired<TextBlock>("BrightnessLabel").Text = localizer[UiStrings.StageAmbientBrightness];
         FindRequired<TextBlock>("SaturationLabel").Text = localizer[UiStrings.StageAmbientSaturation];
         FindRequired<TextBlock>("BlurLabel").Text = localizer[UiStrings.StageAmbientBlur];
@@ -144,6 +173,23 @@ internal sealed partial class SettingsWindow : Window
             await EditColorAsync(customBackground: false);
         FindRequired<Button>("ResetShortcutsButton").Click += async (_, _) =>
             await _settings.ResetShortcutsAsync();
+        _enableMarkupOption.IsCheckedChanged += async (_, _) =>
+        {
+            if (!_initializing)
+            {
+                await _settings.SetPresentationAsync(_settings.Current.Presentation with
+                {
+                    MarkupToolsEnabled = _enableMarkupOption.IsChecked == true,
+                });
+            }
+        };
+        _highlightOpacitySlider.ValueChanged += OnPresentationSliderChanged;
+        _highlightRadiusSlider.ValueChanged += OnPresentationSliderChanged;
+        _defaultStrokeSlider.ValueChanged += OnPresentationSliderChanged;
+        FindRequired<Button>("EditHighlightColorButton").Click += async (_, _) =>
+            await EditPresentationColorAsync(highlight: true);
+        FindRequired<Button>("EditDefaultMarkupColorButton").Click += async (_, _) =>
+            await EditPresentationColorAsync(highlight: false);
     }
 
     private void CreateShortcutRows()
@@ -377,6 +423,13 @@ internal sealed partial class SettingsWindow : Window
         UpdateAmbientValueText(settings.Stage);
         UpdateMatteWidthText(settings.Stage.MatteWidthPhysicalPixels);
         UpdateShortcutButtons(settings.Shortcuts);
+        _enableMarkupOption.IsChecked = settings.Presentation.MarkupToolsEnabled;
+        _highlightOpacitySlider.Value = settings.Presentation.HighlightOpacity * 100;
+        _highlightRadiusSlider.Value = settings.Presentation.HighlightRadiusPhysicalPixels;
+        _defaultStrokeSlider.Value = settings.Presentation.DefaultMarkupStrokePhysicalPixels;
+        SetSwatch(_highlightColorSwatch, settings.Presentation.HighlightColor);
+        SetSwatch(_defaultMarkupColorSwatch, settings.Presentation.DefaultMarkupColor);
+        UpdatePresentationValueText(settings.Presentation);
         _initializing = false;
     }
 
@@ -425,6 +478,8 @@ internal sealed partial class SettingsWindow : Window
         ViewerCommand.Settings => UiStrings.CommandSettings,
         ViewerCommand.Peek100 => UiStrings.CommandPeek100,
         ViewerCommand.BlinkCompare => UiStrings.CommandBlinkCompare,
+        ViewerCommand.ToggleHighlight => UiStrings.CommandToggleHighlight,
+        ViewerCommand.ToggleMarkupTools => UiStrings.CommandToggleMarkupTools,
         _ => throw new ArgumentOutOfRangeException(nameof(command)),
     }];
 
@@ -436,6 +491,61 @@ internal sealed partial class SettingsWindow : Window
 
     private static void SetSwatch(Border border, StageColor color) =>
         border.Background = new SolidColorBrush(Color.FromRgb(color.Red, color.Green, color.Blue));
+
+    private static void SetSwatch(Border border, PresentationColor color) =>
+        border.Background = new SolidColorBrush(Color.FromRgb(color.Red, color.Green, color.Blue));
+
+    private async void OnPresentationSliderChanged(object? sender, RangeBaseValueChangedEventArgs e)
+    {
+        if (_initializing)
+        {
+            return;
+        }
+
+        var presentation = _settings.Current.Presentation with
+        {
+            HighlightOpacity = _highlightOpacitySlider.Value / 100,
+            HighlightRadiusPhysicalPixels = Math.Round(_highlightRadiusSlider.Value),
+            DefaultMarkupStrokePhysicalPixels = Math.Round(_defaultStrokeSlider.Value),
+        };
+        UpdatePresentationValueText(presentation);
+        await _settings.SetPresentationAsync(presentation);
+    }
+
+    private async Task EditPresentationColorAsync(bool highlight)
+    {
+        var presentation = _settings.Current.Presentation;
+        var original = highlight ? presentation.HighlightColor : presentation.DefaultMarkupColor;
+        var editor = new ColorEditorWindow(
+            new StageColor(original.Red, original.Green, original.Blue),
+            _localizer,
+            _localizer[highlight
+                ? UiStrings.PresentationHighlightColor
+                : UiStrings.PresentationMarkupColor]);
+        editor.ColorChanged += async (_, args) =>
+        {
+            var color = new PresentationColor(args.Color.Red, args.Color.Green, args.Color.Blue);
+            var current = _settings.Current.Presentation;
+            await _settings.SetPresentationAsync(highlight
+                ? current with { HighlightColor = color }
+                : current with { DefaultMarkupColor = color });
+        };
+        var accepted = await editor.ShowDialog<bool>(this);
+        if (!accepted)
+        {
+            var current = _settings.Current.Presentation;
+            await _settings.SetPresentationAsync(highlight
+                ? current with { HighlightColor = original }
+                : current with { DefaultMarkupColor = original });
+        }
+    }
+
+    private void UpdatePresentationValueText(PresentationSettings presentation)
+    {
+        _highlightOpacityValue.Text = $"{presentation.HighlightOpacity:P0}";
+        _highlightRadiusValue.Text = $"{presentation.HighlightRadiusPhysicalPixels:0} px";
+        _defaultStrokeValue.Text = $"{presentation.DefaultMarkupStrokePhysicalPixels:0} px";
+    }
 
     private T FindRequired<T>(string name)
         where T : Control =>

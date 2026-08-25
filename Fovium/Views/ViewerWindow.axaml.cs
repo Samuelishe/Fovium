@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Fovium.Application;
@@ -11,6 +12,7 @@ using Fovium.Input;
 using Fovium.Loading;
 using Fovium.Localization;
 using Fovium.Navigation;
+using Fovium.Presentation;
 using Fovium.Rendering;
 using Fovium.Settings;
 using Fovium.Stage;
@@ -37,6 +39,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
     private readonly ViewerCommandExecutor _commandExecutor;
     private readonly ViewerInspectionCoordinator _inspectionCoordinator;
     private readonly ViewerHoldController _holdController;
+    private readonly PresentationOverlaySession _presentation;
     private readonly Dictionary<ViewerCommand, MenuItem> _commandMenuItems = [];
     private readonly MenuItem _previousMenuItem;
     private readonly MenuItem _nextMenuItem;
@@ -67,6 +70,11 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             settings.Current.Stage);
 
         InitializeComponent();
+        _presentation = new PresentationOverlaySession(
+            settings.Current.Presentation,
+            StringComparer.OrdinalIgnoreCase);
+        PhotoViewport.ConfigurePresentation(_presentation, _visibleCursor, _hiddenCursor);
+        ConfigureMarkupTools();
         _commandExecutor = new ViewerCommandExecutor(this);
         _inspectionCoordinator = new ViewerInspectionCoordinator(PhotoViewport, session, settings);
         _holdController = new ViewerHoldController(_inspectionCoordinator);
@@ -97,7 +105,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             PhotoViewport.Focus();
             RestartCursorTimer();
             await _settings.InitializeAsync(_lifetimeCancellation.Token);
-            ApplyStage(_settings.Current.Stage);
+            ApplySettings(_settings.Current);
             if (_startupPaths.Count == 0)
             {
                 var selected = await PickFilesAsync();
@@ -434,6 +442,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         }
 
         var result = await _session.OpenAsync(sequence, _lifetimeCancellation.Token);
+        _presentation.StartNewSequence();
         ApplySelection(result, ImageChangeViewPolicyResolver.ForNewSequence(), showFailure: true);
     }
 
@@ -465,7 +474,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             var path = result.Path
                 ?? throw new InvalidOperationException("Published selection has no source path.");
             var identity = result.Image.Value.Identity;
-            PhotoViewport.SetImage(result.Image, transfer);
+            PhotoViewport.SetImage(result.Image, transfer, path);
             _stageCoordinator.SelectImage(path, identity);
             return;
         }
@@ -532,12 +541,19 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
     {
         if (Dispatcher.UIThread.CheckAccess())
         {
-            ApplyStage(e.Settings.Stage);
+            ApplySettings(e.Settings);
         }
         else
         {
-            Dispatcher.UIThread.Post(() => ApplyStage(e.Settings.Stage));
+            Dispatcher.UIThread.Post(() => ApplySettings(e.Settings));
         }
+    }
+
+    private void ApplySettings(FoviumSettings settings)
+    {
+        ApplyStage(settings.Stage);
+        _presentation.ApplySettings(settings.Presentation);
+        ApplyMarkupToolsUi();
     }
 
     private void ApplyStage(StageSettings stage)
@@ -608,11 +624,11 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         _cursorTimer.Stop();
         if (!_contextMenuOpen)
         {
-            PhotoViewport.Cursor = _hiddenCursor;
+            PhotoViewport.SetViewerCursor(_hiddenCursor);
         }
     }
 
-    private void ShowCursor() => PhotoViewport.Cursor = _visibleCursor;
+    private void ShowCursor() => PhotoViewport.SetViewerCursor(_visibleCursor);
 
     private void RestartCursorTimer()
     {
@@ -645,4 +661,83 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
     Task IViewerCommandTarget.OpenAsync() => OpenFromPickerAsync();
 
     void IViewerCommandTarget.ShowSettings() => ShowSettings();
+
+    void IViewerCommandTarget.ToggleHighlight() => _presentation.ToggleHighlight();
+
+    void IViewerCommandTarget.ToggleMarkupTools()
+    {
+        _presentation.ToggleMarkupTools();
+        ApplyMarkupToolsUi();
+    }
+
+    private void ConfigureMarkupTools()
+    {
+        MarkupBrushButton.Click += (_, _) => SelectMarkupTool(MarkupTool.Brush);
+        MarkupLineButton.Click += (_, _) => SelectMarkupTool(MarkupTool.Line);
+        MarkupRectangleButton.Click += (_, _) => SelectMarkupTool(MarkupTool.Rectangle);
+        MarkupArrowButton.Click += (_, _) => SelectMarkupTool(MarkupTool.Arrow);
+        MarkupColorButton.Click += async (_, _) => await EditMarkupColorAsync();
+        MarkupStrokeSlider.ValueChanged += (_, _) =>
+        {
+            _presentation.SetActiveStrokePhysicalPixels(MarkupStrokeSlider.Value);
+            MarkupStrokeValue.Text = Math.Round(MarkupStrokeSlider.Value)
+                .ToString(System.Globalization.CultureInfo.InvariantCulture);
+        };
+        MarkupClearButton.Click += (_, _) => _presentation.ClearCurrent();
+        _presentation.Changed += (_, _) => ApplyMarkupToolsUi();
+
+        MarkupBrushButton.Content = _localizer[UiStrings.PresentationBrush];
+        MarkupLineButton.Content = _localizer[UiStrings.PresentationLine];
+        MarkupRectangleButton.Content = _localizer[UiStrings.PresentationRectangle];
+        MarkupArrowButton.Content = _localizer[UiStrings.PresentationArrow];
+        MarkupColorText.Text = _localizer[UiStrings.PresentationColor];
+        MarkupStrokeText.Text = _localizer[UiStrings.PresentationStroke];
+        MarkupClearButton.Content = _localizer[UiStrings.PresentationClear];
+        ApplyMarkupToolsUi();
+    }
+
+    private void SelectMarkupTool(MarkupTool tool)
+    {
+        _presentation.SetActiveTool(tool);
+        ApplyMarkupToolsUi();
+    }
+
+    private async Task EditMarkupColorAsync()
+    {
+        var original = _presentation.ActiveColor;
+        var editor = new ColorEditorWindow(
+            new StageColor(original.Red, original.Green, original.Blue),
+            _localizer,
+            _localizer[UiStrings.PresentationMarkupColor]);
+        editor.ColorChanged += (_, args) => _presentation.SetActiveColor(
+            new PresentationColor(args.Color.Red, args.Color.Green, args.Color.Blue));
+        var accepted = await editor.ShowDialog<bool>(this);
+        if (!accepted)
+        {
+            _presentation.SetActiveColor(original);
+        }
+    }
+
+    private void ApplyMarkupToolsUi()
+    {
+        if (!IsInitialized)
+        {
+            return;
+        }
+
+        MarkupToolsPanel.IsVisible = _presentation.MarkupToolsVisible;
+        MarkupBrushButton.Classes.Set("accent", _presentation.ActiveTool == MarkupTool.Brush);
+        MarkupLineButton.Classes.Set("accent", _presentation.ActiveTool == MarkupTool.Line);
+        MarkupRectangleButton.Classes.Set("accent", _presentation.ActiveTool == MarkupTool.Rectangle);
+        MarkupArrowButton.Classes.Set("accent", _presentation.ActiveTool == MarkupTool.Arrow);
+        var color = _presentation.ActiveColor;
+        MarkupColorSwatch.Background = new SolidColorBrush(Color.FromRgb(color.Red, color.Green, color.Blue));
+        if (Math.Abs(MarkupStrokeSlider.Value - _presentation.ActiveStrokePhysicalPixels) > 0.001)
+        {
+            MarkupStrokeSlider.Value = _presentation.ActiveStrokePhysicalPixels;
+        }
+
+        MarkupStrokeValue.Text = Math.Round(_presentation.ActiveStrokePhysicalPixels)
+            .ToString(System.Globalization.CultureInfo.InvariantCulture);
+    }
 }

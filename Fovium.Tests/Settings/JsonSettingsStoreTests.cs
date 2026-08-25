@@ -1,4 +1,5 @@
 using Fovium.Input;
+using Fovium.Presentation;
 using Fovium.Settings;
 using Fovium.Stage;
 
@@ -25,6 +26,7 @@ public sealed class JsonSettingsStoreTests : IDisposable
         Assert.Equal(StageDefaults.AmbientBrightness, FoviumSettings.Default.Stage.AmbientBrightness);
         Assert.Equal(StageDefaults.AmbientSaturation, FoviumSettings.Default.Stage.AmbientSaturation);
         Assert.Equal(StageDefaults.AmbientBlurSigmaPixels, FoviumSettings.Default.Stage.AmbientBlur);
+        Assert.Equal(PresentationSettings.Default, FoviumSettings.Default.Presentation);
     }
 
     [Fact]
@@ -90,6 +92,15 @@ public sealed class JsonSettingsStoreTests : IDisposable
             Shortcuts = ShortcutSettings.Default.WithBinding(
                 ViewerCommand.ToggleMatte,
                 new ShortcutGesture("K", ShortcutModifiers.Control)),
+            Presentation = PresentationSettings.Default with
+            {
+                MarkupToolsEnabled = false,
+                HighlightColor = new PresentationColor(0x01, 0x23, 0x45),
+                HighlightOpacity = 0.55,
+                HighlightRadiusPhysicalPixels = 88,
+                DefaultMarkupColor = new PresentationColor(0xAB, 0xCD, 0xEF),
+                DefaultMarkupStrokePhysicalPixels = 9,
+            },
         };
 
         await store.SaveAsync(expected, CancellationToken.None);
@@ -99,6 +110,9 @@ public sealed class JsonSettingsStoreTests : IDisposable
         Assert.Equal(expected.SchemaVersion, result.Settings.SchemaVersion);
         Assert.Equal(expected.ImageChangeViewPolicy, result.Settings.ImageChangeViewPolicy);
         Assert.Equal(expected.Stage, result.Settings.Stage);
+        Assert.Equal(expected.Presentation, result.Settings.Presentation);
+        Assert.Contains("#012345", serialized, StringComparison.Ordinal);
+        Assert.Contains("#ABCDEF", serialized, StringComparison.Ordinal);
         Assert.Equal("#123456", result.Settings.Stage.CustomBackgroundColor.ToHex());
         Assert.Equal("#654321", result.Settings.Stage.MatteColor.ToHex());
         Assert.Equal(
@@ -295,6 +309,47 @@ public sealed class JsonSettingsStoreTests : IDisposable
         Assert.Equal(new ShortcutGesture("C"), result.Settings.Shortcuts.Get(ViewerCommand.ToggleMatte));
         Assert.Null(result.Settings.Shortcuts.Get(ViewerCommand.Peek100));
         Assert.Null(result.Settings.Shortcuts.Get(ViewerCommand.BlinkCompare));
+    }
+
+    [Fact]
+    public async Task ExistingV2ReceivesPresentationDefaultsAndFreeHighlightMarkupShortcuts()
+    {
+        await WriteAsync("""
+            {
+              "schemaVersion": 2,
+              "shortcuts": { "bindings": { "viewer.fit": { "key": "0", "modifiers": "None" } } }
+            }
+            """);
+
+        var result = await CreateStore().LoadAsync(CancellationToken.None);
+
+        Assert.Equal(2, result.Settings.SchemaVersion);
+        Assert.Equal(PresentationSettings.Default, result.Settings.Presentation);
+        Assert.Equal(new ShortcutGesture("H"), result.Settings.Shortcuts.Get(ViewerCommand.ToggleHighlight));
+        Assert.Equal(new ShortcutGesture("P"), result.Settings.Shortcuts.Get(ViewerCommand.ToggleMarkupTools));
+    }
+
+    [Fact]
+    public async Task ExistingV2CustomHAndPBindingsWinOverNewPresentationDefaults()
+    {
+        await WriteAsync("""
+            {
+              "schemaVersion": 2,
+              "shortcuts": {
+                "bindings": {
+                  "viewer.fit": { "key": "H", "modifiers": "None" },
+                  "viewer.toggleMatte": { "key": "P", "modifiers": "None" }
+                }
+              }
+            }
+            """);
+
+        var result = await CreateStore().LoadAsync(CancellationToken.None);
+
+        Assert.Equal(new ShortcutGesture("H"), result.Settings.Shortcuts.Get(ViewerCommand.Fit));
+        Assert.Equal(new ShortcutGesture("P"), result.Settings.Shortcuts.Get(ViewerCommand.ToggleMatte));
+        Assert.Null(result.Settings.Shortcuts.Get(ViewerCommand.ToggleHighlight));
+        Assert.Null(result.Settings.Shortcuts.Get(ViewerCommand.ToggleMarkupTools));
     }
 
     [Fact]

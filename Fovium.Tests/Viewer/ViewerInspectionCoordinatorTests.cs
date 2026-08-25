@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using Fovium.Imaging;
 using Fovium.Loading;
 using Fovium.Navigation;
+using Fovium.Presentation;
 using Fovium.Rendering;
 using Fovium.Settings;
 using Fovium.Tests.Stage;
@@ -20,7 +21,13 @@ public sealed class ViewerInspectionCoordinatorTests(Xunit.Abstractions.ITestOut
         using var settings = new SettingsService(new DefaultSettingsStore());
         var viewport = new PhotoViewportControl();
         var opened = await session.OpenAsync(new ImageSequence(["A.png", "B.png", "C.png"], 1));
-        viewport.SetImage(opened.Image!, ViewTransfer.Fit);
+        var overlays = new PresentationOverlaySession(PresentationSettings.Default);
+        overlays.ToggleMarkupTools();
+        DrawOverlay(overlays, opened.Path!, new PresentationColor(0x11, 0x22, 0x33));
+        var previousPath = Path.GetFullPath("A.png");
+        DrawOverlay(overlays, previousPath, new PresentationColor(0xAA, 0xBB, 0xCC));
+        viewport.ConfigurePresentation(overlays);
+        viewport.SetImage(opened.Image!, ViewTransfer.Fit, opened.Path!);
         viewport.SetPhotographic100AtCenter();
         var before = viewport.CaptureViewTransfer();
         await session.WaitForAdjacentPreloadAsync(CancellationToken.None);
@@ -33,12 +40,20 @@ public sealed class ViewerInspectionCoordinatorTests(Xunit.Abstractions.ITestOut
         Assert.Equal(1, session.CurrentIndex);
         Assert.Equal(callsBefore, loader.Calls.Count);
         Assert.Equal(before, viewport.CaptureViewTransfer());
+        Assert.Equal(previousPath, viewport.PresentedImageIdentity);
+        Assert.Equal(
+            new PresentationColor(0xAA, 0xBB, 0xCC),
+            Assert.Single(viewport.CapturePresentedMarkup().Elements).Color);
 
         coordinator.End();
 
         Assert.Equal(InspectionMode.None, viewport.InspectionMode);
         Assert.Equal(before, viewport.CaptureViewTransfer());
         Assert.Equal(1, session.CurrentIndex);
+        Assert.Equal(opened.Path, viewport.PresentedImageIdentity);
+        Assert.Equal(
+            new PresentationColor(0x11, 0x22, 0x33),
+            Assert.Single(viewport.CapturePresentedMarkup().Elements).Color);
         var metrics = coordinator.GetMetrics();
         Assert.True(metrics.LastCachedBlinkLatency > TimeSpan.Zero);
         Assert.True(metrics.LastReleaseLatency > TimeSpan.Zero);
@@ -46,6 +61,31 @@ public sealed class ViewerInspectionCoordinatorTests(Xunit.Abstractions.ITestOut
             "Cached Blink coordinator: press-to-presentation {0:F3} ms; release-to-restore {1:F3} ms.",
             metrics.LastCachedBlinkLatency.TotalMilliseconds,
             metrics.LastReleaseLatency.TotalMilliseconds);
+        viewport.ClearImage();
+    }
+
+    [Fact]
+    public async Task PeekKeepsCanonicalOverlayIdentity()
+    {
+        var loader = new DecodedImageLoader((path, _) => Task.FromResult(
+            ImageLoadResult<DecodedImage>.Success(StageTestImages.CreateDecoded(path))));
+        await using var session = CreateSession(loader);
+        using var settings = new SettingsService(new DefaultSettingsStore());
+        var viewport = new PhotoViewportControl();
+        var overlays = new PresentationOverlaySession(PresentationSettings.Default);
+        overlays.ToggleMarkupTools();
+        viewport.ConfigurePresentation(overlays);
+        var opened = await session.OpenAsync(new ImageSequence(["A.png"], 0));
+        DrawOverlay(overlays, opened.Path!, new PresentationColor(1, 2, 3));
+        viewport.SetImage(opened.Image!, ViewTransfer.Fit, opened.Path!);
+        var coordinator = new ViewerInspectionCoordinator(viewport, session, settings);
+
+        await coordinator.BeginAsync(Fovium.Input.ViewerCommand.Peek100, CancellationToken.None);
+
+        Assert.Equal(opened.Path, viewport.PresentedImageIdentity);
+        Assert.Single(viewport.CapturePresentedMarkup().Elements);
+        coordinator.End();
+        Assert.Equal(opened.Path, viewport.PresentedImageIdentity);
         viewport.ClearImage();
     }
 
@@ -62,7 +102,7 @@ public sealed class ViewerInspectionCoordinatorTests(Xunit.Abstractions.ITestOut
         using var settings = new SettingsService(new DefaultSettingsStore());
         var viewport = new PhotoViewportControl();
         var opened = await session.OpenAsync(new ImageSequence(["A.png", "B.png"], 1));
-        viewport.SetImage(opened.Image!, ViewTransfer.Fit);
+        viewport.SetImage(opened.Image!, ViewTransfer.Fit, opened.Path!);
         await session.WaitForAdjacentPreloadAsync(CancellationToken.None);
         var coordinator = new ViewerInspectionCoordinator(viewport, session, settings);
 
@@ -121,7 +161,7 @@ public sealed class ViewerInspectionCoordinatorTests(Xunit.Abstractions.ITestOut
         var viewport = new PhotoViewportControl();
         var opened = await session.OpenAsync(
             new ImageSequence(["A.png", "B.png", "C.png", "D.png"], 3));
-        viewport.SetImage(opened.Image!, ViewTransfer.Fit);
+        viewport.SetImage(opened.Image!, ViewTransfer.Fit, opened.Path!);
         await session.WaitForAdjacentPreloadAsync(CancellationToken.None);
         var coordinator = new ViewerInspectionCoordinator(viewport, session, settings);
 
@@ -174,5 +214,17 @@ public sealed class ViewerInspectionCoordinatorTests(Xunit.Abstractions.ITestOut
 
         public Task SaveAsync(FoviumSettings settings, CancellationToken cancellationToken) =>
             Task.CompletedTask;
+    }
+
+    private static void DrawOverlay(
+        PresentationOverlaySession overlays,
+        string identity,
+        PresentationColor color)
+    {
+        overlays.SelectImage(identity);
+        overlays.SetActiveTool(MarkupTool.Line);
+        overlays.SetActiveColor(color);
+        Assert.True(overlays.BeginDrawing(new PointD(1, 1), 1));
+        Assert.True(overlays.EndDrawing(new PointD(8, 8)));
     }
 }

@@ -69,5 +69,7 @@ internal static class ShortcutDefaults
         [ViewerCommands.GetId(ViewerCommand.Settings)] = new("Comma", ShortcutModifiers.Control),
         [ViewerCommands.GetId(ViewerCommand.Peek100)] = new("Z"),
         [ViewerCommands.GetId(ViewerCommand.BlinkCompare)] = new("C"),
+        [ViewerCommands.GetId(ViewerCommand.ToggleHighlight)] = new("H"),
+        [ViewerCommands.GetId(ViewerCommand.ToggleMarkupTools)] = new("P"),
     };
 }

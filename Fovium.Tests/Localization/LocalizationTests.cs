@@ -144,4 +144,24 @@ public sealed class LocalizationTests
         Assert.Equal(peek, localizer[UiStrings.CommandPeek100]);
         Assert.Equal(blink, localizer[UiStrings.CommandBlinkCompare]);
     }
+
+    [Theory]
+    [InlineData("en-US", "Presentation", "Cursor Highlight", "Markup Tools", "Brush", "Clear")]
+    [InlineData("ru-RU", "Презентация", "Подсветка курсора", "Инструменты пометок", "Кисть", "Очистить")]
+    public void PresentationCatalogContainsSettingsCommandsAndDockTools(
+        string cultureName,
+        string section,
+        string highlight,
+        string markup,
+        string brush,
+        string clear)
+    {
+        var localizer = Localizer.Create(CultureInfo.GetCultureInfo(cultureName));
+
+        Assert.Equal(section, localizer[UiStrings.SettingsPresentation]);
+        Assert.Equal(highlight, localizer[UiStrings.CommandToggleHighlight]);
+        Assert.Equal(markup, localizer[UiStrings.CommandToggleMarkupTools]);
+        Assert.Equal(brush, localizer[UiStrings.PresentationBrush]);
+        Assert.Equal(clear, localizer[UiStrings.PresentationClear]);
+    }
 }

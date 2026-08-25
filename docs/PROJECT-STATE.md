@@ -7,13 +7,13 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R4 is complete. The project version is `0.0.0.0009`; its semantics and accepted checkpoint history are owned by [`VERSIONING.md`](VERSIONING.md).
+R5 is complete. The project version is `0.0.0.0010`; its semantics and accepted checkpoint history are owned by [`VERSIONING.md`](VERSIONING.md).
 
 The retained R0 probe remains experimental evidence under `experiments/Fovium.RenderProbe`. Production code is the single `Fovium` assembly and does not depend on the experiment. Local Windows acceptance used one `RenderScaling = 1.00` display; no GitHub-hosted CI or Linux/macOS runtime result is claimed by this stage.
 
 ## Current focus
 
-Owner review of the completed R4 inspection feel, followed by the next accepted roadmap stage. If that review finds an interaction defect, contain it in a bounded R4-F1 rather than starting unrelated R5 work.
+Owner review of the completed presenter overlay and cursor-highlight feel. Do not begin metadata/context-menu work automatically; contain any bounded interaction correction in R5-F1.
 
 ## Implemented application functionality
 
@@ -25,7 +25,7 @@ Owner review of the completed R4 inspection feel, followed by the next accepted 
 - Fullscreen, cursor auto-hide, `Ctrl+O`, and a basic temporary context menu.
 - English/Russian runtime localization foundation with English fallback.
 - Persistent image-change view policy: Keep current scale by default, or Fit each image.
-- Dark Settings window with implemented Viewing, Stage, Controls, and About sections; schema-v2 JSON autosave; explicit v1 migration; and malformed-file fallback.
+- Dark Settings window with implemented Viewing, Stage, Presentation, Controls, and About sections; schema-v2 JSON autosave; explicit v1 migration; and malformed-file fallback.
 - Persisted Stage background, custom/matte colors, independent Matte, and configurable Ambient brightness/saturation/blur with synchronized Settings and context-menu surfaces.
 - Persisted Matte physical width and Solid, Rounded, Soft, and Angular outer presentation styles; all styles retain an opaque rectangular backing beneath alpha photographs without changing photo geometry.
 - Bounded asynchronous blur-only Ambient preparation from the oriented decoded photograph; render-time brightness/saturation; adjacent preparation; byte-accounted cache ownership; and matching-identity publication.
@@ -34,9 +34,13 @@ Owner review of the completed R4 inspection feel, followed by the next accepted 
 - Non-navigating Blink Compare on configurable hold `C`, acquiring the previous viable image through retained inspection leases while preserving canonical sequence/index/generation state.
 - One application-level transient inspection mode, primary-key release ownership, repeat suppression, persistent-command/Esc/focus-loss cancellation, and stale-result rejection.
 - Temporary Blink Stage presentation with unchanged solid backgrounds and Matte, matching prepared comparison Ambient when available, and Black fallback rather than mismatched Ambient.
+- Configurable cursor highlight on `H`, rendered as a physical-radius translucent circle over photograph or Stage while hiding the system cursor only inside the viewport.
+- Configurable presenter dock on `P` with Brush, Line, Rectangle, Arrow, color, shared stroke size, and Clear; its mouse-only controls do not steal viewer shortcut focus.
+- Bounded image-bound markup in oriented source coordinates, transformed by the current Fit/manual/100%/pan/fullscreen geometry and retained only for the current in-memory sequence session.
+- Peek renders the canonical image's overlay; Blink selects only the comparison image's own overlay and cannot leak current markup onto it.
 - Traversal-excluded local imaging corpus policy plus hardened async session shutdown/cache release.
 
-Selected-reference A/B comparison, language/theme selection, metadata UI, broad codecs, file associations/thumbnails, and full monitor-aware ICC are not implemented.
+Markup save/export, undo/redo, text/ellipse/eraser/editing/layers, selected-reference A/B comparison, language/theme selection, metadata UI, broad codecs, file associations/thumbnails, and full monitor-aware ICC are not implemented.
 
 ## Active blockers
 
@@ -46,5 +50,6 @@ Selected-reference A/B comparison, language/theme selection, metadata UI, broad 
 - Broader codec support and a huge/tiled-image strategy remain unselected.
 - GitHub Actions portability is configured but cannot be claimed as passing until the workflow runs remotely.
 - R4 runtime inspection evidence is Windows-only at `RenderScaling = 1.00`; precise cold non-cached Blink latency and real fractional-DPI interaction still need representative owner hardware evidence.
+- R5 pointer/rendering evidence is Windows-only at `RenderScaling = 1.00`; fractional-DPI, Linux, and macOS runtime feel remain unvalidated.
 
 Open technical risks are tracked in [`KNOWN-PROBLEMS.md`](KNOWN-PROBLEMS.md). Directional stages are in [`ROADMAP.md`](ROADMAP.md). Git remains the authority for branch, HEAD, and worktree status.

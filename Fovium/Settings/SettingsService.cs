@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Fovium.Input;
+using Fovium.Presentation;
 using Fovium.Stage;
 
 namespace Fovium.Settings;
@@ -102,6 +103,19 @@ internal sealed class SettingsService(ISettingsStore store) : IDisposable
             settings => SettingsEqual(settings.Shortcuts, normalized)
                 ? settings
                 : settings with { Shortcuts = normalized },
+            cancellationToken);
+    }
+
+    public Task SetPresentationAsync(
+        PresentationSettings presentation,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(presentation);
+        var normalized = presentation.Normalize();
+        return UpdateAsync(
+            settings => settings.Presentation == normalized
+                ? settings
+                : settings with { Presentation = normalized },
             cancellationToken);
     }
 
@@ -223,6 +237,7 @@ internal sealed class SettingsService(ISettingsStore store) : IDisposable
         left.SchemaVersion == right.SchemaVersion &&
         left.ImageChangeViewPolicy == right.ImageChangeViewPolicy &&
         left.Stage == right.Stage &&
+        left.Presentation == right.Presentation &&
         SettingsEqual(left.Shortcuts, right.Shortcuts);
 
     private static bool SettingsEqual(ShortcutSettings left, ShortcutSettings right) =>
