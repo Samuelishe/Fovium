@@ -21,6 +21,7 @@
             BorderThickness="1">
       <StackPanel Orientation="Horizontal" Spacing="6">
         <Button x:Name="MarkupBrushButton" MinWidth="64" Focusable="False" />
+        <Button x:Name="MarkupEraserButton" MinWidth="64" Focusable="False" />
         <Button x:Name="MarkupLineButton" MinWidth="58" Focusable="False" />
         <Button x:Name="MarkupRectangleButton" MinWidth="82" Focusable="False" />
         <Button x:Name="MarkupArrowButton" MinWidth="64" Focusable="False" />
@@ -43,6 +44,8 @@
         <TextBlock x:Name="MarkupStrokeValue"
                    Width="24"
                    VerticalAlignment="Center" />
+        <Button x:Name="MarkupUndoButton" MinWidth="58" Focusable="False" />
+        <Button x:Name="MarkupRedoButton" MinWidth="58" Focusable="False" />
         <Button x:Name="MarkupClearButton" MinWidth="58" Focusable="False" />
       </StackPanel>
     </Border>

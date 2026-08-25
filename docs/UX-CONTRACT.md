@@ -29,6 +29,9 @@ Temporary overlays are acceptable only in response to a direct action and should
 | Hold `C` | Temporarily show the previous viable image without navigating; release restores the retained current presentation (default binding) |
 | `H` | Toggle the configured translucent cursor highlight inside the viewer viewport (default binding) |
 | `P` | Show/hide the compact markup tools dock without clearing existing marks (default binding) |
+| `Ctrl+Z` | Undo the current image's last markup operation; cancel an unfinished draft first (default binding) |
+| `Ctrl+Y` | Redo the current image's next markup operation (default binding) |
+| `Ctrl+Delete` | Clear the current image's markup as one undoable operation (default binding) |
 | `F11` | Toggle fullscreen (default binding) |
 | `Esc` | Cancel active Peek/Blink; otherwise leave fullscreen; otherwise close the viewer |
 
@@ -36,7 +39,7 @@ The effective bindings except `Esc` are user-configurable in Settings → Contro
 
 When highlight is active, a translucent configured circle follows the pointer over photograph and Stage and the system cursor is hidden only while it is inside the photo viewport. The highlight does not alter navigation, viewport state, Peek, Blink, or drawing input.
 
-The markup dock is visible only after `P`. Its Brush, Line, Rectangle, Arrow, color, stroke-size, and Clear controls are mouse-operated without taking viewer shortcut focus. Left drag over the photograph draws with the selected tool while the dock is open; wheel zoom remains available. Hiding the dock prevents new drawing but leaves committed marks visible. With the dock hidden, left drag returns to ordinary pan. Clear removes only the current image's marks.
+The markup dock is visible only after `P`. Its Brush, Eraser, Line, Rectangle, Arrow, color, stroke-size, Undo, Redo, and Clear controls are mouse-operated without taking viewer shortcut focus. Left drag over the photograph draws or partially erases markup with the selected tool while the dock is open; wheel zoom remains available. Eraser uses the shared physical stroke size and shows its own circular outline under the pointer. Hiding the dock prevents new drawing but leaves committed marks visible. With the dock hidden, left drag returns to ordinary pan. Undo/Redo is image-bound, one continuous gesture is one step, a new operation after Undo drops the redo tail, and Clear is one undoable operation affecting only the current image.
 
 ## View behavior
 

@@ -59,6 +59,19 @@ public sealed class ViewerCommandExecutorTests
     }
 
     [Theory]
+    [InlineData((int)ViewerCommand.MarkupUndo, "undo")]
+    [InlineData((int)ViewerCommand.MarkupRedo, "redo")]
+    [InlineData((int)ViewerCommand.ClearMarkup, "clear")]
+    public async Task MarkupHistoryCommandsUseSharedExecutor(int commandValue, string expectedAction)
+    {
+        var target = new RecordingTarget();
+
+        await new ViewerCommandExecutor(target).ExecuteAsync((ViewerCommand)commandValue);
+
+        Assert.Equal([expectedAction], target.MarkupActions);
+    }
+
+    [Theory]
     [InlineData((int)ViewerCommand.Peek100)]
     [InlineData((int)ViewerCommand.BlinkCompare)]
     public async Task HoldCommandsCannotRunThroughOneShotExecutor(int commandValue)
@@ -78,6 +91,8 @@ public sealed class ViewerCommandExecutorTests
         public int ActualSizeCount { get; private set; }
 
         public int PresentationToggleCount { get; private set; }
+
+        public List<string> MarkupActions { get; } = [];
 
         public Task PreviousAsync() => Task.CompletedTask;
 
@@ -104,5 +119,11 @@ public sealed class ViewerCommandExecutorTests
         public void ToggleHighlight() => PresentationToggleCount++;
 
         public void ToggleMarkupTools() => PresentationToggleCount++;
+
+        public void UndoMarkup() => MarkupActions.Add("undo");
+
+        public void RedoMarkup() => MarkupActions.Add("redo");
+
+        public void ClearMarkup() => MarkupActions.Add("clear");
     }
 }

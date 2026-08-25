@@ -670,9 +670,16 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         ApplyMarkupToolsUi();
     }
 
+    void IViewerCommandTarget.UndoMarkup() => _presentation.UndoCurrent();
+
+    void IViewerCommandTarget.RedoMarkup() => _presentation.RedoCurrent();
+
+    void IViewerCommandTarget.ClearMarkup() => _presentation.ClearCurrent();
+
     private void ConfigureMarkupTools()
     {
         MarkupBrushButton.Click += (_, _) => SelectMarkupTool(MarkupTool.Brush);
+        MarkupEraserButton.Click += (_, _) => SelectMarkupTool(MarkupTool.Eraser);
         MarkupLineButton.Click += (_, _) => SelectMarkupTool(MarkupTool.Line);
         MarkupRectangleButton.Click += (_, _) => SelectMarkupTool(MarkupTool.Rectangle);
         MarkupArrowButton.Click += (_, _) => SelectMarkupTool(MarkupTool.Arrow);
@@ -683,16 +690,21 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             MarkupStrokeValue.Text = Math.Round(MarkupStrokeSlider.Value)
                 .ToString(System.Globalization.CultureInfo.InvariantCulture);
         };
+        MarkupUndoButton.Click += (_, _) => _presentation.UndoCurrent();
+        MarkupRedoButton.Click += (_, _) => _presentation.RedoCurrent();
         MarkupClearButton.Click += (_, _) => _presentation.ClearCurrent();
         _presentation.Changed += (_, _) => ApplyMarkupToolsUi();
 
         MarkupBrushButton.Content = _localizer[UiStrings.PresentationBrush];
+        MarkupEraserButton.Content = _localizer[UiStrings.PresentationEraser];
         MarkupLineButton.Content = _localizer[UiStrings.PresentationLine];
         MarkupRectangleButton.Content = _localizer[UiStrings.PresentationRectangle];
         MarkupArrowButton.Content = _localizer[UiStrings.PresentationArrow];
         MarkupColorText.Text = _localizer[UiStrings.PresentationColor];
         MarkupStrokeText.Text = _localizer[UiStrings.PresentationStroke];
         MarkupClearButton.Content = _localizer[UiStrings.PresentationClear];
+        MarkupUndoButton.Content = _localizer[UiStrings.PresentationUndo];
+        MarkupRedoButton.Content = _localizer[UiStrings.PresentationRedo];
         ApplyMarkupToolsUi();
     }
 
@@ -727,9 +739,13 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
 
         MarkupToolsPanel.IsVisible = _presentation.MarkupToolsVisible;
         MarkupBrushButton.Classes.Set("accent", _presentation.ActiveTool == MarkupTool.Brush);
+        MarkupEraserButton.Classes.Set("accent", _presentation.ActiveTool == MarkupTool.Eraser);
         MarkupLineButton.Classes.Set("accent", _presentation.ActiveTool == MarkupTool.Line);
         MarkupRectangleButton.Classes.Set("accent", _presentation.ActiveTool == MarkupTool.Rectangle);
         MarkupArrowButton.Classes.Set("accent", _presentation.ActiveTool == MarkupTool.Arrow);
+        MarkupUndoButton.IsEnabled = _presentation.CanUndo;
+        MarkupRedoButton.IsEnabled = _presentation.CanRedo;
+        MarkupClearButton.IsEnabled = _presentation.CanClear;
         var color = _presentation.ActiveColor;
         MarkupColorSwatch.Background = new SolidColorBrush(Color.FromRgb(color.Red, color.Green, color.Blue));
         if (Math.Abs(MarkupStrokeSlider.Value - _presentation.ActiveStrokePhysicalPixels) > 0.001)

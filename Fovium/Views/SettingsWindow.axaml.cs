@@ -480,6 +480,9 @@ internal sealed partial class SettingsWindow : Window
         ViewerCommand.BlinkCompare => UiStrings.CommandBlinkCompare,
         ViewerCommand.ToggleHighlight => UiStrings.CommandToggleHighlight,
         ViewerCommand.ToggleMarkupTools => UiStrings.CommandToggleMarkupTools,
+        ViewerCommand.MarkupUndo => UiStrings.CommandMarkupUndo,
+        ViewerCommand.MarkupRedo => UiStrings.CommandMarkupRedo,
+        ViewerCommand.ClearMarkup => UiStrings.CommandClearMarkup,
         _ => throw new ArgumentOutOfRangeException(nameof(command)),
     }];
 

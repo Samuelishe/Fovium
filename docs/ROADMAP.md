@@ -51,9 +51,17 @@ Accepted outcome: add configurable press-and-hold whole-viewport Peek 100% and p
 
 Accepted outcome: add configurable cursor highlight plus an on-demand Brush/Line/Rectangle/Arrow dock. Markup is bounded, image-bound in oriented source space, session-local, memory-only, compatible with viewport changes and Peek/Blink, and never writes source or sidecar data.
 
+## R5-F1 — True Eraser and markup history foundation
+
+Accepted outcome: replace append-only primitives with bounded per-image ordered operation history; add a true partial visual Eraser through an isolated markup layer, per-image Undo/Redo, undoable Clear, and conflict-safe configurable history shortcuts without changing source files or adding persistent annotation data.
+
+## R5-F2 — Markup shapes, opacity, and Shift constraints
+
+Expected next bounded stage after explicit R5-F1 owner acceptance. Ellipse, shared opacity, and drawing constraints require their own scope; do not start automatically or fold in toolbar redesign, text, selection/editing, export, sidecars, or layers.
+
 ## R6 — Metadata / context-menu polish
 
-Potential next bounded stage: unobtrusive metadata access and coherent context-menu polish. It requires explicit owner acceptance after R5 review; do not expand presenter markup into editing/export work.
+Potential later bounded stage: unobtrusive metadata access and coherent context-menu polish. It requires explicit owner acceptance after the remaining bounded presenter work; do not expand presenter markup into editing/export work.
 
 ## Later / separate platform milestones
 

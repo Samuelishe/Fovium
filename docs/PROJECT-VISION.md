@@ -44,7 +44,7 @@ An optional persisted **Matte** is an independent modifier over any background. 
 
 Both use the shared shortcut system, allow one transient mode at a time, and add no persistent viewport UI. Selected-reference A/B and combined compare-at-100 remain future possibilities requiring evidence from real use.
 
-**Presenter overlay** is an explicitly requested, temporary presentation aid: `H` toggles a translucent cursor highlight and `P` toggles a compact drawing dock. Brush, Line, Rectangle, and Arrow marks are bound to oriented photograph coordinates for the current in-memory session. They are not source edits, annotation documents, sidecars, or exportable content; hiding the dock preserves marks and Clear affects only the current image.
+**Presenter overlay** is an explicitly requested, temporary presentation aid: `H` toggles a translucent cursor highlight and `P` toggles a compact drawing dock. Brush, Line, Rectangle, Arrow, and true partial Eraser operations are bound to oriented photograph coordinates for the current in-memory session. Per-image Undo/Redo and undoable Clear replay that bounded operation history. They are not source edits, annotation documents, sidecars, layers, object-editing tools, or exportable content; hiding the dock preserves marks.
 
 ## Non-goals
 

@@ -5,41 +5,48 @@ namespace Fovium.Presentation;
 internal enum MarkupTool
 {
     Brush,
+    Eraser,
     Line,
     Rectangle,
     Arrow,
 }
 
-internal abstract record MarkupElement(PresentationColor Color, double StrokeWidthSource);
+internal abstract record MarkupElement(PresentationColor Color, double StrokeWidthSource)
+{
+    public abstract int PointCount { get; }
+}
 
 internal sealed record BrushMarkup(
     PresentationColor Color,
     double StrokeWidthSource,
-    PointD[] Points) : MarkupElement(Color, StrokeWidthSource);
+    MarkupStrokePoints Points) : MarkupElement(Color, StrokeWidthSource)
+{
+    public override int PointCount => Points.Count;
+}
 
 internal sealed record LineMarkup(
     PresentationColor Color,
     double StrokeWidthSource,
     PointD Start,
-    PointD End) : MarkupElement(Color, StrokeWidthSource);
+    PointD End) : MarkupElement(Color, StrokeWidthSource)
+{
+    public override int PointCount => 2;
+}
 
 internal sealed record RectangleMarkup(
     PresentationColor Color,
     double StrokeWidthSource,
     PointD Start,
-    PointD End) : MarkupElement(Color, StrokeWidthSource);
+    PointD End) : MarkupElement(Color, StrokeWidthSource)
+{
+    public override int PointCount => 2;
+}
 
 internal sealed record ArrowMarkup(
     PresentationColor Color,
     double StrokeWidthSource,
     PointD Start,
-    PointD End) : MarkupElement(Color, StrokeWidthSource);
-
-internal readonly record struct MarkupRenderSnapshot(
-    IReadOnlyList<MarkupElement> Elements,
-    MarkupElement? Draft)
+    PointD End) : MarkupElement(Color, StrokeWidthSource)
 {
-    public static MarkupRenderSnapshot Empty { get; } = new(Array.Empty<MarkupElement>(), null);
-
-    public bool IsEmpty => Elements.Count == 0 && Draft is null;
+    public override int PointCount => 2;
 }

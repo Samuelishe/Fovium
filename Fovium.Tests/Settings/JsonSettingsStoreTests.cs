@@ -353,6 +353,62 @@ public sealed class JsonSettingsStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task ExistingV2ReceivesFreeMarkupHistoryDefaultsWithoutSchemaBump()
+    {
+        await WriteAsync("""
+            {
+              "schemaVersion": 2,
+              "shortcuts": { "bindings": { "viewer.fit": { "key": "0", "modifiers": "None" } } }
+            }
+            """);
+
+        var result = await CreateStore().LoadAsync(CancellationToken.None);
+
+        Assert.Equal(2, result.Settings.SchemaVersion);
+        Assert.Equal(
+            new ShortcutGesture("Z", ShortcutModifiers.Control),
+            result.Settings.Shortcuts.Get(ViewerCommand.MarkupUndo));
+        Assert.Equal(
+            new ShortcutGesture("Y", ShortcutModifiers.Control),
+            result.Settings.Shortcuts.Get(ViewerCommand.MarkupRedo));
+        Assert.Equal(
+            new ShortcutGesture("Delete", ShortcutModifiers.Control),
+            result.Settings.Shortcuts.Get(ViewerCommand.ClearMarkup));
+    }
+
+    [Fact]
+    public async Task ExistingV2CustomizedHistoryGesturesAreNeverStolen()
+    {
+        await WriteAsync("""
+            {
+              "schemaVersion": 2,
+              "shortcuts": {
+                "bindings": {
+                  "viewer.fit": { "key": "Z", "modifiers": "Control" },
+                  "viewer.toggleMatte": { "key": "Y", "modifiers": "Control" },
+                  "viewer.toggleHighlight": { "key": "Delete", "modifiers": "Control" }
+                }
+              }
+            }
+            """);
+
+        var result = await CreateStore().LoadAsync(CancellationToken.None);
+
+        Assert.Equal(
+            new ShortcutGesture("Z", ShortcutModifiers.Control),
+            result.Settings.Shortcuts.Get(ViewerCommand.Fit));
+        Assert.Equal(
+            new ShortcutGesture("Y", ShortcutModifiers.Control),
+            result.Settings.Shortcuts.Get(ViewerCommand.ToggleMatte));
+        Assert.Equal(
+            new ShortcutGesture("Delete", ShortcutModifiers.Control),
+            result.Settings.Shortcuts.Get(ViewerCommand.ToggleHighlight));
+        Assert.Null(result.Settings.Shortcuts.Get(ViewerCommand.MarkupUndo));
+        Assert.Null(result.Settings.Shortcuts.Get(ViewerCommand.MarkupRedo));
+        Assert.Null(result.Settings.Shortcuts.Get(ViewerCommand.ClearMarkup));
+    }
+
+    [Fact]
     public async Task MalformedJsonRecoversToDefaults()
     {
         await WriteAsync("{not-json");

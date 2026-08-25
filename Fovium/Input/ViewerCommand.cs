@@ -16,6 +16,9 @@ internal enum ViewerCommand
     BlinkCompare,
     ToggleHighlight,
     ToggleMarkupTools,
+    MarkupUndo,
+    MarkupRedo,
+    ClearMarkup,
 }
 
 internal enum ViewerCommandTrigger
@@ -47,6 +50,9 @@ internal static class ViewerCommands
         new(ViewerCommand.BlinkCompare, "viewer.blinkCompare", ViewerCommandTrigger.Hold),
         new(ViewerCommand.ToggleHighlight, "viewer.toggleHighlight"),
         new(ViewerCommand.ToggleMarkupTools, "viewer.toggleMarkupTools"),
+        new(ViewerCommand.MarkupUndo, "viewer.markupUndo"),
+        new(ViewerCommand.MarkupRedo, "viewer.markupRedo"),
+        new(ViewerCommand.ClearMarkup, "viewer.clearMarkup"),
     ];
 
     private static readonly IReadOnlyDictionary<ViewerCommand, ViewerCommandDefinition> ByCommand =

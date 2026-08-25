@@ -60,6 +60,9 @@ internal static class UiStrings
     public const string CommandBlinkCompare = "command.blinkCompare";
     public const string CommandToggleHighlight = "command.toggleHighlight";
     public const string CommandToggleMarkupTools = "command.toggleMarkupTools";
+    public const string CommandMarkupUndo = "command.markupUndo";
+    public const string CommandMarkupRedo = "command.markupRedo";
+    public const string CommandClearMarkup = "command.clearMarkup";
     public const string PresentationEnableMarkup = "presentation.enableMarkup";
     public const string PresentationHighlight = "presentation.highlight";
     public const string PresentationHighlightColor = "presentation.highlightColor";
@@ -69,11 +72,14 @@ internal static class UiStrings
     public const string PresentationMarkupColor = "presentation.markupColor";
     public const string PresentationStroke = "presentation.stroke";
     public const string PresentationBrush = "presentation.brush";
+    public const string PresentationEraser = "presentation.eraser";
     public const string PresentationLine = "presentation.line";
     public const string PresentationRectangle = "presentation.rectangle";
     public const string PresentationArrow = "presentation.arrow";
     public const string PresentationColor = "presentation.color";
     public const string PresentationClear = "presentation.clear";
+    public const string PresentationUndo = "presentation.undo";
+    public const string PresentationRedo = "presentation.redo";
     public const string SettingsScaleOnImageChange = "settings.scaleOnImageChange";
     public const string SettingsKeepCurrentScale = "settings.keepCurrentScale";
     public const string SettingsFitEachImage = "settings.fitEachImage";

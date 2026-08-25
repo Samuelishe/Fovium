@@ -107,7 +107,12 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
             canvas.Restore();
         }
 
-        SkiaMarkupOverlayRenderer.Draw(canvas, _destination, orientedSize, _markup);
+        SkiaMarkupOverlayRenderer.Draw(
+            canvas,
+            _destination,
+            orientedSize,
+            _markup,
+            new RectD(Bounds.X, Bounds.Y, Bounds.Width, Bounds.Height));
     }
 
     public bool Equals(ICustomDrawOperation? other) => false;

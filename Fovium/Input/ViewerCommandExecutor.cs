@@ -23,6 +23,12 @@ internal interface IViewerCommandTarget
     void ToggleHighlight();
 
     void ToggleMarkupTools();
+
+    void UndoMarkup();
+
+    void RedoMarkup();
+
+    void ClearMarkup();
 }
 
 internal sealed class ViewerCommandExecutor(IViewerCommandTarget target)
@@ -48,6 +54,9 @@ internal sealed class ViewerCommandExecutor(IViewerCommandTarget target)
             ViewerCommand.Settings => Execute(target.ShowSettings),
             ViewerCommand.ToggleHighlight => Execute(target.ToggleHighlight),
             ViewerCommand.ToggleMarkupTools => Execute(target.ToggleMarkupTools),
+            ViewerCommand.MarkupUndo => Execute(target.UndoMarkup),
+            ViewerCommand.MarkupRedo => Execute(target.RedoMarkup),
+            ViewerCommand.ClearMarkup => Execute(target.ClearMarkup),
             _ => throw new ArgumentOutOfRangeException(nameof(command)),
         };
     }

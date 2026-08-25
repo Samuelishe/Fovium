@@ -19,6 +19,9 @@ public sealed class ShortcutDefaultsTests
     [InlineData((int)ViewerCommand.BlinkCompare, "C", (int)ShortcutModifiers.None)]
     [InlineData((int)ViewerCommand.ToggleHighlight, "H", (int)ShortcutModifiers.None)]
     [InlineData((int)ViewerCommand.ToggleMarkupTools, "P", (int)ShortcutModifiers.None)]
+    [InlineData((int)ViewerCommand.MarkupUndo, "Z", (int)ShortcutModifiers.Control)]
+    [InlineData((int)ViewerCommand.MarkupRedo, "Y", (int)ShortcutModifiers.Control)]
+    [InlineData((int)ViewerCommand.ClearMarkup, "Delete", (int)ShortcutModifiers.Control)]
     public void ExactDefaultBindingsUseProjectOwnedGestures(
         int commandValue,
         string key,
@@ -48,6 +51,9 @@ public sealed class ShortcutDefaultsTests
         Assert.Equal("viewer.blinkCompare", ViewerCommands.GetId(ViewerCommand.BlinkCompare));
         Assert.Equal("viewer.toggleHighlight", ViewerCommands.GetId(ViewerCommand.ToggleHighlight));
         Assert.Equal("viewer.toggleMarkupTools", ViewerCommands.GetId(ViewerCommand.ToggleMarkupTools));
+        Assert.Equal("viewer.markupUndo", ViewerCommands.GetId(ViewerCommand.MarkupUndo));
+        Assert.Equal("viewer.markupRedo", ViewerCommands.GetId(ViewerCommand.MarkupRedo));
+        Assert.Equal("viewer.clearMarkup", ViewerCommands.GetId(ViewerCommand.ClearMarkup));
         Assert.Equal(ViewerCommandTrigger.Hold, ViewerCommands.GetDefinition(ViewerCommand.Peek100).Trigger);
         Assert.Equal(ViewerCommandTrigger.Hold, ViewerCommands.GetDefinition(ViewerCommand.BlinkCompare).Trigger);
         Assert.All(

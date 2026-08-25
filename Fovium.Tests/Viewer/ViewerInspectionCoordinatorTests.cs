@@ -26,6 +26,7 @@ public sealed class ViewerInspectionCoordinatorTests(Xunit.Abstractions.ITestOut
         DrawOverlay(overlays, opened.Path!, new PresentationColor(0x11, 0x22, 0x33));
         var previousPath = Path.GetFullPath("A.png");
         DrawOverlay(overlays, previousPath, new PresentationColor(0xAA, 0xBB, 0xCC));
+        EraseOverlay(overlays, previousPath);
         viewport.ConfigurePresentation(overlays);
         viewport.SetImage(opened.Image!, ViewTransfer.Fit, opened.Path!);
         viewport.SetPhotographic100AtCenter();
@@ -41,9 +42,13 @@ public sealed class ViewerInspectionCoordinatorTests(Xunit.Abstractions.ITestOut
         Assert.Equal(callsBefore, loader.Calls.Count);
         Assert.Equal(before, viewport.CaptureViewTransfer());
         Assert.Equal(previousPath, viewport.PresentedImageIdentity);
+        var comparisonMarkup = viewport.CapturePresentedMarkup().Operations;
+        Assert.Equal(2, comparisonMarkup.Count);
         Assert.Equal(
             new PresentationColor(0xAA, 0xBB, 0xCC),
-            Assert.Single(viewport.CapturePresentedMarkup().Elements).Color);
+            Assert.IsType<DrawMarkupOperation>(
+                comparisonMarkup[0]).Element.Color);
+        Assert.IsType<EraseMarkupOperation>(comparisonMarkup[1]);
 
         coordinator.End();
 
@@ -53,7 +58,8 @@ public sealed class ViewerInspectionCoordinatorTests(Xunit.Abstractions.ITestOut
         Assert.Equal(opened.Path, viewport.PresentedImageIdentity);
         Assert.Equal(
             new PresentationColor(0x11, 0x22, 0x33),
-            Assert.Single(viewport.CapturePresentedMarkup().Elements).Color);
+            Assert.IsType<DrawMarkupOperation>(
+                Assert.Single(viewport.CapturePresentedMarkup().Operations)).Element.Color);
         var metrics = coordinator.GetMetrics();
         Assert.True(metrics.LastCachedBlinkLatency > TimeSpan.Zero);
         Assert.True(metrics.LastReleaseLatency > TimeSpan.Zero);
@@ -77,13 +83,16 @@ public sealed class ViewerInspectionCoordinatorTests(Xunit.Abstractions.ITestOut
         viewport.ConfigurePresentation(overlays);
         var opened = await session.OpenAsync(new ImageSequence(["A.png"], 0));
         DrawOverlay(overlays, opened.Path!, new PresentationColor(1, 2, 3));
+        EraseOverlay(overlays, opened.Path!);
         viewport.SetImage(opened.Image!, ViewTransfer.Fit, opened.Path!);
         var coordinator = new ViewerInspectionCoordinator(viewport, session, settings);
 
         await coordinator.BeginAsync(Fovium.Input.ViewerCommand.Peek100, CancellationToken.None);
 
         Assert.Equal(opened.Path, viewport.PresentedImageIdentity);
-        Assert.Single(viewport.CapturePresentedMarkup().Elements);
+        var peekMarkup = viewport.CapturePresentedMarkup().Operations;
+        Assert.Equal(2, peekMarkup.Count);
+        Assert.IsType<EraseMarkupOperation>(peekMarkup[1]);
         coordinator.End();
         Assert.Equal(opened.Path, viewport.PresentedImageIdentity);
         viewport.ClearImage();
@@ -226,5 +235,13 @@ public sealed class ViewerInspectionCoordinatorTests(Xunit.Abstractions.ITestOut
         overlays.SetActiveColor(color);
         Assert.True(overlays.BeginDrawing(new PointD(1, 1), 1));
         Assert.True(overlays.EndDrawing(new PointD(8, 8)));
+    }
+
+    private static void EraseOverlay(PresentationOverlaySession overlays, string identity)
+    {
+        overlays.SelectImage(identity);
+        overlays.SetActiveTool(MarkupTool.Eraser);
+        Assert.True(overlays.BeginDrawing(new PointD(4, 1), 1));
+        Assert.True(overlays.EndDrawing(new PointD(4, 8)));
     }
 }

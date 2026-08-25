@@ -139,6 +139,29 @@ public sealed class SettingsServiceTests
     }
 
     [Fact]
+    public async Task ResetShortcutsRestoresMarkupHistoryDefaults()
+    {
+        var store = new RecordingSettingsStore();
+        using var service = new SettingsService(store);
+        await service.SetShortcutsAsync(ShortcutSettings.Default
+            .WithBinding(ViewerCommand.MarkupUndo, null)
+            .WithBinding(ViewerCommand.MarkupRedo, null)
+            .WithBinding(ViewerCommand.ClearMarkup, null));
+
+        await service.ResetShortcutsAsync();
+
+        Assert.Equal(
+            new ShortcutGesture("Z", ShortcutModifiers.Control),
+            service.Current.Shortcuts.Get(ViewerCommand.MarkupUndo));
+        Assert.Equal(
+            new ShortcutGesture("Y", ShortcutModifiers.Control),
+            service.Current.Shortcuts.Get(ViewerCommand.MarkupRedo));
+        Assert.Equal(
+            new ShortcutGesture("Delete", ShortcutModifiers.Control),
+            service.Current.Shortcuts.Get(ViewerCommand.ClearMarkup));
+    }
+
+    [Fact]
     public async Task PresentationSettingsRoundTripThroughSharedService()
     {
         var store = new RecordingSettingsStore();

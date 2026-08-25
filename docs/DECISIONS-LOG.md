@@ -225,7 +225,7 @@ Peek and Blink are configurable hold commands in the shared stable command/gestu
 
 ## D-037 — Presenter markup is image-bound session state
 
-Status: Accepted in R5.
+Status: Superseded by D-039 in R5-F1.
 
 Brush, Line, Rectangle, and Arrow primitives live only in bounded managed memory keyed by image identity and use oriented source coordinates. Rendering transforms them through the existing destination after the photograph; Peek keeps current identity and Blink selects comparison identity. Hiding tools preserves marks, Clear removes only the current image, and new sequence/session clears all. No source write, sidecar, save/export, document format, undo/editing/layers, or second compositor is introduced.
 
@@ -234,3 +234,9 @@ Brush, Line, Rectangle, and Arrow primitives live only in bounded managed memory
 Status: Accepted in R5.
 
 Cursor Highlight and Markup Tools are shared configurable press commands defaulting to `H` and `P` without stealing occupied gestures. Highlight is viewport-space, physical-radius, and hides the system cursor only over the viewer. The compact markup dock appears only on request and its mouse controls do not take viewer keyboard focus; it is not a persistent toolbar or general annotation UI.
+
+## D-039 — Markup is an ordered, erasable, per-image operation history
+
+Status: Accepted in R5-F1.
+
+Each image-bound memory-only markup document has one bounded chronological operation history and one cursor; active rendering replays Draw, Erase, and Clear operations before that cursor. A freehand Eraser uses Clear blending only inside a destination-bounded isolated transparent markup layer, so it removes crossed markup pixels without mutating photograph, Stage, or Matte. One continuous draw/erase gesture is one history step, Clear is an undoable operation, Undo/Redo remain per image, and a new edit after Undo releases the redo tail. This foundation does not introduce source writes, sidecars, export, object editing, layers, or a general annotation document format.

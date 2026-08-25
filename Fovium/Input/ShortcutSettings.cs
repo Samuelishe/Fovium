@@ -71,5 +71,8 @@ internal static class ShortcutDefaults
         [ViewerCommands.GetId(ViewerCommand.BlinkCompare)] = new("C"),
         [ViewerCommands.GetId(ViewerCommand.ToggleHighlight)] = new("H"),
         [ViewerCommands.GetId(ViewerCommand.ToggleMarkupTools)] = new("P"),
+        [ViewerCommands.GetId(ViewerCommand.MarkupUndo)] = new("Z", ShortcutModifiers.Control),
+        [ViewerCommands.GetId(ViewerCommand.MarkupRedo)] = new("Y", ShortcutModifiers.Control),
+        [ViewerCommands.GetId(ViewerCommand.ClearMarkup)] = new("Delete", ShortcutModifiers.Control),
     };
 }

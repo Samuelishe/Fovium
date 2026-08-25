@@ -35,6 +35,20 @@ public sealed class AvaloniaShortcutGestureAdapterTests
         Assert.False(AvaloniaShortcutGestureAdapter.TryCreate(Key.Escape, KeyModifiers.None, out _));
     }
 
+    [Fact]
+    public void ControlDeleteRoundTripsAsClearMarkupGesture()
+    {
+        Assert.True(AvaloniaShortcutGestureAdapter.TryCreate(
+            Key.Delete,
+            KeyModifiers.Control,
+            out var gesture));
+
+        Assert.Equal(new ShortcutGesture("Delete", ShortcutModifiers.Control), gesture);
+        var avalonia = Assert.IsType<KeyGesture>(AvaloniaShortcutGestureAdapter.ToAvalonia(gesture));
+        Assert.Equal(Key.Delete, avalonia.Key);
+        Assert.Equal(KeyModifiers.Control, avalonia.KeyModifiers);
+    }
+
     [Theory]
     [InlineData((int)Key.Z, "Z")]
     [InlineData((int)Key.C, "C")]

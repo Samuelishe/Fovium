@@ -316,6 +316,31 @@ internal sealed class PhotoViewportControl : Control
             var radius = presentation.Settings.HighlightRadiusPhysicalPixels / _viewport.RenderScaling;
             context.DrawEllipse(brush, null, new Point(pointer.X, pointer.Y), radius, radius);
         }
+
+        if (_presentation is
+            {
+                MarkupToolsVisible: true,
+                ActiveTool: MarkupTool.Eraser,
+            } eraserPresentation &&
+            _pointerInside &&
+            _lastPointerPosition is { } eraserPointer)
+        {
+            var radius = eraserPresentation.ActiveStrokePhysicalPixels /
+                (2 * _viewport.RenderScaling);
+            var center = new Point(eraserPointer.X, eraserPointer.Y);
+            context.DrawEllipse(
+                null,
+                new Pen(Brushes.Black, 3 / _viewport.RenderScaling),
+                center,
+                radius,
+                radius);
+            context.DrawEllipse(
+                null,
+                new Pen(Brushes.White, 1 / _viewport.RenderScaling),
+                center,
+                radius,
+                radius);
+        }
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -535,7 +560,9 @@ internal sealed class PhotoViewportControl : Control
         _lastPointerPosition = new PointD(pointer.X, pointer.Y);
         _pointerInside = true;
         ApplyCursor();
-        if (_presentation?.HighlightEnabled == true)
+        if (_presentation is { } presentation &&
+            (presentation.HighlightEnabled ||
+                presentation.MarkupToolsVisible && presentation.ActiveTool == MarkupTool.Eraser))
         {
             InvalidateVisual();
         }
