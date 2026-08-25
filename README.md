@@ -35,7 +35,7 @@ See the canonical [UX contract](docs/UX-CONTRACT.md), [rendering contract](docs/
 
 ## Current status
 
-The current project checkpoint is **`0.0.0.0012`**. R5-F2 adds Ellipse/Circle, immutable per-draw opacity, Shift constraints, and contextual bracket-key style adjustments to the presenter dock. Markup remains image-bound, session-local, memory-only, and never changes or writes the source photograph.
+The current project checkpoint is **`0.0.0.0013`**. R5-P1 makes matching current-image Ambient presentation outrank speculative neighbor work, removing the visible Black edge flash from normal sequential 24 MP navigation while keeping photograph publication first. Markup remains image-bound, session-local, memory-only, and never changes or writes the source photograph.
 
 This remains an early vertical slice, not a release claim. Full monitor-aware ICC, broad codecs, metadata, platform associations, markup export/object editing, and selected-reference A/B comparison are not implemented. The next stage requires owner review rather than automatic continuation. The canonical handoff is [PROJECT-STATE.md](docs/PROJECT-STATE.md); bounded R0 evidence remains in the [experiment report](docs/experiments/R0-RENDERING-PROBE.md).
 

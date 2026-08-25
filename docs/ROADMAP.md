@@ -59,9 +59,13 @@ Accepted outcome: replace append-only primitives with bounded per-image ordered 
 
 Accepted outcome: add Ellipse/Shift-circle, immutable per-draw opacity, Shift constraints for Line/Arrow/Rectangle/Ellipse/Brush, contextual bracket-key thickness/opacity adjustment, and conflict-safe Clear/Blink default evolution without adding a dedicated Highlighter or persistent markup data.
 
+## R5-P1 — Ambient transition latency hardening
+
+Accepted outcome: retain photograph-first navigation while promoting matching current-image Ambient ahead of speculative neighbor work, add identity-aware photo-to-Ambient diagnostics, and eliminate the normal sequential 24 MP Black edge flash without mismatched fallback, a larger cache, or transition animation.
+
 ## R5-F3 — Contextual drawing shortcuts and presentation UI polish
 
-Expected next bounded stage after explicit R5-F2 owner acceptance. It may address contextual tool shortcuts plus compact dock/Controls grouping and iconography; do not start automatically or fold in text, selection/editing, export, sidecars, or layers.
+Expected next bounded stage after explicit R5-P1 owner acceptance. It may address contextual tool shortcuts plus compact dock/Controls grouping and iconography; do not start automatically or fold in text, selection/editing, export, sidecars, or layers.
 
 ## R6 — Metadata / context-menu polish
 

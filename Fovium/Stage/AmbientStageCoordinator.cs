@@ -13,7 +13,13 @@ internal readonly record struct AmbientStageMetrics(
     long StaleDisposalCount,
     long PreparationFailureCount,
     long TotalPreparedBytes,
-    TimeSpan LastPreparationDuration);
+    TimeSpan LastPreparationDuration,
+    long CurrentAmbientCacheHitCount,
+    long CurrentAmbientPrepareCount,
+    long AdjacentAmbientPreparedCount,
+    TimeSpan LastCurrentAmbientPreparationDuration,
+    TimeSpan? LastPhotoToAmbientPresentationGap,
+    bool LastCurrentAmbientWasCacheHit);
 
 internal sealed class StagePresentation : IDisposable
 {
@@ -63,6 +69,15 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
     private long _preparationFailureCount;
     private long _preparedRetainedBytes;
     private long _lastPreparationTicks;
+    private long _currentAmbientCacheHitCount;
+    private long _currentAmbientPrepareCount;
+    private long _adjacentAmbientPreparedCount;
+    private long _lastCurrentAmbientPreparationTicks;
+    private long _lastPhotoToAmbientPresentationGapTicks = -1;
+    private long _photoPublicationTimestamp;
+    private long _photoPublicationGeneration;
+    private long _ambientAvailabilityGeneration;
+    private int _lastCurrentAmbientWasCacheHit;
     private bool _disposed;
 
     public AmbientStageCoordinator(
@@ -95,7 +110,13 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
         Interlocked.Read(ref _staleDisposalCount),
         Interlocked.Read(ref _preparationFailureCount),
         Interlocked.Read(ref _preparedRetainedBytes),
-        TimeSpan.FromTicks(Interlocked.Read(ref _lastPreparationTicks)));
+        TimeSpan.FromTicks(Interlocked.Read(ref _lastPreparationTicks)),
+        Interlocked.Read(ref _currentAmbientCacheHitCount),
+        Interlocked.Read(ref _currentAmbientPrepareCount),
+        Interlocked.Read(ref _adjacentAmbientPreparedCount),
+        TimeSpan.FromTicks(Interlocked.Read(ref _lastCurrentAmbientPreparationTicks)),
+        ReadPresentationGap(),
+        Volatile.Read(ref _lastCurrentAmbientWasCacheHit) != 0);
 
     public void SelectImage(string path, long imageIdentity)
     {
@@ -114,7 +135,24 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
             generation = ++_sourceGeneration;
             shouldPrepare = _stage.BackgroundMode.RequiresAmbient();
             blur = _stage.AmbientBlur;
+            _photoPublicationTimestamp = Stopwatch.GetTimestamp();
+            _photoPublicationGeneration = generation;
+            _ambientAvailabilityGeneration = 0;
+            Interlocked.Exchange(ref _lastPhotoToAmbientPresentationGapTicks, -1);
+            Interlocked.Exchange(ref _lastCurrentAmbientPreparationTicks, 0);
+            Volatile.Write(ref _lastCurrentAmbientWasCacheHit, 0);
             token = shouldPrepare ? CreateWorkTokenUnsafe() : CancellationToken.None;
+        }
+
+        if (shouldPrepare && HasMatchingAmbient(path, imageIdentity, blur))
+        {
+            RecordCurrentAmbientAvailability(
+                generation,
+                path,
+                imageIdentity,
+                blur,
+                wasCacheHit: true,
+                preparationDuration: TimeSpan.Zero);
         }
 
         NotifyPresentationChanged();
@@ -134,6 +172,11 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
             _currentIdentity = null;
             _transitionalAmbientIdentity = null;
             _sourceGeneration++;
+            _photoPublicationGeneration = 0;
+            _ambientAvailabilityGeneration = 0;
+            Interlocked.Exchange(ref _lastPhotoToAmbientPresentationGapTicks, -1);
+            Interlocked.Exchange(ref _lastCurrentAmbientPreparationTicks, 0);
+            Volatile.Write(ref _lastCurrentAmbientWasCacheHit, 0);
         }
 
         NotifyPresentationChanged();
@@ -339,7 +382,6 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
                 await Task.Delay(BlurDebounce, cancellationToken).ConfigureAwait(false);
             }
 
-            await _repository.WaitForAdjacentPreloadAsync(cancellationToken).ConfigureAwait(false);
             if (!IsAuthorized(generation, path, identity, blur))
             {
                 return;
@@ -347,6 +389,12 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
 
             PrepareOne(path, identity, generation, blur, publishIfCurrent: true, cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
+            await _repository.WaitForAdjacentPreloadAsync(cancellationToken).ConfigureAwait(false);
+            if (!IsAuthorized(generation, path, identity, blur))
+            {
+                return;
+            }
+
             var adjacent = _repository.AcquireAdjacent();
             try
             {
@@ -413,7 +461,17 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
             {
                 if (publishIfCurrent && image.Identity == identity && image.HasAmbientForBlur(blur))
                 {
-                    NotifyPresentationChanged();
+                    var becameAvailable = RecordCurrentAmbientAvailability(
+                        generation,
+                        path,
+                        identity,
+                        blur,
+                        wasCacheHit: true,
+                        preparationDuration: TimeSpan.Zero);
+                    if (becameAvailable)
+                    {
+                        NotifyPresentationChanged();
+                    }
                 }
 
                 return;
@@ -450,7 +508,18 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
                     }
                 }
 
+                _ = RecordCurrentAmbientAvailability(
+                    generation,
+                    path,
+                    identity,
+                    blur,
+                    wasCacheHit: false,
+                    prepared.PreparationDuration);
                 NotifyPresentationChanged();
+            }
+            else if (!publishIfCurrent)
+            {
+                Interlocked.Increment(ref _adjacentAmbientPreparedCount);
             }
         }
         finally
@@ -477,13 +546,78 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
     {
         lock (_sync)
         {
-            return !_disposed &&
-                generation == _sourceGeneration &&
-                _stage.BackgroundMode.RequiresAmbient() &&
-                _stage.AmbientBlur.Equals(blur) &&
-                string.Equals(path, _currentPath, StringComparison.Ordinal) &&
-                identity == _currentIdentity;
+            return IsAuthorizedUnsafe(generation, path, identity, blur);
         }
+    }
+
+    private bool HasMatchingAmbient(string path, long identity, double blur)
+    {
+        if (!_repository.TryAcquire(path, out var imageLease))
+        {
+            return false;
+        }
+
+        using (imageLease)
+        {
+            return imageLease!.Value.Identity == identity && imageLease.Value.HasAmbientForBlur(blur);
+        }
+    }
+
+    private bool RecordCurrentAmbientAvailability(
+        long generation,
+        string path,
+        long identity,
+        double blur,
+        bool wasCacheHit,
+        TimeSpan preparationDuration)
+    {
+        TimeSpan gap;
+        lock (_sync)
+        {
+            if (!IsAuthorizedUnsafe(generation, path, identity, blur) ||
+                _photoPublicationGeneration != generation ||
+                _ambientAvailabilityGeneration == generation)
+            {
+                return false;
+            }
+
+            _ambientAvailabilityGeneration = generation;
+            gap = Stopwatch.GetElapsedTime(_photoPublicationTimestamp);
+            Interlocked.Exchange(ref _lastPhotoToAmbientPresentationGapTicks, gap.Ticks);
+            Volatile.Write(ref _lastCurrentAmbientWasCacheHit, wasCacheHit ? 1 : 0);
+            if (wasCacheHit)
+            {
+                Interlocked.Increment(ref _currentAmbientCacheHitCount);
+                Interlocked.Exchange(ref _lastCurrentAmbientPreparationTicks, 0);
+            }
+            else
+            {
+                Interlocked.Increment(ref _currentAmbientPrepareCount);
+                Interlocked.Exchange(
+                    ref _lastCurrentAmbientPreparationTicks,
+                    preparationDuration.Ticks);
+            }
+        }
+
+        Debug.WriteLine(
+            $"Fovium Ambient current {(wasCacheHit ? "cache hit" : "prepared")} identity {identity}, " +
+            $"blur {blur:F1}, preparation {preparationDuration.TotalMilliseconds:F2} ms, " +
+            $"photo-to-Ambient {gap.TotalMilliseconds:F2} ms.");
+        return true;
+    }
+
+    private bool IsAuthorizedUnsafe(long generation, string path, long identity, double blur) =>
+        !_disposed &&
+        generation == _sourceGeneration &&
+        _stage.BackgroundMode.RequiresAmbient() &&
+        _stage.AmbientBlur.Equals(blur) &&
+        string.Equals(path, _currentPath, StringComparison.Ordinal) &&
+        identity == _currentIdentity;
+
+    private TimeSpan? ReadPresentationGap()
+    {
+        var ticks = Interlocked.Read(ref _lastPhotoToAmbientPresentationGapTicks);
+        return ticks < 0 ? null : TimeSpan.FromTicks(ticks);
     }
 
     private CancellationToken CreateWorkTokenUnsafe()

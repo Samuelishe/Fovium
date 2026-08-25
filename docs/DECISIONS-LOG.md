@@ -171,7 +171,7 @@ Stage is a persisted presentation preference independent from application theme 
 
 ## D-028 — Ambient is a bounded optional derivative
 
-Status: Accepted in R3.
+Status: Accepted in R3; scheduling priority superseded by D-041 in R5-P1.
 
 Ambient is prepared asynchronously from the full oriented decoded photograph at a bounded `384 px` long edge, not from viewport zoom/pan. Photograph publication and adjacent decode outrank it; failure or stale work leaves a Black fallback. The optional native resource is attached to its decoded image and charged to the existing byte-budget cache rather than retained in an unlimited second cache.
 
@@ -246,3 +246,9 @@ Each image-bound memory-only markup document has one bounded chronological opera
 Status: Accepted in R5-F2.
 
 Draw operations capture immutable color, source-space width, and opacity; opacity applies to Brush, Line, Rectangle, Ellipse, and Arrow but never weakens Eraser. Ellipse is a two-control-point oriented-source shape. A project-owned pure geometry helper constrains Line/Arrow/Brush to 45-degree directions and Rectangle/Ellipse to square/circle geometry; Shift is translated only at the Avalonia boundary, and releasing it can restore the collected freehand Brush draft before commit. Contextual `[`/`]` and `Ctrl+[`/`Ctrl+]` commands adjust active dock thickness/opacity, Clear defaults to `C`, and Blink moves to `Shift+C`, leaving `Ctrl+C` available for a future conventional Copy command. No dedicated Highlighter, contextual tool-selection scheme, or toolbar redesign is introduced.
+
+## D-041 — Matching current Ambient outranks speculative neighbor work
+
+Status: Accepted in R5-P1.
+
+The canonical photograph still publishes before decoration. Once published, its matching current-image Ambient is user-visible presentation work and must start without waiting for the full adjacent-photo preload barrier; only later neighbor Ambient work remains speculative. Cached matching Ambient transfers immediately with its decoded owner, while a genuine miss uses Black rather than a mismatched previous-image derivative. Latest-wins source/blur authority rejects stale publication. Local 10/24 MP evidence did not justify a progressive session hook, placeholder, fade, cache-budget increase, or lower Ambient resolution.

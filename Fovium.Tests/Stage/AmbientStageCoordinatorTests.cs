@@ -106,6 +106,7 @@ public sealed class AmbientStageCoordinatorTests
         await using var coordinator = new AmbientStageCoordinator(repository, preparer, initial);
         coordinator.SelectImage("photo", image.Identity);
         await coordinator.WaitForIdleAsync();
+        var navigationMetrics = coordinator.GetMetrics();
 
         coordinator.SetStage(initial with { AmbientBlur = 20 });
         coordinator.SetStage(initial with { AmbientBlur = 22 });
@@ -118,6 +119,10 @@ public sealed class AmbientStageCoordinatorTests
         Assert.Equal(24, presentation.Ambient?.Blur);
         Assert.Equal(24, presentation.Stage.AmbientBlur);
         Assert.Equal(2, coordinator.GetMetrics().PreparedCount);
+        Assert.Equal(1, coordinator.GetMetrics().CurrentAmbientPrepareCount);
+        Assert.Equal(
+            navigationMetrics.LastPhotoToAmbientPresentationGap,
+            coordinator.GetMetrics().LastPhotoToAmbientPresentationGap);
     }
 
     [Fact]
@@ -174,6 +179,37 @@ public sealed class AmbientStageCoordinatorTests
     }
 
     [Fact]
+    public async Task ObsoleteCurrentAmbientCannotPublishOverLatestSelection()
+    {
+        using var repository = new TestRepository();
+        var first = StageTestImages.CreateDecoded("first.png");
+        var latest = StageTestImages.CreateDecoded("latest.png");
+        repository.Add("first", first, protect: true);
+        repository.Add("latest", latest, protect: false);
+        var preparer = new ObsoleteFirstPreparer();
+        await using var coordinator = new AmbientStageCoordinator(
+            repository,
+            preparer,
+            StageSettings.Default with { BackgroundMode = StageBackgroundMode.Ambient });
+
+        coordinator.SelectImage("first", first.Identity);
+        await preparer.FirstStarted.Task;
+        coordinator.SelectImage("latest", latest.Identity);
+        await preparer.LatestCompleted.Task;
+        preparer.CompleteFirst();
+        await coordinator.WaitForIdleAsync();
+        using var presentation = coordinator.AcquirePresentation();
+
+        Assert.Equal(latest.Identity, presentation.ImageIdentity);
+        Assert.NotNull(presentation.Ambient);
+        Assert.True(latest.HasAmbientForBlur(18));
+        Assert.False(first.HasAmbient);
+        Assert.True(preparer.ObsoletePreparedWasDisposed);
+        Assert.Equal(1, coordinator.GetMetrics().StaleDisposalCount);
+        Assert.Equal(1, coordinator.GetMetrics().CurrentAmbientPrepareCount);
+    }
+
+    [Fact]
     public async Task PreparationFailureKeepsAmbientOnBlackFallback()
     {
         using var repository = new TestRepository();
@@ -196,6 +232,128 @@ public sealed class AmbientStageCoordinatorTests
     }
 
     [Fact]
+    public async Task CurrentAmbientPreparationStartsBeforeBlockedAdjacentPreload()
+    {
+        using var repository = new TestRepository(delayPreload: true);
+        var current = StageTestImages.CreateDecoded("current.png");
+        repository.Add("current", current, protect: true);
+        var preparer = new BlockingPreparer();
+        await using var coordinator = new AmbientStageCoordinator(
+            repository,
+            preparer,
+            StageSettings.Default with { BackgroundMode = StageBackgroundMode.Ambient });
+
+        coordinator.SelectImage("current", current.Identity);
+        var firstSignal = await Task.WhenAny(preparer.Started.Task, repository.AdjacentWaitStarted.Task);
+
+        try
+        {
+            Assert.Same(preparer.Started.Task, firstSignal);
+            Assert.False(repository.AdjacentWaitStarted.Task.IsCompleted);
+        }
+        finally
+        {
+            preparer.Complete();
+        }
+
+        await repository.AdjacentWaitStarted.Task;
+        repository.CompletePreload();
+        await coordinator.WaitForIdleAsync();
+    }
+
+    [Fact]
+    public async Task CurrentAmbientPublishesBeforeBlockedAdjacentPreloadIsReleased()
+    {
+        using var repository = new TestRepository(delayPreload: true);
+        var current = StageTestImages.CreateDecoded("current.png");
+        repository.Add("current", current, protect: true);
+        var preparer = new RecordingPreparer();
+        var ambientPublished = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        using var allowPublicationToContinue = new ManualResetEventSlim(false);
+        await using var coordinator = new AmbientStageCoordinator(
+            repository,
+            preparer,
+            StageSettings.Default with { BackgroundMode = StageBackgroundMode.Ambient });
+        coordinator.PresentationChanged += (_, _) =>
+        {
+            using var presentation = coordinator.AcquirePresentation();
+            if (presentation.Ambient is not null)
+            {
+                ambientPublished.TrySetResult();
+                allowPublicationToContinue.Wait();
+            }
+        };
+
+        coordinator.SelectImage("current", current.Identity);
+        var firstSignal = await Task.WhenAny(ambientPublished.Task, repository.AdjacentWaitStarted.Task);
+
+        try
+        {
+            Assert.Same(ambientPublished.Task, firstSignal);
+            Assert.False(repository.AdjacentWaitStarted.Task.IsCompleted);
+            Assert.False(repository.AdjacentPreloadCompleted);
+            var metrics = coordinator.GetMetrics();
+            Assert.Equal(1, metrics.CurrentAmbientPrepareCount);
+            Assert.Equal(0, metrics.CurrentAmbientCacheHitCount);
+            Assert.Equal(0, metrics.AdjacentAmbientPreparedCount);
+            Assert.NotNull(metrics.LastPhotoToAmbientPresentationGap);
+            Assert.False(metrics.LastCurrentAmbientWasCacheHit);
+            Assert.Equal(
+                TimeSpan.FromMilliseconds(1),
+                metrics.LastCurrentAmbientPreparationDuration);
+        }
+        finally
+        {
+            allowPublicationToContinue.Set();
+        }
+
+        await repository.AdjacentWaitStarted.Task;
+        repository.CompletePreload();
+        await coordinator.WaitForIdleAsync();
+    }
+
+    [Fact]
+    public async Task PreparedNeighborAmbientIsExposedImmediatelyWhenSelectedWithoutRepreparation()
+    {
+        using var repository = new TestRepository();
+        var first = StageTestImages.CreateDecoded("first.png");
+        var target = StageTestImages.CreateDecoded("target.png");
+        repository.Add("first", first, protect: true);
+        repository.Add("target", target, protect: false);
+        repository.AdjacentPaths.Add("target");
+        var preparer = new RecordingPreparer();
+        await using var coordinator = new AmbientStageCoordinator(
+            repository,
+            preparer,
+            StageSettings.Default with { BackgroundMode = StageBackgroundMode.Ambient });
+
+        coordinator.SelectImage("first", first.Identity);
+        await coordinator.WaitForIdleAsync();
+        Assert.Equal(2, preparer.CallCount);
+        Assert.True(target.HasAmbientForBlur(18));
+
+        repository.AdjacentPaths.Clear();
+        repository.AdjacentPaths.Add("first");
+        coordinator.SelectImage("target", target.Identity);
+        using var presentation = coordinator.AcquirePresentation();
+        var metrics = coordinator.GetMetrics();
+
+        Assert.Equal(target.Identity, presentation.ImageIdentity);
+        Assert.NotNull(presentation.Ambient);
+        Assert.Equal(18, presentation.Ambient!.Blur);
+        Assert.Equal(2, preparer.CallCount);
+        Assert.Equal(1, metrics.CurrentAmbientCacheHitCount);
+        Assert.Equal(1, metrics.CurrentAmbientPrepareCount);
+        Assert.Equal(1, metrics.AdjacentAmbientPreparedCount);
+        Assert.NotNull(metrics.LastPhotoToAmbientPresentationGap);
+        Assert.True(metrics.LastCurrentAmbientWasCacheHit);
+
+        await coordinator.WaitForIdleAsync();
+        Assert.Equal(2, preparer.CallCount);
+    }
+
+    [Fact]
     public async Task AdjacentAmbientUsesCurrentBlurAfterPhotoPreloadCompletes()
     {
         using var repository = new TestRepository(delayPreload: true);
@@ -215,7 +373,10 @@ public sealed class AmbientStageCoordinatorTests
             });
 
         coordinator.SelectImage("current", current.Identity);
-        Assert.Equal(0, preparer.CallCount);
+        await repository.AdjacentWaitStarted.Task;
+        Assert.Equal(1, preparer.CallCount);
+        Assert.True(current.HasAmbientForBlur(26));
+        Assert.False(adjacent.HasAmbientForBlur(26));
         repository.CompletePreload();
         await coordinator.WaitForIdleAsync();
 
@@ -314,10 +475,61 @@ public sealed class AmbientStageCoordinatorTests
             throw new InvalidOperationException("Synthetic native preparation failure.");
     }
 
+    private sealed class ObsoleteFirstPreparer : IAmbientStagePreparer
+    {
+        private readonly ManualResetEventSlim _firstCompletion = new(false);
+        private int _callCount;
+        private PreparedAmbient? _obsoletePrepared;
+
+        public TaskCompletionSource FirstStarted { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource LatestCompleted { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public bool ObsoletePreparedWasDisposed
+        {
+            get
+            {
+                try
+                {
+                    _ = _obsoletePrepared?.Image.Width;
+                    return false;
+                }
+                catch (ObjectDisposedException)
+                {
+                    return true;
+                }
+            }
+        }
+
+        public PreparedAmbient Prepare(
+            DecodedImage image,
+            double blur,
+            CancellationToken cancellationToken)
+        {
+            if (Interlocked.Increment(ref _callCount) == 1)
+            {
+                FirstStarted.TrySetResult();
+                _firstCompletion.Wait();
+                _obsoletePrepared = StageTestImages.CreateAmbient(blur: blur);
+                return _obsoletePrepared;
+            }
+
+            var prepared = StageTestImages.CreateAmbient(blur: blur);
+            LatestCompleted.TrySetResult();
+            return prepared;
+        }
+
+        public void CompleteFirst() => _firstCompletion.Set();
+    }
+
     private sealed class TestRepository : IAmbientImageRepository, IDisposable
     {
         private readonly ByteBudgetCache<string, DecodedImage> _cache = new(1_000_000, StringComparer.Ordinal);
         private readonly TaskCompletionSource _preload = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _adjacentWaitStarted = new(
             TaskCreationOptions.RunContinuationsAsynchronously);
 
         public TestRepository(bool delayPreload = false)
@@ -330,6 +542,10 @@ public sealed class AmbientStageCoordinatorTests
 
         public List<string> AdjacentPaths { get; } = [];
 
+        public TaskCompletionSource AdjacentWaitStarted => _adjacentWaitStarted;
+
+        public bool AdjacentPreloadCompleted => _preload.Task.IsCompleted;
+
         public void Add(string path, DecodedImage image, bool protect) =>
             Assert.True(_cache.Add(path, image, protect));
 
@@ -339,8 +555,11 @@ public sealed class AmbientStageCoordinatorTests
         public bool RefreshRetainedCost(string path, DecodedImage image) =>
             _cache.RefreshCost(path, image);
 
-        public Task WaitForAdjacentPreloadAsync(CancellationToken cancellationToken) =>
-            _preload.Task.WaitAsync(cancellationToken);
+        public Task WaitForAdjacentPreloadAsync(CancellationToken cancellationToken)
+        {
+            _adjacentWaitStarted.TrySetResult();
+            return _preload.Task.WaitAsync(cancellationToken);
+        }
 
         public IReadOnlyList<CachedResourceLease<DecodedImage>> AcquireAdjacent()
         {
