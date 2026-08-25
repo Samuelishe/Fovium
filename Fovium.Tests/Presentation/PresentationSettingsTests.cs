@@ -16,6 +16,7 @@ public sealed class PresentationSettingsTests
         Assert.Equal(128, PresentationSettings.MaximumMarkupStrokePhysicalPixels);
         Assert.Equal(1, settings.DefaultMarkupOpacity);
         Assert.Equal(FloatingOverlayPlacement.Default, settings.MarkupDockPlacement);
+        Assert.Equal(FloatingOverlayPlacement.BottomLeft, settings.PhotoInfoPlacement);
         Assert.Equal("#FFD54F", settings.HighlightColor.ToHex());
         Assert.Equal("#FF4545", settings.DefaultMarkupColor.ToHex());
     }

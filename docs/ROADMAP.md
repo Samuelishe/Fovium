@@ -73,11 +73,11 @@ Accepted corrective outcome at `0.1.0.0001`: split low-frequency compositor-cach
 
 ## R6-A — Metadata foundation and Photo Info floating overlay
 
-Next intended bounded product stage: metadata extraction/model boundaries and an unobtrusive Photo Info panel using the accepted floating-overlay foundation. Do not begin automatically.
+Accepted outcome at `0.1.0.0002`: focused read-only metadata adapter and project-owned typed summary, lazy identity-safe background parsing from retained encoded bytes, bounded session cache, and a configurable `I` movable Photo Info panel that follows canonical/Blink presentation without changing Peek or navigation. No Advanced Metadata browser, writing, sidecars, Histogram, or ICC behavior was added.
 
 ## R6-B — Histogram floating overlay
 
-Following bounded stage: an identity-safe Histogram overlay. It remains separate from R6-A and must not expand presenter markup into editing/export work.
+Next intended bounded stage: an identity-safe Histogram overlay. It remains separate from R6-A and must not expand presenter markup into editing/export work. Do not begin automatically.
 
 ## Later / separate platform milestones
 

@@ -270,3 +270,9 @@ Viewer commands own a semantic group and one code-owned scope: Global, Highlight
 Status: Accepted in R5-F3-P1.
 
 Photographic Stage/photo presentation, image-bound markup, pointer feedback, and floating secondary UI are separate render-frequency layers. Avalonia retains the low-frequency direct-Skia photographic visual in one viewport-sized compositor bitmap so damage from transparent overlays does not re-enter photo drawing. Markup consumes immutable snapshots in its own composition visual; pointer movement changes only a small control transform after style geometry is resolved; floating panels use transform-only live drag and persist normalized placement once on release. High-frequency pointer/draft/dock paths must not refresh the photographic presentation or rebuild toolbar state. The cache is display-sized, not a source-resolution annotation surface, and does not alter decoded-image cache policy.
+
+## D-045 — Photo Info follows retained presented-image identity
+
+Status: Accepted in R6-A.
+
+Photo Info is a requested, movable, zero-layout overlay defaulting to configurable `I`; visibility is session-local and starts hidden, while normalized client-relative placement persists. Metadata parsing is lazy, background, read-only, and independently fallible. A focused MetadataExtractor adapter maps exact retained encoded bytes into immutable Fovium camera/lens/exposure/date models; third-party directory/tag types never escape. A bounded session LRU and request generation prevent reparsing and stale publication. The overlay observes/acquires the photograph actually presented, so Blink switches identity while Peek does not. Metadata never reopens or writes the source, creates sidecars, changes decode validity, or alters ICC/rendering policy.

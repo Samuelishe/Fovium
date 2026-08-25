@@ -164,4 +164,20 @@ public sealed class LocalizationTests
         Assert.Equal(brush, localizer[UiStrings.PresentationBrush]);
         Assert.Equal(clear, localizer[UiStrings.PresentationClear]);
     }
+
+    [Theory]
+    [InlineData("en-US", "Photo Info", "Photo info", "Close Photo Info")]
+    [InlineData("ru-RU", "Информация о фото", "Информация о фото", "Закрыть информацию о фото")]
+    public void PhotoInfoCatalogContainsCommandAndPanelChrome(
+        string cultureName,
+        string command,
+        string title,
+        string close)
+    {
+        var localizer = Localizer.Create(CultureInfo.GetCultureInfo(cultureName));
+
+        Assert.Equal(command, localizer[UiStrings.CommandTogglePhotoInfo]);
+        Assert.Equal(title, localizer[UiStrings.PhotoInfoTitle]);
+        Assert.Equal(close, localizer[UiStrings.PhotoInfoClose]);
+    }
 }

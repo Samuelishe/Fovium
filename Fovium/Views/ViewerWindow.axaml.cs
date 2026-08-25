@@ -13,6 +13,7 @@ using Fovium.Imaging;
 using Fovium.Input;
 using Fovium.Loading;
 using Fovium.Localization;
+using Fovium.Metadata;
 using Fovium.Navigation;
 using Fovium.Presentation;
 using Fovium.Rendering;
@@ -46,18 +47,17 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
     private readonly ViewerInspectionCoordinator _inspectionCoordinator;
     private readonly ViewerHoldController _holdController;
     private readonly PresentationOverlaySession _presentation;
+    private readonly PhotoInfoCoordinator _photoInfo;
+    private readonly FloatingOverlayInteraction _markupFloatingOverlay;
+    private readonly FloatingOverlayInteraction _photoInfoFloatingOverlay;
     private readonly Dictionary<ViewerCommand, MenuItem> _commandMenuItems = [];
     private readonly MenuItem _previousMenuItem;
     private readonly MenuItem _nextMenuItem;
     private readonly IReadOnlyDictionary<StageBackgroundMode, MenuItem> _stageBackgroundMenuItems;
     private readonly MenuItem _matteMenuItem;
+    private readonly MenuItem _photoInfoMenuItem;
     private readonly MenuItem _highlightMenuItem;
     private readonly MenuItem _markupMenuItem;
-    private readonly TranslateTransform _markupDockTranslation = new();
-    private IPointer? _dockDragPointer;
-    private Point _dockDragStartPointer;
-    private FloatingOverlayPoint _dockDragStartPosition;
-    private FloatingOverlayPoint _dockDragCurrentPosition;
     private PresentationColor? _appliedMarkupColor;
     private long _lastPointerActivityTimestamp;
     private bool _contextMenuOpen;
@@ -87,7 +87,6 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         _interactionDiagnostics = InteractionRenderDiagnostics.CreateFromEnvironment();
 
         InitializeComponent();
-        MarkupToolsPanel.RenderTransform = _markupDockTranslation;
         PhotoViewport.ConfigureInteractionDiagnostics(_interactionDiagnostics);
         MarkupOverlay.ConfigureDiagnostics(_interactionDiagnostics);
         PointerFeedbackOverlay.ConfigureDiagnostics(_interactionDiagnostics);
@@ -106,12 +105,31 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             _handCursor,
             MarkupOverlay,
             PointerFeedbackOverlay);
+        _photoInfo = new PhotoInfoCoordinator(
+            PhotoViewport,
+            new MetadataExtractorPhotoMetadataReader());
+        _photoInfo.StateChanged += OnPhotoInfoStateChanged;
+        _markupFloatingOverlay = new FloatingOverlayInteraction(
+            ViewerRoot,
+            MarkupToolsPanel,
+            MarkupDragHandle,
+            settings.Current.Presentation.MarkupDockPlacement,
+            _interactionDiagnostics);
+        _photoInfoFloatingOverlay = new FloatingOverlayInteraction(
+            ViewerRoot,
+            PhotoInfoPanel,
+            PhotoInfoDragHandle,
+            settings.Current.Presentation.PhotoInfoPlacement,
+            _interactionDiagnostics);
+        _markupFloatingOverlay.PlacementCommitted += OnMarkupPlacementCommitted;
+        _photoInfoFloatingOverlay.PlacementCommitted += OnPhotoInfoPlacementCommitted;
         _commandExecutor = new ViewerCommandExecutor(this);
         _inspectionCoordinator = new ViewerInspectionCoordinator(PhotoViewport, session, settings);
         _holdController = new ViewerHoldController(new ViewerHoldActionRouter(
             _inspectionCoordinator,
             new MarkupTemporaryHandHoldAction(_presentation)));
         ConfigureMarkupTools();
+        ConfigurePhotoInfo();
         _previousMenuItem = CreateCommandMenuItem(
             UiStrings.MenuPrevious,
             ViewerCommand.PreviousImage,
@@ -122,6 +140,10 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             FoviumIcon.Next);
         _stageBackgroundMenuItems = CreateStageBackgroundMenuItems();
         _matteMenuItem = CreateMatteMenuItem();
+        _photoInfoMenuItem = CreateOverlayToggleMenuItem(
+            UiStrings.CommandTogglePhotoInfo,
+            ViewerCommand.TogglePhotoInfo,
+            FoviumIcon.Info);
         _highlightMenuItem = CreateOverlayToggleMenuItem(
             UiStrings.CommandToggleHighlight,
             ViewerCommand.ToggleHighlight,
@@ -198,6 +220,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         _settingsWindow?.Close();
         _lifetimeCancellation.Cancel();
         CompleteAmbientSoakTransition();
+        _photoInfo.Dispose();
         PhotoViewport.ClearImage();
         try
         {
@@ -242,6 +265,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         _hiddenCursor.Dispose();
         _handCursor.Dispose();
         _settings.SettingsChanged -= OnSettingsChanged;
+        _photoInfo.StateChanged -= OnPhotoInfoStateChanged;
         _stageCoordinator.PresentationChanged -= OnStagePresentationChanged;
         _ambientSoakTrace.Dispose();
         _settings.Dispose();
@@ -338,6 +362,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
                     Icon = FoviumIconCatalog.Create(FoviumIcon.Markup),
                     ItemsSource = new Control[]
                     {
+                        _photoInfoMenuItem,
                         _highlightMenuItem,
                         _markupMenuItem,
                     },
@@ -384,7 +409,9 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             _matteMenuItem.IsChecked = _settings.Current.Stage.MatteEnabled;
             var overlays = ViewerOverlayMenuState.Capture(
                 _presentation,
+                _photoInfo.IsVisible,
                 _settings.Current.Shortcuts);
+            _photoInfoMenuItem.IsChecked = overlays.PhotoInfoChecked;
             _highlightMenuItem.IsChecked = overlays.HighlightChecked;
             _markupMenuItem.IsChecked = overlays.MarkupChecked;
             UpdateCommandGestures();
@@ -566,6 +593,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
 
         var result = await _session.OpenAsync(sequence, _lifetimeCancellation.Token);
         _presentation.StartNewSequence();
+        _photoInfo.BeginNewSequence();
         ApplySelection(result, ImageChangeViewPolicyResolver.ForNewSequence(), showFailure: true);
     }
 
@@ -687,7 +715,8 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         _presentation.ApplySettings(settings.Presentation);
         ApplyMarkupToolsUi();
         UpdateMarkupToolTips();
-        ApplyMarkupDockPlacement();
+        _markupFloatingOverlay.SetPlacement(settings.Presentation.MarkupDockPlacement);
+        _photoInfoFloatingOverlay.SetPlacement(settings.Presentation.PhotoInfoPlacement);
     }
 
     private void ApplyStage(StageSettings stage)
@@ -825,7 +854,13 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
     void IViewerCommandTarget.ToggleMarkupTools()
     {
         _presentation.ToggleMarkupTools();
-        ApplyMarkupDockPlacement();
+        _markupFloatingOverlay.ApplyPlacement();
+    }
+
+    void IViewerCommandTarget.TogglePhotoInfo()
+    {
+        _photoInfo.Toggle();
+        _photoInfoFloatingOverlay.ApplyPlacement();
     }
 
     void IViewerCommandTarget.UndoMarkup() => _presentation.UndoCurrent();
@@ -891,18 +926,11 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             PointerPressedEvent,
             OnMarkupPanelPointerPressed,
             RoutingStrategies.Tunnel);
-        MarkupDragHandle.PointerPressed += OnDockDragPressed;
-        MarkupDragHandle.PointerMoved += OnDockDragMoved;
-        MarkupDragHandle.PointerReleased += OnDockDragReleased;
         ViewerRoot.SizeChanged += (_, _) =>
         {
             _interactionDiagnostics.RecordViewerLayoutSizeChange();
-            ApplyMarkupDockPlacement();
-        };
-        MarkupToolsPanel.SizeChanged += (_, _) =>
-        {
-            _interactionDiagnostics.RecordViewerLayoutSizeChange();
-            ApplyMarkupDockPlacement();
+            _markupFloatingOverlay.ApplyPlacement();
+            _photoInfoFloatingOverlay.ApplyPlacement();
         };
 
         MarkupHandButton.Content = FoviumIconCatalog.Create(FoviumIcon.Hand);
@@ -1024,97 +1052,97 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         ShowCursor();
     }
 
-    private void OnDockDragPressed(object? sender, PointerPressedEventArgs e)
+    private void ConfigurePhotoInfo()
     {
-        if (!e.GetCurrentPoint(MarkupDragHandle).Properties.IsLeftButtonPressed)
+        PhotoInfoTitleText.Text = _localizer[UiStrings.PhotoInfoTitle];
+        PhotoInfoCloseButton.Content = FoviumIconCatalog.Create(FoviumIcon.Close, 14);
+        ToolTip.SetTip(PhotoInfoDragHandle, _localizer[UiStrings.PresentationMovePanel]);
+        ToolTip.SetTip(PhotoInfoCloseButton, _localizer[UiStrings.PhotoInfoClose]);
+        PhotoInfoCloseButton.Click += (_, _) =>
         {
-            return;
-        }
-
-        _dockDragPointer = e.Pointer;
-        _dockDragStartPointer = e.GetPosition(ViewerRoot);
-        _dockDragStartPosition = new FloatingOverlayPoint(
-            MarkupToolsPanel.Margin.Left,
-            MarkupToolsPanel.Margin.Top);
-        _dockDragCurrentPosition = _dockDragStartPosition;
-        _markupDockTranslation.X = 0;
-        _markupDockTranslation.Y = 0;
-        e.Pointer.Capture(MarkupDragHandle);
-        e.Handled = true;
+            _photoInfo.SetVisible(false);
+            PhotoViewport.Focus();
+        };
+        PhotoInfoPanel.AddHandler(
+            PointerPressedEvent,
+            OnMarkupPanelPointerPressed,
+            RoutingStrategies.Tunnel);
+        ApplyPhotoInfoUi();
     }
 
-    private void OnDockDragMoved(object? sender, PointerEventArgs e)
+    private void OnPhotoInfoStateChanged(object? sender, EventArgs e)
     {
-        if (_dockDragPointer != e.Pointer ||
-            !e.GetCurrentPoint(MarkupDragHandle).Properties.IsLeftButtonPressed)
+        if (Dispatcher.UIThread.CheckAccess())
         {
+            ApplyPhotoInfoUi();
             return;
         }
 
-        _interactionDiagnostics.RecordFloatingDockDragUpdate();
-
-        var pointer = e.GetPosition(ViewerRoot);
-        var update = FloatingOverlayDrag.Update(
-            _dockDragStartPosition,
-            new FloatingOverlayPoint(_dockDragStartPointer.X, _dockDragStartPointer.Y),
-            new FloatingOverlayPoint(pointer.X, pointer.Y),
-            GetFloatingSize(ViewerRoot.Bounds.Size),
-            GetFloatingSize(MarkupToolsPanel.Bounds.Size));
-        _dockDragCurrentPosition = update.Position;
-        _markupDockTranslation.X = update.Translation.X;
-        _markupDockTranslation.Y = update.Translation.Y;
-        e.Handled = true;
+        Dispatcher.UIThread.Post(ApplyPhotoInfoUi);
     }
 
-    private async void OnDockDragReleased(object? sender, PointerReleasedEventArgs e)
+    private void ApplyPhotoInfoUi()
     {
-        if (_dockDragPointer != e.Pointer)
+        if (!IsInitialized || _closed)
         {
             return;
         }
 
-        _dockDragPointer = null;
-        e.Pointer.Capture(null);
-        _markupDockTranslation.X = 0;
-        _markupDockTranslation.Y = 0;
-        SetDockPosition(_dockDragCurrentPosition);
-        var placement = FloatingOverlayPlacement.FromPosition(
-            _dockDragCurrentPosition,
-            GetFloatingSize(ViewerRoot.Bounds.Size),
-            GetFloatingSize(MarkupToolsPanel.Bounds.Size));
+        PhotoInfoPanel.IsVisible = _photoInfo.IsVisible;
+        var state = _photoInfo.CurrentState;
+        if (!_photoInfo.IsVisible || state is null)
+        {
+            SetPhotoInfoLine(PhotoInfoCameraText, null);
+            SetPhotoInfoLine(PhotoInfoLensText, null);
+            SetPhotoInfoLine(PhotoInfoExposureText, null);
+            SetPhotoInfoLine(PhotoInfoDimensionsText, null);
+            SetPhotoInfoLine(PhotoInfoDateText, null);
+            SetPhotoInfoLine(PhotoInfoFileText, null);
+            return;
+        }
+
+        var culture = System.Globalization.CultureInfo.GetCultureInfo(
+            _localizer.Locale == "ru" ? "ru-RU" : "en-US");
+        var text = PhotoInfoFormatter.Format(state, culture);
+        SetPhotoInfoLine(PhotoInfoCameraText, text.Camera);
+        SetPhotoInfoLine(PhotoInfoLensText, text.Lens);
+        SetPhotoInfoLine(PhotoInfoExposureText, text.Exposure);
+        SetPhotoInfoLine(PhotoInfoDimensionsText, text.Dimensions);
+        SetPhotoInfoLine(PhotoInfoDateText, text.CaptureDateTime);
+        SetPhotoInfoLine(PhotoInfoFileText, text.File);
+        _photoInfoFloatingOverlay.ApplyPlacement();
+    }
+
+    private static void SetPhotoInfoLine(TextBlock textBlock, string? value)
+    {
+        textBlock.Text = value;
+        textBlock.IsVisible = !string.IsNullOrEmpty(value);
+    }
+
+    private async void OnMarkupPlacementCommitted(FloatingOverlayPlacement placement)
+    {
+        await PersistOverlayPlacementAsync(
+            _settings.Current.Presentation with { MarkupDockPlacement = placement });
+    }
+
+    private async void OnPhotoInfoPlacementCommitted(FloatingOverlayPlacement placement)
+    {
+        await PersistOverlayPlacementAsync(
+            _settings.Current.Presentation with { PhotoInfoPlacement = placement });
+    }
+
+    private async Task PersistOverlayPlacementAsync(PresentationSettings presentation)
+    {
         try
         {
-            await _settings.SetPresentationAsync(
-                _settings.Current.Presentation with { MarkupDockPlacement = placement },
-                _lifetimeCancellation.Token);
+            await _settings.SetPresentationAsync(presentation, _lifetimeCancellation.Token);
         }
         catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
         {
-            // Window shutdown owns cancellation; the in-memory placement is no longer observable.
-        }
-
-        PhotoViewport.Focus();
-        e.Handled = true;
-    }
-
-    private void ApplyMarkupDockPlacement()
-    {
-        if (!IsInitialized || _dockDragPointer is not null)
-        {
             return;
         }
 
-        var position = _settings.Current.Presentation.MarkupDockPlacement.Resolve(
-            GetFloatingSize(ViewerRoot.Bounds.Size),
-            GetFloatingSize(MarkupToolsPanel.Bounds.Size));
-        SetDockPosition(position);
+        PhotoViewport.Focus();
     }
-
-    private void SetDockPosition(FloatingOverlayPoint position)
-    {
-        MarkupToolsPanel.Margin = new Thickness(position.X, position.Y, 0, 0);
-    }
-
-    private static FloatingOverlaySize GetFloatingSize(Size size) => new(size.Width, size.Height);
 
 }

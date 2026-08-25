@@ -10,9 +10,13 @@ internal readonly record struct FloatingOverlayPlacement(double NormalizedX, dou
 
     public static FloatingOverlayPlacement Default { get; } = new(0.5, 0);
 
-    public FloatingOverlayPlacement Normalize() => new(
-        NormalizeCoordinate(NormalizedX, Default.NormalizedX),
-        NormalizeCoordinate(NormalizedY, Default.NormalizedY));
+    public static FloatingOverlayPlacement BottomLeft { get; } = new(0, 1);
+
+    public FloatingOverlayPlacement Normalize() => Normalize(Default);
+
+    public FloatingOverlayPlacement Normalize(FloatingOverlayPlacement fallback) => new(
+        NormalizeCoordinate(NormalizedX, fallback.NormalizedX),
+        NormalizeCoordinate(NormalizedY, fallback.NormalizedY));
 
     public FloatingOverlayPoint Resolve(
         FloatingOverlaySize client,

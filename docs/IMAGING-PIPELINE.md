@@ -42,6 +42,8 @@ Orientation is part of baseline display correctness. Downstream dimensions, view
 
 EXIF, XMP, IPTC, and other descriptive metadata are useful but optional to ordinary display. Their extraction may be lazy and independently fallible. Metadata parsing must not block navigation unnecessarily. Source ICC/profile data is not optional UI metadata: it must survive to the color boundary even before the full color pipeline exists.
 
+R6-A implements the optional descriptive path through a focused managed `MetadataExtractor` adapter. It reads the exact encoded byte array already retained by `DecodedImage` through a non-copying memory stream, maps useful EXIF values into immutable Fovium types, and contains malformed/no-metadata results without changing decode success. External directory, tag, and rational types do not cross the adapter. Parsing is lazy while Photo Info is visible, background-run, cancellable at publication authority, and count-cached for the current sequence. ICC discoveries remain informational and do not alter rendering.
+
 ## Decoder registry direction
 
 A project-owned registry may route probes and decodes among multiple libraries or native/specialized codecs. Backends should expose capabilities and failures in common terms, preserve resource ownership, and honor cancellation when the underlying API allows it. A backend addition must not require navigation, viewport, cache, or renderer redesign.

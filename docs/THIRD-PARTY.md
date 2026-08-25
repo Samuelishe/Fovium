@@ -19,8 +19,10 @@ Exact direct versions are authoritative in the linked project manifests. REPO-R1
 | Avalonia.Skia | AvaloniaUI | MIT | Avalonia Skia renderer and isolated direct-canvas lease | [NuGet](https://www.nuget.org/packages/Avalonia.Skia/12.1.1) | `12.1.1` | Direct experimental and production reference; requires SkiaSharp `>= 3.119.4`; production adoption R1 |
 | Avalonia.Themes.Fluent | AvaloniaUI | MIT | Basic RenderProbe controls and R1 Dark secondary UI | [NuGet](https://www.nuget.org/packages/Avalonia.Themes.Fluent/12.1.1) | `12.1.1` | Direct experimental and production reference; not the final Fovium visual system; production adoption R1 |
 | SkiaSharp | Microsoft / SkiaSharp contributors | MIT | Controlled `SKCodec` decode and explicit photographic sampling | [NuGet](https://www.nuget.org/packages/SkiaSharp/3.119.4) | `3.119.4` | Direct experimental and production reference pinned to Avalonia.Skia's coherent graph; production adoption R1 |
+| MetadataExtractor | Drew Noakes / contributors | Apache-2.0 | Focused read-only EXIF/IPTC/XMP metadata parsing behind a Fovium adapter | [NuGet](https://www.nuget.org/packages/MetadataExtractor/2.9.3), [project](https://github.com/drewnoakes/metadata-extractor-dotnet) | `2.9.3` | Direct managed production reference introduced in R6-A; selected over a hand-written EXIF parser and a complete second ImageSharp imaging pipeline |
+| XmpCore | Drew Noakes / Adobe XMP SDK lineage | BSD (Adobe XMP SDK) | XMP support required transitively by MetadataExtractor | [NuGet](https://www.nuget.org/packages/XmpCore/6.1.10.1), [project](https://github.com/drewnoakes/xmp-core-dotnet) | `6.1.10.1` | Managed transitive dependency introduced with MetadataExtractor in R6-A; no native assets |
 
-No separate coverage collector is introduced. Transitive package resolution remains NuGet/MSBuild data rather than a manually duplicated version ledger here.
+No separate coverage collector is introduced. Other transitive package resolution remains NuGet/MSBuild data rather than a manually duplicated version ledger here.
 
 ## Planned / under evaluation
 

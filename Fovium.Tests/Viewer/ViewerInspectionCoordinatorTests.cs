@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using Fovium.Imaging;
 using Fovium.Loading;
+using Fovium.Metadata;
 using Fovium.Navigation;
 using Fovium.Presentation;
 using Fovium.Rendering;
@@ -28,7 +29,12 @@ public sealed class ViewerInspectionCoordinatorTests(Xunit.Abstractions.ITestOut
         DrawOverlay(overlays, previousPath, new PresentationColor(0xAA, 0xBB, 0xCC));
         EraseOverlay(overlays, previousPath);
         viewport.ConfigurePresentation(overlays);
+        var canonicalIdentity = opened.Image!.Value.Identity;
         viewport.SetImage(opened.Image!, ViewTransfer.Fit, opened.Path!);
+        var metadataReader = new EmptyMetadataReader();
+        using var photoInfo = new PhotoInfoCoordinator(viewport, metadataReader);
+        photoInfo.SetVisible(true);
+        Assert.Equal(canonicalIdentity, photoInfo.CurrentState!.Base.ImageIdentity);
         viewport.SetPhotographic100AtCenter();
         var before = viewport.CaptureViewTransfer();
         await session.WaitForAdjacentPreloadAsync(CancellationToken.None);
@@ -42,6 +48,7 @@ public sealed class ViewerInspectionCoordinatorTests(Xunit.Abstractions.ITestOut
         Assert.Equal(callsBefore, loader.Calls.Count);
         Assert.Equal(before, viewport.CaptureViewTransfer());
         Assert.Equal(previousPath, viewport.PresentedImageIdentity);
+        Assert.Equal(previousPath, photoInfo.CurrentState!.Base.SourcePath);
         var comparisonMarkup = viewport.CapturePresentedMarkup().Operations;
         Assert.Equal(2, comparisonMarkup.Count);
         Assert.Equal(
@@ -56,6 +63,8 @@ public sealed class ViewerInspectionCoordinatorTests(Xunit.Abstractions.ITestOut
         Assert.Equal(before, viewport.CaptureViewTransfer());
         Assert.Equal(1, session.CurrentIndex);
         Assert.Equal(opened.Path, viewport.PresentedImageIdentity);
+        Assert.Equal(opened.Path, photoInfo.CurrentState!.Base.SourcePath);
+        Assert.Equal(2, metadataReader.CallCount);
         Assert.Equal(
             new PresentationColor(0x11, 0x22, 0x33),
             Assert.IsType<DrawMarkupOperation>(
@@ -85,6 +94,8 @@ public sealed class ViewerInspectionCoordinatorTests(Xunit.Abstractions.ITestOut
         DrawOverlay(overlays, opened.Path!, new PresentationColor(1, 2, 3));
         EraseOverlay(overlays, opened.Path!);
         viewport.SetImage(opened.Image!, ViewTransfer.Fit, opened.Path!);
+        var presentedChangeCount = 0;
+        viewport.PresentedImageChanged += (_, _) => presentedChangeCount++;
         var coordinator = new ViewerInspectionCoordinator(viewport, session, settings);
 
         await coordinator.BeginAsync(Fovium.Input.ViewerCommand.Peek100, CancellationToken.None);
@@ -95,7 +106,21 @@ public sealed class ViewerInspectionCoordinatorTests(Xunit.Abstractions.ITestOut
         Assert.IsType<EraseMarkupOperation>(peekMarkup[1]);
         coordinator.End();
         Assert.Equal(opened.Path, viewport.PresentedImageIdentity);
+        Assert.Equal(0, presentedChangeCount);
         viewport.ClearImage();
+    }
+
+    private sealed class EmptyMetadataReader : IPhotoMetadataReader
+    {
+        public int CallCount { get; private set; }
+
+        public Task<PhotoMetadataReadResult> ReadAsync(
+            ReadOnlyMemory<byte> encodedSource,
+            CancellationToken cancellationToken)
+        {
+            CallCount++;
+            return Task.FromResult(PhotoMetadataReadResult.FromSummary(PhotoMetadataSummary.Empty));
+        }
     }
 
     [Fact]

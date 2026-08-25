@@ -7,13 +7,13 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R5-F3-P1 is complete at `0.1.0.0001`. The `0.1.0.0000` first substantial usable Fovium alpha milestone remains historical. High-frequency pointer feedback, markup replay, and floating-dock motion are isolated from the low-frequency photographic presentation. R5-P1 current-first scheduling, R5-P2 atomic cached presentation, and R5-P3 sustained preload across cache saturation remain owner-accepted for normal human browsing. Version semantics are owned by [`VERSIONING.md`](VERSIONING.md).
+R6-A is complete at `0.1.0.0002`. The viewer now has lazy read-only photographic metadata and a movable Photo Info overlay that follows the actually presented canonical or Blink image. The `0.1.0.0000` first substantial usable Fovium alpha milestone remains historical; R5-F3-P1 interaction isolation and owner-accepted R5-P1/P2/P3 Ambient hardening remain retained. Version semantics are owned by [`VERSIONING.md`](VERSIONING.md).
 
 The retained R0 probe remains experimental evidence under `experiments/Fovium.RenderProbe`. Production code is the single `Fovium` assembly and does not depend on the experiment. Local Windows acceptance used one `RenderScaling = 1.00` display; no GitHub-hosted CI or Linux/macOS runtime result is claimed by this stage.
 
 ## Current focus
 
-The next intended stage is R6-A, metadata foundation and a Photo Info floating overlay, followed by R6-B Histogram. Do not begin either automatically.
+The next intended stage is R6-B, an identity-safe Histogram floating overlay. Do not begin it automatically.
 
 ## Implemented application functionality
 
@@ -51,10 +51,12 @@ The next intended stage is R6-A, metadata foundation and a Photo Info floating o
 - Shared markup physical size range extended to `1–128 px` without changing existing/default values.
 - Compact project-owned vector-icon presenter dock with normalized client-relative persisted placement, bounds clamping across resize/fullscreen, localized effective-shortcut tooltips, and no external icon dependency.
 - Grouped Controls generated from command metadata plus standard icon-and-text context menus with checked, shared-state Cursor Highlight and Markup Tools toggles.
+- Read-only `MetadataExtractor` adapter behind project-owned typed photographic metadata, parsing retained encoded bytes lazily off the UI thread with bounded session cache and latest-wins presented-image authority.
+- Session-local Photo Info toggle on configurable `I`, checked Overlays menu entry, immediate oriented dimensions/MP/filename/format/encoded-size data, sparse camera/lens/exposure/capture details, and normalized persisted bottom-left floating placement.
 - Peek renders the canonical image's overlay; Blink selects only the comparison image's own overlay and cannot leak current markup onto it.
 - Traversal-excluded local imaging corpus policy plus hardened async session shutdown/cache release.
 
-Markup save/export, text, dedicated Highlighter, edit handles/layers, selected-reference A/B comparison, language/theme selection, metadata/EXIF/Histogram UI, broad codecs, file associations/thumbnails, and full monitor-aware ICC are not implemented.
+Markup save/export, text, dedicated Highlighter, edit handles/layers, selected-reference A/B comparison, language/theme selection, Advanced Metadata/Histogram, metadata writing, broad codecs, file associations/thumbnails, and full monitor-aware ICC are not implemented.
 
 ## Active blockers
 

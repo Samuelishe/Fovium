@@ -18,7 +18,7 @@ internal readonly record struct ViewportAmbientPresentationState(
     StageBackgroundMode BackgroundMode,
     bool HasMatchingAmbient);
 
-internal sealed class PhotoViewportControl : Control
+internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 {
     private readonly ViewportModel _viewport = new();
     private readonly AmbientRenderFrameDiagnostics _ambientFrameDiagnostics = new();
@@ -61,6 +61,8 @@ internal sealed class PhotoViewportControl : Control
 
     public event EventHandler? ViewStateChanged;
 
+    public event EventHandler? PresentedImageChanged;
+
     public bool HasImage => _image is not null;
 
     public InspectionMode InspectionMode => _inspectionMode;
@@ -68,6 +70,20 @@ internal sealed class PhotoViewportControl : Control
     internal string? PresentedImageIdentity => _inspectionImage is not null
         ? _inspectionImageIdentity
         : _canonicalImageIdentity;
+
+    public bool TryAcquirePresentedImage(out PresentedImageLease? image)
+    {
+        var lease = _inspectionImage ?? _image;
+        var identity = PresentedImageIdentity;
+        if (lease is null || identity is null)
+        {
+            image = null;
+            return false;
+        }
+
+        image = new PresentedImageLease(lease.Acquire(), identity);
+        return true;
+    }
 
     internal MarkupRenderSnapshot CapturePresentedMarkup() =>
         _presentation?.GetRenderSnapshot(PresentedImageIdentity) ?? MarkupRenderSnapshot.Empty;
@@ -152,6 +168,7 @@ internal sealed class PhotoViewportControl : Control
         _presentation?.SelectImage(imageIdentity);
         UpdateMarkupOverlay();
         PublishPhotoPresentation();
+        PresentedImageChanged?.Invoke(this, EventArgs.Empty);
         previous?.Dispose();
         previousAmbient?.Dispose();
         RaiseViewStateChanged();
@@ -190,6 +207,7 @@ internal sealed class PhotoViewportControl : Control
         _presentation?.SelectImage(imageIdentity);
         UpdateMarkupOverlay();
         PublishPhotoPresentation();
+        PresentedImageChanged?.Invoke(this, EventArgs.Empty);
         previousImage?.Dispose();
         previousAmbient?.Dispose();
         RaiseViewStateChanged();
@@ -227,6 +245,7 @@ internal sealed class PhotoViewportControl : Control
         _ambientImageIdentity = null;
         UpdateMarkupOverlay();
         PublishPhotoPresentation();
+        PresentedImageChanged?.Invoke(this, EventArgs.Empty);
         previous?.Dispose();
         previousAmbient?.Dispose();
     }
@@ -320,6 +339,7 @@ internal sealed class PhotoViewportControl : Control
         _viewport.SetImage(image.Value.Descriptor.OrientedSize, _inspectionRestore.Value);
         UpdateMarkupOverlay();
         PublishPhotoPresentation();
+        PresentedImageChanged?.Invoke(this, EventArgs.Empty);
         previousImage?.Dispose();
         previousAmbient?.Dispose();
         return true;
@@ -350,6 +370,11 @@ internal sealed class PhotoViewportControl : Control
 
         UpdateMarkupOverlay();
         PublishPhotoPresentation();
+        if (comparison is not null)
+        {
+            PresentedImageChanged?.Invoke(this, EventArgs.Empty);
+        }
+
         comparison?.Dispose();
         comparisonAmbient?.Dispose();
         return true;

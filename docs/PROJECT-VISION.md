@@ -46,6 +46,8 @@ Both use the shared shortcut system, allow one transient mode at a time, and add
 
 **Presenter overlay** is an explicitly requested, temporary presentation aid: `H` toggles a translucent cursor highlight and `P` toggles a compact movable drawing dock. Brush, Line, Rectangle, Ellipse, Arrow, and true partial Eraser operations are bound to oriented photograph coordinates for the current in-memory session. Draw operations capture color, physical stroke size, and opacity; Shift constrains familiar shapes and can temporarily preview Brush as a straight 45-degree-snapped stroke. Hand and temporary Space-Hand reuse viewer pan without creating history. Physical drawing cursors expose the active Brush/Eraser footprint or a restrained shape target. Per-image Undo/Redo and undoable Clear replay that bounded operation history. They are not source edits, annotation documents, sidecars, layers, object-editing tools, or exportable content; hiding the dock preserves marks.
 
+**Photo Info** is an on-demand zero-layout aid: configurable `I` shows a restrained movable panel for the photograph actually being presented, then hides it without changing the photograph. It summarizes useful photographic facts rather than dumping raw tags. Metadata is read-only, partial, session-local, and independently fallible; it is not a catalog, editor, sidecar, rating, or tagging system.
+
 ## Non-goals
 
 Fovium must not drift into a:

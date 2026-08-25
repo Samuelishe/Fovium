@@ -24,6 +24,8 @@ internal interface IViewerCommandTarget
 
     void ToggleMarkupTools();
 
+    void TogglePhotoInfo();
+
     void UndoMarkup();
 
     void RedoMarkup();
@@ -74,6 +76,7 @@ internal sealed class ViewerCommandExecutor(IViewerCommandTarget target)
             ViewerCommand.Settings => Execute(target.ShowSettings),
             ViewerCommand.ToggleHighlight => Execute(target.ToggleHighlight),
             ViewerCommand.ToggleMarkupTools => Execute(target.ToggleMarkupTools),
+            ViewerCommand.TogglePhotoInfo => Execute(target.TogglePhotoInfo),
             ViewerCommand.MarkupUndo => Execute(target.UndoMarkup),
             ViewerCommand.MarkupRedo => Execute(target.RedoMarkup),
             ViewerCommand.ClearMarkup => Execute(target.ClearMarkup),

@@ -63,6 +63,7 @@ internal static class UiStrings
     public const string CommandBlinkCompare = "command.blinkCompare";
     public const string CommandToggleHighlight = "command.toggleHighlight";
     public const string CommandToggleMarkupTools = "command.toggleMarkupTools";
+    public const string CommandTogglePhotoInfo = "command.togglePhotoInfo";
     public const string CommandMarkupUndo = "command.markupUndo";
     public const string CommandMarkupRedo = "command.markupRedo";
     public const string CommandClearMarkup = "command.clearMarkup";
@@ -109,6 +110,8 @@ internal static class UiStrings
     public const string PresentationRedo = "presentation.redo";
     public const string PresentationHand = "presentation.hand";
     public const string PresentationMovePanel = "presentation.movePanel";
+    public const string PhotoInfoTitle = "photoInfo.title";
+    public const string PhotoInfoClose = "photoInfo.close";
     public const string SettingsScaleOnImageChange = "settings.scaleOnImageChange";
     public const string SettingsKeepCurrentScale = "settings.keepCurrentScale";
     public const string SettingsFitEachImage = "settings.fitEachImage";
@@ -137,6 +140,7 @@ internal static class UiStrings
         ViewerCommand.BlinkCompare => CommandBlinkCompare,
         ViewerCommand.ToggleHighlight => CommandToggleHighlight,
         ViewerCommand.ToggleMarkupTools => CommandToggleMarkupTools,
+        ViewerCommand.TogglePhotoInfo => CommandTogglePhotoInfo,
         ViewerCommand.MarkupUndo => CommandMarkupUndo,
         ViewerCommand.MarkupRedo => CommandMarkupRedo,
         ViewerCommand.ClearMarkup => CommandClearMarkup,

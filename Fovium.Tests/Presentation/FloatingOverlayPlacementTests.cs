@@ -16,6 +16,17 @@ public sealed class FloatingOverlayPlacementTests
     }
 
     [Fact]
+    public void PhotoInfoDefaultIsBottomLeftInsideClientInset()
+    {
+        var point = FloatingOverlayPlacement.BottomLeft.Resolve(
+            new FloatingOverlaySize(1000, 700),
+            new FloatingOverlaySize(360, 180));
+
+        Assert.Equal(12, point.X);
+        Assert.Equal(508, point.Y);
+    }
+
+    [Fact]
     public void DragBeyondEveryEdgeClampsNormalizedPlacement()
     {
         var client = new FloatingOverlaySize(1000, 700);

@@ -13,13 +13,16 @@ public sealed class ViewerOverlayMenuStateTests
         presentation.ToggleMarkupTools();
         var shortcuts = ShortcutSettings.Default
             .WithBinding(ViewerCommand.ToggleHighlight, new ShortcutGesture("J"))
-            .WithBinding(ViewerCommand.ToggleMarkupTools, null);
+            .WithBinding(ViewerCommand.ToggleMarkupTools, null)
+            .WithBinding(ViewerCommand.TogglePhotoInfo, new ShortcutGesture("K"));
 
-        var state = ViewerOverlayMenuState.Capture(presentation, shortcuts);
+        var state = ViewerOverlayMenuState.Capture(presentation, photoInfoVisible: true, shortcuts);
 
+        Assert.True(state.PhotoInfoChecked);
         Assert.True(state.HighlightChecked);
         Assert.True(state.MarkupChecked);
         Assert.Equal(new ShortcutGesture("J"), state.HighlightGesture);
         Assert.Null(state.MarkupGesture);
+        Assert.Equal(new ShortcutGesture("K"), state.PhotoInfoGesture);
     }
 }

@@ -29,6 +29,7 @@ Temporary overlays are acceptable only in response to a direct action and should
 | Hold `Shift+C` | Temporarily show the previous viable image without navigating; release restores the retained current presentation (default binding) |
 | `H` | Toggle the configured translucent cursor highlight inside the viewer viewport (default binding) |
 | `P` | Show/hide the compact markup tools dock without clearing existing marks (default binding) |
+| `I` | Show/hide the movable Photo Info panel for the currently presented photograph (default binding) |
 | `Ctrl+Z` | Undo the current image's last markup operation; cancel an unfinished draft first (default binding) |
 | `Ctrl+Y` | Redo the current image's next markup operation (default binding) |
 | `C` | Clear the current image's markup as one undoable operation while the markup dock is visible (default binding) |
@@ -67,13 +68,7 @@ By default, navigation preserves physical scale and normalized point of interest
 
 ## Context menu, metadata, and Stage
 
-Rare features live behind right click. Planned metadata access follows:
-
-`Photo` → `Information / Metadata`
-
-A future split between basic photo information and advanced metadata is acceptable. A persistent EXIF sidebar is not.
-
-A complete metadata viewer is acceptable when explicitly opened; it must not reserve permanent viewport space.
+Rare features live behind right click. `I` or Overlays → Photo Info toggles a compact movable panel for the currently presented image. It starts hidden each application launch, preserves only normalized client-relative placement, follows Blink comparison identity, and leaves Peek unchanged. Missing fields collapse rather than producing placeholder rows. A future Advanced Metadata view remains separate; a persistent EXIF sidebar is not acceptable.
 
 Stage background selection is available from both the context menu and Settings. Black remains default; Neutral, Custom, and Ambient apply immediately. Matte is an independent modifier over every background; Settings owns its color, physical width, and outer style while the context menu and `M` retain the uncluttered enable/disable path. Neither choice changes Fit, physical scale, pan, point of interest, photo rectangle, or photo sampling. Ambient remains fixed to the full photograph rather than following viewport zoom/pan. Stage definitions belong to [`PROJECT-VISION.md`](PROJECT-VISION.md).
 

@@ -25,6 +25,7 @@ internal enum FoviumIcon
     Undo,
     Redo,
     Clear,
+    Info,
 }
 
 internal static class FoviumIconCatalog
@@ -58,6 +59,7 @@ internal static class FoviumIconCatalog
         FoviumIcon.Undo => "M7,3 L7,0 L1,5 L7,10 L7,7 C12,7 14,10 14,15 C16,9 13,3 7,3 Z",
         FoviumIcon.Redo => "M9,3 L9,0 L15,5 L9,10 L9,7 C4,7 2,10 2,15 C0,9 3,3 9,3 Z",
         FoviumIcon.Clear => "M3,4 L13,4 L12,15 L4,15 Z M5,1 L11,1 L12,3 L4,3 Z M6,6 L7,6 L7,13 L6,13 Z M9,6 L10,6 L10,13 L9,13 Z",
+        FoviumIcon.Info => "M8,1 A7,7 0 1 0 8,15 A7,7 0 1 0 8,1 M7,4 L9,4 L9,6 L7,6 Z M7,7 L9,7 L9,12 L10,12 L10,14 L6,14 L6,12 L7,12 Z",
         _ => throw new ArgumentOutOfRangeException(nameof(icon)),
     };
 }

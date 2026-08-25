@@ -78,6 +78,50 @@
           </StackPanel>
         </StackPanel>
     </Border>
+    <Border x:Name="PhotoInfoPanel"
+            IsVisible="False"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Top"
+            Width="360"
+            MaxWidth="420"
+            Padding="10,8,10,10"
+            CornerRadius="8"
+            Background="#E6202020"
+            BorderBrush="#604A4A4A"
+            BorderThickness="1">
+      <StackPanel Spacing="5">
+        <Grid ColumnDefinitions="Auto,*,Auto" Height="26">
+          <Border x:Name="PhotoInfoDragHandle"
+                  Grid.Column="0"
+                  Width="22"
+                  Cursor="SizeAll"
+                  Background="Transparent"
+                  CornerRadius="3">
+            <TextBlock Text="⠿"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Opacity="0.65" />
+          </Border>
+          <TextBlock x:Name="PhotoInfoTitleText"
+                     Grid.Column="1"
+                     VerticalAlignment="Center"
+                     FontWeight="SemiBold"
+                     Opacity="0.88" />
+          <Button x:Name="PhotoInfoCloseButton"
+                  Grid.Column="2"
+                  Width="26"
+                  Height="26"
+                  Padding="5"
+                  Focusable="False" />
+        </Grid>
+        <TextBlock x:Name="PhotoInfoCameraText" FontWeight="SemiBold" />
+        <TextBlock x:Name="PhotoInfoLensText" Opacity="0.85" />
+        <TextBlock x:Name="PhotoInfoExposureText" Margin="0,3,0,0" TextWrapping="Wrap" />
+        <TextBlock x:Name="PhotoInfoDimensionsText" Opacity="0.85" />
+        <TextBlock x:Name="PhotoInfoDateText" Margin="0,3,0,0" Opacity="0.85" />
+        <TextBlock x:Name="PhotoInfoFileText" Opacity="0.75" TextTrimming="CharacterEllipsis" />
+      </StackPanel>
+    </Border>
     <Border x:Name="ErrorSurface"
             IsVisible="False"
             IsHitTestVisible="False"
