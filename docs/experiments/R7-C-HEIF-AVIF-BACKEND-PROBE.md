@@ -20,6 +20,8 @@ The local ignored corpus supplied one static AVIF and one static HEIF. Only anon
 
 The source files remain ignored and are not product fixtures.
 
+R7-C-N1 additionally introduces two tiny project-authored tracked smoke fixtures: a `16 x 12` asymmetric RGB pattern encoded once as 8-bit HEIF and AVIF. Their generator provenance and immutable hashes are recorded beside the fixtures under [`../../eng/native/libheif/fixtures/`](../../eng/native/libheif/fixtures/). They contain no personal photograph or metadata.
+
 ## Results
 
 | Candidate | Decode evidence | Packaging evidence | Gate result |
@@ -30,23 +32,39 @@ The source files remain ignored and are not product fixtures.
 | NetVips 3.2.0 + NetVips.Native 8.18.5 | Decoded the AVIF file; HEIF pixel decode failed because HEVC decompression was not built in | Broad all-RID imaging runtime | Fails HEIF and is materially broader than the focused boundary |
 | Pure-managed HEIC candidates | HEIC-only direction; no matching AVIF backend with equivalent maturity and contract | Avoids native loading but would split the stage across unrelated implementations | Does not meet the one focused HEIF/AVIF backend goal |
 
-The focused LibHeifSharp API exposed the product-relevant primary image, source bit depth, alpha/depth presence, ICC/NCLX data, transforms, and interleaved RGBA decode. This makes the managed adapter technically plausible. It does not solve the missing packaged macOS runtime.
+The focused LibHeifSharp API exposed the product-relevant primary image, source bit depth, alpha/depth presence, ICC/NCLX data, transforms, and interleaved RGBA decode. This makes the managed adapter technically plausible. It does not by itself solve native runtime packaging.
+
+## R7-C-N1 native runtime evidence
+
+The repository now owns a direct-source, decode-only build under [`../../eng/native/libheif/`](../../eng/native/libheif/). It does not use a system libheif, install a production NuGet reference, register a product backend, or change format discovery.
+
+Pinned official sources:
+
+| Component | Version | Tag commit | Release archive SHA-256 | Role / license |
+| --- | --- | --- | --- | --- |
+| libheif | `1.23.1` | `2c4bbb54c2738d4a5efbbe3e5fa1d5d76bb88eb0` | `0de0327f60fcd47de90d5654c6fe152232738d60d84fe084ec3e0f35e03b166a` | Container/decode integration; LGPL-3.0-or-later |
+| libde265 | `1.1.1` | `4dd701fffac01632ffd5cabc5ef10deb56accba1` | `fd48a927e94ed74fc7ce8829d222b9d8599fcbfe8b6448ba66705babc56ab219` | HEVC decoder; LGPL-3.0-or-later |
+| dav1d | `1.5.4` | `191bdda98ec3c68137754dc97da1db34043d7cd4` | `686616b7c69eb88d44459391ab25cac13b6647a3b288835c5784e71c1514a5c5` | AV1 decoder; BSD-2-Clause |
+
+libde265 and dav1d are linked as built-in libheif decoder backends. Plugin loading, x265, AOM, rav1e, SVT-AV1, Kvazaar, x264, FFmpeg, OpenH264, JPEG/JPEG 2000, OpenJPH, VVC codecs, all encoders, examples, CLIs, tests, documentation, fuzzers, GDK Pixbuf, and experimental features are disabled. The packaged payload contains only libheif, libde265, dav1d, their loader-name links where the platform uses them, machine-readable manifests, dependency audits, smoke evidence, and the three license texts.
+
+Current proof:
+
+| RID | Build / locality | Codec inventory | Controlled decode | Status |
+| --- | --- | --- | --- | --- |
+| `win-x64` | Clean local MSVC build; `heif.dll`, `libde265.dll`, and `dav1d.dll` load beside one another | HEVC decoder yes; AV1 decoder yes; HEVC/AV1 encoders no | 8-bit HEIF pass; 8-bit AVIF pass | PASS locally; two clean builds produced the same packaged SHA-256 |
+| `linux-x64` | Clean Ubuntu 24.04 x64 container build; `libheif.so` uses `$ORIGIN` and `ldd` resolves both codec libraries from the artifact directory | HEVC decoder yes; AV1 decoder yes; HEVC/AV1 encoders no | 8-bit HEIF pass; 8-bit AVIF pass | PASS locally |
+| `osx-arm64` | Build, `@loader_path` audit, and decode smoke are defined in the separate hosted matrix | Pending hosted execution after owner push | Pending | BLOCKED pending hosted evidence |
+| `osx-x64` | The build owner accepts a real x64 macOS host | No runner/artifact evidence yet | No evidence | Preferred additional RID remains unproven |
+
+Each artifact carries `manifest.json` with source pins, build options, binary hashes, toolchain versions, fixture hashes, and license inventory; `dependency-audit.txt`; and `smoke-report.txt` with the absolute loaded libheif path/version and decoder/encoder/decode results. Windows `dumpbin` and Linux `readelf`/`ldd` found no x265, unrelated codec, developer-prefix, or custom system-library dependency. Windows depends on the normal MSVC runtime; Linux depends only on normal platform C/C++ runtime libraries beyond its app-local codec set.
 
 ## Decision
 
-R7-C is not productized. Fovium remains at `0.1.0.0005`; no production package, backend, format capability, discovery extension, or support claim is added. The controlled files prove Windows API feasibility only, not cross-platform product support. In particular, no hosted R7-C decode evidence, real 10-bit rejection fixture, HDR fixture, alpha fixture, or container-transform fixture exists yet.
+R7-C is not productized. Fovium remains at `0.1.0.0005`; no production package, backend, format capability, discovery extension, or support claim is added. R7-C-N1 proves the pinned build and app-local decode contract locally on Windows x64 and Linux x64. It does not yet prove the mandatory macOS arm64 artifact, so the native prerequisite remains blocked pending the separate hosted native matrix. There is still no product integration evidence, real 10-bit rejection fixture, HDR fixture, alpha fixture, or container-transform fixture.
 
 ## Best next option
 
-Establish a reproducible, application-owned decode-only libheif runtime distribution before resuming R7-C:
-
-- build from an official pinned libheif source;
-- include HEVC decode (for example libde265) and AV1 decode (for example dav1d or the accepted decoder path);
-- exclude x265 and other encoder-only components;
-- publish explicit `win-x64`, `linux-x64`, `osx-arm64`, and preferably `osx-x64` assets;
-- record complete binary/license inventory and reproducible build provenance;
-- prove each packaged asset is the one loaded by real fixture decode on its hosted runner.
-
-Only after that prerequisite should Fovium add the backend, deterministic 8-bit/10-bit/HDR/alpha/transform fixtures, and the full content-routing/integration suite.
+Run the new native workflow after owner push and require green build/package/audit/decode jobs for `win-x64`, `linux-x64`, and `osx-arm64`. If all mandatory artifacts pass, R7-C-N1 can be accepted and R7-C may resume with the managed backend, real 8/10-bit/HDR/alpha/transform fixtures, and the full content-routing/integration suite. If macOS fails, retain `0.1.0.0005` and resolve that native toolchain/loader defect without weakening the platform matrix.
 
 Current product truth remains in [`../FORMAT-SUPPORT.md`](../FORMAT-SUPPORT.md); dependency provenance remains in [`../THIRD-PARTY.md`](../THIRD-PARTY.md).

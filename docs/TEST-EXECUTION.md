@@ -87,4 +87,21 @@ R7-B adds an independent minimal uncompressed classic-TIFF byte fixture plus foc
 
 CI restores, builds, and tests on Windows, Linux, and macOS. The accepted R7-B commit `d5de440` completed all three hosted restore-build-test jobs successfully, including the managed TIFF suite. This proves the solution/test contract and cross-platform managed decoder execution, not manual Avalonia/Skia viewer behavior on Linux/macOS.
 
-The R7-C feasibility probe did not accept a HEIF/AVIF runtime package, so there are intentionally no production HEIF/AVIF decode tests or platform skips. Windows-only experimental decoding is not cross-platform product evidence. Any resumed R7-C implementation must run real packaged HEIF and AVIF decode tests on all three hosted jobs and prove that the intended app-local native asset was loaded.
+R7-C-N1 still adds no production HEIF/AVIF package or decoder tests. It introduces a separate path-filtered `native-libheif.yml` matrix that builds pinned source, packages and audits the decode-only runtime, loads the exact app-local libheif, verifies HEVC/AV1 decoder presence and encoder absence, and decodes tracked project-authored 8-bit HEIF/AVIF smoke fixtures. The mandatory jobs are `win-x64`, `linux-x64`, and `osx-arm64`; no platform skip is accepted.
+
+Local R7-C-N1 evidence is green for Windows x64 and a clean Ubuntu 24.04 x64 container. The hosted native matrix, especially macOS arm64, remains unconfirmed until the owner pushes and GitHub Actions completes. These native artifacts are prerequisite evidence only; they do not make HEIF/AVIF product formats.
+
+Run a clean native build locally with:
+
+```powershell
+pwsh eng/native/libheif/build.ps1 -Rid win-x64
+```
+
+or on a matching Unix host:
+
+```bash
+bash eng/native/libheif/build.sh linux-x64
+bash eng/native/libheif/build.sh osx-arm64
+```
+
+The scripts fail on host/RID mismatch, archive hash mismatch, non-local libheif loading, missing HEVC/AV1 decoders, present HEVC/AV1 encoders, forbidden codec/developer-path dependencies, or fixture decode failure. Per-RID `manifest.json`, `dependency-audit.txt`, and `smoke-report.txt` are the detailed evidence owners.

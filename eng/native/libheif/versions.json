@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "sources": {
+    "libheif": {
+      "version": "1.23.1",
+      "tag": "v1.23.1",
+      "commit": "2c4bbb54c2738d4a5efbbe3e5fa1d5d76bb88eb0",
+      "sourceUrl": "https://github.com/strukturag/libheif",
+      "archiveUrl": "https://github.com/strukturag/libheif/releases/download/v1.23.1/libheif-1.23.1.tar.gz",
+      "archiveFile": "libheif-1.23.1.tar.gz",
+      "archiveSha256": "0de0327f60fcd47de90d5654c6fe152232738d60d84fe084ec3e0f35e03b166a",
+      "sourceDirectory": "libheif-1.23.1",
+      "license": "LGPL-3.0-or-later",
+      "licenseFile": "COPYING"
+    },
+    "libde265": {
+      "version": "1.1.1",
+      "tag": "v1.1.1",
+      "commit": "4dd701fffac01632ffd5cabc5ef10deb56accba1",
+      "sourceUrl": "https://github.com/strukturag/libde265",
+      "archiveUrl": "https://github.com/strukturag/libde265/releases/download/v1.1.1/libde265-1.1.1.tar.gz",
+      "archiveFile": "libde265-1.1.1.tar.gz",
+      "archiveSha256": "fd48a927e94ed74fc7ce8829d222b9d8599fcbfe8b6448ba66705babc56ab219",
+      "sourceDirectory": "libde265-1.1.1",
+      "license": "LGPL-3.0-or-later",
+      "licenseFile": "COPYING"
+    },
+    "dav1d": {
+      "version": "1.5.4",
+      "tag": "1.5.4",
+      "commit": "191bdda98ec3c68137754dc97da1db34043d7cd4",
+      "sourceUrl": "https://code.videolan.org/videolan/dav1d",
+      "archiveUrl": "https://download.videolan.org/pub/videolan/dav1d/1.5.4/dav1d-1.5.4.tar.xz",
+      "archiveFile": "dav1d-1.5.4.tar.xz",
+      "archiveSha256": "686616b7c69eb88d44459391ab25cac13b6647a3b288835c5784e71c1514a5c5",
+      "sourceDirectory": "dav1d-1.5.4",
+      "license": "BSD-2-Clause",
+      "licenseFile": "COPYING"
+    }
+  },
+  "tooling": {
+    "meson": "1.12.0",
+    "ninja": "1.13.0",
+    "minimumPython": "3.12.0",
+    "minimumCMake": "3.28.0",
+    "minimumNasm": "2.16.0",
+    "sourceDateEpoch": "1767225600"
+  },
+  "requiredRids": [
+    "win-x64",
+    "linux-x64",
+    "osx-arm64"
+  ],
+  "additionalRids": [
+    "osx-x64"
+  ]
+}

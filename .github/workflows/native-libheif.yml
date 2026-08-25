@@ -1,0 +1,78 @@
+name: Native libheif runtime
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/native-libheif.yml'
+      - 'eng/native/libheif/**'
+  push:
+    branches:
+      - master
+    paths:
+      - '.github/workflows/native-libheif.yml'
+      - 'eng/native/libheif/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-package-smoke:
+    name: Build ${{ matrix.rid }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+          - os: ubuntu-latest
+            rid: linux-x64
+          - os: macos-latest
+            rid: osx-arm64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Verify host architecture
+        shell: pwsh
+        run: |
+          $expected = '${{ matrix.rid }}'
+          $actual = [System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier
+          Write-Host "Expected RID: $expected"
+          Write-Host "Actual RID:   $actual"
+          if ($actual -ne $expected) {
+              throw "Hosted runner architecture mismatch."
+          }
+
+      - name: Install Linux build prerequisites
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes nasm python3-venv
+
+      - name: Install macOS build prerequisites
+        if: runner.os == 'macOS'
+        run: |
+          if ! command -v nasm >/dev/null 2>&1; then
+            brew install nasm
+          fi
+
+      - name: Build, package, audit, and smoke (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: pwsh eng/native/libheif/build.ps1 -Rid win-x64
+
+      - name: Build, package, audit, and smoke (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: bash eng/native/libheif/build.sh '${{ matrix.rid }}'
+
+      - name: Upload native runtime artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: fovium-libheif-${{ matrix.rid }}
+          if-no-files-found: error
+          path: |
+            artifacts/native/packages/fovium-libheif-${{ matrix.rid }}.*

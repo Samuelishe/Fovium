@@ -13,7 +13,7 @@ The retained R0 probe remains experimental evidence under `experiments/Fovium.Re
 
 ## Current focus
 
-R7-C HEIF/AVIF feasibility is gated and not productized. The existing Skia stack cannot decode the controlled files; the focused libheif runtime that decoded both on Windows lacks macOS assets, while evaluated all-RID alternatives either lacked required HEVC/AV1 decoders or added unsuitable encoder/broad-stack baggage. Fovium therefore remains at `0.1.0.0005` with no HEIF/AVIF production dependency or support claim. The next technical option is a reproducible application-owned decode-only libheif runtime for Windows x64, Linux x64, macOS arm64, and preferably macOS x64. Do not begin another format automatically.
+R7-C HEIF/AVIF productization remains gated. R7-C-N1 now owns a pinned decode-only libheif 1.23.1/libde265 1.1.1/dav1d 1.5.4 source build, deterministic artifact manifest/audit/smoke contract, and a separate native workflow. App-local 8-bit HEIF/AVIF decode passes locally on Windows x64 and clean Ubuntu 24.04 x64; mandatory macOS arm64 build/load/decode evidence remains pending owner push and hosted execution. Fovium therefore remains at `0.1.0.0005` with no HEIF/AVIF production dependency, capability, discovery hint, or support claim. Do not begin another format automatically.
 
 ## Implemented application functionality
 
@@ -67,7 +67,7 @@ Markup save/export, text, dedicated Highlighter, edit handles/layers, selected-r
 - Avalonia's direct-Skia lease used by the accepted initial renderer is explicitly unstable and must remain isolated.
 - Physical-pixel 100% is validated by pure tests at 1.00/1.25/1.50/2.00, but production runtime evidence exists only at `RenderScaling = 1.00`; per-monitor transitions still need real hardware coverage.
 - The monitor-aware color pipeline and raw embedded-profile extraction boundary have not been selected.
-- HEIF/AVIF productization is blocked on a trustworthy application-owned decode-only native runtime covering Windows x64, Linux x64, and macOS arm64. The Windows adapter path is feasible, but no evaluated package met the combined platform/decode/dependency gate; retained evidence is in [`experiments/R7-C-HEIF-AVIF-BACKEND-PROBE.md`](experiments/R7-C-HEIF-AVIF-BACKEND-PROBE.md).
+- HEIF/AVIF productization remains blocked until the new application-owned decode-only native workflow proves the mandatory macOS arm64 artifact alongside Windows/Linux. Local Windows x64 and clean Ubuntu x64 artifacts already pass exact-path HEIF/AVIF decode, decoder-only inventory, and dependency audit; retained evidence is in [`experiments/R7-C-HEIF-AVIF-BACKEND-PROBE.md`](experiments/R7-C-HEIF-AVIF-BACKEND-PROBE.md).
 - Codec support beyond JPEG/PNG/static WebP/bounded 8-bit TIFF and a huge/region-rendered-image strategy remain unselected.
 - WebP EXIF orientation is not currently surfaced by SkiaSharp 3.119.4 `SKCodec.EncodedOrigin` in the controlled fixture; Fovium retains encoded geometry rather than adding a second eager orientation parser.
 - Hosted restore-build-test is confirmed on Windows/Linux/macOS for the accepted R7-B commit, including the managed TIFF suite. Manual Linux/macOS Avalonia/Skia runtime behavior remains unvalidated.
