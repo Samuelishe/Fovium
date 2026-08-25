@@ -78,6 +78,7 @@ The displayed checkpoint is not a substitute for a Git commit, tag, or branch. G
 | `0.0.0.0012` | R5-F2 | Ellipse/Circle, immutable per-draw opacity, Shift constraints, and contextual markup style shortcuts |
 | `0.0.0.0013` | R5-P1 / R5-P2 / R5-P3 corrective line | Owner-accepted current-first scheduling, atomic Ambient presentation, and sustained preload across cache saturation |
 | `0.1.0.0000` | R5-F3 | First substantial usable Fovium alpha: contextual controls, drawing cursors, Hand, movable icon dock, and polished secondary UI |
+| `0.1.0.0001` | R5-F3-P1 | Interaction render-path isolation for photo, markup, pointer feedback, and floating UI |
 
 The `0.0.0.xxxx` line records the completed foundation and early product-construction checkpoints. The explicit owner-controlled `0.1.0.0000` transition marks the first substantial usable Fovium alpha; it does not claim feature completeness, a stable API, production release status, or `1.0` quality. Current implementation state remains owned by [`PROJECT-STATE.md`](PROJECT-STATE.md).
 
@@ -86,9 +87,9 @@ The `0.0.0.xxxx` line records the completed foundation and early product-constru
 The root `Directory.Build.props` is the canonical source for the current components and formatted display identity. It supplies the production `Fovium` assembly with:
 
 ```text
-InformationalVersion = 0.1.0.0000
-AssemblyVersion      = 0.1.0.0
-FileVersion          = 0.1.0.0
+InformationalVersion = 0.1.0.0001
+AssemblyVersion      = 0.1.0.1
+FileVersion          = 0.1.0.1
 ```
 
 From that source:

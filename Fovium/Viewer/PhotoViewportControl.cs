@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.VisualTree;
+using Fovium.Diagnostics;
 using Fovium.Imaging;
 using Fovium.Loading;
 using Fovium.Presentation;
@@ -21,6 +22,7 @@ internal sealed class PhotoViewportControl : Control
 {
     private readonly ViewportModel _viewport = new();
     private readonly AmbientRenderFrameDiagnostics _ambientFrameDiagnostics = new();
+    private readonly CompositionCustomDrawHost _photoDrawHost = new();
     private SharedResourceLease<DecodedImage>? _image;
     private DecodedImage.AmbientLease? _ambient;
     private long? _ambientImageIdentity;
@@ -39,15 +41,20 @@ internal sealed class PhotoViewportControl : Control
     private double _wheelAccumulator;
     private StageSettings _stage = StageSettings.Default;
     private PresentationOverlaySession? _presentation;
+    private MarkupOverlayControl? _markupOverlay;
+    private PointerFeedbackOverlayControl? _pointerFeedbackOverlay;
     private string? _canonicalImageIdentity;
     private Cursor? _visibleViewerCursor;
     private Cursor? _hiddenViewerCursor;
     private Cursor? _handViewerCursor;
+    private ViewerSystemCursorMode _appliedSystemCursorMode = (ViewerSystemCursorMode)(-1);
+    private InteractionRenderDiagnostics _interactionDiagnostics = new();
 
     public PhotoViewportControl()
     {
         ClipToBounds = true;
         Focusable = true;
+        CacheMode = new BitmapCache { SnapsToDevicePixels = true };
     }
 
     public event EventHandler? PointerActivity;
@@ -74,6 +81,9 @@ internal sealed class PhotoViewportControl : Control
     internal void EnableAmbientPipelineDiagnostics() =>
         _ambientFrameDiagnostics.EnablePipelineTracking();
 
+    internal void ConfigureInteractionDiagnostics(InteractionRenderDiagnostics diagnostics) =>
+        _interactionDiagnostics = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
+
     internal ViewportAmbientPresentationState CaptureAmbientPresentationState()
     {
         var imageIdentity = _image?.Value.Identity;
@@ -88,7 +98,9 @@ internal sealed class PhotoViewportControl : Control
         PresentationOverlaySession presentation,
         Cursor? visibleViewerCursor = null,
         Cursor? hiddenViewerCursor = null,
-        Cursor? handViewerCursor = null)
+        Cursor? handViewerCursor = null,
+        MarkupOverlayControl? markupOverlay = null,
+        PointerFeedbackOverlayControl? pointerFeedbackOverlay = null)
     {
         ArgumentNullException.ThrowIfNull(presentation);
         if (_presentation is not null)
@@ -100,15 +112,25 @@ internal sealed class PhotoViewportControl : Control
         _visibleViewerCursor = visibleViewerCursor;
         _hiddenViewerCursor = hiddenViewerCursor;
         _handViewerCursor = handViewerCursor;
+        _markupOverlay = markupOverlay;
+        _pointerFeedbackOverlay = pointerFeedbackOverlay;
+        _appliedSystemCursorMode = (ViewerSystemCursorMode)(-1);
         presentation.Changed += OnPresentationChanged;
+        UpdateMarkupOverlay();
+        UpdatePointerPresentation();
         ApplyCursor();
-        InvalidateVisual();
     }
 
     public void SetViewerCursor(Cursor cursor)
     {
         ArgumentNullException.ThrowIfNull(cursor);
+        if (ReferenceEquals(_visibleViewerCursor, cursor))
+        {
+            return;
+        }
+
         _visibleViewerCursor = cursor;
+        _appliedSystemCursorMode = (ViewerSystemCursorMode)(-1);
         ApplyCursor();
     }
 
@@ -126,9 +148,10 @@ internal sealed class PhotoViewportControl : Control
         _ambientImageIdentity = null;
         _image = image;
         _canonicalImageIdentity = imageIdentity;
-        _presentation?.SelectImage(imageIdentity);
         _viewport.SetImage(image.Value.Descriptor.OrientedSize, transfer);
-        InvalidateVisual();
+        _presentation?.SelectImage(imageIdentity);
+        UpdateMarkupOverlay();
+        PublishPhotoPresentation();
         previous?.Dispose();
         previousAmbient?.Dispose();
         RaiseViewStateChanged();
@@ -163,9 +186,10 @@ internal sealed class PhotoViewportControl : Control
         _stage = presentation.Stage;
         _ambient = ambient;
         _ambientImageIdentity = ambient is null ? null : presentation.ImageIdentity;
-        _presentation?.SelectImage(imageIdentity);
         _viewport.SetImage(image.Value.Descriptor.OrientedSize, transfer);
-        InvalidateVisual();
+        _presentation?.SelectImage(imageIdentity);
+        UpdateMarkupOverlay();
+        PublishPhotoPresentation();
         previousImage?.Dispose();
         previousAmbient?.Dispose();
         RaiseViewStateChanged();
@@ -187,7 +211,7 @@ internal sealed class PhotoViewportControl : Control
         _stage = presentation.Stage;
         _ambient = ambient;
         _ambientImageIdentity = ambient is null ? null : presentation.ImageIdentity;
-        InvalidateVisual();
+        PublishPhotoPresentation();
         previous?.Dispose();
     }
 
@@ -201,7 +225,8 @@ internal sealed class PhotoViewportControl : Control
         _presentation?.SelectImage(null);
         _ambient = null;
         _ambientImageIdentity = null;
-        InvalidateVisual();
+        UpdateMarkupOverlay();
+        PublishPhotoPresentation();
         previous?.Dispose();
         previousAmbient?.Dispose();
     }
@@ -252,7 +277,8 @@ internal sealed class PhotoViewportControl : Control
         _inspectionMode = InspectionMode.Peek100;
         _lastDragPoint = null;
         _viewport.SetPhotographic100ForInspection(_lastPointerPosition);
-        InvalidateVisual();
+        UpdateMarkupOverlay();
+        PublishPhotoPresentation();
         return true;
     }
 
@@ -292,7 +318,8 @@ internal sealed class PhotoViewportControl : Control
         _inspectionAmbientImageIdentity = ambient is null ? null : image.Value.Identity;
         _inspectionStage = stage;
         _viewport.SetImage(image.Value.Descriptor.OrientedSize, _inspectionRestore.Value);
-        InvalidateVisual();
+        UpdateMarkupOverlay();
+        PublishPhotoPresentation();
         previousImage?.Dispose();
         previousAmbient?.Dispose();
         return true;
@@ -321,7 +348,8 @@ internal sealed class PhotoViewportControl : Control
             _viewport.SetImage(_image.Value.Descriptor.OrientedSize, restore.Value);
         }
 
-        InvalidateVisual();
+        UpdateMarkupOverlay();
+        PublishPhotoPresentation();
         comparison?.Dispose();
         comparisonAmbient?.Dispose();
         return true;
@@ -330,73 +358,7 @@ internal sealed class PhotoViewportControl : Control
     public override void Render(DrawingContext context)
     {
         base.Render(context);
-        _ambientFrameDiagnostics.RecordViewportRender();
-        var presentationStage = _inspectionImage is not null ? _inspectionStage! : _stage;
-        var fallbackColor = presentationStage.BackgroundMode switch
-        {
-            StageBackgroundMode.Neutral => StageDefaults.NeutralColor,
-            StageBackgroundMode.Custom => presentationStage.CustomBackgroundColor,
-            _ => StageDefaults.BlackColor,
-        };
-        IBrush fallback = new SolidColorBrush(Color.FromRgb(
-            fallbackColor.Red,
-            fallbackColor.Green,
-            fallbackColor.Blue));
-        context.FillRectangle(fallback, new Rect(Bounds.Size));
-        var cachedLease = _inspectionImage ?? _image;
-        if (cachedLease is not null)
-        {
-            DecodedImage.RenderLease? renderLease = null;
-            DecodedImage.AmbientLease? ambientLease = null;
-            try
-            {
-                renderLease = cachedLease.Value.AcquireRenderLease();
-                var ambient = _inspectionImage is not null ? _inspectionAmbient : _ambient;
-                var presentedNumericIdentity = cachedLease.Value.Identity;
-                var ambientIdentity = _inspectionImage is not null
-                    ? _inspectionAmbientImageIdentity
-                    : _ambientImageIdentity;
-                if (ambientIdentity == presentedNumericIdentity)
-                {
-                    ambientLease = ambient?.Acquire();
-                }
-                var descriptor = cachedLease.Value.Descriptor;
-                var presentationIdentity = _inspectionImage is not null
-                    ? _inspectionImageIdentity
-                    : _canonicalImageIdentity;
-                var markup = _presentation?.GetRenderSnapshot(presentationIdentity)
-                    ?? MarkupRenderSnapshot.Empty;
-                _ambientFrameDiagnostics.RecordCustomDrawScheduled();
-                context.Custom(new SkiaPhotoDrawOperation(
-                    new Rect(Bounds.Size),
-                    renderLease,
-                    descriptor.EncodedSize,
-                    descriptor.Orientation,
-                    GetDestination(),
-                    _viewport.UsesExactPixelSampling,
-                    presentationStage,
-                    _viewport.RenderScaling,
-                    ambientLease,
-                    markup,
-                    presentedNumericIdentity,
-                    ambientLease is null ? null : ambientIdentity,
-                    _ambientFrameDiagnostics));
-                renderLease = null;
-                ambientLease = null;
-            }
-            finally
-            {
-                renderLease?.Dispose();
-                ambientLease?.Dispose();
-            }
-        }
-
-        if (_presentation is { } pointerPresentation &&
-            _pointerInside &&
-            _lastPointerPosition is { } pointerPosition)
-        {
-            DrawPointerFeedback(context, pointerPosition);
-        }
+        context.FillRectangle(Brushes.Transparent, new Rect(Bounds.Size));
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -408,6 +370,7 @@ internal sealed class PhotoViewportControl : Control
             _topLevel.ScalingChanged += OnScalingChanged;
         }
 
+        _photoDrawHost.Attach(this, Bounds.Size);
         UpdateViewportMetrics();
     }
 
@@ -419,12 +382,14 @@ internal sealed class PhotoViewportControl : Control
             _topLevel = null;
         }
 
+        _photoDrawHost.Detach(this);
         base.OnDetachedFromVisualTree(e);
     }
 
     protected override void OnSizeChanged(SizeChangedEventArgs e)
     {
         base.OnSizeChanged(e);
+        _photoDrawHost.Resize(e.NewSize);
         UpdateViewportMetrics();
     }
 
@@ -524,6 +489,7 @@ internal sealed class PhotoViewportControl : Control
     protected override void OnPointerMoved(PointerEventArgs e)
     {
         base.OnPointerMoved(e);
+        _interactionDiagnostics.RecordPointerMoved();
         NotifyPointerActivity();
         UpdatePointerPosition(e);
         if (_drawingPointer == e.Pointer &&
@@ -549,7 +515,8 @@ internal sealed class PhotoViewportControl : Control
         _lastDragPoint = current;
         if (_inspectionMode == InspectionMode.Peek100)
         {
-            InvalidateVisual();
+            UpdateMarkupOverlay();
+            PublishPhotoPresentation();
         }
         else
         {
@@ -596,6 +563,57 @@ internal sealed class PhotoViewportControl : Control
         return destination with { X = aligned.X, Y = aligned.Y };
     }
 
+    private void PublishPhotoPresentation()
+    {
+        var cachedLease = _inspectionImage ?? _image;
+        if (cachedLease is null || Bounds.Width <= 0 || Bounds.Height <= 0)
+        {
+            _photoDrawHost.SetOperation(null);
+            return;
+        }
+
+        DecodedImage.RenderLease? renderLease = null;
+        DecodedImage.AmbientLease? ambientLease = null;
+        try
+        {
+            renderLease = cachedLease.Value.AcquireRenderLease();
+            var ambient = _inspectionImage is not null ? _inspectionAmbient : _ambient;
+            var presentedNumericIdentity = cachedLease.Value.Identity;
+            var ambientIdentity = _inspectionImage is not null
+                ? _inspectionAmbientImageIdentity
+                : _ambientImageIdentity;
+            if (ambientIdentity == presentedNumericIdentity)
+            {
+                ambientLease = ambient?.Acquire();
+            }
+
+            var descriptor = cachedLease.Value.Descriptor;
+            var presentationStage = _inspectionImage is not null ? _inspectionStage! : _stage;
+            _ambientFrameDiagnostics.RecordCustomDrawScheduled();
+            _photoDrawHost.SetOperation(new SkiaPhotoDrawOperation(
+                new Rect(Bounds.Size),
+                renderLease,
+                descriptor.EncodedSize,
+                descriptor.Orientation,
+                GetDestination(),
+                _viewport.UsesExactPixelSampling,
+                presentationStage,
+                _viewport.RenderScaling,
+                ambientLease,
+                presentedNumericIdentity,
+                ambientLease is null ? null : ambientIdentity,
+                _ambientFrameDiagnostics,
+                _interactionDiagnostics));
+            renderLease = null;
+            ambientLease = null;
+        }
+        finally
+        {
+            renderLease?.Dispose();
+            ambientLease?.Dispose();
+        }
+    }
+
     private void OnScalingChanged(object? sender, EventArgs e) => UpdateViewportMetrics();
 
     protected override void OnPointerExited(PointerEventArgs e)
@@ -603,8 +621,8 @@ internal sealed class PhotoViewportControl : Control
         base.OnPointerExited(e);
         _lastPointerPosition = null;
         _pointerInside = false;
+        _pointerFeedbackOverlay?.SetPointerPosition(null);
         ApplyCursor();
-        InvalidateVisual();
     }
 
     private void UpdateViewportMetrics()
@@ -613,6 +631,7 @@ internal sealed class PhotoViewportControl : Control
         _viewport.SetViewport(
             new LogicalSize(Math.Max(Bounds.Width, 1), Math.Max(Bounds.Height, 1)),
             renderScaling);
+        UpdatePointerPresentation();
         InvalidateAndReport();
     }
 
@@ -620,7 +639,8 @@ internal sealed class PhotoViewportControl : Control
 
     private void InvalidateAndReport()
     {
-        InvalidateVisual();
+        UpdateMarkupOverlay();
+        PublishPhotoPresentation();
         RaiseViewStateChanged();
     }
 
@@ -630,13 +650,11 @@ internal sealed class PhotoViewportControl : Control
     {
         var pointer = e.GetPosition(this);
         _lastPointerPosition = new PointD(pointer.X, pointer.Y);
-        _pointerInside = true;
-        ApplyCursor();
-        if (_presentation is { } presentation &&
-            (presentation.HighlightEnabled ||
-                presentation.MarkupToolsVisible))
+        _pointerFeedbackOverlay?.SetPointerPosition(_lastPointerPosition);
+        if (!_pointerInside)
         {
-            InvalidateVisual();
+            _pointerInside = true;
+            ApplyCursor();
         }
     }
 
@@ -656,7 +674,7 @@ internal sealed class PhotoViewportControl : Control
         comparisonAmbient?.Dispose();
     }
 
-    private void OnPresentationChanged(object? sender, EventArgs e)
+    private void OnPresentationChanged(object? sender, PresentationChangedEventArgs e)
     {
         if (_presentation?.IsDrawing != true && _drawingPointer is { } pointer)
         {
@@ -664,8 +682,17 @@ internal sealed class PhotoViewportControl : Control
             pointer.Capture(null);
         }
 
-        ApplyCursor();
-        InvalidateVisual();
+        var layers = InteractionRenderRouting.ForPresentationChange(e.Kind);
+        if (layers.HasFlag(InteractionRenderLayer.Markup))
+        {
+            UpdateMarkupOverlay();
+        }
+
+        if (layers.HasFlag(InteractionRenderLayer.Pointer))
+        {
+            UpdatePointerPresentation();
+            ApplyCursor();
+        }
     }
 
     private void ApplyCursor()
@@ -676,13 +703,17 @@ internal sealed class PhotoViewportControl : Control
         }
 
         var feedback = GetPointerFeedback();
-        Cursor = feedback.Kind switch
+        var mode = ViewerSystemCursorPresentation.Resolve(_pointerInside, feedback.Kind);
+        if (mode == _appliedSystemCursorMode)
         {
-            DrawingCursorKind.Hand when _pointerInside => _handViewerCursor ?? _visibleViewerCursor,
-            DrawingCursorKind.Highlight or
-                DrawingCursorKind.Brush or
-                DrawingCursorKind.Eraser or
-                DrawingCursorKind.Precision when _pointerInside => _hiddenViewerCursor,
+            return;
+        }
+
+        _appliedSystemCursorMode = mode;
+        Cursor = mode switch
+        {
+            ViewerSystemCursorMode.Hand => _handViewerCursor ?? _visibleViewerCursor,
+            ViewerSystemCursorMode.Hidden => _hiddenViewerCursor,
             _ => _visibleViewerCursor,
         };
     }
@@ -712,73 +743,31 @@ internal sealed class PhotoViewportControl : Control
             _viewport.RenderScaling);
     }
 
-    private void DrawPointerFeedback(
-        DrawingContext context,
-        PointD pointer)
+    private void UpdatePointerPresentation()
     {
-        var feedback = GetPointerFeedback();
-        var center = new Point(pointer.X, pointer.Y);
-        switch (feedback.Kind)
-        {
-            case DrawingCursorKind.Highlight:
-            case DrawingCursorKind.Brush:
-                {
-                    var alpha = (byte)Math.Round(feedback.Opacity * byte.MaxValue);
-                    var color = feedback.Color;
-                    var fill = new SolidColorBrush(Color.FromArgb(alpha, color.Red, color.Green, color.Blue));
-                    var radius = feedback.DiameterDip / 2;
-                    context.DrawEllipse(fill, null, center, radius, radius);
-                    if (feedback.Kind == DrawingCursorKind.Brush)
-                    {
-                        DrawHighContrastCircle(context, center, radius, feedback.OutlineWidthDip);
-                    }
-
-                    break;
-                }
-
-            case DrawingCursorKind.Eraser:
-                DrawHighContrastCircle(
-                    context,
-                    center,
-                    feedback.DiameterDip / 2,
-                    feedback.OutlineWidthDip);
-                break;
-
-            case DrawingCursorKind.Precision:
-                DrawPrecisionCursor(context, center, feedback);
-                break;
-        }
+        _pointerFeedbackOverlay?.SetPresentation(GetPointerFeedback());
     }
 
-    private static void DrawHighContrastCircle(
-        DrawingContext context,
-        Point center,
-        double radius,
-        double outlineWidth)
+    private void UpdateMarkupOverlay()
     {
-        context.DrawEllipse(null, new Pen(Brushes.Black, outlineWidth * 3), center, radius, radius);
-        context.DrawEllipse(null, new Pen(Brushes.White, outlineWidth), center, radius, radius);
-    }
-
-    private static void DrawPrecisionCursor(
-        DrawingContext context,
-        Point center,
-        DrawingCursorPresentation feedback)
-    {
-        var half = feedback.CrosshairHalfExtentDip;
-        var gap = Math.Min(half / 3, 3 * feedback.OutlineWidthDip);
-        var segments = new[]
+        if (_markupOverlay is null)
         {
-            (new Point(center.X - half, center.Y), new Point(center.X - gap, center.Y)),
-            (new Point(center.X + gap, center.Y), new Point(center.X + half, center.Y)),
-            (new Point(center.X, center.Y - half), new Point(center.X, center.Y - gap)),
-            (new Point(center.X, center.Y + gap), new Point(center.X, center.Y + half)),
-        };
-        foreach (var (start, end) in segments)
-        {
-            context.DrawLine(new Pen(Brushes.Black, feedback.OutlineWidthDip * 3), start, end);
-            context.DrawLine(new Pen(Brushes.White, feedback.OutlineWidthDip), start, end);
+            return;
         }
+
+        var image = _inspectionImage ?? _image;
+        if (image is null || _presentation is null)
+        {
+            _markupOverlay.SetPresentation(null);
+            return;
+        }
+
+        var identity = PresentedImageIdentity;
+        var snapshot = _presentation.GetRenderSnapshot(identity);
+        _markupOverlay.SetPresentation(new MarkupOverlayFrame(
+            GetDestination(),
+            image.Value.Descriptor.OrientedSize,
+            snapshot));
     }
 
     private PointD? TryGetSourcePoint(Point pointer)

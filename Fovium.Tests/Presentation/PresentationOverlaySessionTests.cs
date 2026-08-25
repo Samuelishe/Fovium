@@ -5,6 +5,23 @@ namespace Fovium.Tests.Presentation;
 
 public sealed class PresentationOverlaySessionTests
 {
+    [Fact]
+    public void ContinueDrawingRaisesRenderContentOnly()
+    {
+        var session = CreateReadySession("A");
+        session.SetActiveTool(MarkupTool.Brush);
+        Assert.True(session.BeginDrawing(new PointD(10, 10), 1));
+        var changes = new List<PresentationChangeKind>();
+        session.Changed += (_, args) => changes.Add(args.Kind);
+
+        Assert.True(session.ContinueDrawing(new PointD(12, 14)));
+
+        Assert.Equal([PresentationChangeKind.RenderContent], changes);
+        Assert.DoesNotContain(changes, change => change.HasFlag(PresentationChangeKind.ToolState));
+        Assert.DoesNotContain(changes, change => change.HasFlag(PresentationChangeKind.StyleState));
+        Assert.DoesNotContain(changes, change => change.HasFlag(PresentationChangeKind.HistoryState));
+    }
+
     [Theory]
     [InlineData((int)MarkupTool.Brush, typeof(BrushMarkup))]
     [InlineData((int)MarkupTool.Line, typeof(LineMarkup))]

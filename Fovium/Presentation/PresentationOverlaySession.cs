@@ -2,6 +2,23 @@ using Fovium.Rendering;
 
 namespace Fovium.Presentation;
 
+[Flags]
+internal enum PresentationChangeKind
+{
+    None = 0,
+    RenderContent = 1 << 0,
+    ToolState = 1 << 1,
+    StyleState = 1 << 2,
+    HistoryState = 1 << 3,
+    Visibility = 1 << 4,
+    Highlight = 1 << 5,
+}
+
+internal sealed class PresentationChangedEventArgs(PresentationChangeKind kind) : EventArgs
+{
+    public PresentationChangeKind Kind { get; } = kind;
+}
+
 internal readonly record struct MarkupHistoryLimits(
     int MaximumOperationsPerImage,
     int MaximumPointsPerStroke,
@@ -44,7 +61,7 @@ internal sealed class PresentationOverlaySession
         ActiveOpacity = _settings.DefaultMarkupOpacity;
     }
 
-    public event EventHandler? Changed;
+    public event EventHandler<PresentationChangedEventArgs>? Changed;
 
     public PresentationSettings Settings => _settings;
 
@@ -86,36 +103,56 @@ internal sealed class PresentationOverlaySession
 
         var previous = _settings;
         _settings = normalized;
+        var change = PresentationChangeKind.None;
         if (normalized.DefaultMarkupColor != previous.DefaultMarkupColor)
         {
             ActiveColor = normalized.DefaultMarkupColor;
+            change |= PresentationChangeKind.StyleState;
         }
 
         if (!normalized.DefaultMarkupStrokePhysicalPixels.Equals(
                 previous.DefaultMarkupStrokePhysicalPixels))
         {
             ActiveStrokePhysicalPixels = normalized.DefaultMarkupStrokePhysicalPixels;
+            change |= PresentationChangeKind.StyleState;
         }
 
         if (!normalized.DefaultMarkupOpacity.Equals(previous.DefaultMarkupOpacity))
         {
             ActiveOpacity = normalized.DefaultMarkupOpacity;
+            change |= PresentationChangeKind.StyleState;
         }
 
-        if (!normalized.MarkupToolsEnabled)
+        if (normalized.HighlightColor != previous.HighlightColor ||
+            !normalized.HighlightOpacity.Equals(previous.HighlightOpacity) ||
+            !normalized.HighlightRadiusPhysicalPixels.Equals(previous.HighlightRadiusPhysicalPixels))
+        {
+            change |= PresentationChangeKind.Highlight;
+        }
+
+        if (normalized.MarkupToolsEnabled != previous.MarkupToolsEnabled)
+        {
+            change |= PresentationChangeKind.Visibility;
+        }
+
+        if (!normalized.MarkupToolsEnabled &&
+            (MarkupToolsVisible || _draft is not null || _temporaryHandActive))
         {
             MarkupToolsVisible = false;
             _draft = null;
             _temporaryHandActive = false;
+            change |= PresentationChangeKind.RenderContent |
+                PresentationChangeKind.ToolState |
+                PresentationChangeKind.HistoryState;
         }
 
-        RaiseChanged();
+        RaiseChanged(change);
     }
 
     public bool ToggleHighlight()
     {
         HighlightEnabled = !HighlightEnabled;
-        RaiseChanged();
+        RaiseChanged(PresentationChangeKind.Highlight);
         return HighlightEnabled;
     }
 
@@ -133,7 +170,11 @@ internal sealed class PresentationOverlaySession
             _temporaryHandActive = false;
         }
 
-        RaiseChanged();
+        RaiseChanged(
+            PresentationChangeKind.Visibility |
+            PresentationChangeKind.ToolState |
+            PresentationChangeKind.HistoryState |
+            PresentationChangeKind.RenderContent);
         return MarkupToolsVisible;
     }
 
@@ -149,7 +190,10 @@ internal sealed class PresentationOverlaySession
         _draft = null;
         _temporaryHandActive = false;
         CurrentImageIdentity = identity;
-        RaiseChanged();
+        RaiseChanged(
+            PresentationChangeKind.RenderContent |
+            PresentationChangeKind.ToolState |
+            PresentationChangeKind.HistoryState);
     }
 
     public void StartNewSequence()
@@ -159,7 +203,10 @@ internal sealed class PresentationOverlaySession
         CurrentImageIdentity = null;
         _documents.Clear();
         _totalCommittedPoints = 0;
-        RaiseChanged();
+        RaiseChanged(
+            PresentationChangeKind.RenderContent |
+            PresentationChangeKind.ToolState |
+            PresentationChangeKind.HistoryState);
     }
 
     public void SetActiveTool(MarkupTool tool)
@@ -172,7 +219,10 @@ internal sealed class PresentationOverlaySession
         _draft = null;
         _temporaryHandActive = false;
         ActiveTool = tool;
-        RaiseChanged();
+        RaiseChanged(
+            PresentationChangeKind.RenderContent |
+            PresentationChangeKind.ToolState |
+            PresentationChangeKind.HistoryState);
     }
 
     public bool BeginTemporaryHand()
@@ -184,7 +234,10 @@ internal sealed class PresentationOverlaySession
 
         _draft = null;
         _temporaryHandActive = true;
-        RaiseChanged();
+        RaiseChanged(
+            PresentationChangeKind.RenderContent |
+            PresentationChangeKind.ToolState |
+            PresentationChangeKind.HistoryState);
         return true;
     }
 
@@ -196,7 +249,7 @@ internal sealed class PresentationOverlaySession
         }
 
         _temporaryHandActive = false;
-        RaiseChanged();
+        RaiseChanged(PresentationChangeKind.ToolState);
         return true;
     }
 
@@ -208,7 +261,7 @@ internal sealed class PresentationOverlaySession
         }
 
         ActiveColor = color;
-        RaiseChanged();
+        RaiseChanged(PresentationChangeKind.StyleState);
     }
 
     public void SetActiveStrokePhysicalPixels(double stroke)
@@ -225,7 +278,7 @@ internal sealed class PresentationOverlaySession
         }
 
         ActiveStrokePhysicalPixels = normalized;
-        RaiseChanged();
+        RaiseChanged(PresentationChangeKind.StyleState);
     }
 
     public void SetActiveOpacity(double opacity)
@@ -242,7 +295,7 @@ internal sealed class PresentationOverlaySession
         }
 
         ActiveOpacity = normalized;
-        RaiseChanged();
+        RaiseChanged(PresentationChangeKind.StyleState);
     }
 
     public bool AdjustActiveStrokePhysicalPixels(double delta)
@@ -298,7 +351,9 @@ internal sealed class PresentationOverlaySession
             sourcePoint,
             sourceSize,
             _limits.MaximumPointsPerStroke);
-        RaiseChanged();
+        RaiseChanged(
+            PresentationChangeKind.RenderContent |
+            PresentationChangeKind.HistoryState);
         return true;
     }
 
@@ -312,7 +367,7 @@ internal sealed class PresentationOverlaySession
         }
 
         _draft.Move(sourcePoint, modifiers);
-        RaiseChanged();
+        RaiseChanged(PresentationChangeKind.RenderContent);
         return true;
     }
 
@@ -329,7 +384,9 @@ internal sealed class PresentationOverlaySession
         _draft = null;
         var operation = draft.CreateOperation();
         var committed = operation is not null && TryCommit(draft.Identity, operation);
-        RaiseChanged();
+        RaiseChanged(
+            PresentationChangeKind.RenderContent |
+            PresentationChangeKind.HistoryState);
         return committed;
     }
 
@@ -341,7 +398,9 @@ internal sealed class PresentationOverlaySession
         }
 
         _draft = null;
-        RaiseChanged();
+        RaiseChanged(
+            PresentationChangeKind.RenderContent |
+            PresentationChangeKind.HistoryState);
     }
 
     public bool UndoCurrent()
@@ -349,7 +408,9 @@ internal sealed class PresentationOverlaySession
         if (_draft is not null)
         {
             _draft = null;
-            RaiseChanged();
+            RaiseChanged(
+                PresentationChangeKind.RenderContent |
+                PresentationChangeKind.HistoryState);
             return true;
         }
 
@@ -359,7 +420,9 @@ internal sealed class PresentationOverlaySession
             return false;
         }
 
-        RaiseChanged();
+        RaiseChanged(
+            PresentationChangeKind.RenderContent |
+            PresentationChangeKind.HistoryState);
         return true;
     }
 
@@ -368,7 +431,9 @@ internal sealed class PresentationOverlaySession
         if (_draft is not null)
         {
             _draft = null;
-            RaiseChanged();
+            RaiseChanged(
+                PresentationChangeKind.RenderContent |
+                PresentationChangeKind.HistoryState);
             return true;
         }
 
@@ -378,7 +443,9 @@ internal sealed class PresentationOverlaySession
             return false;
         }
 
-        RaiseChanged();
+        RaiseChanged(
+            PresentationChangeKind.RenderContent |
+            PresentationChangeKind.HistoryState);
         return true;
     }
 
@@ -388,12 +455,16 @@ internal sealed class PresentationOverlaySession
         var document = GetCurrentDocument();
         if (CurrentImageIdentity is null || document is null || !document.HasPotentiallyVisibleMarkup)
         {
-            RaiseChanged();
+            RaiseChanged(
+                PresentationChangeKind.RenderContent |
+                PresentationChangeKind.HistoryState);
             return false;
         }
 
         var committed = TryCommit(CurrentImageIdentity, ClearMarkupOperation.Instance);
-        RaiseChanged();
+        RaiseChanged(
+            PresentationChangeKind.RenderContent |
+            PresentationChangeKind.HistoryState);
         return committed;
     }
 
@@ -470,7 +541,13 @@ internal sealed class PresentationOverlaySession
         }
     }
 
-    private void RaiseChanged() => Changed?.Invoke(this, EventArgs.Empty);
+    private void RaiseChanged(PresentationChangeKind kind)
+    {
+        if (kind != PresentationChangeKind.None)
+        {
+            Changed?.Invoke(this, new PresentationChangedEventArgs(kind));
+        }
+    }
 
     private sealed class MarkupDocument
     {

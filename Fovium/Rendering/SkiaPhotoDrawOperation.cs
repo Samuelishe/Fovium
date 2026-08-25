@@ -3,8 +3,8 @@ using Avalonia.Media;
 using Avalonia.Platform;
 using Avalonia.Rendering.SceneGraph;
 using Avalonia.Skia;
+using Fovium.Diagnostics;
 using Fovium.Imaging;
-using Fovium.Presentation;
 using Fovium.Stage;
 using SkiaSharp;
 
@@ -22,10 +22,10 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
     private readonly bool _exactPixelSampling;
     private readonly StageSettings _stage;
     private readonly double _renderScaling;
-    private readonly MarkupRenderSnapshot _markup;
     private readonly long _imageIdentity;
     private readonly long? _ambientIdentity;
     private readonly AmbientRenderFrameDiagnostics _frameDiagnostics;
+    private readonly InteractionRenderDiagnostics _interactionDiagnostics;
 
     public SkiaPhotoDrawOperation(
         Rect bounds,
@@ -37,10 +37,10 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
         StageSettings stage,
         double renderScaling,
         DecodedImage.AmbientLease? ambientLease,
-        MarkupRenderSnapshot markup,
         long imageIdentity,
         long? ambientIdentity,
-        AmbientRenderFrameDiagnostics frameDiagnostics)
+        AmbientRenderFrameDiagnostics frameDiagnostics,
+        InteractionRenderDiagnostics interactionDiagnostics)
     {
         Bounds = bounds;
         _imageLease = imageLease;
@@ -51,10 +51,10 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
         _stage = stage;
         _renderScaling = renderScaling;
         _ambientLease = ambientLease;
-        _markup = markup;
         _imageIdentity = imageIdentity;
         _ambientIdentity = ambientIdentity;
         _frameDiagnostics = frameDiagnostics;
+        _interactionDiagnostics = interactionDiagnostics;
     }
 
     public Rect Bounds { get; }
@@ -63,6 +63,9 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
 
     public void Render(ImmediateDrawingContext context)
     {
+        _interactionDiagnostics.RecordPhotoPresentationRender();
+        _interactionDiagnostics.RecordPhotoSkiaDraw();
+        _frameDiagnostics.RecordViewportRender();
         _frameDiagnostics.RecordCustomDrawEntered();
         var imageLease = _imageLease;
         if (imageLease is null)
@@ -122,12 +125,6 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
             canvas.Restore();
         }
 
-        SkiaMarkupOverlayRenderer.Draw(
-            canvas,
-            _destination,
-            orientedSize,
-            _markup,
-            new RectD(Bounds.X, Bounds.Y, Bounds.Width, Bounds.Height));
     }
 
     public bool Equals(ICustomDrawOperation? other) => false;

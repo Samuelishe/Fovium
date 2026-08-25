@@ -9,6 +9,8 @@
         MinHeight="320">
   <Grid x:Name="ViewerRoot" Background="Black">
     <viewer:PhotoViewportControl x:Name="PhotoViewport" />
+    <viewer:MarkupOverlayControl x:Name="MarkupOverlay" />
+    <viewer:PointerFeedbackOverlayControl x:Name="PointerFeedbackOverlay" />
     <Border x:Name="MarkupToolsPanel"
               IsVisible="False"
               HorizontalAlignment="Left"

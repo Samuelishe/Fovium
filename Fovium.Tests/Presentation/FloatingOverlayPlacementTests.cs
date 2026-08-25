@@ -68,4 +68,35 @@ public sealed class FloatingOverlayPlacementTests
         Assert.True(double.IsFinite(point.X));
         Assert.True(double.IsFinite(point.Y));
     }
+
+    [Fact]
+    public void LiveDragReturnsClampedTranslationWithoutChangingCanonicalBase()
+    {
+        var basePosition = new FloatingOverlayPoint(300, 12);
+
+        var update = FloatingOverlayDrag.Update(
+            basePosition,
+            new FloatingOverlayPoint(350, 30),
+            new FloatingOverlayPoint(900, 900),
+            new FloatingOverlaySize(1000, 700),
+            new FloatingOverlaySize(400, 80));
+
+        Assert.Equal(new FloatingOverlayPoint(588, 608), update.Position);
+        Assert.Equal(new FloatingOverlayPoint(288, 596), update.Translation);
+        Assert.Equal(new FloatingOverlayPoint(300, 12), basePosition);
+    }
+
+    [Fact]
+    public void LiveDragHandlesOversizedPanelWithoutNaN()
+    {
+        var update = FloatingOverlayDrag.Update(
+            new FloatingOverlayPoint(0, 0),
+            new FloatingOverlayPoint(10, 10),
+            new FloatingOverlayPoint(double.PositiveInfinity, double.NaN),
+            new FloatingOverlaySize(320, 200),
+            new FloatingOverlaySize(500, 260));
+
+        Assert.Equal(new FloatingOverlayPoint(0, 0), update.Position);
+        Assert.Equal(new FloatingOverlayPoint(0, 0), update.Translation);
+    }
 }

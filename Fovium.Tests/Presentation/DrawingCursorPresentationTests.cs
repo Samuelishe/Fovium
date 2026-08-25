@@ -85,6 +85,26 @@ public sealed class DrawingCursorPresentationTests
         Assert.Equal((DrawingCursorKind)expectedKindValue, cursor.Kind);
     }
 
+    [Theory]
+    [InlineData(false, (int)DrawingCursorKind.Brush, (int)ViewerSystemCursorMode.Visible)]
+    [InlineData(true, (int)DrawingCursorKind.Viewer, (int)ViewerSystemCursorMode.Visible)]
+    [InlineData(true, (int)DrawingCursorKind.Brush, (int)ViewerSystemCursorMode.Hidden)]
+    [InlineData(true, (int)DrawingCursorKind.Eraser, (int)ViewerSystemCursorMode.Hidden)]
+    [InlineData(true, (int)DrawingCursorKind.Precision, (int)ViewerSystemCursorMode.Hidden)]
+    [InlineData(true, (int)DrawingCursorKind.Highlight, (int)ViewerSystemCursorMode.Hidden)]
+    [InlineData(true, (int)DrawingCursorKind.Hand, (int)ViewerSystemCursorMode.Hand)]
+    public void SystemCursorModeChangesOnlyAcrossMeaningfulStateTransitions(
+        bool pointerInside,
+        int feedbackKind,
+        int expectedMode)
+    {
+        Assert.Equal(
+            (ViewerSystemCursorMode)expectedMode,
+            ViewerSystemCursorPresentation.Resolve(
+                pointerInside,
+                (DrawingCursorKind)feedbackKind));
+    }
+
     private static DrawingCursorPresentation Resolve(
         bool markupVisible,
         bool highlightEnabled,

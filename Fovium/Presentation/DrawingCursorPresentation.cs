@@ -10,6 +10,29 @@ internal enum DrawingCursorKind
     Hand,
 }
 
+internal enum ViewerSystemCursorMode
+{
+    Visible,
+    Hidden,
+    Hand,
+}
+
+internal static class ViewerSystemCursorPresentation
+{
+    public static ViewerSystemCursorMode Resolve(
+        bool pointerInside,
+        DrawingCursorKind feedbackKind) =>
+        (pointerInside, feedbackKind) switch
+        {
+            (true, DrawingCursorKind.Hand) => ViewerSystemCursorMode.Hand,
+            (true, DrawingCursorKind.Highlight or
+                DrawingCursorKind.Brush or
+                DrawingCursorKind.Eraser or
+                DrawingCursorKind.Precision) => ViewerSystemCursorMode.Hidden,
+            _ => ViewerSystemCursorMode.Visible,
+        };
+}
+
 internal readonly record struct DrawingCursorPresentation(
     DrawingCursorKind Kind,
     double DiameterDip,

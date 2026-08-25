@@ -7,7 +7,7 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R5-F3 is complete at `0.1.0.0000`, the first substantial usable Fovium alpha milestone. R5-P1 current-first scheduling, R5-P2 atomic cached presentation, and R5-P3 sustained preload across cache saturation are owner-accepted for normal human browsing. Version semantics are owned by [`VERSIONING.md`](VERSIONING.md).
+R5-F3-P1 is complete at `0.1.0.0001`. The `0.1.0.0000` first substantial usable Fovium alpha milestone remains historical. High-frequency pointer feedback, markup replay, and floating-dock motion are isolated from the low-frequency photographic presentation. R5-P1 current-first scheduling, R5-P2 atomic cached presentation, and R5-P3 sustained preload across cache saturation remain owner-accepted for normal human browsing. Version semantics are owned by [`VERSIONING.md`](VERSIONING.md).
 
 The retained R0 probe remains experimental evidence under `experiments/Fovium.RenderProbe`. Production code is the single `Fovium` assembly and does not depend on the experiment. Local Windows acceptance used one `RenderScaling = 1.00` display; no GitHub-hosted CI or Linux/macOS runtime result is claimed by this stage.
 
@@ -47,6 +47,7 @@ The next intended stage is R6-A, metadata foundation and a Photo Info floating o
 - Code-owned Global, Highlight, and Markup shortcut scopes with deterministic Markup → Highlight → Global precedence, cross-scope gesture reuse, and typed Navigation/Viewing/Inspection/Presentation/Markup/Application groups.
 - Contextual `V/B/E/L/R/O/A` Hand/Brush/Eraser/Line/Rectangle/Ellipse/Arrow commands; permanent Hand pans without history, while hold `Space` temporarily activates Hand through the shared repeat/focus/cancellation-safe hold lifecycle.
 - Lightweight physical-pixel drawing feedback: opacity/color/size-aware Brush circle, true Eraser-diameter outline, precision shape crosshair, and Hand cursor; markup interaction suppresses but does not disable persisted Cursor Highlight.
+- Update-frequency render isolation: direct-Skia photograph/Stage presentation is compositor-cached as one low-frequency layer, markup replays in its own transparent composition visual, pointer feedback moves through a small transform-only surface, and live dock drag uses a transform before one placement commit on release.
 - Shared markup physical size range extended to `1–128 px` without changing existing/default values.
 - Compact project-owned vector-icon presenter dock with normalized client-relative persisted placement, bounds clamping across resize/fullscreen, localized effective-shortcut tooltips, and no external icon dependency.
 - Grouped Controls generated from command metadata plus standard icon-and-text context menus with checked, shared-state Cursor Highlight and Markup Tools toggles.
@@ -65,6 +66,6 @@ Markup save/export, text, dedicated Highlighter, edit handles/layers, selected-r
 - R4 runtime inspection evidence is Windows-only at `RenderScaling = 1.00`; precise cold non-cached Blink latency and real fractional-DPI interaction still need representative owner hardware evidence.
 - R5 through R5-F2 pointer, eraser, constrained-drawing, opacity, and rendering evidence is Windows-only at `RenderScaling = 1.00`; fractional-DPI, Linux, and macOS runtime feel remain unvalidated.
 - R5-P1 reduced coordinator-side current Ambient latency from roughly `134 ms` to `15 ms`; R5-P2 removed cached-handoff intermediate state; R5-P3 explained the delayed long-sequence failure at cache saturation and restored continuous bounded LRU replacement. Owner review accepts normal human browsing around 3–4 distinct 24 MP photographs per second. Deliberately browsing roughly 5–6+ per second can outrun speculative photo/Ambient readiness and briefly expose matching Black fallback; stale or mismatched Ambient remains forbidden. Fractional-DPI and cross-platform presentation remain unmeasured.
-- R5-F3 pointer/cursor and floating-panel runtime evidence is Windows-only at `RenderScaling = 1.00`; pure geometry covers 1.00/1.25/1.50/2.00, but real fractional-DPI, Linux, and macOS interaction feel remains unvalidated.
+- R5-F3-P1 pointer/cursor, compositor-cache, drawing, and floating-panel runtime evidence is Windows-only at `RenderScaling = 1.00`; pure geometry covers 1.00/1.25/1.50/2.00, but real fractional-DPI, Linux, and macOS interaction feel and cached exact-pixel presentation remain unvalidated.
 
 Open technical risks are tracked in [`KNOWN-PROBLEMS.md`](KNOWN-PROBLEMS.md). Directional stages are in [`ROADMAP.md`](ROADMAP.md). Git remains the authority for branch, HEAD, and worktree status.

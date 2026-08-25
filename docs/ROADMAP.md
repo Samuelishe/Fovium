@@ -67,6 +67,10 @@ Accepted corrective outcome on `0.0.0.0013`: retain photograph-first/current-fir
 
 Accepted outcome and `0.1.0.0000` alpha milestone: code-owned contextual shortcut scopes, drawing/Hand cursors, a 128 px markup-size range, permanent and temporary Hand modes, a normalized movable presenter dock, project-owned icons, overlay context-menu toggles, and grouped Controls. No text, selection/editing, export, sidecars, or layers were added.
 
+## R5-F3-P1 — Interaction render-path isolation
+
+Accepted corrective outcome at `0.1.0.0001`: split low-frequency compositor-cached photographic presentation, independent markup replay, transform-positioned pointer feedback, and transform-only live floating-panel drag. Draft movement no longer refreshes the presenter toolbar, pointer activity no longer restarts its inactivity timer, and opt-in counters verify that high-frequency interaction does not redraw the photograph.
+
 ## R6-A — Metadata foundation and Photo Info floating overlay
 
 Next intended bounded product stage: metadata extraction/model boundaries and an unobtrusive Photo Info panel using the accepted floating-overlay foundation. Do not begin automatically.
