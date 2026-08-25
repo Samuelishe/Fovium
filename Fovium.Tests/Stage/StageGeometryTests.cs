@@ -37,7 +37,7 @@ public sealed class StageGeometryTests
     [InlineData(1.25, 19.2)]
     [InlineData(1.50, 16.0)]
     [InlineData(2.00, 12.0)]
-    public void MatteWidthUsesPhysicalPixelsWithoutChangingImageRect(
+    public void MatteMetricsUsePhysicalPixelsWithoutChangingPhoto(
         double renderScaling,
         double expectedDipWidth)
     {
@@ -46,24 +46,126 @@ public sealed class StageGeometryTests
         var result = StageGeometry.CalculateMatte(
             image,
             new LogicalSize(800, 600),
-            renderScaling);
+            renderScaling,
+            MatteStyle.Rounded,
+            24);
 
-        Assert.Equal(image, result.ImageDestination);
-        var matte = Assert.IsType<RectD>(result.MatteDestination);
-        Assert.Equal(expectedDipWidth, image.X - matte.X, 9);
-        Assert.Equal(expectedDipWidth, image.Y - matte.Y, 9);
-        Assert.Equal(expectedDipWidth * 2 + image.Width, matte.Width, 9);
-        Assert.Equal(expectedDipWidth * 2 + image.Height, matte.Height, 9);
+        Assert.Equal(image, result.BackingDestination);
+        Assert.Equal(expectedDipWidth, result.WidthDip, 9);
+        Assert.Equal(expectedDipWidth, image.X - result.OuterBounds.X, 9);
+        Assert.Equal(expectedDipWidth, image.Y - result.OuterBounds.Y, 9);
+        Assert.Equal(expectedDipWidth * 1.5, result.OuterRadiusDip, 9);
+        Assert.Equal(expectedDipWidth * 1.5, result.ChamferDip, 9);
+        Assert.Equal(expectedDipWidth / 3, result.SoftSigmaDip, 9);
+    }
+
+    [Theory]
+    [InlineData((int)MatteStyle.Solid)]
+    [InlineData((int)MatteStyle.Rounded)]
+    [InlineData((int)MatteStyle.Soft)]
+    [InlineData((int)MatteStyle.Angular)]
+    public void EveryStyleKeepsCompleteRectangularPhotoBacking(int styleValue)
+    {
+        var image = new RectD(100, 80, 400, 300);
+
+        var result = StageGeometry.CalculateMatte(
+            image,
+            new LogicalSize(800, 600),
+            1,
+            (MatteStyle)styleValue,
+            64);
+
+        Assert.Equal(image, result.BackingDestination);
+        Assert.Equal(new RectD(36, 16, 528, 428), result.OuterBounds);
+        Assert.Equal(result.OuterBounds, result.VisibleBounds);
+        Assert.Equal((MatteStyle)styleValue, result.Style);
     }
 
     [Fact]
-    public void MatteClipsAtViewportEdgesWithoutMovingPhoto()
+    public void MatteClipsAtViewportEdgesWithoutMovingPhotoOrChangingIdealShape()
     {
         var image = new RectD(0, 20, 800, 560);
 
-        var result = StageGeometry.CalculateMatte(image, new LogicalSize(800, 600), 1);
+        var result = StageGeometry.CalculateMatte(
+            image,
+            new LogicalSize(800, 600),
+            1,
+            MatteStyle.Solid,
+            24);
 
-        Assert.Equal(image, result.ImageDestination);
-        Assert.Equal(new RectD(0, 0, 800, 600), result.MatteDestination);
+        Assert.Equal(image, result.BackingDestination);
+        Assert.Equal(new RectD(-24, -4, 848, 608), result.OuterBounds);
+        Assert.Equal(new RectD(0, 0, 800, 600), result.VisibleBounds);
+        Assert.True(result.VisibleBounds.Width >= 0);
+        Assert.True(result.VisibleBounds.Height >= 0);
+    }
+
+    [Fact]
+    public void RoundedRadiusIsClampedToHalfOuterBounds()
+    {
+        var result = StageGeometry.CalculateMatte(
+            new RectD(100, 100, 4, 4),
+            new LogicalSize(400, 400),
+            1,
+            MatteStyle.Rounded,
+            192);
+
+        Assert.Equal(194, result.OuterRadiusDip);
+        Assert.Equal(result.OuterRadiusDip, result.ChamferDip);
+    }
+
+    [Fact]
+    public void AngularPointsAreDeterministicAndChamferEveryOuterCorner()
+    {
+        var bounds = new RectD(10, 20, 100, 80);
+
+        var points = StageGeometry.CalculateAngularPoints(bounds, 12);
+
+        Assert.Equal(
+            [
+                new PointD(22, 20),
+                new PointD(98, 20),
+                new PointD(110, 32),
+                new PointD(110, 88),
+                new PointD(98, 100),
+                new PointD(22, 100),
+                new PointD(10, 88),
+                new PointD(10, 32),
+            ],
+            points);
+    }
+
+    [Fact]
+    public void SoftFeatherExtentIsBoundedByConfiguredWidth()
+    {
+        var result = StageGeometry.CalculateMatte(
+            new RectD(200, 150, 400, 300),
+            new LogicalSize(1000, 800),
+            2,
+            MatteStyle.Soft,
+            128);
+
+        Assert.Equal(64, result.WidthDip);
+        Assert.Equal(64d / 3, result.SoftSigmaDip, 9);
+        Assert.Equal(new RectD(136, 86, 528, 428), result.OuterBounds);
+        Assert.Equal(result.OuterBounds, result.VisibleBounds);
+    }
+
+    [Fact]
+    public void InvalidGeometryInputsAreRejectedAtBoundary()
+    {
+        var viewport = new LogicalSize(800, 600);
+        var image = new RectD(100, 100, 400, 300);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => StageGeometry.CalculateMatte(
+            new RectD(double.NaN, 0, 10, 10), viewport, 1, MatteStyle.Solid, 24));
+        Assert.Throws<ArgumentOutOfRangeException>(() => StageGeometry.CalculateMatte(
+            image, viewport, 0, MatteStyle.Solid, 24));
+        Assert.Throws<ArgumentOutOfRangeException>(() => StageGeometry.CalculateMatte(
+            image, viewport, 1, (MatteStyle)999, 24));
+        Assert.Throws<ArgumentOutOfRangeException>(() => StageGeometry.CalculateMatte(
+            image, viewport, 1, MatteStyle.Solid, 193));
+        Assert.Throws<ArgumentOutOfRangeException>(() => StageGeometry.CalculateAngularPoints(
+            image, double.PositiveInfinity));
     }
 }

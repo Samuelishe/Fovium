@@ -49,6 +49,8 @@ Admission checks both estimated peak working bytes and retained encoded-plus-BGR
 
 Stage customization does not increase those caps. A prepared Ambient is at most `384` pixels on its long edge in premultiplied BGRA (about `576 KiB` at a square worst case and typically less), is owned by its decoded image, and increases the same cache entry's retained-byte cost. Only one blur variant per decoded image is retained; replacement respects render leases. Optional/speculative entries are evicted before a protected current image; a derivative that still cannot fit is discarded and the visible Stage uses a matching previous derivative or Black fallback.
 
+Matte style, width, color, and enabled state remain synchronous draw-time presentation and never invalidate Ambient. Solid, Rounded, and Angular materialize bounded geometry; Soft uses one bounded mask blur on the Matte shape without a viewport-sized offscreen or retained cache. A local Windows raster observation at 1920×1080 over 300 draws measured approximately `338 µs`/draw for Solid and `383 µs`/draw for Soft; this is comparative engineering evidence, not a cross-platform frame-time benchmark.
+
 ## Diagnostics
 
 Future opt-in diagnostics may show renderer/backend, display scaling, cache budget/usage, current decoded allocation, pending decodes, decode time, and color-transform time. Diagnostics are for investigation and must not become permanent viewport chrome.

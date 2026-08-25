@@ -38,7 +38,7 @@ public sealed class AmbientStageCoordinatorTests
     }
 
     [Fact]
-    public async Task MatteToggleAndColorChangeReusePreparedAmbient()
+    public async Task MattePresentationChangesReusePreparedAmbientWithoutSchedulingWork()
     {
         using var repository = new TestRepository();
         var image = StageTestImages.CreateDecoded();
@@ -54,6 +54,8 @@ public sealed class AmbientStageCoordinatorTests
         {
             MatteEnabled = true,
             MatteColor = new StageColor(0x60, 0x50, 0x40),
+            MatteStyle = MatteStyle.Soft,
+            MatteWidthPhysicalPixels = 128,
         });
         await coordinator.WaitForIdleAsync();
         using var after = coordinator.AcquirePresentation();
@@ -64,6 +66,8 @@ public sealed class AmbientStageCoordinatorTests
         Assert.Same(before.Ambient!.Image, after.Ambient!.Image);
         Assert.True(after.Stage.MatteEnabled);
         Assert.Equal(new StageColor(0x60, 0x50, 0x40), after.Stage.MatteColor);
+        Assert.Equal(MatteStyle.Soft, after.Stage.MatteStyle);
+        Assert.Equal(128, after.Stage.MatteWidthPhysicalPixels);
         Assert.Equal(1, coordinator.GetMetrics().ScheduledWorkCount);
     }
 

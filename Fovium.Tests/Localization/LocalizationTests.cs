@@ -91,6 +91,28 @@ public sealed class LocalizationTests
     }
 
     [Theory]
+    [InlineData("en-US", "Style", "Size", "Solid", "Rounded", "Soft", "Angular")]
+    [InlineData("ru-RU", "Стиль", "Размер", "Классическое", "Скруглённое", "Мягкое", "Угловое")]
+    public void MatteCatalogsContainGeometryControlsAndEveryStyle(
+        string cultureName,
+        string styleLabel,
+        string sizeLabel,
+        string solid,
+        string rounded,
+        string soft,
+        string angular)
+    {
+        var localizer = Localizer.Create(CultureInfo.GetCultureInfo(cultureName));
+
+        Assert.Equal(styleLabel, localizer[UiStrings.StageMatteStyle]);
+        Assert.Equal(sizeLabel, localizer[UiStrings.StageMatteSize]);
+        Assert.Equal(solid, localizer[UiStrings.StageMatteSolid]);
+        Assert.Equal(rounded, localizer[UiStrings.StageMatteRounded]);
+        Assert.Equal(soft, localizer[UiStrings.StageMatteSoft]);
+        Assert.Equal(angular, localizer[UiStrings.StageMatteAngular]);
+    }
+
+    [Theory]
     [InlineData("en-US", "Controls", "Press a key…", "Unassigned", "Reset shortcuts")]
     [InlineData("ru-RU", "Управление", "Нажмите клавишу…", "Не назначено", "Сбросить сочетания")]
     public void ControlsCatalogsContainShortcutInteractionStrings(

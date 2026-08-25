@@ -49,14 +49,26 @@ internal static class SkiaStageRenderer
                 ambientPaint);
         }
 
-        if (geometry.MatteDestination is { } matte)
+        if (geometry.Matte is { } matte)
         {
             using var mattePaint = new SKPaint
             {
-                IsAntialias = false,
+                IsAntialias = matte.Style != MatteStyle.Solid,
                 Color = ToSkColor(stage.MatteColor),
             };
-            canvas.DrawRect(ToSkRect(matte), mattePaint);
+            canvas.Save();
+            try
+            {
+                canvas.ClipRect(ToSkRect(viewport));
+                DrawMatteOuterShape(canvas, matte, mattePaint);
+                mattePaint.IsAntialias = false;
+                mattePaint.MaskFilter = null;
+                canvas.DrawRect(ToSkRect(matte.BackingDestination), mattePaint);
+            }
+            finally
+            {
+                canvas.Restore();
+            }
         }
     }
 
@@ -65,6 +77,57 @@ internal static class SkiaStageRenderer
         (float)rectangle.Y,
         (float)(rectangle.X + rectangle.Width),
         (float)(rectangle.Y + rectangle.Height));
+
+    private static void DrawMatteOuterShape(
+        SKCanvas canvas,
+        MatteRenderGeometry matte,
+        SKPaint paint)
+    {
+        var outer = ToSkRect(matte.OuterBounds);
+        switch (matte.Style)
+        {
+            case MatteStyle.Solid:
+                canvas.DrawRect(outer, paint);
+                break;
+            case MatteStyle.Rounded:
+                canvas.DrawRoundRect(
+                    outer,
+                    (float)matte.OuterRadiusDip,
+                    (float)matte.OuterRadiusDip,
+                    paint);
+                break;
+            case MatteStyle.Soft:
+                paint.MaskFilter = SKMaskFilter.CreateBlur(
+                    SKBlurStyle.Normal,
+                    (float)matte.SoftSigmaDip,
+                    respectCTM: true);
+                canvas.DrawRect(ToSkRect(matte.BackingDestination), paint);
+                break;
+            case MatteStyle.Angular:
+                using (var path = CreateAngularPath(
+                    StageGeometry.CalculateAngularPoints(matte.OuterBounds, matte.ChamferDip)))
+                {
+                    canvas.DrawPath(path, paint);
+                }
+
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(matte));
+        }
+    }
+
+    private static SKPath CreateAngularPath(IReadOnlyList<PointD> points)
+    {
+        var path = new SKPath();
+        path.MoveTo((float)points[0].X, (float)points[0].Y);
+        for (var index = 1; index < points.Count; index++)
+        {
+            path.LineTo((float)points[index].X, (float)points[index].Y);
+        }
+
+        path.Close();
+        return path;
+    }
 
     internal static float[] CreateColorMatrix(double brightness, double saturation)
     {

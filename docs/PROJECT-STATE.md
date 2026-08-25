@@ -7,7 +7,7 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R3-F1 is complete. The project version is `0.0.0.0007`; its semantics and accepted checkpoint history are owned by [`VERSIONING.md`](VERSIONING.md).
+R3-F2 is complete. The project version is `0.0.0.0008`; its semantics and accepted checkpoint history are owned by [`VERSIONING.md`](VERSIONING.md).
 
 The retained R0 probe remains experimental evidence under `experiments/Fovium.RenderProbe`. Production code is the single `Fovium` assembly and does not depend on the experiment. Local Windows acceptance used one `RenderScaling = 1.00` display; no GitHub-hosted CI or Linux/macOS runtime result is claimed by this stage.
 
@@ -27,6 +27,7 @@ R4 — Peek 100% / Blink Compare photographer-inspection interactions.
 - Persistent image-change view policy: Keep current scale by default, or Fit each image.
 - Dark Settings window with implemented Viewing, Stage, Controls, and About sections; schema-v2 JSON autosave; explicit v1 migration; and malformed-file fallback.
 - Persisted Stage background, custom/matte colors, independent Matte, and configurable Ambient brightness/saturation/blur with synchronized Settings and context-menu surfaces.
+- Persisted Matte physical width and Solid, Rounded, Soft, and Angular outer presentation styles; all styles retain an opaque rectangular backing beneath alpha photographs without changing photo geometry.
 - Bounded asynchronous blur-only Ambient preparation from the oriented decoded photograph; render-time brightness/saturation; adjacent preparation; byte-accounted cache ownership; and matching-identity publication.
 - Persistent command shortcuts with locale-independent identifiers, conflict confirmation, unassigned state, reset, and reserved `Esc` behavior. Defaults add `+`, `-`, `0`, `1`, and `M` viewer controls.
 - Traversal-excluded local imaging corpus policy plus hardened async session shutdown/cache release.

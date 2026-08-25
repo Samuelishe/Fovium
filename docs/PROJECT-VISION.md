@@ -34,7 +34,7 @@ The presentation space around the photograph is the **Stage**, not leftover wind
 - **Custom**: an explicit user-selected opaque solid color.
 - **Ambient**: derived from the photograph, cover-filled, strongly blurred, darkened, and moderately desaturated so it never competes with the original.
 
-An optional persisted **Matte** is an independent modifier over any background. Stage processing does not alter the photograph or viewport state. Ambient is a bounded, strongly simplified derivative of the full oriented photograph and remains stable during zoom/pan; Matte adds separation behind the resolved photograph bounds without shrinking them. The shared state is available through the context menu and Settings.
+An optional persisted **Matte** is an independent modifier over any background. It may use a Solid, Rounded, Soft, or Angular outer presentation with a configurable physical width and color, while the photograph itself always remains a complete rectangle. Stage processing does not alter the photograph or viewport state. Ambient is a bounded, strongly simplified derivative of the full oriented photograph and remains stable during zoom/pan; Matte adds separation behind the resolved photograph bounds without shrinking them. The shared state is available through the context menu and Settings.
 
 ## Photographer-specific direction
 

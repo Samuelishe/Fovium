@@ -198,3 +198,9 @@ Prepared Ambient owns oriented reduction and bounded blur and is identified by s
 Status: Accepted in R3-F1.
 
 Configurable commands persist locale-independent IDs and project-owned key/modifier gestures. Capture rejects unsupported gestures, bare modifiers, and reserved `Esc`. Conflicts require explicit confirmation; replacement clears the previous command instead of swapping, and an unassigned command remains valid. Controls is a first-class Settings section, and the trigger model leaves a bounded path for future hold/release actions without implementing them early.
+
+## D-033 — Matte styles alter only outer presentation
+
+Status: Accepted in R3-F2.
+
+Matte is an independent presentation layer with an opaque color, a physical-pixel width, and an initial Solid, Rounded, Soft, or Angular outer style. The complete photograph remains rectangular and unmodified, with an opaque Matte backing beneath its entire destination for alpha compositing. Style and width are synchronous renderer geometry and never invalidate Ambient; this initial style catalog and its aesthetic ratios may be refined by later visual evidence.

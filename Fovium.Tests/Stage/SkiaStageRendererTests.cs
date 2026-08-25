@@ -37,8 +37,12 @@ public sealed class SkiaStageRendererTests
         Assert.Equal(new SKColor(expectedRed, expectedGreen, expectedBlue), pixels.GetPixel(0, 0));
     }
 
-    [Fact]
-    public void MattePlacesConfiguredColorBehindTransparentPhotoForAnyBackground()
+    [Theory]
+    [InlineData((int)MatteStyle.Solid)]
+    [InlineData((int)MatteStyle.Rounded)]
+    [InlineData((int)MatteStyle.Soft)]
+    [InlineData((int)MatteStyle.Angular)]
+    public void EveryMatteStylePlacesOpaqueColorBehindTransparentPhoto(int styleValue)
     {
         using var surface = SKSurface.Create(new SKImageInfo(
             100,
@@ -51,6 +55,7 @@ public sealed class SkiaStageRendererTests
             CustomBackgroundColor = new StageColor(0x11, 0x22, 0x33),
             MatteEnabled = true,
             MatteColor = new StageColor(0x77, 0x66, 0x55),
+            MatteStyle = (MatteStyle)styleValue,
         };
         var photoDestination = new RectD(25, 25, 50, 50);
         SkiaStageRenderer.Draw(
@@ -76,6 +81,67 @@ public sealed class SkiaStageRendererTests
         Assert.Equal(new SKColor(0x77, 0x66, 0x55), pixels.GetPixel(50, 50));
         Assert.Equal(new SKColor(0x11, 0x22, 0x33), pixels.GetPixel(0, 0));
         Assert.Equal(0, transparentBitmap.GetPixel(25, 25).Alpha);
+    }
+
+    [Theory]
+    [InlineData((int)MatteStyle.Solid, true)]
+    [InlineData((int)MatteStyle.Rounded, false)]
+    [InlineData((int)MatteStyle.Angular, false)]
+    public void HardMatteStylesProduceExpectedDeterministicOuterCorner(
+        int styleValue,
+        bool cornerIsMatte)
+    {
+        using var surface = SKSurface.Create(new SKImageInfo(120, 120));
+        var stage = StageSettings.Default with
+        {
+            MatteEnabled = true,
+            MatteColor = new StageColor(0xCC, 0x44, 0x22),
+            MatteStyle = (MatteStyle)styleValue,
+            MatteWidthPhysicalPixels = 20,
+        };
+
+        SkiaStageRenderer.Draw(
+            surface.Canvas,
+            new RectD(0, 0, 120, 120),
+            new RectD(40, 40, 40, 40),
+            1,
+            stage,
+            null,
+            null);
+        using var result = surface.Snapshot();
+        using var pixels = SKBitmap.FromImage(result);
+
+        Assert.Equal(cornerIsMatte, pixels.GetPixel(21, 21).Red > 0);
+        Assert.Equal(new SKColor(0xCC, 0x44, 0x22), pixels.GetPixel(60, 25));
+        Assert.Equal(new SKColor(0xCC, 0x44, 0x22), pixels.GetPixel(60, 60));
+    }
+
+    [Fact]
+    public void SoftMatteCreatesBoundedFeatherWithoutChangingOpaqueBacking()
+    {
+        using var surface = SKSurface.Create(new SKImageInfo(120, 120));
+        var stage = StageSettings.Default with
+        {
+            MatteEnabled = true,
+            MatteColor = new StageColor(0xCC, 0x44, 0x22),
+            MatteStyle = MatteStyle.Soft,
+            MatteWidthPhysicalPixels = 24,
+        };
+
+        SkiaStageRenderer.Draw(
+            surface.Canvas,
+            new RectD(0, 0, 120, 120),
+            new RectD(40, 40, 40, 40),
+            1,
+            stage,
+            null,
+            null);
+        using var result = surface.Snapshot();
+        using var pixels = SKBitmap.FromImage(result);
+
+        Assert.True(pixels.GetPixel(30, 60).Red > 0);
+        Assert.Equal(SKColors.Black, pixels.GetPixel(0, 0));
+        Assert.Equal(new SKColor(0xCC, 0x44, 0x22), pixels.GetPixel(60, 60));
     }
 
     [Fact]

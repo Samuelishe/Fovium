@@ -23,6 +23,9 @@ internal sealed partial class SettingsWindow : Window
     private readonly RadioButton _customStageOption;
     private readonly RadioButton _ambientStageOption;
     private readonly CheckBox _matteEnabledOption;
+    private readonly ComboBox _matteStyleOption;
+    private readonly Slider _matteWidthSlider;
+    private readonly TextBlock _matteWidthValue;
     private readonly Border _customColorSwatch;
     private readonly Border _matteColorSwatch;
     private readonly Slider _brightnessSlider;
@@ -54,6 +57,9 @@ internal sealed partial class SettingsWindow : Window
         _customStageOption = FindRequired<RadioButton>("CustomStageOption");
         _ambientStageOption = FindRequired<RadioButton>("AmbientStageOption");
         _matteEnabledOption = FindRequired<CheckBox>("MatteEnabledOption");
+        _matteStyleOption = FindRequired<ComboBox>("MatteStyleOption");
+        _matteWidthSlider = FindRequired<Slider>("MatteWidthSlider");
+        _matteWidthValue = FindRequired<TextBlock>("MatteWidthValue");
         _customColorSwatch = FindRequired<Border>("CustomColorSwatch");
         _matteColorSwatch = FindRequired<Border>("MatteColorSwatch");
         _brightnessSlider = FindRequired<Slider>("BrightnessSlider");
@@ -77,6 +83,9 @@ internal sealed partial class SettingsWindow : Window
         FindRequired<TextBlock>("BrightnessLabel").Text = localizer[UiStrings.StageAmbientBrightness];
         FindRequired<TextBlock>("SaturationLabel").Text = localizer[UiStrings.StageAmbientSaturation];
         FindRequired<TextBlock>("BlurLabel").Text = localizer[UiStrings.StageAmbientBlur];
+        FindRequired<TextBlock>("MatteStyleLabel").Text = localizer[UiStrings.StageMatteStyle];
+        FindRequired<TextBlock>("MatteSizeLabel").Text = localizer[UiStrings.StageMatteSize];
+        FindRequired<TextBlock>("MatteColorLabel").Text = localizer[UiStrings.StageMatteColor];
         _keepCurrentScaleOption.Content = localizer[UiStrings.SettingsKeepCurrentScale];
         _fitEachImageOption.Content = localizer[UiStrings.SettingsFitEachImage];
         _blackStageOption.Content = localizer[UiStrings.StageBlack];
@@ -85,6 +94,9 @@ internal sealed partial class SettingsWindow : Window
         _ambientStageOption.Content = localizer[UiStrings.StageAmbient];
         _matteEnabledOption.Content = localizer[UiStrings.StageMatteEnabled];
         _ambientOptions.Header = localizer[UiStrings.StageAmbientOptions];
+        _matteStyleOption.ItemsSource = Enum.GetValues<MatteStyle>()
+            .Select(style => new ComboBoxItem { Content = LocalizeMatteStyle(style), Tag = style })
+            .ToArray();
         FindRequired<Button>("ResetShortcutsButton").Content = localizer[UiStrings.ShortcutReset];
         FindRequired<TextBlock>("VersionText").Text = string.Format(
             System.Globalization.CultureInfo.CurrentUICulture,
@@ -119,6 +131,8 @@ internal sealed partial class SettingsWindow : Window
             _ambientStageOption,
             StageBackgroundMode.Ambient);
         _matteEnabledOption.IsCheckedChanged += OnMatteEnabledChanged;
+        _matteStyleOption.SelectionChanged += OnMatteStyleChanged;
+        _matteWidthSlider.ValueChanged += OnMatteWidthChanged;
         _brightnessSlider.ValueChanged += OnAmbientSliderChanged;
         _saturationSlider.ValueChanged += OnAmbientSliderChanged;
         _blurSlider.ValueChanged += OnAmbientSliderChanged;
@@ -194,6 +208,29 @@ internal sealed partial class SettingsWindow : Window
                 MatteEnabled = _matteEnabledOption.IsChecked == true,
             });
         }
+    }
+
+    private async void OnMatteStyleChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (!_initializing && _matteStyleOption.SelectedItem is ComboBoxItem { Tag: MatteStyle style })
+        {
+            await _settings.SetStageAsync(_settings.Current.Stage with { MatteStyle = style });
+        }
+    }
+
+    private async void OnMatteWidthChanged(object? sender, RangeBaseValueChangedEventArgs e)
+    {
+        if (_initializing)
+        {
+            return;
+        }
+
+        var width = Math.Round(_matteWidthSlider.Value);
+        UpdateMatteWidthText(width);
+        await _settings.SetStageAsync(_settings.Current.Stage with
+        {
+            MatteWidthPhysicalPixels = width,
+        });
     }
 
     private async void OnAmbientSliderChanged(object? sender, RangeBaseValueChangedEventArgs e)
@@ -328,12 +365,17 @@ internal sealed partial class SettingsWindow : Window
         _customStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.Custom;
         _ambientStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.Ambient;
         _matteEnabledOption.IsChecked = settings.Stage.MatteEnabled;
+        _matteStyleOption.SelectedItem = _matteStyleOption.ItemsSource?
+            .OfType<ComboBoxItem>()
+            .Single(item => item.Tag is MatteStyle style && style == settings.Stage.MatteStyle);
+        _matteWidthSlider.Value = settings.Stage.MatteWidthPhysicalPixels;
         _brightnessSlider.Value = settings.Stage.AmbientBrightness * 100;
         _saturationSlider.Value = settings.Stage.AmbientSaturation * 100;
         _blurSlider.Value = settings.Stage.AmbientBlur;
         SetSwatch(_customColorSwatch, settings.Stage.CustomBackgroundColor);
         SetSwatch(_matteColorSwatch, settings.Stage.MatteColor);
         UpdateAmbientValueText(settings.Stage);
+        UpdateMatteWidthText(settings.Stage.MatteWidthPhysicalPixels);
         UpdateShortcutButtons(settings.Shortcuts);
         _initializing = false;
     }
@@ -344,6 +386,18 @@ internal sealed partial class SettingsWindow : Window
         _saturationValue.Text = $"{stage.AmbientSaturation:P0}";
         _blurValue.Text = stage.AmbientBlur.ToString("0", System.Globalization.CultureInfo.CurrentUICulture);
     }
+
+    private void UpdateMatteWidthText(double width) =>
+        _matteWidthValue.Text = $"{width:0} px";
+
+    private string LocalizeMatteStyle(MatteStyle style) => _localizer[style switch
+    {
+        MatteStyle.Solid => UiStrings.StageMatteSolid,
+        MatteStyle.Rounded => UiStrings.StageMatteRounded,
+        MatteStyle.Soft => UiStrings.StageMatteSoft,
+        MatteStyle.Angular => UiStrings.StageMatteAngular,
+        _ => throw new ArgumentOutOfRangeException(nameof(style)),
+    }];
 
     private void UpdateShortcutButtons(ShortcutSettings shortcuts)
     {

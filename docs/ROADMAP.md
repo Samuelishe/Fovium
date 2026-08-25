@@ -39,6 +39,10 @@ Accepted outcome: persisted Black, Neutral, Ambient, and Ambient + Matte present
 
 Accepted outcome: split Stage background from independent Matte, add Custom/color and bounded Ambient controls with schema-v2 migration, and establish persistent conflict-safe viewer command bindings before hold-based inspection actions.
 
+## R3-F2 — Configurable Matte geometry and styles
+
+Accepted outcome: add persisted DPI-aware Matte width plus Solid, Rounded, Soft, and Angular outer presentation styles while retaining a rectangular, unmodified photograph and isolating all Matte changes from Ambient preparation.
+
 ## R4 — Peek 100% / Blink Compare
 
 Build photographer inspection actions on the shared viewport and navigation models, preserving view state and point of interest where intended.

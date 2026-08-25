@@ -29,6 +29,12 @@ internal static class UiStrings
     public const string StageAmbientBlur = "stage.ambientBlur";
     public const string StageCustomColor = "stage.customColor";
     public const string StageMatteColor = "stage.matteColor";
+    public const string StageMatteStyle = "stage.matteStyle";
+    public const string StageMatteSize = "stage.matteSize";
+    public const string StageMatteSolid = "stage.matteSolid";
+    public const string StageMatteRounded = "stage.matteRounded";
+    public const string StageMatteSoft = "stage.matteSoft";
+    public const string StageMatteAngular = "stage.matteAngular";
     public const string ShortcutPressKey = "shortcut.pressKey";
     public const string ShortcutUnassigned = "shortcut.unassigned";
     public const string ShortcutReset = "shortcut.reset";

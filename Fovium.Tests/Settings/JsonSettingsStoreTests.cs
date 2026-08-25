@@ -20,6 +20,8 @@ public sealed class JsonSettingsStoreTests : IDisposable
         Assert.False(FoviumSettings.Default.Stage.MatteEnabled);
         Assert.Equal(StageDefaults.CustomBackgroundColor, FoviumSettings.Default.Stage.CustomBackgroundColor);
         Assert.Equal(StageDefaults.MatteColor, FoviumSettings.Default.Stage.MatteColor);
+        Assert.Equal(MatteStyle.Solid, FoviumSettings.Default.Stage.MatteStyle);
+        Assert.Equal(24, FoviumSettings.Default.Stage.MatteWidthPhysicalPixels);
         Assert.Equal(StageDefaults.AmbientBrightness, FoviumSettings.Default.Stage.AmbientBrightness);
         Assert.Equal(StageDefaults.AmbientSaturation, FoviumSettings.Default.Stage.AmbientSaturation);
         Assert.Equal(StageDefaults.AmbientBlurSigmaPixels, FoviumSettings.Default.Stage.AmbientBlur);
@@ -79,6 +81,8 @@ public sealed class JsonSettingsStoreTests : IDisposable
                 MatteEnabled = true,
                 CustomBackgroundColor = new StageColor(0x12, 0x34, 0x56),
                 MatteColor = new StageColor(0x65, 0x43, 0x21),
+                MatteStyle = MatteStyle.Angular,
+                MatteWidthPhysicalPixels = 96,
                 AmbientBrightness = 0.72,
                 AmbientSaturation = 1.1,
                 AmbientBlur = 24,
@@ -103,6 +107,73 @@ public sealed class JsonSettingsStoreTests : IDisposable
         Assert.DoesNotContain("isValid", serialized, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("isReserved", serialized, StringComparison.OrdinalIgnoreCase);
         Assert.Null(result.Diagnostic);
+    }
+
+    [Fact]
+    public async Task ExistingSchemaV2WithoutMatteGeometryUsesSolidAnd24Pixels()
+    {
+        await WriteAsync(
+            """
+            {
+              "schemaVersion": 2,
+              "imageChangeViewPolicy": "FitEachImage",
+              "stage": {
+                "backgroundMode": "Custom",
+                "matteEnabled": true,
+                "customBackgroundColor": "#123456",
+                "matteColor": "#654321",
+                "ambientBrightness": 0.72,
+                "ambientSaturation": 1.1,
+                "ambientBlur": 24
+              },
+              "shortcuts": {
+                "bindings": {
+                  "viewer.toggleMatte": { "key": "K", "modifiers": "Control" }
+                }
+              }
+            }
+            """);
+
+        var result = await CreateStore().LoadAsync(CancellationToken.None);
+
+        Assert.Equal(2, result.Settings.SchemaVersion);
+        Assert.Equal(ImageChangeViewPolicy.FitEachImage, result.Settings.ImageChangeViewPolicy);
+        Assert.Equal(StageBackgroundMode.Custom, result.Settings.Stage.BackgroundMode);
+        Assert.True(result.Settings.Stage.MatteEnabled);
+        Assert.Equal(new StageColor(0x12, 0x34, 0x56), result.Settings.Stage.CustomBackgroundColor);
+        Assert.Equal(new StageColor(0x65, 0x43, 0x21), result.Settings.Stage.MatteColor);
+        Assert.Equal(MatteStyle.Solid, result.Settings.Stage.MatteStyle);
+        Assert.Equal(24, result.Settings.Stage.MatteWidthPhysicalPixels);
+        Assert.Equal(new ShortcutGesture("K", ShortcutModifiers.Control),
+            result.Settings.Shortcuts.Get(ViewerCommand.ToggleMatte));
+        Assert.Null(result.Diagnostic);
+        Assert.False(result.RequiresSave);
+    }
+
+    [Fact]
+    public async Task InvalidMatteGeometryValuesNormalizeSafelyWithoutChangingOtherSettings()
+    {
+        await WriteAsync(
+            """
+            {
+              "schemaVersion": 2,
+              "imageChangeViewPolicy": "FitEachImage",
+              "stage": {
+                "backgroundMode": "Ambient",
+                "matteEnabled": true,
+                "matteStyle": 999,
+                "matteWidthPhysicalPixels": 999
+              }
+            }
+            """);
+
+        var result = await CreateStore().LoadAsync(CancellationToken.None);
+
+        Assert.Equal(ImageChangeViewPolicy.FitEachImage, result.Settings.ImageChangeViewPolicy);
+        Assert.Equal(StageBackgroundMode.Ambient, result.Settings.Stage.BackgroundMode);
+        Assert.True(result.Settings.Stage.MatteEnabled);
+        Assert.Equal(MatteStyle.Solid, result.Settings.Stage.MatteStyle);
+        Assert.Equal(192, result.Settings.Stage.MatteWidthPhysicalPixels);
     }
 
     [Fact]

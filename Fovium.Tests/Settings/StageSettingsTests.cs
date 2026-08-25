@@ -13,6 +13,8 @@ public sealed class StageSettingsTests
         Assert.False(defaults.MatteEnabled);
         Assert.Equal("#202020", defaults.CustomBackgroundColor.ToHex());
         Assert.Equal("#202020", defaults.MatteColor.ToHex());
+        Assert.Equal(MatteStyle.Solid, defaults.MatteStyle);
+        Assert.Equal(24, defaults.MatteWidthPhysicalPixels);
         Assert.Equal(0.65, defaults.AmbientBrightness);
         Assert.Equal(0.85, defaults.AmbientSaturation);
         Assert.Equal(18, defaults.AmbientBlur);
@@ -68,6 +70,34 @@ public sealed class StageSettingsTests
         }).Normalize();
 
         Assert.Equal(StageBackgroundMode.Black, normalized.BackgroundMode);
+    }
+
+    [Fact]
+    public void InvalidMatteStyleAndNonFiniteWidthUseDefaults()
+    {
+        var normalized = (StageSettings.Default with
+        {
+            MatteStyle = (MatteStyle)999,
+            MatteWidthPhysicalPixels = double.NaN,
+        }).Normalize();
+
+        Assert.Equal(MatteStyle.Solid, normalized.MatteStyle);
+        Assert.Equal(24, normalized.MatteWidthPhysicalPixels);
+    }
+
+    [Theory]
+    [InlineData(-100, 4)]
+    [InlineData(0, 4)]
+    [InlineData(3.99, 4)]
+    [InlineData(4, 4)]
+    [InlineData(192, 192)]
+    [InlineData(192.01, 192)]
+    [InlineData(1000, 192)]
+    public void MatteWidthIsClampedToPhysicalPixelRange(double value, double expected)
+    {
+        var normalized = (StageSettings.Default with { MatteWidthPhysicalPixels = value }).Normalize();
+
+        Assert.Equal(expected, normalized.MatteWidthPhysicalPixels);
     }
 
     [Theory]

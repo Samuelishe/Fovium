@@ -10,6 +10,10 @@ internal sealed record StageSettings
 
     public StageColor MatteColor { get; init; } = StageDefaults.MatteColor;
 
+    public MatteStyle MatteStyle { get; init; } = StageDefaults.MatteStyle;
+
+    public double MatteWidthPhysicalPixels { get; init; } = StageDefaults.MatteWidthPhysicalPixels;
+
     public double AmbientBrightness { get; init; } = StageDefaults.AmbientBrightness;
 
     public double AmbientSaturation { get; init; } = StageDefaults.AmbientSaturation;
@@ -23,6 +27,14 @@ internal sealed record StageSettings
         BackgroundMode = Enum.IsDefined(BackgroundMode)
             ? BackgroundMode
             : StageBackgroundMode.Black,
+        MatteStyle = Enum.IsDefined(MatteStyle)
+            ? MatteStyle
+            : StageDefaults.MatteStyle,
+        MatteWidthPhysicalPixels = NormalizeFinite(
+            MatteWidthPhysicalPixels,
+            StageDefaults.MatteWidthPhysicalPixels,
+            StageDefaults.MatteWidthMinimumPhysicalPixels,
+            StageDefaults.MatteWidthMaximumPhysicalPixels),
         AmbientBrightness = NormalizeFinite(
             AmbientBrightness,
             StageDefaults.AmbientBrightness,

@@ -64,17 +64,18 @@ The displayed checkpoint is not a substitute for a Git commit, tag, or branch. G
 | `0.0.0.0005` | R2 | Persistent view policy, minimal Settings foundation, and navigation/lifetime hardening |
 | `0.0.0.0006` | R3 | Persisted Black, Neutral, Ambient, and Ambient + Matte photographic Stage modes |
 | `0.0.0.0007` | R3-F1 | Stage customization, independent Matte, settings-schema migration, and configurable controls |
+| `0.0.0.0008` | R3-F2 | Configurable physical Matte width and Solid, Rounded, Soft, and Angular outer styles |
 
-The current accepted project checkpoint is `0.0.0.0007`. Current implementation state remains owned by [`PROJECT-STATE.md`](PROJECT-STATE.md).
+The current accepted project checkpoint is `0.0.0.0008`. Current implementation state remains owned by [`PROJECT-STATE.md`](PROJECT-STATE.md).
 
 ## Future code and packaging source
 
 The root `Directory.Build.props` is the canonical source for the current components and formatted display identity. It supplies the production `Fovium` assembly with:
 
 ```text
-InformationalVersion = 0.0.0.0007
-AssemblyVersion      = 0.0.0.7
-FileVersion          = 0.0.0.7
+InformationalVersion = 0.0.0.0008
+AssemblyVersion      = 0.0.0.8
+FileVersion          = 0.0.0.8
 ```
 
 From that source:

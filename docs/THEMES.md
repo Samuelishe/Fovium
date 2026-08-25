@@ -37,7 +37,7 @@ MatteEnabled
     false / true
 ```
 
-Changing application theme must not silently change Stage mode. Changing Stage must not change Settings, menus, or dialogs. Neither system may modify the original photograph. Stage product semantics remain owned by [`PROJECT-VISION.md`](PROJECT-VISION.md).
+Changing application theme must not silently change Stage mode, Matte color/width, or Matte outer style. Changing Stage must not change Settings, menus, or dialogs. Neither system may modify the original photograph. Stage product semantics remain owned by [`PROJECT-VISION.md`](PROJECT-VISION.md).
 
 ## Visual-system direction
 

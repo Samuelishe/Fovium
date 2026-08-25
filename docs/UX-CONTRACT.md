@@ -54,7 +54,7 @@ A future split between basic photo information and advanced metadata is acceptab
 
 A complete metadata viewer is acceptable when explicitly opened; it must not reserve permanent viewport space.
 
-Stage background selection is available from both the context menu and Settings. Black remains default; Neutral, Custom, and Ambient apply immediately. Matte is an independent modifier over every background. Neither choice changes Fit, physical scale, pan, or point of interest. Ambient remains fixed to the full photograph rather than following viewport zoom/pan. Stage definitions belong to [`PROJECT-VISION.md`](PROJECT-VISION.md).
+Stage background selection is available from both the context menu and Settings. Black remains default; Neutral, Custom, and Ambient apply immediately. Matte is an independent modifier over every background; Settings owns its color, physical width, and outer style while the context menu and `M` retain the uncluttered enable/disable path. Neither choice changes Fit, physical scale, pan, point of interest, photo rectangle, or photo sampling. Ambient remains fixed to the full photograph rather than following viewport zoom/pan. Stage definitions belong to [`PROJECT-VISION.md`](PROJECT-VISION.md).
 
 ## Settings principles
 

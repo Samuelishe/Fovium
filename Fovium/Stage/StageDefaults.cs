@@ -2,7 +2,7 @@ namespace Fovium.Stage;
 
 internal static class StageDefaults
 {
-    // Presentation defaults selected for R3-F1; these are not calibrated reference values.
+    // Presentation defaults selected through R3-F2; these are not calibrated reference values.
     public static StageColor BlackColor { get; } = new(0x00, 0x00, 0x00);
 
     public static StageColor NeutralColor { get; } = new(0x50, 0x50, 0x50);
@@ -31,5 +31,15 @@ internal static class StageDefaults
 
     public const double AmbientBlurMaximum = 32;
 
+    public const MatteStyle MatteStyle = global::Fovium.Stage.MatteStyle.Solid;
+
     public const double MatteWidthPhysicalPixels = 24;
+
+    public const double MatteWidthMinimumPhysicalPixels = 4;
+
+    public const double MatteWidthMaximumPhysicalPixels = 192;
+
+    public const double MatteOuterShapeRatio = 1.5;
+
+    public const double MatteSoftSigmaRatio = 1d / 3d;
 }

@@ -34,7 +34,7 @@ See the canonical [UX contract](docs/UX-CONTRACT.md), [rendering contract](docs/
 
 ## Current status
 
-The current project checkpoint is **`0.0.0.0007`**. R3-F1 adds customizable Stage appearance and persistent conflict-safe keyboard bindings to the runnable JPEG/PNG Core Viewer while retaining the R2/R3 viewport, navigation, and rendering contracts.
+The current project checkpoint is **`0.0.0.0008`**. R3-F2 adds DPI-aware configurable Matte width and Solid, Rounded, Soft, and Angular outer presentation styles while keeping the photograph rectangle and R2/R3 viewport, navigation, and rendering contracts unchanged.
 
 This remains an early vertical slice, not a release claim. Full monitor-aware ICC, broad codecs, broader Settings, metadata, platform associations, and later photographer features are not implemented. The expected next stage is **R4 Peek 100% / Blink Compare**. The canonical handoff is [PROJECT-STATE.md](docs/PROJECT-STATE.md); bounded R0 evidence remains in the [experiment report](docs/experiments/R0-RENDERING-PROBE.md).
 

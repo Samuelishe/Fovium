@@ -46,7 +46,7 @@ A future zoom-step control may present a Fine-to-Coarse slider. It adjusts the s
 
 ### Stage
 
-Stage background is a typed choice: Black (default), fixed Neutral `#505050`, configurable Custom solid color, or Ambient. Matte is an independent toggle over any background with its own opaque color; its width remains a fixed presentation default. Ambient exposes bounded brightness, saturation, and blur controls. Background/color/Matte/brightness/saturation apply live; blur reparations are coalesced and asynchronous. Settings and the context menu observe the same state owner and autosave without Save/Apply. Stage remains independent from application theme; see [`PROJECT-VISION.md`](PROJECT-VISION.md) and [`THEMES.md`](THEMES.md).
+Stage background is a typed choice: Black (default), fixed Neutral `#505050`, configurable Custom solid color, or Ambient. Matte is an independent toggle over any background with its own opaque color, Solid/Rounded/Soft/Angular outer style, and physical-pixel width (`24` default, `4–192`). Style affects only the area outside the complete rectangular photograph; transparent pixels remain backed by opaque Matte color. Ambient exposes bounded brightness, saturation, and blur controls. Background/color/Matte/style/width/brightness/saturation apply live; blur reparations are coalesced and asynchronous. Settings and the context menu observe the same state owner and autosave without Save/Apply. Stage remains independent from application theme; see [`PROJECT-VISION.md`](PROJECT-VISION.md) and [`THEMES.md`](THEMES.md).
 
 ### Appearance
 
@@ -85,7 +85,7 @@ Copied diagnostics may include only genuinely known values such as Fovium versio
 
 Ordinary preferences use platform-appropriate per-user application-data storage. They do not require a database, catalog, or project-local file.
 
-The readable JSON document now uses `schemaVersion = 2` in the platform-appropriate per-user application-data directory. Its explicit v1→v2 migration maps the former four-value Stage enum to background plus independent Matte while preserving image-change policy. It writes through a same-directory temporary file and replacement, tolerates unknown properties/command IDs, and falls back to deterministic defaults on missing, malformed, inaccessible, or unsupported-schema input. Extend this direct migration path only when a real incompatible change exists; do not build a generic migration framework.
+The readable JSON document now uses `schemaVersion = 2` in the platform-appropriate per-user application-data directory. Its explicit v1→v2 migration maps the former four-value Stage enum to background plus independent Matte while preserving image-change policy. R3-F2's additive Matte style/width fields do not change the schema: older v2 documents resolve them to Solid and `24` physical pixels. It writes through a same-directory temporary file and replacement, tolerates unknown properties/command IDs, and falls back to deterministic defaults on missing, malformed, inaccessible, or unsupported-schema input. Extend this direct migration path only when a real incompatible change exists; do not build a generic migration framework.
 
 Settings normally autosave after a valid non-destructive preference change. Do not require Save or Apply buttons without evidence that deferred application is necessary. Destructive or system-owned actions remain explicit.
 

@@ -50,13 +50,23 @@
           </Expander>
           <Separator Margin="0,4" />
           <TextBlock x:Name="MatteHeading" FontSize="18" FontWeight="SemiBold" />
-          <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
-            <CheckBox x:Name="MatteEnabledOption" VerticalAlignment="Center" />
-            <Border x:Name="MatteColorSwatch" Grid.Column="1" Width="30" Height="20" CornerRadius="3" BorderThickness="1" />
-            <Button x:Name="EditMatteColorButton" Grid.Column="2" Width="34" Height="28" Padding="7">
-              <Path Stretch="Uniform" Stroke="{DynamicResource ThemeForegroundBrush}" StrokeThickness="1.5"
-                    Data="M1,4 L15,4 M1,8 L15,8 M1,12 L15,12 M5,2 L5,6 M11,6 L11,10 M7,10 L7,14" />
-            </Button>
+          <CheckBox x:Name="MatteEnabledOption" />
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14" RowDefinitions="Auto,Auto,Auto" RowSpacing="10" Margin="24,0,0,4">
+            <TextBlock x:Name="MatteStyleLabel" VerticalAlignment="Center" />
+            <ComboBox x:Name="MatteStyleOption" Grid.Column="1" MinWidth="180" HorizontalAlignment="Left" />
+            <TextBlock x:Name="MatteSizeLabel" Grid.Row="1" VerticalAlignment="Center" />
+            <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+              <Slider x:Name="MatteWidthSlider" MinWidth="180" Minimum="4" Maximum="192" TickFrequency="1" />
+              <TextBlock x:Name="MatteWidthValue" Grid.Column="1" Width="58" TextAlignment="Right" VerticalAlignment="Center" />
+            </Grid>
+            <TextBlock x:Name="MatteColorLabel" Grid.Row="2" VerticalAlignment="Center" />
+            <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="Auto,Auto" ColumnSpacing="10" HorizontalAlignment="Left">
+              <Border x:Name="MatteColorSwatch" Width="40" Height="24" CornerRadius="3" BorderThickness="1" />
+              <Button x:Name="EditMatteColorButton" Grid.Column="1" Width="34" Height="28" Padding="7">
+                <Path Stretch="Uniform" Stroke="{DynamicResource ThemeForegroundBrush}" StrokeThickness="1.5"
+                      Data="M1,4 L15,4 M1,8 L15,8 M1,12 L15,12 M5,2 L5,6 M11,6 L11,10 M7,10 L7,14" />
+              </Button>
+            </Grid>
           </Grid>
         </StackPanel>
       </ScrollViewer>

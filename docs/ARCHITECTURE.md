@@ -33,7 +33,7 @@ Use ordinary composition and explicit ownership. Do not use a Service Locator, m
 - The UI/coordinator requests work and publishes the newest valid result; it does not decode JPEGs or perform ICC transforms itself.
 - Platform-specific implementations sit behind narrow boundaries at the edge. Platform details must not leak throughout application code.
 - Settings storage owns typed persisted preferences; the viewer coordinator resolves image-change policy into a `ViewTransfer`. Renderer and viewport math never query settings.
-- Stage policy and asynchronous Ambient preparation are coordinated above rendering. The renderer receives resolved background/Matte/color-treatment state and geometry; it does not read settings, schedule background work, or modify viewport state.
+- Stage policy and asynchronous Ambient preparation are coordinated above rendering. The renderer receives resolved background/Matte/color-treatment state and project-owned geometry; it materializes backend paths without leaking Skia into geometry contracts, and does not read settings, schedule background work, or modify viewport state.
 - Viewer keys resolve through stable command and project-owned gesture models. The Avalonia key adapter is a narrow boundary; command execution is not a generic application command bus and leaves `Esc` reserved.
 
 Dependencies should point toward small project-owned contracts and pure models only where substitution, resource ownership, or test isolation creates a real need. Do not add interfaces speculatively.

@@ -88,6 +88,8 @@ public sealed class SettingsServiceTests
             BackgroundMode = StageBackgroundMode.Ambient,
             MatteEnabled = true,
             MatteColor = new StageColor(0x11, 0x22, 0x33),
+            MatteStyle = MatteStyle.Soft,
+            MatteWidthPhysicalPixels = 64,
         };
 
         await service.SetStageAsync(stage);
@@ -96,6 +98,9 @@ public sealed class SettingsServiceTests
         Assert.Equal(ImageChangeViewPolicy.KeepCurrentScale, service.Current.ImageChangeViewPolicy);
         Assert.Same(service.Current, published);
         Assert.Equal(stage, store.Saved?.Stage);
+        Assert.Equal(
+            ShortcutSettings.Default.Get(ViewerCommand.ToggleMatte),
+            service.Current.Shortcuts.Get(ViewerCommand.ToggleMatte));
     }
 
     [Fact]
@@ -111,6 +116,8 @@ public sealed class SettingsServiceTests
         Assert.Equal(before.BackgroundMode, service.Current.Stage.BackgroundMode);
         Assert.Equal(before.CustomBackgroundColor, service.Current.Stage.CustomBackgroundColor);
         Assert.Equal(before.MatteColor, service.Current.Stage.MatteColor);
+        Assert.Equal(before.MatteStyle, service.Current.Stage.MatteStyle);
+        Assert.Equal(before.MatteWidthPhysicalPixels, service.Current.Stage.MatteWidthPhysicalPixels);
         Assert.Equal(before.AmbientBrightness, service.Current.Stage.AmbientBrightness);
         Assert.Equal(before.AmbientSaturation, service.Current.Stage.AmbientSaturation);
         Assert.Equal(before.AmbientBlur, service.Current.Stage.AmbientBlur);
