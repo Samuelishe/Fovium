@@ -129,7 +129,7 @@ public sealed class AmbientStageCoordinatorTests
     }
 
     [Fact]
-    public async Task OldBlurMayBridgeCurrentImageButNeverPublishesForNewImage()
+    public async Task OldBlurMayBridgeSameImageButNeverNewImage()
     {
         using var repository = new TestRepository();
         var first = StageTestImages.CreateDecoded("first.png");
@@ -139,21 +139,34 @@ public sealed class AmbientStageCoordinatorTests
         repository.Add("first", first, protect: true);
         repository.Add("second", second, protect: false);
         var initial = StageSettings.Default with { BackgroundMode = StageBackgroundMode.Ambient };
+        using var preparer = new TargetBlockingPreparer(second.Identity);
         await using var coordinator = new AmbientStageCoordinator(
             repository,
-            new RecordingPreparer(),
+            preparer,
             initial);
         SelectAndStart(coordinator, "first", first.Identity);
 
         coordinator.SetStage(initial with { AmbientBlur = 24 });
         using var transitional = coordinator.AcquirePresentation();
         SelectAndStart(coordinator, "second", second.Identity);
-        using var newImage = coordinator.AcquirePresentation();
+        await preparer.TargetStarted.Task;
 
-        Assert.Equal(18, transitional.Ambient?.Blur);
-        Assert.Null(newImage.Ambient);
+        try
+        {
+            using var newImage = coordinator.AcquirePresentation();
+            Assert.Equal(18, transitional.Ambient?.Blur);
+            Assert.Equal(second.Identity, newImage.ImageIdentity);
+            Assert.True(second.HasAmbientForBlur(18));
+            Assert.Null(newImage.Ambient);
+        }
+        finally
+        {
+            preparer.Complete();
+        }
+
         await coordinator.WaitForIdleAsync();
         using var prepared = coordinator.AcquirePresentation();
+        Assert.Equal(second.Identity, prepared.ImageIdentity);
         Assert.Equal(24, prepared.Ambient?.Blur);
     }
 
@@ -530,6 +543,32 @@ public sealed class AmbientStageCoordinatorTests
         }
 
         public void Complete() => _completion.Set();
+    }
+
+    private sealed class TargetBlockingPreparer(long targetIdentity) : IAmbientStagePreparer, IDisposable
+    {
+        private readonly ManualResetEventSlim _completion = new(false);
+
+        public TaskCompletionSource TargetStarted { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public PreparedAmbient Prepare(
+            DecodedImage image,
+            double blur,
+            CancellationToken cancellationToken)
+        {
+            if (image.Identity == targetIdentity)
+            {
+                TargetStarted.TrySetResult();
+            }
+
+            _completion.Wait(cancellationToken);
+            return StageTestImages.CreateAmbient(blur: blur);
+        }
+
+        public void Complete() => _completion.Set();
+
+        public void Dispose() => _completion.Dispose();
     }
 
     private sealed class ThrowingPreparer : IAmbientStagePreparer
