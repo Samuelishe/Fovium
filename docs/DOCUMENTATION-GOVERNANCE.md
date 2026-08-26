@@ -27,6 +27,7 @@ Each durable subject has one owner. Other documents may summarize and link but m
 | ProjectStats behavior and metric semantics | [`PROJECT-STATS.md`](PROJECT-STATS.md) |
 | R0 retained experimental evidence | [`experiments/R0-RENDERING-PROBE.md`](experiments/R0-RENDERING-PROBE.md) |
 | R7-C retained HEIF/AVIF feasibility evidence | [`experiments/R7-C-HEIF-AVIF-BACKEND-PROBE.md`](experiments/R7-C-HEIF-AVIF-BACKEND-PROBE.md) |
+| R8-B retained monitor color-management evidence | [`experiments/R8-B-MONITOR-COLOR-MANAGEMENT-PROBE.md`](experiments/R8-B-MONITOR-COLOR-MANAGEMENT-PROBE.md) |
 | Version format, checkpoint numbering, and future metadata source | [`VERSIONING.md`](VERSIONING.md) |
 | Settings organization, preference persistence, reset, and About content | [`SETTINGS.md`](SETTINGS.md) |
 | UI locales, locale resolution, fallback, and translation boundaries | [`LOCALIZATION.md`](LOCALIZATION.md) |

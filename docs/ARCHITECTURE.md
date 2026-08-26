@@ -9,7 +9,7 @@ Not authoritative for: Exact future classes, final renderer/library selection, i
 
 R1 begins with one production assembly, `Fovium`. Add projects only when an evidenced build, deployment, test, or dependency boundary requires them. Do not pre-create enterprise Clean Architecture layers.
 
-Repository tooling and experiments are separate from this future production shape. `Fovium.Tools.ProjectStats` depends only on the BCL and remains diagnostic CLI code. `experiments/Fovium.RenderProbe` is disposable evidence, not a production layer or class-name source. `Fovium.Tests` may reference tooling, experiments, and production assemblies; production assemblies must never depend on them.
+Repository tooling and experiments are separate from this future production shape. `Fovium.Tools.ProjectStats` depends only on the BCL and remains diagnostic CLI code. `experiments/Fovium.RenderProbe` and `experiments/Fovium.ColorManagementProbe` are disposable evidence, not production layers or class-name sources. `Fovium.Tests` may reference tooling, experiments, and production assemblies; production assemblies must never depend on them.
 
 Logical responsibilities remain distinct even if physically colocated:
 

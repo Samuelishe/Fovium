@@ -93,13 +93,13 @@ Accepted outcome at `0.1.0.0006`: one focused direct-interop backend resolves on
 
 ## R8-A — Offline Color Picker / Eyedropper
 
-Owner-review-ready outcome at `0.1.0.0007`: hidden-by-default click-to-sample photographic inspection with a compact movable `K` overlay, source-pixel geometry, reference-sRGB HEX/RGB(A), correct premultiplied-alpha handling, and one nearest canonical name from a deterministic embedded 1,800-entry catalog using OKLab distance. Pointer movement never commits. The same per-window session retains exactly the latest ten clicks oldest-to-newest across navigation, Peek/Blink, and hide/reopen; no selected value/history is persisted. Picker input precedes markup, temporary Hand and wheel retain their behavior, and no permanent palette, editor, cloud/API, or runtime network path is added.
+Owner-accepted outcome at `0.1.0.0007`: hidden-by-default click-to-sample photographic inspection with a compact movable `K` overlay, source-pixel geometry, reference-sRGB HEX/RGB(A), correct premultiplied-alpha handling, and one nearest canonical name from a deterministic embedded 1,800-entry catalog using OKLab distance. Pointer movement never commits. The same per-window session retains exactly the latest ten clicks oldest-to-newest across navigation, Peek/Blink, and hide/reopen; no selected value/history is persisted. Picker input precedes markup, temporary Hand and wheel retain their behavior, and no permanent palette, editor, cloud/API, or runtime network path is added.
 
 Core Fovium functionality remains offline: decode, navigation, Stage/presentation, Photo Info, Histogram, Color Picker/name matching, settings, and markup require no runtime network service. Development-time source/test-vector downloads do not change that product principle.
 
 ## Monitor Color Management
 
-Owner-selected next product stage after R8-A. It remains separately scoped and unimplemented.
+R8-B-P1 is owner-review-ready as a bounded architecture/rendering probe at unchanged version `0.1.0.0007`. It establishes current source-state truth, Windows display-profile discovery, the untagged Avalonia direct-Skia target, matrix/TRC transform accuracy, a valid LUT-profile Skia limitation, platform-specific double-management boundaries, and the memory case for a viewport-sized derived presentation. Production Color Management remains unimplemented and blocked on owner selection of the next native/platform prerequisite described by the [probe](experiments/R8-B-MONITOR-COLOR-MANAGEMENT-PROBE.md).
 
 ## Later / separate platform milestones
 

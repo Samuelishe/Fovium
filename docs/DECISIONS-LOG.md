@@ -315,12 +315,12 @@ Core decode, navigation, Stage/presentation, Photo Info, Histogram, settings, ma
 
 ## D-052 — Color Picker commits retained photographic source pixels
 
-Status: Owner-review-ready in R8-A.
+Status: Accepted in R8-A.
 
 Pointer motion never changes the selected sample or history. One primary click inside the exact rendered photograph retains the currently presented image, maps to the containing oriented source cell by floor with exclusive right/bottom edges, and reads that decoded BGRA8888/Premul pixel. Descriptor orientation is inverted exactly once; Blink therefore samples the visible comparison while Peek remains canonical. Partial alpha is unpremultiplied once and zero alpha is `Transparent`, never inferred Black. Values are reference sRGB rather than monitor framebuffer values; valid normalized non-sRGB uses one 1×1 Skia conversion and unpreserved profile meaning remains visibly Approximate. Picker click precedes markup, while hold-Space Hand and wheel retain pan/zoom ownership.
 
 ## D-053 — Color names and recent samples are bounded, local, and reproducible
 
-Status: Owner-review-ready in R8-A.
+Status: Accepted in R8-A.
 
 Fovium embeds a deterministic 1,800-entry curated derivative of the MIT-licensed `meodai/color-names` dataset and precomputes standard OKLab anchors once. A click performs a stable-order linear nearest search; no package, database, service, telemetry, or network lookup is used. Canonical names remain reviewed English with EN/RU surrounding UI. Per-viewer history is a duplicate-preserving ten-item FIFO displayed oldest-to-newest and survives navigation/hide/reopen only for that session; visibility/current/history are never persisted, while normalized overlay placement may be.

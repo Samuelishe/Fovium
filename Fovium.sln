@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fovium.RenderProbe", "exper
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fovium", "Fovium\Fovium.csproj", "{B6735D92-5F23-4C59-AE15-AE30F65CFF9B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fovium.ColorManagementProbe", "experiments\Fovium.ColorManagementProbe\Fovium.ColorManagementProbe.csproj", "{C0AE46B9-7972-42E2-9F64-96807EE95738}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,5 +35,9 @@ Global
 		{B6735D92-5F23-4C59-AE15-AE30F65CFF9B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B6735D92-5F23-4C59-AE15-AE30F65CFF9B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B6735D92-5F23-4C59-AE15-AE30F65CFF9B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C0AE46B9-7972-42E2-9F64-96807EE95738}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C0AE46B9-7972-42E2-9F64-96807EE95738}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C0AE46B9-7972-42E2-9F64-96807EE95738}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C0AE46B9-7972-42E2-9F64-96807EE95738}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

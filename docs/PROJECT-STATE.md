@@ -7,13 +7,13 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R8-A is owner-review-ready at `0.1.0.0007`. Fovium now has a hidden-by-default offline photographic Color Picker: configurable `K` and the checked Overlays menu share one session state; pointer movement never commits; a photograph click fixes one retained source-pixel sample as reference-sRGB HEX/RGB(A), correct unpremultiplied alpha, and one deterministic nearest human name from an embedded curated 1,800-entry OKLab catalog. Its duplicate-preserving history is exactly the latest ten clicks, oldest-to-newest, retained across navigation/Peek/Blink/hide-reopen in one viewer window and never persisted. Monitor-aware Color Management remains unimplemented. Version semantics are owned by [`VERSIONING.md`](VERSIONING.md); picker semantics are owned by [`COLOR-PICKER.md`](COLOR-PICKER.md).
+R8-A is owner-accepted at `0.1.0.0007` and accepted commit `26fe6b3a458e4f7cd1662cb41dc49c0d2a22652e`; hosted CI is green. Fovium has a hidden-by-default offline photographic Color Picker: configurable `K` and the checked Overlays menu share one session state; pointer movement never commits; a photograph click fixes one retained source-pixel sample as reference-sRGB HEX/RGB(A), correct unpremultiplied alpha, and one deterministic nearest human name from an embedded curated 1,800-entry OKLab catalog. Its duplicate-preserving history is exactly the latest ten clicks, oldest-to-newest, retained across navigation/Peek/Blink/hide-reopen in one viewer window and never persisted. Monitor-aware Color Management remains unimplemented. Version semantics are owned by [`VERSIONING.md`](VERSIONING.md); picker semantics are owned by [`COLOR-PICKER.md`](COLOR-PICKER.md).
 
 The retained R0 probe remains experimental evidence under `experiments/Fovium.RenderProbe`. Production code is the single `Fovium` assembly and does not depend on the experiment. The accepted R7-B hosted matrix restored, built, and tested successfully on Windows, Ubuntu, and macOS at commit `d5de440`; this is portability evidence for the .NET solution and managed TIFF backend, not manual Linux/macOS viewer/render validation. Local visual acceptance remains Windows at `RenderScaling = 1.00`.
 
 ## Current focus
 
-R7-C and its R7-C-N1 prerequisite are owner-accepted. The accepted prerequisite commit is `c4dba80bd23534f372ae09f9285c0e1c5991d5e3`, and normal hosted CI plus native/product integration are green across Windows/Linux/macOS and `win-x64`/`linux-x64`/`osx-arm64`. R8-A implementation and local Windows evidence are complete pending owner review. The next selected product stage after acceptance is monitor Color Management; it has not begun.
+R7-C and its R7-C-N1 prerequisite are owner-accepted. The accepted prerequisite commit is `c4dba80bd23534f372ae09f9285c0e1c5991d5e3`, and normal hosted CI plus native/product integration are green across Windows/Linux/macOS and `win-x64`/`linux-x64`/`osx-arm64`. R8-A is also owner-accepted with green hosted CI. R8-B-P1 is owner-review-ready as a bounded monitor color-management architecture/rendering investigation; it does not enable production transforms or change version `0.1.0.0007`. Its productization gate is blocked on the engine/platform decisions recorded by the [probe](experiments/R8-B-MONITOR-COLOR-MANAGEMENT-PROBE.md).
 
 ## Implemented application functionality
 
@@ -69,7 +69,7 @@ Markup save/export, text, dedicated Highlighter, edit handles/layers, persistent
 
 - Avalonia's direct-Skia lease used by the accepted initial renderer is explicitly unstable and must remain isolated.
 - Physical-pixel 100% is validated by pure tests at 1.00/1.25/1.50/2.00, but production runtime evidence exists only at `RenderScaling = 1.00`; per-monitor transitions still need real hardware coverage.
-- The monitor-aware color pipeline and raw embedded-profile extraction boundary have not been selected.
+- R8-B-P1 proves Skia 3.119.4 matrix/TRC conversion but also proves that it rejects a valid ICC v4 LUT display profile accepted by Little CMS 2.19. A general production engine is blocked on an owner decision about a reproducible Little CMS runtime stage; macOS compositor evidence and Linux X11/Wayland platform paths also remain unvalidated.
 - R8-A Color Picker visual/input smoke is Windows-only at `RenderScaling = 1.00`; pure geometry covers 1.00/1.25/1.50/2.00, but real fractional-DPI and Linux/macOS cursor/panel/input feel remain unvalidated.
 - Codec support beyond JPEG/PNG/static WebP/bounded 8-bit TIFF/bounded HEIF/AVIF and a huge/region-rendered-image strategy remain unselected.
 - WebP EXIF orientation is not currently surfaced by SkiaSharp 3.119.4 `SKCodec.EncodedOrigin` in the controlled fixture; Fovium retains encoded geometry rather than adding a second eager orientation parser.
