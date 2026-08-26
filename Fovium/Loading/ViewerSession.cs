@@ -376,6 +376,10 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
         _preloadCancellation?.Dispose();
         _lifetimeCancellation.Dispose();
         _cache.Dispose();
+        if (_loader is IDisposable disposableLoader)
+        {
+            disposableLoader.Dispose();
+        }
     }
 
     private async Task<SelectionResult<T>> OpenAfterCacheClearAsync(

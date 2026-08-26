@@ -23,7 +23,7 @@ internal sealed class ImageDecoder : IImageLoader<DecodedImage>, IDisposable
     }
 
     public static ImageDecoder CreateDefault() =>
-        new([new TiffImageDecodeBackend(), new SkiaImageDecodeBackend()]);
+        new([new HeifImageDecodeBackend(), new TiffImageDecodeBackend(), new SkiaImageDecodeBackend()]);
 
     public async Task<ImageLoadResult<DecodedImage>> LoadAsync(
         string path,
@@ -43,7 +43,15 @@ internal sealed class ImageDecoder : IImageLoader<DecodedImage>, IDisposable
         }
     }
 
-    public void Dispose() => _decodeSlots.Dispose();
+    public void Dispose()
+    {
+        foreach (var backend in _backends.OfType<IDisposable>())
+        {
+            backend.Dispose();
+        }
+
+        _decodeSlots.Dispose();
+    }
 
     private ImageLoadResult<DecodedImage> Load(
         string path,
@@ -114,6 +122,7 @@ internal sealed class ImageDecoder : IImageLoader<DecodedImage>, IDisposable
             ImageDecodeBackendResultKind.UnsupportedVariant => ImageLoadErrorKind.Unsupported,
             ImageDecodeBackendResultKind.Corrupt => ImageLoadErrorKind.Corrupt,
             ImageDecodeBackendResultKind.ResourceLimit => ImageLoadErrorKind.ResourceLimit,
+            ImageDecodeBackendResultKind.BackendUnavailable => ImageLoadErrorKind.DecodeFailed,
             ImageDecodeBackendResultKind.DecodeFailed => ImageLoadErrorKind.DecodeFailed,
             _ => throw new ArgumentOutOfRangeException(nameof(kind)),
         };

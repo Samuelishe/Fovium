@@ -236,6 +236,20 @@ public sealed class ViewerSessionTests
     }
 
     [Fact]
+    public async Task DisposeAsyncDisposesOwnedDisposableLoaderExactlyOnce()
+    {
+        var loader = new DisposableFakeImageLoader();
+        var policy = AutomaticMemoryPolicy.FromAvailableMemory(2L * 1024 * 1024 * 1024);
+        var cache = new ByteBudgetCache<string, FakeImage>(policy.CacheBudgetBytes, StringComparer.Ordinal);
+        var session = new ViewerSession<FakeImage>(loader, cache, policy);
+
+        await session.DisposeAsync();
+        await session.DisposeAsync();
+
+        Assert.Equal(1, loader.DisposeCount);
+    }
+
+    [Fact]
     public async Task OpeningNewSequenceReleasesObsoleteCacheOwnership()
     {
         var images = new Dictionary<string, FakeImage>();

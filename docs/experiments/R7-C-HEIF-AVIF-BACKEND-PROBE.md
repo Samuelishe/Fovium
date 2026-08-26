@@ -2,8 +2,8 @@
 
 Role: Retained feasibility evidence for the gated R7-C native decoder investigation.
 Read when: Re-evaluating HEIF/HEIC or AVIF decoding and native runtime packaging.
-Authoritative for: The R7-C candidate observations and productization blocker recorded here.
-Not authoritative for: Current supported-format claims, dependency provenance, or an accepted future implementation.
+Authoritative for: The R7-C candidate observations, former blocker, accepted native prerequisite, and productization route recorded here.
+Not authoritative for: Current supported-format claims or dependency provenance.
 
 ## Question
 
@@ -52,19 +52,23 @@ Current proof:
 
 | RID | Build / locality | Codec inventory | Controlled decode | Status |
 | --- | --- | --- | --- | --- |
-| `win-x64` | Clean local and hosted MSVC build; `heif.dll`, `libde265.dll`, and `dav1d.dll` load beside one another | HEVC decoder yes; AV1 decoder yes; HEVC/AV1 encoders no | 8-bit HEIF pass; 8-bit AVIF pass | Hosted PASS for `5f938e11`; two local clean builds produced the same packaged SHA-256 |
-| `linux-x64` | Clean local Ubuntu 24.04 x64 container and hosted build; `libheif.so` uses `$ORIGIN` and `ldd` resolves both codec libraries from the artifact directory | HEVC decoder yes; AV1 decoder yes; HEVC/AV1 encoders no | 8-bit HEIF pass; 8-bit AVIF pass | Hosted PASS for `5f938e11` |
-| `osx-arm64` | First hosted build loaded libheif 1.23.1 and decoded both fixtures, but its dav1d install name and libheif dependency retained the absolute build prefix | HEVC decoder yes; AV1 decoder yes; HEVC/AV1 encoders no | 8-bit HEIF pass; 8-bit AVIF pass | Hosted FAIL for `5f938e11`: the strict relocation audit correctly rejected the otherwise successful decode; corrected artifact requires a new hosted run |
+| `win-x64` | Clean local and hosted MSVC build; `heif.dll`, `libde265.dll`, and `dav1d.dll` load beside one another | HEVC decoder yes; AV1 decoder yes; HEVC/AV1 encoders no | 8-bit HEIF pass; 8-bit AVIF pass | Hosted PASS; retained in the owner-accepted `c4dba80b` baseline |
+| `linux-x64` | Clean local Ubuntu 24.04 x64 container and hosted build; `libheif.so` uses `$ORIGIN` and `ldd` resolves both codec libraries from the artifact directory | HEVC decoder yes; AV1 decoder yes; HEVC/AV1 encoders no | 8-bit HEIF pass; 8-bit AVIF pass | Hosted PASS; retained in the owner-accepted `c4dba80b` baseline |
+| `osx-arm64` | Hosted arm64 build targeting macOS 14.0; `@rpath` identities and `@loader_path` dependencies resolve with the build prefix unavailable | HEVC decoder yes; AV1 decoder yes; HEVC/AV1 encoders no | 8-bit HEIF pass; 8-bit AVIF pass | Hosted PASS; relocation/deployment/prefix-independent smoke accepted at `c4dba80b` |
 | `osx-x64` | The build owner accepts a real x64 macOS host | No runner/artifact evidence yet | No evidence | Preferred additional RID remains unproven |
 
-Each artifact carries `manifest.json` with source pins, build options, final post-relocation binary hashes, toolchain versions, fixture hashes, and license inventory; `dependency-audit.txt`; and `smoke-report.txt` with the absolute loaded libheif path/version and decoder/encoder/decode results. Windows `dumpbin` and Linux `readelf`/`ldd` found no x265, unrelated codec, developer-prefix, or custom system-library dependency. Windows depends on the normal MSVC runtime; Linux depends only on normal platform C/C++ runtime libraries beyond its app-local codec set. The corrected macOS build targets macOS 14.0 consistently, rewrites the packaged dylibs to `@rpath` identities plus `@loader_path`, audits `minos` and arm64, and makes the original prefix unavailable during smoke; these corrections remain local code evidence until a new hosted run executes them.
+Each artifact carries `manifest.json` with source pins, build options, final post-relocation binary hashes, toolchain versions, fixture hashes, and license inventory; `dependency-audit.txt`; and `smoke-report.txt` with the absolute loaded libheif path/version and decoder/encoder/decode results. Windows `dumpbin` and Linux `readelf`/`ldd` found no x265, unrelated codec, developer-prefix, or custom system-library dependency. Windows depends on the normal MSVC runtime; Linux depends only on normal platform C/C++ runtime libraries beyond its app-local codec set. The corrected macOS build targets macOS 14.0 consistently, rewrites the packaged dylibs to `@rpath` identities plus `@loader_path`, audits `minos` and arm64, and makes the original prefix unavailable during smoke. The follow-up hosted matrix executed and accepted these checks; R7-C-N1 and R7-C-N1-F1 are complete at `c4dba80bd23534f372ae09f9285c0e1c5991d5e3`.
 
 ## Decision
 
-R7-C is not productized. Fovium remains at `0.1.0.0005`; no production package, backend, format capability, discovery extension, or support claim is added. The first hosted R7-C-N1 matrix proves the pinned decode stack and real HEIF/AVIF decode on all three mandatory RIDs, but the macOS artifact was not relocatable and therefore remains unacceptable. R7-C-N1 stays blocked until the corrected macOS relocation/deployment audit and prefix-independent smoke pass in a new hosted matrix. There is still no product integration evidence, real 10-bit rejection fixture, HDR fixture, alpha fixture, or container-transform fixture.
+The R7-C-N1 native prerequisite is complete and owner-accepted. It proves the pinned decode-only stack and relocatable app-local runtime on all three mandatory RIDs, but does not by itself productize HEIF/AVIF. At the accepted baseline Fovium remains `0.1.0.0005` with no production backend, capability, discovery extension, or bounded-format support claim. Product integration must separately prove actual content routing, 8-bit decode, higher-depth/HDR/sequence rejection, alpha, transforms, color truth, lifetime, resource admission, missing-runtime isolation, and common viewer behavior.
 
-## Best next option
+## Productization result
 
-Push the relocation correction and require green build/package/audit/prefix-independent-decode jobs for `win-x64`, `linux-x64`, and `osx-arm64`. If all mandatory artifacts pass, R7-C-N1 can be accepted and R7-C may resume with the managed backend, real 8/10-bit/HDR/alpha/transform fixtures, and the full content-routing/integration suite. If macOS still fails, retain `0.1.0.0005` and resolve the precise native artifact defect without weakening the platform matrix.
+R7-C re-evaluated LibHeifSharp 3.2.0 against the accepted runtime and selected a small project-owned direct binding instead. The wrapper's public surface did not expose all facts needed to enforce source chroma depth and reliable primary codec identity at the required boundary, while deterministic app-owned loading was required in either route. The direct binding is limited to context/memory input, primary/still and item-reference inspection, precision/color/profile queries, RGBA decode, plane access, security limits, codec inventory, and deterministic release; it is not a general libheif binding.
+
+The production locator accepts only the exact Fovium bundle under `runtimes/<rid>/native`, loads dependencies and libheif by absolute path, requires libheif 1.23.1 with HEVC/AV1 decoders and no HEVC/AV1 encoders, and has no system fallback. Tracked project-authored fixtures now cover 8-bit RGB HEIF/AVIF, AVIF alpha, rotation, mirror, real 10-bit rejection, PQ/HLG signaling rejection, sequence rejection, and malformed input. The native workflow builds/audits/smokes each mandatory RID, materializes its bundle, and runs the actual production backend tests. Local Windows evidence is complete; post-push hosted production evidence remains required.
+
+The initial blocked investigation and Windows-only package findings above remain truthful historical evidence rather than being erased by the later app-owned runtime solution.
 
 Current product truth remains in [`../FORMAT-SUPPORT.md`](../FORMAT-SUPPORT.md); dependency provenance remains in [`../THIRD-PARTY.md`](../THIRD-PARTY.md).

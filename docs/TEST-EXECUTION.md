@@ -65,7 +65,7 @@ Run the production logic and boundary tests while iterating:
 dotnet test Fovium.Tests/Fovium.Tests.csproj --filter "FullyQualifiedName~Fovium.Tests.Application|FullyQualifiedName~Fovium.Tests.Navigation|FullyQualifiedName~Fovium.Tests.Loading|FullyQualifiedName~Fovium.Tests.Imaging|FullyQualifiedName~Fovium.Tests.Input|FullyQualifiedName~Fovium.Tests.Rendering|FullyQualifiedName~Fovium.Tests.Viewer|FullyQualifiedName~Fovium.Tests.Settings|FullyQualifiedName~Fovium.Tests.Localization|FullyQualifiedName~Fovium.Tests.Stage|FullyQualifiedName~Fovium.Tests.Versioning"
 ```
 
-Run format capability, discovery, static WebP, bounded TIFF, Photo Info, Histogram, and Stage integration tests:
+Run format capability, discovery, static WebP, bounded TIFF, HEIF/AVIF, Photo Info, Histogram, and Stage integration tests:
 
 ```powershell
 dotnet test Fovium.Tests/Fovium.Tests.csproj --filter "FullyQualifiedName~Fovium.Tests.Imaging|FullyQualifiedName~Fovium.Tests.Navigation|FullyQualifiedName~Fovium.Tests.Metadata|FullyQualifiedName~Fovium.Tests.Histogram|FullyQualifiedName~Fovium.Tests.Stage"
@@ -85,11 +85,13 @@ R7-A adds exact capability-table/extension/Skia-mapping invariants; mixed JPEG/P
 
 R7-B adds an independent minimal uncompressed classic-TIFF byte fixture plus focused library-generated evidence. Tests cover little/big endian, strips/tiles, None/LZW/Deflate/PackBits, grayscale polarity, associated/unassociated alpha, all eight orientation tags, exact BGRA pixels, ICC-state truth, content-extension mismatch, BigTIFF/multipage/high-bit/floating/specialist/unknown-extra rejection, corrupt/resource-bomb recovery, shared cross-backend concurrency, mixed TIFF/Skia parallel stress, and generic Photo Info/MetadataExtractor/Histogram/Ambient/Matte integration. Private/local TIFF photographs remain manual-only evidence.
 
+R7-C adds tracked project-authored 8-bit HEIF/AVIF RGB, AVIF alpha, rotation, mirror, 10-bit, PQ, HLG, sequence, and malformed fixtures. Tests exercise actual production interop and app-local loading; codec-derived HEIF/AVIF identity despite misleading extensions; `.heic/.heif/.hif/.avif` discovery and case; representative pixels, alpha 0/partial/255 and single premultiplication; oriented pixels/dimensions with `Normal` descriptor orientation; encoded 10-bit/PQ/HLG/sequence rejection; pre-decode resource admission; corrupt containment; shared two-slot concurrency; missing-runtime isolation; and generic Photo Info/Histogram/Ambient use of the same `DecodedImage`. Set `FOVIUM_REQUIRE_HEIF_TEST_RUNTIME=1` to make absence of the materialized current-RID bundle a test failure rather than a local skip.
+
 CI restores, builds, and tests on Windows, Linux, and macOS. The accepted R7-B commit `d5de440` completed all three hosted restore-build-test jobs successfully, including the managed TIFF suite. This proves the solution/test contract and cross-platform managed decoder execution, not manual Avalonia/Skia viewer behavior on Linux/macOS.
 
-R7-C-N1 still adds no production HEIF/AVIF package or decoder tests. It introduces a separate path-filtered `native-libheif.yml` matrix that builds pinned source, packages and audits the decode-only runtime, loads the exact app-local libheif, verifies HEVC/AV1 decoder presence and encoder absence, and decodes tracked project-authored 8-bit HEIF/AVIF smoke fixtures. The mandatory jobs are `win-x64`, `linux-x64`, and `osx-arm64`; no platform skip is accepted.
+R7-C-N1 and R7-C-N1-F1 are complete and owner-accepted at `c4dba80bd23534f372ae09f9285c0e1c5991d5e3`. The path-filtered `native-libheif.yml` matrix builds pinned source, packages and audits the decode-only runtime, loads exact app-local libheif, verifies HEVC/AV1 decoder presence and encoder absence, and decodes tracked project-authored HEIF/AVIF fixtures. Its mandatory jobs are `win-x64`, `linux-x64`, and `osx-arm64`; no platform skip is accepted.
 
-The first hosted R7-C-N1 run is green for Windows x64 and Linux x64. macOS arm64 built and decoded both tracked fixtures with the intended decoder-only inventory, then failed the strict audit because a dav1d/libheif Mach-O dependency retained the absolute build prefix. R7-C-N1-F1 relocates packaged dylibs, pins/audits macOS 14.0 plus arm64, and makes the original prefix unavailable during smoke. This correction still needs a new hosted run. These native artifacts are prerequisite evidence only; they do not make HEIF/AVIF product formats.
+R7-C extends those jobs to materialize the built bundle, restore/build Fovium, and run the actual production `HeifImageDecodeBackend` tests with runtime presence mandatory. Normal CI remains the fast managed matrix. Cross-platform product acceptance requires both matrices green after owner push; local Windows success alone is not that hosted claim.
 
 Run a clean native build locally with:
 

@@ -44,6 +44,20 @@ internal sealed class FakeImageLoader(
         new((path, _, _) => Task.FromResult(load(path)));
 }
 
+internal sealed class DisposableFakeImageLoader : IImageLoader<FakeImage>, IDisposable
+{
+    private int _disposeCount;
+
+    public int DisposeCount => Volatile.Read(ref _disposeCount);
+
+    public Task<ImageLoadResult<FakeImage>> LoadAsync(
+        string path,
+        ImageLoadAllowance allowance,
+        CancellationToken cancellationToken) => Task.FromResult(FakeLoadResult.Success(path));
+
+    public void Dispose() => Interlocked.Increment(ref _disposeCount);
+}
+
 internal static class FakeLoadResult
 {
     public static ImageLoadResult<FakeImage> Success(string path, long bytes = 16) =>

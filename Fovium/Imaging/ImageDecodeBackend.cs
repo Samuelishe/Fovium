@@ -7,6 +7,7 @@ internal enum ImageDecodeBackendResultKind
     UnsupportedVariant,
     Corrupt,
     ResourceLimit,
+    BackendUnavailable,
     DecodeFailed,
 }
 

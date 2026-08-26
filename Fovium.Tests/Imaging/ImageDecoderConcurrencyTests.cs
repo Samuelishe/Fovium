@@ -11,13 +11,18 @@ public sealed class ImageDecoderConcurrencyTests
         using var release = new ManualResetEventSlim();
         var tracker = new ConcurrencyTracker(twoEntered, release);
         using var decoder = new ImageDecoder(
-            [new SelectiveBlockingBackend(".tif", tracker), new SelectiveBlockingBackend(null, tracker)],
+            [
+                new SelectiveBlockingBackend(".heic", "heif", tracker),
+                new SelectiveBlockingBackend(".avif", "heif", tracker),
+                new SelectiveBlockingBackend(".tif", "tiff", tracker),
+                new SelectiveBlockingBackend(null, "skia", tracker),
+            ],
             maximumConcurrentDecodes: 2);
         var directory = Directory.CreateTempSubdirectory("Fovium.DecodeConcurrency.Tests.");
         try
         {
-            var paths = Enumerable.Range(0, 6)
-                .Select(index => Path.Combine(directory.FullName, index % 2 == 0 ? $"{index}.tif" : $"{index}.jpg"))
+            var paths = new[] { "0.heic", "1.tif", "2.avif", "3.jpg", "4.heic", "5.jpg" }
+                .Select(name => Path.Combine(directory.FullName, name))
                 .ToArray();
             foreach (var path in paths)
             {
@@ -38,8 +43,8 @@ public sealed class ImageDecoderConcurrencyTests
 
             Assert.True(twoEntered.Wait(TimeSpan.FromSeconds(5)), "Two decode slots did not become active.");
             Assert.Equal(2, tracker.MaximumActive);
-            Assert.True(tracker.TiffEntered > 0);
-            Assert.True(tracker.OtherEntered > 0);
+            Assert.True(tracker.Entered("heif") > 0);
+            Assert.True(tracker.Entered("tiff") > 0);
             tasks.AddRange(paths.Skip(2).Select(path => decoder.LoadAsync(
                 path,
                 new ImageLoadAllowance(long.MaxValue, long.MaxValue, false),
@@ -49,12 +54,28 @@ public sealed class ImageDecoderConcurrencyTests
 
             Assert.All(results, result => Assert.Equal(ImageLoadErrorKind.DecodeFailed, result.Error!.Kind));
             Assert.Equal(2, tracker.MaximumActive);
+            Assert.True(tracker.Entered("heif") > 0);
+            Assert.True(tracker.Entered("tiff") > 0);
+            Assert.True(tracker.Entered("skia") > 0);
         }
         finally
         {
             release.Set();
             directory.Delete(true);
         }
+    }
+
+    [Fact]
+    public void DisposingDispatcherDisposesEveryOwnedBackend()
+    {
+        var first = new DisposableBackend();
+        var second = new DisposableBackend();
+        var decoder = new ImageDecoder([first, second]);
+
+        decoder.Dispose();
+
+        Assert.Equal(1, first.DisposeCount);
+        Assert.Equal(1, second.DisposeCount);
     }
 
     [Theory]
@@ -73,11 +94,13 @@ public sealed class ImageDecoderConcurrencyTests
     private sealed class SelectiveBlockingBackend : IImageDecodeBackend
     {
         private readonly string? _extension;
+        private readonly string _tag;
         private readonly ConcurrencyTracker _tracker;
 
-        public SelectiveBlockingBackend(string? extension, ConcurrencyTracker tracker)
+        public SelectiveBlockingBackend(string? extension, string tag, ConcurrencyTracker tracker)
         {
             _extension = extension;
+            _tag = tag;
             _tracker = tracker;
         }
 
@@ -91,7 +114,7 @@ public sealed class ImageDecoderConcurrencyTests
                 return ImageDecodeBackendResult.NotMyFormat();
             }
 
-            _tracker.Enter(_extension is not null);
+            _tracker.Enter(_tag);
             try
             {
                 _tracker.Release.Wait(cancellationToken);
@@ -106,13 +129,24 @@ public sealed class ImageDecoderConcurrencyTests
         }
     }
 
+    private sealed class DisposableBackend : IImageDecodeBackend, IDisposable
+    {
+        public int DisposeCount { get; private set; }
+
+        public ImageDecodeBackendResult Decode(
+            string path,
+            ImageLoadAllowance allowance,
+            CancellationToken cancellationToken) => ImageDecodeBackendResult.NotMyFormat();
+
+        public void Dispose() => DisposeCount++;
+    }
+
     private sealed class ConcurrencyTracker
     {
         private readonly CountdownEvent _twoEntered;
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<string, int> _entered = new();
         private int _active;
         private int _maximumActive;
-        private int _tiffEntered;
-        private int _otherEntered;
 
         public ConcurrencyTracker(CountdownEvent twoEntered, ManualResetEventSlim release)
         {
@@ -124,20 +158,11 @@ public sealed class ImageDecoderConcurrencyTests
 
         public int MaximumActive => Volatile.Read(ref _maximumActive);
 
-        public int TiffEntered => Volatile.Read(ref _tiffEntered);
+        public int Entered(string tag) => _entered.TryGetValue(tag, out var count) ? count : 0;
 
-        public int OtherEntered => Volatile.Read(ref _otherEntered);
-
-        public void Enter(bool isTiff)
+        public void Enter(string tag)
         {
-            if (isTiff)
-            {
-                Interlocked.Increment(ref _tiffEntered);
-            }
-            else
-            {
-                Interlocked.Increment(ref _otherEntered);
-            }
+            _entered.AddOrUpdate(tag, 1, static (_, count) => count + 1);
 
             var active = Interlocked.Increment(ref _active);
             UpdateMaximum(active);

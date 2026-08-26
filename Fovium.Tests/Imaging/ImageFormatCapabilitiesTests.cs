@@ -6,7 +6,7 @@ namespace Fovium.Tests.Imaging;
 public sealed class ImageFormatCapabilitiesTests
 {
     [Fact]
-    public void RegistryContainsAcceptedJpegPngStaticWebpAndBoundedTiffCapabilities()
+    public void RegistryContainsAcceptedJpegPngWebpTiffHeifAndAvifCapabilities()
     {
         Assert.Collection(
             ImageFormatCapabilities.All,
@@ -37,6 +37,20 @@ public sealed class ImageFormatCapabilitiesTests
                 "tiff",
                 "TIFF",
                 [".tif", ".tiff"],
+                ImageAlphaCapability.Supported),
+            heif => AssertCapability(
+                heif,
+                ImageFormatId.Heif,
+                "heif",
+                "HEIF",
+                [".heic", ".heif", ".hif"],
+                ImageAlphaCapability.Supported),
+            avif => AssertCapability(
+                avif,
+                ImageFormatId.Avif,
+                "avif",
+                "AVIF",
+                [".avif"],
                 ImageAlphaCapability.Supported));
     }
 
@@ -44,13 +58,13 @@ public sealed class ImageFormatCapabilitiesTests
     public void CandidateExtensionsAndPickerHintsComeFromRegistryWithoutDuplicates()
     {
         Assert.Equal(
-            [".jpg", ".jpeg", ".png", ".webp", ".tif", ".tiff"],
+            [".jpg", ".jpeg", ".png", ".webp", ".tif", ".tiff", ".heic", ".heif", ".hif", ".avif"],
             ImageFormatCapabilities.CandidateExtensions);
         Assert.Equal(
-            ["*.jpg", "*.jpeg", "*.png", "*.webp", "*.tif", "*.tiff"],
+            ["*.jpg", "*.jpeg", "*.png", "*.webp", "*.tif", "*.tiff", "*.heic", "*.heif", "*.hif", "*.avif"],
             ImageFormatCapabilities.FilePickerPatterns);
         Assert.Equal(
-            ["image/jpeg", "image/png", "image/webp", "image/tiff"],
+            ["image/jpeg", "image/png", "image/webp", "image/tiff", "image/heic", "image/heif", "image/avif"],
             ImageFormatCapabilities.FilePickerMimeTypes);
         Assert.Equal(
             ImageFormatCapabilities.CandidateExtensions.Count,
@@ -62,6 +76,10 @@ public sealed class ImageFormatCapabilitiesTests
         Assert.True(ImageFormatCapabilities.IsCandidateExtension(".WEBP"));
         Assert.True(ImageFormatCapabilities.IsCandidateExtension(".TIF"));
         Assert.True(ImageFormatCapabilities.IsCandidateExtension(".TIFF"));
+        Assert.True(ImageFormatCapabilities.IsCandidateExtension(".HEIC"));
+        Assert.True(ImageFormatCapabilities.IsCandidateExtension(".HEIF"));
+        Assert.True(ImageFormatCapabilities.IsCandidateExtension(".HIF"));
+        Assert.True(ImageFormatCapabilities.IsCandidateExtension(".AVIF"));
         Assert.False(ImageFormatCapabilities.IsCandidateExtension(".foo"));
     }
 
@@ -94,9 +112,12 @@ public sealed class ImageFormatCapabilitiesTests
     [InlineData(20, false)]
     public void StaticImagePolicyRejectsEveryMultiFramePayload(int frameCount, bool expected)
     {
-        var webp = ImageFormatCapabilities.Get(ImageFormatId.Webp);
-
-        Assert.Equal(expected, ImageFormatCapabilities.SupportsFrameCount(webp, frameCount));
+        foreach (var format in new[] { ImageFormatId.Webp, ImageFormatId.Heif, ImageFormatId.Avif })
+        {
+            Assert.Equal(
+                expected,
+                ImageFormatCapabilities.SupportsFrameCount(ImageFormatCapabilities.Get(format), frameCount));
+        }
     }
 
     private static void AssertCapability(

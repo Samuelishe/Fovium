@@ -5,12 +5,20 @@ on:
     paths:
       - '.github/workflows/native-libheif.yml'
       - 'eng/native/libheif/**'
+      - 'Fovium/Imaging/**'
+      - 'Fovium/Fovium.csproj'
+      - 'Fovium.Tests/**'
+      - 'Directory.Build.props'
   push:
     branches:
       - master
     paths:
       - '.github/workflows/native-libheif.yml'
       - 'eng/native/libheif/**'
+      - 'Fovium/Imaging/**'
+      - 'Fovium/Fovium.csproj'
+      - 'Fovium.Tests/**'
+      - 'Directory.Build.props'
   workflow_dispatch:
 
 permissions:
@@ -68,6 +76,31 @@ jobs:
         if: runner.os != 'Windows'
         shell: bash
         run: bash eng/native/libheif/build.sh '${{ matrix.rid }}'
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore product
+        run: dotnet restore Fovium.sln
+
+      - name: Build product with materialized runtime
+        run: dotnet build Fovium.sln -c Release --no-restore
+
+      - name: Verify app-local runtime materialization
+        shell: pwsh
+        run: |
+          $native = Join-Path '${{ github.workspace }}' 'Fovium/bin/Release/net10.0/runtimes/${{ matrix.rid }}/native'
+          if (-not (Test-Path -LiteralPath $native -PathType Container)) {
+              throw "Fovium native runtime was not materialized at $native"
+          }
+          Get-ChildItem -LiteralPath $native | Select-Object -ExpandProperty FullName
+
+      - name: Test production backend with app-local runtime
+        env:
+          FOVIUM_REQUIRE_HEIF_TEST_RUNTIME: '1'
+        run: dotnet test Fovium.sln -c Release --no-build
 
       - name: Upload native runtime artifact
         uses: actions/upload-artifact@v6

@@ -9,6 +9,7 @@ internal enum SourceColorState
 {
     AssumedSrgb,
     NormalizedSrgb,
+    NormalizedSrgbFromNclx,
     NormalizedNonSrgb,
     EmbeddedProfileUnpreserved,
 }
@@ -27,7 +28,9 @@ internal sealed record ImageDescriptor(
     long EstimatedRetainedBytes,
     TimeSpan ProbeDuration,
     TimeSpan DecodeDuration,
-    TimeSpan PreparationDuration);
+    TimeSpan PreparationDuration,
+    string? SourceColorDescription = null,
+    TimeSpan? PixelCopyDuration = null);
 
 internal sealed class DecodedImage : IRetainedResource
 {

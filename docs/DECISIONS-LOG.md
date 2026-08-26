@@ -294,3 +294,21 @@ Fovium owns stable format identity and one immutable capability authority indepe
 Status: Accepted in R7-B.
 
 One project-owned dispatcher owns the existing two expensive-decode slots and common result semantics across backends. Skia remains the JPEG/PNG/static-WebP backend; focused managed LibTiff.NET handles content-signature-detected classic TIFF without leaking backend types beyond imaging. TIFF support is single-image unsigned 8-bit contiguous grayscale/RGB/explicit-alpha only for the proven storage/compression subset. BigTIFF, multiple pages, high-bit-depth, floating-point, unknown alpha, and specialist photometrics are rejected rather than silently degraded. Scanline/tile working memory is temporary; the viewer retains only exact encoded bytes plus the common `DecodedImage` raster and derivatives.
+
+## D-049 — HEIF/AVIF uses one Fovium-owned decode-only runtime
+
+Status: Owner-review-ready in R7-C.
+
+Fovium builds and materializes its own app-local libheif 1.23.1 runtime; libde265 1.1.1 supplies HEVC decode and dav1d 1.5.4 supplies AV1 decode. A small project-owned direct binding resolves only `runtimes/<rid>/native` for proven `win-x64`, `linux-x64`, and `osx-arm64`, validates exact version plus HEVC/AV1 decoder presence and encoder absence, and never searches system codec locations. No network, system codec installation, broad native stack, encoder, or second native supply chain is required at runtime. A missing or broken bundle disables HEIF/AVIF recoverably without affecting JPEG, PNG, WebP, or TIFF.
+
+## D-050 — HEIF/AVIF support is static, 8-bit, and SDR-fidelity-bounded
+
+Status: Owner-review-ready in R7-C.
+
+One focused backend accepts one unambiguous HEVC or AV1 primary still, supports alpha explicitly exposed by libheif, ignores depth auxiliaries, and may present an SDR primary without reproducing an HDR gain map. Source precision above 8 bits is rejected rather than quantized; explicit PQ/HLG is rejected without tone mapping; sequences and independent-image collections are rejected rather than showing frame zero. Container transforms are applied exactly once by native decode. Output and exact encoded bytes converge into the normal `DecodedImage` BGRA8888/Premul boundary, with native context/image owners released after copy. HEIF/AVIF share the global two-slot decode gate, cache, Stage, Photo Info, Histogram, Peek/Blink, and markup paths.
+
+## D-051 — Core viewer behavior is offline
+
+Status: Accepted direction in R7-C.
+
+Core decode, navigation, Stage/presentation, Photo Info, Histogram, settings, markup, and the planned Color Picker/name matching work without a runtime network dependency. Development may download pinned source archives or public test vectors, but application startup and ordinary viewing never download codecs, query cloud services, or prompt for system codec installation.

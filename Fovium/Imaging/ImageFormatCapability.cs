@@ -9,6 +9,8 @@ internal enum ImageFormatId
     Png,
     Webp,
     Tiff,
+    Heif,
+    Avif,
 }
 
 internal enum ImageAlphaCapability
@@ -101,6 +103,24 @@ internal static class ImageFormatCapabilities
                 "TIFF",
                 [".tif", ".tiff"],
                 ["image/tiff"],
+                staticDecodeSupported: true,
+                ImageAlphaCapability.Supported,
+                ImageAnimationPolicy.StaticOnly),
+            new ImageFormatCapability(
+                ImageFormatId.Heif,
+                "heif",
+                "HEIF",
+                [".heic", ".heif", ".hif"],
+                ["image/heic", "image/heif"],
+                staticDecodeSupported: true,
+                ImageAlphaCapability.Supported,
+                ImageAnimationPolicy.StaticOnly),
+            new ImageFormatCapability(
+                ImageFormatId.Avif,
+                "avif",
+                "AVIF",
+                [".avif"],
+                ["image/avif"],
                 staticDecodeSupported: true,
                 ImageAlphaCapability.Supported,
                 ImageAnimationPolicy.StaticOnly),

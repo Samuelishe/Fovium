@@ -19,6 +19,8 @@ The current pipeline is static-image only. A supported encoded format whose code
 | PNG | Static | Yes | No | Best-effort, read-only | Multi-frame/APNG is rejected if reported by the codec |
 | WebP | Static lossy/lossless | Yes | No | Best-effort, read-only | Skia `SKCodec`; Photo Info base facts always available; animated WebP is rejected |
 | TIFF | Bounded static 8-bit | Declared associated/unassociated alpha | Pages: no | Best-effort, read-only | Focused managed backend; classic single-image contiguous grayscale/RGB; see scope below |
+| HEIF / HEIC | Static 8-bit SDR primary image | Yes, where explicitly exposed | No | Best-effort, read-only | App-owned libheif backend with HEVC decode; `>8` bit and PQ/HLG rejected; depth ignored; HDR gain-map enhancement not reproduced |
+| AVIF | Static 8-bit SDR primary image | Yes, where explicitly exposed | No | Best-effort, read-only | App-owned libheif backend with AV1 decode; `>8` bit and PQ/HLG rejected; depth ignored; HDR gain-map enhancement not reproduced |
 
 TIFF support is deliberately narrower than the container. Proven inputs include classic little- and big-endian TIFF, strip and tiled storage, unsigned 8-bit grayscale/RGB, explicitly declared associated or unassociated alpha, and None/LZW/Deflate/PackBits compression. The decoder preserves all eight TIFF orientation meanings in the common oriented-source descriptor. BigTIFF, multiple directories/pages, samples above 8 bits, floating-point samples, planar-separated data, unspecified extra samples, palette/CMYK/CIELAB/LogLuv and other specialist photometrics, JPEG-in-TIFF, and unproven compression variants are rejected recoverably. The current viewer still uses one complete BGRA8888/Premul raster; TIFF tiling is decoded fully and is not a region-rendering claim.
 
@@ -26,12 +28,14 @@ When an embedded TIFF ICC profile can be normalized by the current Skia color-sp
 
 WebP camera/lens/exposure EXIF is available when the current MetadataExtractor backend recognizes it. Metadata absence or failure never invalidates decode. A controlled WebP EXIF fixture showed that SkiaSharp 3.119.4 did not expose its orientation through `SKCodec.EncodedOrigin`; Fovium therefore currently presents such WebP using encoded geometry rather than adding a second eager orientation parser. This limitation is tracked in [`KNOWN-PROBLEMS.md`](KNOWN-PROBLEMS.md).
 
-JPEG, PNG, static WebP, and accepted TIFF share the same BGRA8888/Premul decoded representation, byte-budget cache, Ambient, Peek/Blink, Photo Info, Histogram, and markup boundaries. Transparent PNG/WebP/TIFF pixels reveal Stage or the opaque Matte backing according to the existing alpha contract.
+HEIF and AVIF support one unambiguous primary still. HEVC content is identified as HEIF and AV1 content as AVIF from native item evidence rather than filename. The accepted backend applies ordinary container rotation, mirror, and crop transforms exactly once and publishes presentation-oriented dimensions with `Normal` descriptor orientation. Auxiliary alpha is decoded when libheif exposes it; depth auxiliaries are ignored, and an SDR primary may be shown without applying an HDR gain map. Multiple independent top-level images and sequences are rejected; Fovium never presents frame zero as static support.
+
+Source luma and chroma precision are inspected before pixel decode. Values above 8 bits are rejected rather than quantized, and NCLX transfer characteristics PQ (`16`) or HLG (`18`) are rejected without tone mapping. Valid ICC data enters the existing Skia source-color boundary when no NCLX conversion governs output. For common SDR NCLX, libheif's output normalization is recorded distinctly from assumed-untagged sRGB together with the source signaling. This preserves truthful source state but is not monitor-aware Color Management.
+
+JPEG, PNG, static WebP, accepted TIFF, HEIF, and AVIF share the same BGRA8888/Premul decoded representation, byte-budget cache, Ambient, Peek/Blink, Photo Info, Histogram, and markup boundaries. Transparent PNG/WebP/TIFF/HEIF/AVIF pixels reveal Stage or the opaque Matte backing according to the existing alpha contract.
 
 ## Not currently supported
 
-Animated WebP/APNG playback, broader/high-bit-depth/multipage TIFF, HEIF/HEIC, AVIF, RAW, JPEG XL, JPEG 2000, PSD, OpenEXR, and other specialized formats are not current decode claims. File associations and thumbnail providers are also separate platform work.
-
-The gated R7-C probe confirmed that the current Skia stack cannot decode the controlled HEIF/AVIF files and that no evaluated native package simultaneously supplied decode-capable HEVC/AV1 assets for Windows x64, Linux x64, and macOS arm64 within the accepted decode-only dependency boundary. HEIF/HEIC and AVIF therefore remain unsupported; Windows-only adapter feasibility is not a product claim. See [`experiments/R7-C-HEIF-AVIF-BACKEND-PROBE.md`](experiments/R7-C-HEIF-AVIF-BACKEND-PROBE.md).
+Animated WebP/APNG playback, HEIF/AVIF sequences, high-bit-depth or HDR HEIF/AVIF, broader/high-bit-depth/multipage TIFF, RAW, JPEG XL, JPEG 2000, PSD, OpenEXR, and other specialized formats are not current decode claims. HEIF collections/page browsing, Live Photo video, depth visualization, gain-map reproduction, and encoding are not implemented. File associations and thumbnail providers are also separate platform work.
 
 Pipeline mechanics belong to [`IMAGING-PIPELINE.md`](IMAGING-PIPELINE.md); library provenance belongs to [`THIRD-PARTY.md`](THIRD-PARTY.md); future direction belongs to [`ROADMAP.md`](ROADMAP.md).

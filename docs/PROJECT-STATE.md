@@ -7,20 +7,20 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R7-B is complete at `0.1.0.0005`. One project-owned, two-slot decoder dispatcher now owns backend selection and expensive decode concurrency. Skia remains isolated to JPEG/PNG/static WebP; a focused managed LibTiff.NET backend adds content-detected, single-image classic 8-bit TIFF for the proven grayscale/RGB/declared-alpha, endian, storage, orientation, and compression subset. Unsupported TIFF variants fail recoverably rather than being silently reduced. R6-B Histogram, R6-A Photo Info, R5-F3-P1 interaction isolation, and owner-accepted R5-P1/P2/P3 Ambient hardening remain retained. Version semantics are owned by [`VERSIONING.md`](VERSIONING.md); current format truth is owned by [`FORMAT-SUPPORT.md`](FORMAT-SUPPORT.md).
+R7-C is owner-review-ready at `0.1.0.0006`. One focused production backend uses only Fovium's app-local libheif 1.23.1/libde265 1.1.1/dav1d 1.5.4 runtime for bounded static 8-bit SDR HEIF/HEIC and AVIF. HEVC/AV1 identity comes from content; proven alpha and container transforms converge to the common BGRA8888/Premul `DecodedImage`; higher precision, PQ/HLG, and sequences are rejected rather than silently reduced. Skia JPEG/PNG/static WebP and managed bounded TIFF retain the same shared two-slot dispatcher and common viewer path. Version semantics are owned by [`VERSIONING.md`](VERSIONING.md); current format truth is owned by [`FORMAT-SUPPORT.md`](FORMAT-SUPPORT.md).
 
 The retained R0 probe remains experimental evidence under `experiments/Fovium.RenderProbe`. Production code is the single `Fovium` assembly and does not depend on the experiment. The accepted R7-B hosted matrix restored, built, and tested successfully on Windows, Ubuntu, and macOS at commit `d5de440`; this is portability evidence for the .NET solution and managed TIFF backend, not manual Linux/macOS viewer/render validation. Local visual acceptance remains Windows at `RenderScaling = 1.00`.
 
 ## Current focus
 
-R7-C HEIF/AVIF productization remains gated. R7-C-N1 owns a pinned decode-only libheif 1.23.1/libde265 1.1.1/dav1d 1.5.4 source build, deterministic artifact manifest/audit/smoke contract, and a separate native workflow. The first hosted run for `5f938e11` passed Windows x64 and Linux x64. macOS arm64 built the correct decoder-only codec inventory and decoded both tracked 8-bit fixtures, but then correctly failed the dependency audit because the packaged dav1d identity and libheif dependency retained an absolute build-prefix path. R7-C-N1-F1 now makes relocation explicit, targets macOS 14.0, audits architecture/deployment metadata, and makes the prefix unavailable during smoke; a new hosted run is still required. Fovium therefore remains at `0.1.0.0005` with no HEIF/AVIF production dependency, capability, discovery hint, or support claim. Do not begin another format automatically.
+R7-C local productization is complete pending owner review and post-push hosted evidence. Its R7-C-N1 prerequisite remains owner-accepted at `c4dba80bd23534f372ae09f9285c0e1c5991d5e3`: the pinned decode-only source build passed build, audit, prefix-independent load, and real HEIF/AVIF decode on `win-x64`, `linux-x64`, and `osx-arm64`; macOS evidence is arm64, targets macOS 14.0, uses `@rpath` plus `@loader_path`, and has no build-prefix dependency. After R7-C acceptance, the owner-selected next product stage is the bounded Offline Color Picker described in [`ROADMAP.md`](ROADMAP.md), followed by monitor Color Management. Neither is implemented here.
 
 ## Implemented application functionality
 
 - Runnable zero-UI Avalonia desktop viewer with Black, Neutral, Custom, or Ambient Stage backgrounds and an independent optional Matte.
-- Central JPEG/PNG/WebP/TIFF capability registry: candidate extensions and picker hints derive from one authority, while backend content probes determine actual format.
-- One shared bounded decoder dispatcher with a Skia JPEG/PNG/static-WebP backend and a focused managed TIFF backend; extension remains only a discovery hint.
-- Static JPEG, PNG, lossy/lossless/alpha WebP, and bounded classic 8-bit TIFF decode into the shared BGRA8888/Premul representation. Multi-frame encoded images, multipage TIFF, BigTIFF, >8-bit/floating TIFF, and unsupported TIFF photometrics are rejected recoverably.
+- Central JPEG/PNG/WebP/TIFF/HEIF/AVIF capability registry: candidate extensions, MIME hints, and picker patterns derive from one authority, while backend content probes determine actual format.
+- One shared bounded decoder dispatcher with Skia JPEG/PNG/static-WebP, focused managed TIFF, and focused app-local libheif HEIF/AVIF backends; extension remains only a discovery hint.
+- Static JPEG, PNG, lossy/lossless/alpha WebP, bounded classic 8-bit TIFF, and bounded static 8-bit SDR HEIF/AVIF decode into the shared BGRA8888/Premul representation. Multi-frame encoded images, TIFF pages/high precision, and HEIF/AVIF sequences, `>8` bit precision, or explicit PQ/HLG are rejected recoverably.
 - Fit, physical-pixel 100%, cursor-anchored wheel zoom, pan, and view-state preservation.
 - Same-directory single-file activation and ordered explicit multi-file activation.
 - Natural filename ordering, failure skipping, adjacent preload, latest-wins publication, and a byte-bounded cache.
@@ -60,15 +60,15 @@ R7-C HEIF/AVIF productization remains gated. R7-C-N1 owns a pinned decode-only l
 - Peek renders the canonical image's overlay; Blink selects only the comparison image's own overlay and cannot leak current markup onto it.
 - Traversal-excluded local imaging corpus policy plus hardened async session shutdown/cache release.
 
-Markup save/export, text, dedicated Highlighter, edit handles/layers, selected-reference A/B comparison, language/theme selection, Advanced Metadata, luminance/clipping histogram modes, metadata writing, animated WebP/APNG, high-bit-depth/floating/multipage TIFF, HEIF/HEIC, AVIF, RAW, file associations/thumbnails, and full monitor-aware ICC are not implemented.
+Markup save/export, text, dedicated Highlighter, edit handles/layers, selected-reference A/B comparison, language/theme selection, Advanced Metadata, luminance/clipping histogram modes, metadata writing, animated WebP/APNG, HEIF/AVIF sequences or HDR/high precision, high-bit-depth/floating/multipage TIFF, RAW, file associations/thumbnails, and full monitor-aware ICC are not implemented.
 
 ## Active blockers
 
 - Avalonia's direct-Skia lease used by the accepted initial renderer is explicitly unstable and must remain isolated.
 - Physical-pixel 100% is validated by pure tests at 1.00/1.25/1.50/2.00, but production runtime evidence exists only at `RenderScaling = 1.00`; per-monitor transitions still need real hardware coverage.
 - The monitor-aware color pipeline and raw embedded-profile extraction boundary have not been selected.
-- HEIF/AVIF productization remains blocked until a new hosted native run proves the corrected relocatable macOS arm64 artifact alongside retained Windows/Linux behavior. The first hosted macOS run already proved libheif 1.23.1, HEVC/AV1 decoder presence, encoder absence, and real HEIF/AVIF decode, but its absolute dav1d build-prefix install name made the artifact non-deployable. Retained evidence is in [`experiments/R7-C-HEIF-AVIF-BACKEND-PROBE.md`](experiments/R7-C-HEIF-AVIF-BACKEND-PROBE.md).
-- Codec support beyond JPEG/PNG/static WebP/bounded 8-bit TIFF and a huge/region-rendered-image strategy remain unselected.
+- R7-C cross-platform product evidence still requires the post-push normal Windows/Linux/macOS CI plus native/product jobs running the actual backend on `win-x64`, `linux-x64`, and `osx-arm64`. Local Windows integration is complete; retained history and accepted prerequisite evidence are in [`experiments/R7-C-HEIF-AVIF-BACKEND-PROBE.md`](experiments/R7-C-HEIF-AVIF-BACKEND-PROBE.md).
+- Codec support beyond JPEG/PNG/static WebP/bounded 8-bit TIFF/bounded HEIF/AVIF and a huge/region-rendered-image strategy remain unselected.
 - WebP EXIF orientation is not currently surfaced by SkiaSharp 3.119.4 `SKCodec.EncodedOrigin` in the controlled fixture; Fovium retains encoded geometry rather than adding a second eager orientation parser.
 - Hosted restore-build-test is confirmed on Windows/Linux/macOS for the accepted R7-B commit, including the managed TIFF suite. Manual Linux/macOS Avalonia/Skia runtime behavior remains unvalidated.
 - R4 runtime inspection evidence is Windows-only at `RenderScaling = 1.00`; precise cold non-cached Blink latency and real fractional-DPI interaction still need representative owner hardware evidence.

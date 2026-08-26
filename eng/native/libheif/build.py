@@ -866,7 +866,7 @@ def create_manifest(
         "sources": versions["sources"],
         "binaryFiles": binary_files,
         "buildConfiguration": {
-            "purpose": "decode-only HEIF/AVIF native runtime prerequisite",
+            "purpose": "production decode-only HEIF/AVIF native runtime",
             "enabledCodecs": ["libde265 HEVC decoder", "dav1d AV1 decoder"],
             "pluginLoading": False,
             "encoders": [],

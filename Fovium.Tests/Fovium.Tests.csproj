@@ -24,4 +24,10 @@
     <ProjectReference Include="..\experiments\Fovium.RenderProbe\Fovium.RenderProbe.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="..\eng\native\libheif\fixtures\*.heic;..\eng\native\libheif\fixtures\*.avif"
+             Link="TestData\Heif\%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

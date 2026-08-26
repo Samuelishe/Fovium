@@ -1,11 +1,11 @@
 # Fovium decode-only libheif runtime
 
-Role: Reproducible native build owner for the gated R7-C-N1 prerequisite.
-Read when: Building, auditing, or updating Fovium's experimental HEIF/AVIF native runtime.
+Role: Reproducible native build owner for Fovium's production HEIF/AVIF runtime.
+Read when: Building, auditing, materializing, or updating Fovium's HEIF/AVIF native runtime.
 Authoritative for: Native source pins, build commands, artifact layout, and decode-only supply-chain checks.
-Not authoritative for: Product format support or production decoder registration.
+Not authoritative for: Product format scope or decoder semantics.
 
-This tooling does not add HEIF/AVIF to Fovium. It builds a separate application-local runtime artifact for later R7-C integration.
+This tooling builds the sole production native supply for R7-C. The Fovium project materializes an already built current-RID artifact; it never rebuilds or downloads native code during an ordinary managed build or at application startup.
 
 ## Pinned stack
 
@@ -43,6 +43,16 @@ The same script supports `osx-x64` on a real x64 macOS host. It does not pretend
 
 Each invocation re-extracts source and rebuilds into ignored `artifacts/native/`. Downloaded archives may be reused only after their pinned SHA-256 is revalidated.
 
+## Development materialization
+
+Build the current host RID once with the command above. The resulting directory is `artifacts/native/fovium-libheif-<rid>/`. A normal subsequent:
+
+```powershell
+dotnet build Fovium.sln -c Release
+```
+
+copies its `runtimes/<rid>/native/` files into the Fovium build and publish output. If the artifact does not exist, the managed solution still builds and other formats remain usable; HEIF/AVIF reports its backend unavailable. There is no system-library fallback and no runtime download. Re-run the native build only when materializing a fresh clone/RID or deliberately changing the pinned native stack.
+
 ## Artifact contract
 
 The result is named `fovium-libheif-<rid>` and contains:
@@ -55,6 +65,6 @@ The result is named `fovium-libheif-<rid>` and contains:
 
 Linux uses `$ORIGIN`. macOS packaging deterministically rewrites the three shipped dylib identities to `@rpath`, rewrites their mutual dependencies to the same app-local identities, and gives every real dylib an `@loader_path` runtime search path. Windows resolves the dependency DLLs beside libheif. The dependency audit runs after relocation and verifies the exact macOS deployment target and RID architecture. The build prefix is then renamed out of reach while the smoke runs, on both Unix platforms and Windows, so a passing decode cannot borrow the original install tree. The smoke also fails if libheif loads outside the artifact runtime directory or if an HEVC/AV1 encoder is available.
 
-Final binary hashes are generated only after relocation, dependency audit, and self-contained smoke. Formal macOS signing/notarization is not part of this prerequisite artifact.
+Final binary hashes are generated only after relocation, dependency audit, and self-contained smoke. Formal macOS signing/notarization remains a separate packaging concern.
 
-The artifact is additionally packed as a deterministic ZIP on Windows or deterministic tar.gz on Unix. No runtime is published or referenced by the production application in R7-C-N1.
+The artifact is additionally packed as a deterministic ZIP on Windows or deterministic tar.gz on Unix. R7-C production loads only the materialized app-local runtime for the current proven RID. Formal installer/signing work remains a separate packaging stage.
