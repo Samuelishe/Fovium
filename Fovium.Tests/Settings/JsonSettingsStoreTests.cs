@@ -104,6 +104,7 @@ public sealed class JsonSettingsStoreTests : IDisposable
                 MarkupDockPlacement = new FloatingOverlayPlacement(0.22, 0.84),
                 PhotoInfoPlacement = new FloatingOverlayPlacement(0.17, 0.68),
                 HistogramPlacement = new FloatingOverlayPlacement(0.82, 0.71),
+                ColorPickerPlacement = new FloatingOverlayPlacement(0.79, 0.12),
             },
         };
 
@@ -123,6 +124,8 @@ public sealed class JsonSettingsStoreTests : IDisposable
             new ShortcutGesture("K", ShortcutModifiers.Control),
             result.Settings.Shortcuts.Get(ViewerCommand.ToggleMatte));
         Assert.DoesNotContain("isValid", serialized, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("currentSample", serialized, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("history", serialized, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("isReserved", serialized, StringComparison.OrdinalIgnoreCase);
         Assert.Null(result.Diagnostic);
     }
@@ -452,6 +455,12 @@ public sealed class JsonSettingsStoreTests : IDisposable
         Assert.Equal(
             FloatingOverlayPlacement.BottomRight,
             result.Settings.Presentation.HistogramPlacement);
+        Assert.Equal(
+            FloatingOverlayPlacement.TopRight,
+            result.Settings.Presentation.ColorPickerPlacement);
+        Assert.Equal(
+            new ShortcutGesture("K"),
+            result.Settings.Shortcuts.Get(ViewerCommand.ToggleColorPicker));
         Assert.False(result.RequiresSave);
     }
 

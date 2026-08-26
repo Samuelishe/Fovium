@@ -8,6 +8,7 @@ using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Fovium.Application;
+using Fovium.ColorPicking;
 using Fovium.Diagnostics;
 using Fovium.Histogram;
 using Fovium.Imaging;
@@ -50,9 +51,12 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
     private readonly PresentationOverlaySession _presentation;
     private readonly PhotoInfoCoordinator _photoInfo;
     private readonly HistogramCoordinator _histogram;
+    private readonly ColorPickerSession _colorPicker;
+    private readonly PhotoColorSampler _photoColorSampler;
     private readonly FloatingOverlayInteraction _markupFloatingOverlay;
     private readonly FloatingOverlayInteraction _photoInfoFloatingOverlay;
     private readonly FloatingOverlayInteraction _histogramFloatingOverlay;
+    private readonly FloatingOverlayInteraction _colorPickerFloatingOverlay;
     private readonly Dictionary<ViewerCommand, MenuItem> _commandMenuItems = [];
     private readonly MenuItem _previousMenuItem;
     private readonly MenuItem _nextMenuItem;
@@ -60,6 +64,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
     private readonly MenuItem _matteMenuItem;
     private readonly MenuItem _photoInfoMenuItem;
     private readonly MenuItem _histogramMenuItem;
+    private readonly MenuItem _colorPickerMenuItem;
     private readonly MenuItem _highlightMenuItem;
     private readonly MenuItem _markupMenuItem;
     private PresentationColor? _appliedMarkupColor;
@@ -117,6 +122,10 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             PhotoViewport,
             new SkiaDecodedHistogramReader());
         _histogram.StateChanged += OnHistogramStateChanged;
+        _colorPicker = new ColorPickerSession();
+        _photoColorSampler = new PhotoColorSampler();
+        _colorPicker.Changed += OnColorPickerChanged;
+        PhotoViewport.ColorSampleRequested += OnColorSampleRequested;
         _markupFloatingOverlay = new FloatingOverlayInteraction(
             ViewerRoot,
             MarkupToolsPanel,
@@ -135,17 +144,25 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             HistogramDragHandle,
             settings.Current.Presentation.HistogramPlacement,
             _interactionDiagnostics);
+        _colorPickerFloatingOverlay = new FloatingOverlayInteraction(
+            ViewerRoot,
+            ColorPickerPanel,
+            ColorPickerDragHandle,
+            settings.Current.Presentation.ColorPickerPlacement,
+            _interactionDiagnostics);
         _markupFloatingOverlay.PlacementCommitted += OnMarkupPlacementCommitted;
         _photoInfoFloatingOverlay.PlacementCommitted += OnPhotoInfoPlacementCommitted;
         _histogramFloatingOverlay.PlacementCommitted += OnHistogramPlacementCommitted;
+        _colorPickerFloatingOverlay.PlacementCommitted += OnColorPickerPlacementCommitted;
         _commandExecutor = new ViewerCommandExecutor(this);
         _inspectionCoordinator = new ViewerInspectionCoordinator(PhotoViewport, session, settings);
         _holdController = new ViewerHoldController(new ViewerHoldActionRouter(
             _inspectionCoordinator,
-            new MarkupTemporaryHandHoldAction(_presentation)));
+            new MarkupTemporaryHandHoldAction(_presentation, () => _colorPicker.IsVisible)));
         ConfigureMarkupTools();
         ConfigurePhotoInfo();
         ConfigureHistogram();
+        ConfigureColorPicker();
         _previousMenuItem = CreateCommandMenuItem(
             UiStrings.MenuPrevious,
             ViewerCommand.PreviousImage,
@@ -164,6 +181,10 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             UiStrings.CommandToggleHistogram,
             ViewerCommand.ToggleHistogram,
             FoviumIcon.Histogram);
+        _colorPickerMenuItem = CreateOverlayToggleMenuItem(
+            UiStrings.CommandToggleColorPicker,
+            ViewerCommand.ToggleColorPicker,
+            FoviumIcon.ColorPicker);
         _highlightMenuItem = CreateOverlayToggleMenuItem(
             UiStrings.CommandToggleHighlight,
             ViewerCommand.ToggleHighlight,
@@ -242,6 +263,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         CompleteAmbientSoakTransition();
         _photoInfo.Dispose();
         _histogram.Dispose();
+        _colorPicker.SetVisible(false);
         PhotoViewport.ClearImage();
         try
         {
@@ -302,6 +324,8 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         _settings.SettingsChanged -= OnSettingsChanged;
         _photoInfo.StateChanged -= OnPhotoInfoStateChanged;
         _histogram.StateChanged -= OnHistogramStateChanged;
+        _colorPicker.Changed -= OnColorPickerChanged;
+        PhotoViewport.ColorSampleRequested -= OnColorSampleRequested;
         _stageCoordinator.PresentationChanged -= OnStagePresentationChanged;
         _ambientSoakTrace.Dispose();
         _settings.Dispose();
@@ -334,7 +358,8 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
                     gesture,
                     new ViewerShortcutContext(
                         _presentation.MarkupToolsVisible,
-                        _presentation.HighlightEnabled)) is { } command)
+                        _presentation.HighlightEnabled,
+                        _colorPicker.IsVisible)) is { } command)
             {
                 e.Handled = true;
                 var definition = ViewerCommands.GetDefinition(command);
@@ -400,6 +425,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
                     {
                         _photoInfoMenuItem,
                         _histogramMenuItem,
+                        _colorPickerMenuItem,
                         _highlightMenuItem,
                         _markupMenuItem,
                     },
@@ -448,9 +474,11 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
                 _presentation,
                 _photoInfo.IsVisible,
                 _histogram.IsVisible,
+                _colorPicker.IsVisible,
                 _settings.Current.Shortcuts);
             _photoInfoMenuItem.IsChecked = overlays.PhotoInfoChecked;
             _histogramMenuItem.IsChecked = overlays.HistogramChecked;
+            _colorPickerMenuItem.IsChecked = overlays.ColorPickerChecked;
             _highlightMenuItem.IsChecked = overlays.HighlightChecked;
             _markupMenuItem.IsChecked = overlays.MarkupChecked;
             UpdateCommandGestures();
@@ -758,6 +786,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         _markupFloatingOverlay.SetPlacement(settings.Presentation.MarkupDockPlacement);
         _photoInfoFloatingOverlay.SetPlacement(settings.Presentation.PhotoInfoPlacement);
         _histogramFloatingOverlay.SetPlacement(settings.Presentation.HistogramPlacement);
+        _colorPickerFloatingOverlay.SetPlacement(settings.Presentation.ColorPickerPlacement);
     }
 
     private void ApplyStage(StageSettings stage)
@@ -910,6 +939,12 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         _histogramFloatingOverlay.ApplyPlacement();
     }
 
+    void IViewerCommandTarget.ToggleColorPicker()
+    {
+        _colorPicker.Toggle();
+        _colorPickerFloatingOverlay.ApplyPlacement();
+    }
+
     void IViewerCommandTarget.UndoMarkup() => _presentation.UndoCurrent();
 
     void IViewerCommandTarget.RedoMarkup() => _presentation.RedoCurrent();
@@ -979,6 +1014,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             _markupFloatingOverlay.ApplyPlacement();
             _photoInfoFloatingOverlay.ApplyPlacement();
             _histogramFloatingOverlay.ApplyPlacement();
+            _colorPickerFloatingOverlay.ApplyPlacement();
         };
 
         MarkupHandButton.Content = FoviumIconCatalog.Create(FoviumIcon.Hand);
@@ -1215,6 +1251,152 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         }
     }
 
+    private void ConfigureColorPicker()
+    {
+        ColorPickerTitleText.Text = _localizer[UiStrings.ColorPickerTitle];
+        ColorPickerEmptyText.Text = _localizer[UiStrings.ColorPickerEmpty];
+        ColorPickerRecentText.Text = _localizer[UiStrings.ColorPickerRecent];
+        ColorPickerCloseButton.Content = FoviumIconCatalog.Create(FoviumIcon.Close, 14);
+        ToolTip.SetTip(ColorPickerDragHandle, _localizer[UiStrings.PresentationMovePanel]);
+        ToolTip.SetTip(ColorPickerCloseButton, _localizer[UiStrings.ColorPickerClose]);
+        ColorPickerCloseButton.Click += (_, _) =>
+        {
+            _colorPicker.SetVisible(false);
+            PhotoViewport.Focus();
+        };
+        ColorPickerPanel.AddHandler(
+            PointerPressedEvent,
+            OnMarkupPanelPointerPressed,
+            RoutingStrategies.Tunnel);
+        ApplyColorPickerUi();
+    }
+
+    private void OnColorPickerChanged(object? sender, EventArgs e)
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            ApplyColorPickerUi();
+            return;
+        }
+
+        Dispatcher.UIThread.Post(ApplyColorPickerUi);
+    }
+
+    private void OnColorSampleRequested(object? sender, PhotoSampleRequestedEventArgs e)
+    {
+        if (!_colorPicker.IsVisible)
+        {
+            return;
+        }
+
+        try
+        {
+            _colorPicker.Commit(_photoColorSampler.Sample(e.Image.Image, e.OrientedPixel));
+        }
+        catch (InvalidDataException exception)
+        {
+            Debug.WriteLine($"Fovium Color Picker catalog failure: {exception.Message}");
+        }
+        catch (InvalidOperationException exception)
+        {
+            Debug.WriteLine($"Fovium Color Picker sample failure: {exception.Message}");
+        }
+    }
+
+    private void ApplyColorPickerUi()
+    {
+        if (!IsInitialized || _closed)
+        {
+            return;
+        }
+
+        PhotoViewport.SetColorPickerEnabled(_colorPicker.IsVisible);
+        ColorPickerPanel.IsVisible = _colorPicker.IsVisible;
+        var sample = _colorPicker.CurrentSample;
+        ColorPickerEmptyText.IsVisible = sample is null;
+        ColorPickerSampleContent.IsVisible = sample is not null;
+        ColorPickerHistoryRows.Children.Clear();
+        if (sample is null)
+        {
+            return;
+        }
+
+        ColorPickerMainSwatch.Background = CreateSampleBrush(sample);
+        ColorPickerMainName.Text = GetSampleName(sample);
+        ColorPickerMainHex.Text = FormatSampleCode(sample);
+        ColorPickerMainComponents.Text = FormatSampleComponents(sample);
+        SetAccuracyToolTip(ColorPickerMainHex, sample);
+        foreach (var historySample in _colorPicker.History)
+        {
+            ColorPickerHistoryRows.Children.Add(CreateColorHistoryRow(historySample));
+        }
+
+        _colorPickerFloatingOverlay.ApplyPlacement();
+        Dispatcher.UIThread.Post(
+            _colorPickerFloatingOverlay.ApplyPlacement,
+            DispatcherPriority.Loaded);
+    }
+
+    private Control CreateColorHistoryRow(ColorSample sample)
+    {
+        var row = new StackPanel
+        {
+            Orientation = Avalonia.Layout.Orientation.Horizontal,
+            Spacing = 7,
+        };
+        row.Children.Add(new Border
+        {
+            Width = 16,
+            Height = 16,
+            CornerRadius = new CornerRadius(3),
+            BorderBrush = new SolidColorBrush(Color.FromArgb(0x60, 0xFF, 0xFF, 0xFF)),
+            BorderThickness = new Thickness(1),
+            Background = CreateSampleBrush(sample),
+        });
+        var code = new TextBlock
+        {
+            Width = 92,
+            Text = FormatSampleCode(sample),
+            Opacity = 0.88,
+        };
+        SetAccuracyToolTip(code, sample);
+        row.Children.Add(code);
+        row.Children.Add(new TextBlock
+        {
+            Text = GetSampleName(sample),
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            MaxWidth = 155,
+        });
+        return row;
+    }
+
+    private static IBrush CreateSampleBrush(ColorSample sample) => new SolidColorBrush(
+        Color.FromArgb(sample.Alpha, sample.Red, sample.Green, sample.Blue));
+
+    private string GetSampleName(ColorSample sample) => sample.IsTransparent
+        ? _localizer[UiStrings.ColorPickerTransparent]
+        : sample.CanonicalName ?? _localizer[UiStrings.ColorPickerTransparent];
+
+    private static string FormatSampleCode(ColorSample sample) =>
+        sample.Accuracy == ColorSampleAccuracy.Approximate ? $"≈ {sample.Hex}" : sample.Hex;
+
+    private string FormatSampleComponents(ColorSample sample) => string.Format(
+        System.Globalization.CultureInfo.InvariantCulture,
+        _localizer[sample.Alpha == byte.MaxValue
+            ? UiStrings.ColorPickerRgb
+            : UiStrings.ColorPickerRgba],
+        sample.Red,
+        sample.Green,
+        sample.Blue,
+        sample.Alpha);
+
+    private void SetAccuracyToolTip(Control control, ColorSample sample) =>
+        ToolTip.SetTip(
+            control,
+            sample.Accuracy == ColorSampleAccuracy.Approximate
+                ? _localizer[UiStrings.ColorPickerApproximate]
+                : null);
+
     private async void OnMarkupPlacementCommitted(FloatingOverlayPlacement placement)
     {
         await PersistOverlayPlacementAsync(
@@ -1231,6 +1413,12 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
     {
         await PersistOverlayPlacementAsync(
             _settings.Current.Presentation with { HistogramPlacement = placement });
+    }
+
+    private async void OnColorPickerPlacementCommitted(FloatingOverlayPlacement placement)
+    {
+        await PersistOverlayPlacementAsync(
+            _settings.Current.Presentation with { ColorPickerPlacement = placement });
     }
 
     private async Task PersistOverlayPlacementAsync(PresentationSettings presentation)

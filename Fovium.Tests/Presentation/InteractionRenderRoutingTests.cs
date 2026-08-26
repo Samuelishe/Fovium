@@ -13,6 +13,17 @@ public sealed class InteractionRenderRoutingTests
     }
 
     [Fact]
+    public void ColorPickerMotionAndCommitStayOffPhotoAndMarkupLayers()
+    {
+        Assert.Equal(
+            InteractionRenderLayer.Pointer,
+            InteractionRenderRouting.ForColorPickerPointerMotion());
+        Assert.Equal(
+            InteractionRenderLayer.FloatingUi,
+            InteractionRenderRouting.ForColorPickerSampleCommit());
+    }
+
+    [Fact]
     public void DraftContentChangedDirtiesOnlyMarkup()
     {
         Assert.Equal(

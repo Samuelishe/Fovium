@@ -38,6 +38,7 @@ Do not load every document by default. If documents conflict, follow the owner n
 | Supported formats or per-format capabilities | [`docs/FORMAT-SUPPORT.md`](docs/FORMAT-SUPPORT.md) + [`docs/IMAGING-PIPELINE.md`](docs/IMAGING-PIPELINE.md) |
 | Cache, preload, limits, or concurrency | [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md) + relevant imaging owner |
 | ICC, color, or display profiles | [`docs/COLOR-MANAGEMENT.md`](docs/COLOR-MANAGEMENT.md) + [`docs/RENDERING.md`](docs/RENDERING.md) |
+| Color Picker, sampling, color names, or picker history | [`docs/COLOR-PICKER.md`](docs/COLOR-PICKER.md) + [`docs/IMAGING-PIPELINE.md`](docs/IMAGING-PIPELINE.md) |
 | Architecture or dependencies | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |
 | C# implementation | [`docs/CODING-GUIDELINES.md`](docs/CODING-GUIDELINES.md) + affected area owner |
 | Tests or test execution | [`docs/TEST-EXECUTION.md`](docs/TEST-EXECUTION.md) + [`docs/CODING-GUIDELINES.md`](docs/CODING-GUIDELINES.md) |

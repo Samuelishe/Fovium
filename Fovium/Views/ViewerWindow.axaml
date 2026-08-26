@@ -164,6 +164,75 @@
                                     ClipToBounds="True" />
       </StackPanel>
     </Border>
+    <Border x:Name="ColorPickerPanel"
+            IsVisible="False"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Top"
+            Width="300"
+            MaxHeight="540"
+            Padding="10,8,10,10"
+            CornerRadius="8"
+            Background="#E6202020"
+            BorderBrush="#604A4A4A"
+            BorderThickness="1">
+      <StackPanel Spacing="7">
+        <Grid ColumnDefinitions="Auto,*,Auto" Height="26">
+          <Border x:Name="ColorPickerDragHandle"
+                  Grid.Column="0"
+                  Width="22"
+                  Cursor="SizeAll"
+                  Background="Transparent"
+                  CornerRadius="3">
+            <TextBlock Text="⠿"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Opacity="0.65" />
+          </Border>
+          <TextBlock x:Name="ColorPickerTitleText"
+                     Grid.Column="1"
+                     VerticalAlignment="Center"
+                     FontWeight="SemiBold"
+                     Opacity="0.88" />
+          <Button x:Name="ColorPickerCloseButton"
+                  Grid.Column="2"
+                  Width="26"
+                  Height="26"
+                  Padding="5"
+                  Focusable="False" />
+        </Grid>
+        <TextBlock x:Name="ColorPickerEmptyText"
+                   Margin="4,6"
+                   TextWrapping="Wrap"
+                   Opacity="0.78" />
+        <StackPanel x:Name="ColorPickerSampleContent"
+                    IsVisible="False"
+                    Spacing="7">
+          <Grid ColumnDefinitions="64,*" ColumnSpacing="9">
+            <Border Grid.Column="0"
+                    Width="58"
+                    Height="58"
+                    CornerRadius="6"
+                    Background="#FF505050"
+                    BorderBrush="#60FFFFFF"
+                    BorderThickness="1">
+              <Border x:Name="ColorPickerMainSwatch" Margin="3" CornerRadius="4" />
+            </Border>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+              <TextBlock x:Name="ColorPickerMainName"
+                         FontWeight="SemiBold"
+                         TextWrapping="Wrap" />
+              <TextBlock x:Name="ColorPickerMainHex" Opacity="0.92" />
+              <TextBlock x:Name="ColorPickerMainComponents" Opacity="0.78" />
+            </StackPanel>
+          </Grid>
+          <Separator Height="1" />
+          <TextBlock x:Name="ColorPickerRecentText"
+                     FontWeight="SemiBold"
+                     Opacity="0.78" />
+          <StackPanel x:Name="ColorPickerHistoryRows" Spacing="3" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
     <Border x:Name="ErrorSurface"
             IsVisible="False"
             IsHitTestVisible="False"

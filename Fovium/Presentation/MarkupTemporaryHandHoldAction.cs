@@ -2,7 +2,9 @@ using Fovium.Input;
 
 namespace Fovium.Presentation;
 
-internal sealed class MarkupTemporaryHandHoldAction(PresentationOverlaySession session)
+internal sealed class MarkupTemporaryHandHoldAction(
+    PresentationOverlaySession session,
+    Func<bool>? allowWithoutMarkupTools = null)
     : IViewerHoldAction
 {
     public Task BeginAsync(ViewerCommand command, CancellationToken cancellationToken)
@@ -13,7 +15,7 @@ internal sealed class MarkupTemporaryHandHoldAction(PresentationOverlaySession s
             throw new ArgumentOutOfRangeException(nameof(command));
         }
 
-        session.BeginTemporaryHand();
+        session.BeginTemporaryHand(allowWithoutMarkupTools?.Invoke() == true);
         return Task.CompletedTask;
     }
 

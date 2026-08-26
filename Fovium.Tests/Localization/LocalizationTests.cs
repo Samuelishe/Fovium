@@ -210,4 +210,39 @@ public sealed class LocalizationTests
         Assert.Equal(title, localizer[UiStrings.HistogramTitle]);
         Assert.Equal(close, localizer[UiStrings.HistogramClose]);
     }
+
+    [Theory]
+    [InlineData(
+        "en-US",
+        "Color Picker",
+        "Click a color in the photo",
+        "Recent",
+        "Transparent",
+        "Approximate reference-sRGB color")]
+    [InlineData(
+        "ru-RU",
+        "Пипетка",
+        "Щёлкните цвет на фотографии",
+        "Недавние",
+        "Прозрачный",
+        "Приблизительный цвет в эталонном sRGB")]
+    public void ColorPickerCatalogContainsLocalizedChromeAndAccuracySemantics(
+        string cultureName,
+        string title,
+        string empty,
+        string recent,
+        string transparent,
+        string approximate)
+    {
+        var localizer = Localizer.Create(CultureInfo.GetCultureInfo(cultureName));
+
+        Assert.Equal(title, localizer[UiStrings.CommandToggleColorPicker]);
+        Assert.Equal(title, localizer[UiStrings.ColorPickerTitle]);
+        Assert.Equal(empty, localizer[UiStrings.ColorPickerEmpty]);
+        Assert.Equal(recent, localizer[UiStrings.ColorPickerRecent]);
+        Assert.Equal(transparent, localizer[UiStrings.ColorPickerTransparent]);
+        Assert.Equal(approximate, localizer[UiStrings.ColorPickerApproximate]);
+        Assert.Contains("{0}", localizer[UiStrings.ColorPickerRgb], StringComparison.Ordinal);
+        Assert.Contains("{3}", localizer[UiStrings.ColorPickerRgba], StringComparison.Ordinal);
+    }
 }

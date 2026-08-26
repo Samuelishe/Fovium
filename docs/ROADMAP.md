@@ -89,17 +89,17 @@ Accepted outcome at `0.1.0.0005`: one shared two-slot decoder dispatcher separat
 
 ## R7-C — HEIF/AVIF backend and native packaging gate
 
-Owner-review-ready outcome at `0.1.0.0006`: one focused direct-interop backend resolves only Fovium's reproducible app-local libheif 1.23.1/libde265 1.1.1/dav1d 1.5.4 runtime. It supports one static 8-bit SDR HEVC or AV1 primary with proven alpha and container transforms, rejects higher precision, PQ/HLG, sequences, and ambiguous collections, and converges into the existing shared decode/cache/presentation path. The accepted R7-C-N1 prerequisite remains retained history; post-push cross-platform product evidence is still required.
+Accepted outcome at `0.1.0.0006`: one focused direct-interop backend resolves only Fovium's reproducible app-local libheif 1.23.1/libde265 1.1.1/dav1d 1.5.4 runtime. It supports one static 8-bit SDR HEVC or AV1 primary with proven alpha and container transforms, rejects higher precision, PQ/HLG, sequences, and ambiguous collections, and converges into the existing shared decode/cache/presentation path. Normal hosted CI and native/product integration are accepted green on the required Windows/Linux/macOS and `win-x64`/`linux-x64`/`osx-arm64` matrices.
 
-## Offline Color Picker / Eyedropper
+## R8-A — Offline Color Picker / Eyedropper
 
-Owner-selected next product stage after R7-C acceptance, before monitor Color Management. It is click-to-sample: pointer movement must not continuously overwrite the selected sample. A small movable/on-demand overlay shows the selected swatch, HEX, RGB, and a human-readable nearest name from a local/offline curated database targeting roughly 1,500–2,000 useful names, with perceptual matching such as OKLab. The same overlay shows the ten most recently clicked samples as swatch/code/name rows; the eleventh removes the oldest and the remaining rows shift naturally. History is session-only. No permanent sample database, cloud/API, palette library, or editor is introduced.
+Owner-review-ready outcome at `0.1.0.0007`: hidden-by-default click-to-sample photographic inspection with a compact movable `K` overlay, source-pixel geometry, reference-sRGB HEX/RGB(A), correct premultiplied-alpha handling, and one nearest canonical name from a deterministic embedded 1,800-entry catalog using OKLab distance. Pointer movement never commits. The same per-window session retains exactly the latest ten clicks oldest-to-newest across navigation, Peek/Blink, and hide/reopen; no selected value/history is persisted. Picker input precedes markup, temporary Hand and wheel retain their behavior, and no permanent palette, editor, cloud/API, or runtime network path is added.
 
-Core Fovium functionality remains offline: decode, navigation, Stage/presentation, Photo Info, Histogram, this future Color Picker and color-name matching, settings, and markup require no runtime network service. Development-time source/test-vector downloads do not change that product principle. Do not implement the Color Picker automatically as part of R7-C.
+Core Fovium functionality remains offline: decode, navigation, Stage/presentation, Photo Info, Histogram, Color Picker/name matching, settings, and markup require no runtime network service. Development-time source/test-vector downloads do not change that product principle.
 
 ## Monitor Color Management
 
-Follows the Offline Color Picker stage. It remains separately scoped and unimplemented.
+Owner-selected next product stage after R8-A. It remains separately scoped and unimplemented.
 
 ## Later / separate platform milestones
 

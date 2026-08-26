@@ -28,6 +28,8 @@ internal interface IViewerCommandTarget
 
     void ToggleHistogram();
 
+    void ToggleColorPicker();
+
     void UndoMarkup();
 
     void RedoMarkup();
@@ -80,6 +82,7 @@ internal sealed class ViewerCommandExecutor(IViewerCommandTarget target)
             ViewerCommand.ToggleMarkupTools => Execute(target.ToggleMarkupTools),
             ViewerCommand.TogglePhotoInfo => Execute(target.TogglePhotoInfo),
             ViewerCommand.ToggleHistogram => Execute(target.ToggleHistogram),
+            ViewerCommand.ToggleColorPicker => Execute(target.ToggleColorPicker),
             ViewerCommand.MarkupUndo => Execute(target.UndoMarkup),
             ViewerCommand.MarkupRedo => Execute(target.RedoMarkup),
             ViewerCommand.ClearMarkup => Execute(target.ClearMarkup),

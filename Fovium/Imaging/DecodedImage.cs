@@ -253,6 +253,36 @@ internal sealed class DecodedImage : IRetainedResource
 
         public ReadOnlySpan<byte> PixelBytes => GetBitmap().GetPixelSpan();
 
+        public unsafe bool TryReadSrgbUnpremultiplied(
+            int sourceX,
+            int sourceY,
+            Span<byte> destinationBgra)
+        {
+            if (destinationBgra.Length < 4 ||
+                sourceX < 0 || sourceX >= Width ||
+                sourceY < 0 || sourceY >= Height)
+            {
+                return false;
+            }
+
+            using var srgb = SKColorSpace.CreateSrgb();
+            var targetInfo = new SKImageInfo(
+                1,
+                1,
+                SKColorType.Bgra8888,
+                SKAlphaType.Unpremul,
+                srgb);
+            fixed (byte* destination = destinationBgra)
+            {
+                return GetLease().Value.Image.ReadPixels(
+                    targetInfo,
+                    (IntPtr)destination,
+                    4,
+                    sourceX,
+                    sourceY);
+            }
+        }
+
         public PixelLease Acquire() => new(GetLease().Acquire());
 
         public void Dispose() => Interlocked.Exchange(ref _lease, null)?.Dispose();

@@ -1,5 +1,6 @@
 using Fovium.Imaging;
 using Fovium.Loading;
+using Fovium.Rendering;
 
 namespace Fovium.Viewer;
 
@@ -8,6 +9,15 @@ internal interface IPresentedImageSource
     event EventHandler? PresentedImageChanged;
 
     bool TryAcquirePresentedImage(out PresentedImageLease? image);
+}
+
+internal sealed class PhotoSampleRequestedEventArgs(
+    PresentedImageLease image,
+    PixelPoint orientedPixel) : EventArgs
+{
+    public PresentedImageLease Image { get; } = image;
+
+    public PixelPoint OrientedPixel { get; } = orientedPixel;
 }
 
 internal sealed class PresentedImageLease : IDisposable

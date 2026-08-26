@@ -34,6 +34,7 @@ Fovium displays its version as:
 0.1.0.0004
 0.1.0.0005
 0.1.0.0006
+0.1.0.0007
 ```
 
 CLR assembly and file-version fields are numeric and do not preserve meaningful leading zeros. Their early-line equivalents are `0.0.0.1` through `0.0.0.13`; the promoted milestone is `0.1.0.0`. The human-facing informational version preserves the four-digit BUILD.
@@ -90,6 +91,7 @@ The displayed checkpoint is not a substitute for a Git commit, tag, or branch. G
 | `0.1.0.0004` | R7-A | Project-owned format capability foundation and static WebP support |
 | `0.1.0.0005` | R7-B | Shared decoder-backend boundary and bounded static 8-bit TIFF support |
 | `0.1.0.0006` | R7-C | Bounded static 8-bit SDR HEIF/HEIC and AVIF support through the app-owned decode-only runtime |
+| `0.1.0.0007` | R8-A | Offline click-to-sample photographic Color Picker with reference-sRGB values, local OKLab names, and ten-click session history |
 
 The `0.0.0.xxxx` line records the completed foundation and early product-construction checkpoints. The explicit owner-controlled `0.1.0.0000` transition marks the first substantial usable Fovium alpha; it does not claim feature completeness, a stable API, production release status, or `1.0` quality. Current implementation state remains owned by [`PROJECT-STATE.md`](PROJECT-STATE.md).
 
@@ -98,9 +100,9 @@ The `0.0.0.xxxx` line records the completed foundation and early product-constru
 The root `Directory.Build.props` is the canonical source for the current components and formatted display identity. It supplies the production `Fovium` assembly with:
 
 ```text
-InformationalVersion = 0.1.0.0006
-AssemblyVersion      = 0.1.0.6
-FileVersion          = 0.1.0.6
+InformationalVersion = 0.1.0.0007
+AssemblyVersion      = 0.1.0.7
+FileVersion          = 0.1.0.7
 ```
 
 From that source:

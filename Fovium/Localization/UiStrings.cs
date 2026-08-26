@@ -65,6 +65,7 @@ internal static class UiStrings
     public const string CommandToggleMarkupTools = "command.toggleMarkupTools";
     public const string CommandTogglePhotoInfo = "command.togglePhotoInfo";
     public const string CommandToggleHistogram = "command.toggleHistogram";
+    public const string CommandToggleColorPicker = "command.toggleColorPicker";
     public const string CommandMarkupUndo = "command.markupUndo";
     public const string CommandMarkupRedo = "command.markupRedo";
     public const string CommandClearMarkup = "command.clearMarkup";
@@ -115,6 +116,14 @@ internal static class UiStrings
     public const string PhotoInfoClose = "photoInfo.close";
     public const string HistogramTitle = "histogram.title";
     public const string HistogramClose = "histogram.close";
+    public const string ColorPickerTitle = "colorPicker.title";
+    public const string ColorPickerClose = "colorPicker.close";
+    public const string ColorPickerEmpty = "colorPicker.empty";
+    public const string ColorPickerRecent = "colorPicker.recent";
+    public const string ColorPickerTransparent = "colorPicker.transparent";
+    public const string ColorPickerApproximate = "colorPicker.approximate";
+    public const string ColorPickerRgb = "colorPicker.rgb";
+    public const string ColorPickerRgba = "colorPicker.rgba";
     public const string SettingsScaleOnImageChange = "settings.scaleOnImageChange";
     public const string SettingsKeepCurrentScale = "settings.keepCurrentScale";
     public const string SettingsFitEachImage = "settings.fitEachImage";
@@ -145,6 +154,7 @@ internal static class UiStrings
         ViewerCommand.ToggleMarkupTools => CommandToggleMarkupTools,
         ViewerCommand.TogglePhotoInfo => CommandTogglePhotoInfo,
         ViewerCommand.ToggleHistogram => CommandToggleHistogram,
+        ViewerCommand.ToggleColorPicker => CommandToggleColorPicker,
         ViewerCommand.MarkupUndo => CommandMarkupUndo,
         ViewerCommand.MarkupRedo => CommandMarkupRedo,
         ViewerCommand.ClearMarkup => CommandClearMarkup,

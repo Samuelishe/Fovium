@@ -40,6 +40,21 @@ public sealed class DrawingCursorPresentationTests
         Assert.Equal(7, cursor.CrosshairHalfExtentDip * renderScaling, 10);
     }
 
+    [Theory]
+    [InlineData(1.00)]
+    [InlineData(1.25)]
+    [InlineData(1.50)]
+    [InlineData(2.00)]
+    public void ColorPickerCrosshairRetainsFixedPhysicalExtent(double renderScaling)
+    {
+        var cursor = DrawingCursorPresentation.CreateColorPicker(renderScaling);
+
+        Assert.Equal(DrawingCursorKind.Precision, cursor.Kind);
+        Assert.Equal(14, cursor.DiameterDip * renderScaling, 10);
+        Assert.Equal(7, cursor.CrosshairHalfExtentDip * renderScaling, 10);
+        Assert.Equal(new PresentationColor(255, 255, 255), cursor.Color);
+    }
+
     [Fact]
     public void MarkupCursorSuppressesHighlightAndUsesActiveBrushStyle()
     {

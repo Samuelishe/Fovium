@@ -34,6 +34,12 @@
     <EmbeddedResource Include="..\resources\localization\ui\*.json"
                       Link="Localization\%(Filename)%(Extension)"
                       LogicalName="Fovium.Localization.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\resources\color-names\fovium-color-names.json"
+                      Link="ColorNames\fovium-color-names.json"
+                      LogicalName="Fovium.ColorNames.fovium-color-names.json" />
+    <EmbeddedResource Include="..\resources\color-names\LICENSE.meodai-color-names.txt"
+                      Link="ColorNames\LICENSE.meodai-color-names.txt"
+                      LogicalName="Fovium.ColorNames.LICENSE.meodai-color-names.txt" />
   </ItemGroup>
 
   <ItemGroup>

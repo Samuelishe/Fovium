@@ -47,4 +47,28 @@ public sealed class OrientationTransformTests
 
         Assert.Equal(new PixelSize(expectedWidth, expectedHeight), oriented);
     }
+
+    [Theory]
+    [InlineData(1, 0, 0, 0, 0)]
+    [InlineData(2, 0, 0, 2, 0)]
+    [InlineData(3, 0, 0, 2, 1)]
+    [InlineData(4, 0, 0, 0, 1)]
+    [InlineData(5, 0, 0, 0, 0)]
+    [InlineData(6, 0, 0, 0, 1)]
+    [InlineData(7, 0, 0, 2, 1)]
+    [InlineData(8, 0, 0, 2, 0)]
+    public void OrientedTopLeftMapsToExpectedEncodedPixelExactlyOnce(
+        int value,
+        int orientedX,
+        int orientedY,
+        int encodedX,
+        int encodedY)
+    {
+        var actual = OrientationTransform.OrientedToEncodedPixel(
+            new PixelSize(3, 2),
+            (ExifOrientation)value,
+            new PixelPoint(orientedX, orientedY));
+
+        Assert.Equal(new PixelPoint(encodedX, encodedY), actual);
+    }
 }

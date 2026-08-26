@@ -21,6 +21,45 @@ internal static class OrientationTransform
             ExifOrientation.Transverse or ExifOrientation.Rotate270
             ? new PixelSize(encodedSize.Height, encodedSize.Width)
             : encodedSize;
+
+    public static PixelPoint OrientedToEncodedPixel(
+        PixelSize encodedSize,
+        ExifOrientation orientation,
+        PixelPoint orientedPixel)
+    {
+        if (!encodedSize.IsValid)
+        {
+            throw new ArgumentOutOfRangeException(nameof(encodedSize));
+        }
+
+        var orientedSize = GetOrientedSize(encodedSize, orientation);
+        if (orientedPixel.X < 0 || orientedPixel.X >= orientedSize.Width ||
+            orientedPixel.Y < 0 || orientedPixel.Y >= orientedSize.Height)
+        {
+            throw new ArgumentOutOfRangeException(nameof(orientedPixel));
+        }
+
+        return orientation switch
+        {
+            ExifOrientation.Normal => orientedPixel,
+            ExifOrientation.MirrorHorizontal =>
+                new PixelPoint(encodedSize.Width - 1 - orientedPixel.X, orientedPixel.Y),
+            ExifOrientation.Rotate180 => new PixelPoint(
+                encodedSize.Width - 1 - orientedPixel.X,
+                encodedSize.Height - 1 - orientedPixel.Y),
+            ExifOrientation.MirrorVertical =>
+                new PixelPoint(orientedPixel.X, encodedSize.Height - 1 - orientedPixel.Y),
+            ExifOrientation.Transpose => new PixelPoint(orientedPixel.Y, orientedPixel.X),
+            ExifOrientation.Rotate90 =>
+                new PixelPoint(orientedPixel.Y, encodedSize.Height - 1 - orientedPixel.X),
+            ExifOrientation.Transverse => new PixelPoint(
+                encodedSize.Width - 1 - orientedPixel.Y,
+                encodedSize.Height - 1 - orientedPixel.X),
+            ExifOrientation.Rotate270 =>
+                new PixelPoint(encodedSize.Width - 1 - orientedPixel.Y, orientedPixel.X),
+            _ => throw new ArgumentOutOfRangeException(nameof(orientation)),
+        };
+    }
 }
 
 internal readonly record struct OrientationAffine(

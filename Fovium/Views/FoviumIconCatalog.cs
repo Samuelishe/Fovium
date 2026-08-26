@@ -27,6 +27,7 @@ internal enum FoviumIcon
     Clear,
     Info,
     Histogram,
+    ColorPicker,
 }
 
 internal static class FoviumIconCatalog
@@ -62,6 +63,7 @@ internal static class FoviumIconCatalog
         FoviumIcon.Clear => "M3,4 L13,4 L12,15 L4,15 Z M5,1 L11,1 L12,3 L4,3 Z M6,6 L7,6 L7,13 L6,13 Z M9,6 L10,6 L10,13 L9,13 Z",
         FoviumIcon.Info => "M8,1 A7,7 0 1 0 8,15 A7,7 0 1 0 8,1 M7,4 L9,4 L9,6 L7,6 Z M7,7 L9,7 L9,12 L10,12 L10,14 L6,14 L6,12 L7,12 Z",
         FoviumIcon.Histogram => "M1,14 L1,9 L3,9 L3,14 Z M4,14 L4,5 L6,5 L6,14 Z M7,14 L7,2 L9,2 L9,14 Z M10,14 L10,6 L12,6 L12,14 Z M13,14 L13,10 L15,10 L15,14 Z",
+        FoviumIcon.ColorPicker => "M11,1 L15,5 L12,8 L13,9 L11,11 L10,10 L5,15 L1,15 L1,11 L6,6 L5,5 L7,3 L8,4 Z M3,12 L3,13 L4,13 L9,8 L8,7 Z",
         _ => throw new ArgumentOutOfRangeException(nameof(icon)),
     };
 }

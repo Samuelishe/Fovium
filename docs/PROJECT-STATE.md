@@ -7,13 +7,13 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R7-C is owner-review-ready at `0.1.0.0006`. One focused production backend uses only Fovium's app-local libheif 1.23.1/libde265 1.1.1/dav1d 1.5.4 runtime for bounded static 8-bit SDR HEIF/HEIC and AVIF. HEVC/AV1 identity comes from content; proven alpha and container transforms converge to the common BGRA8888/Premul `DecodedImage`; higher precision, PQ/HLG, and sequences are rejected rather than silently reduced. Skia JPEG/PNG/static WebP and managed bounded TIFF retain the same shared two-slot dispatcher and common viewer path. Version semantics are owned by [`VERSIONING.md`](VERSIONING.md); current format truth is owned by [`FORMAT-SUPPORT.md`](FORMAT-SUPPORT.md).
+R8-A is owner-review-ready at `0.1.0.0007`. Fovium now has a hidden-by-default offline photographic Color Picker: configurable `K` and the checked Overlays menu share one session state; pointer movement never commits; a photograph click fixes one retained source-pixel sample as reference-sRGB HEX/RGB(A), correct unpremultiplied alpha, and one deterministic nearest human name from an embedded curated 1,800-entry OKLab catalog. Its duplicate-preserving history is exactly the latest ten clicks, oldest-to-newest, retained across navigation/Peek/Blink/hide-reopen in one viewer window and never persisted. Monitor-aware Color Management remains unimplemented. Version semantics are owned by [`VERSIONING.md`](VERSIONING.md); picker semantics are owned by [`COLOR-PICKER.md`](COLOR-PICKER.md).
 
 The retained R0 probe remains experimental evidence under `experiments/Fovium.RenderProbe`. Production code is the single `Fovium` assembly and does not depend on the experiment. The accepted R7-B hosted matrix restored, built, and tested successfully on Windows, Ubuntu, and macOS at commit `d5de440`; this is portability evidence for the .NET solution and managed TIFF backend, not manual Linux/macOS viewer/render validation. Local visual acceptance remains Windows at `RenderScaling = 1.00`.
 
 ## Current focus
 
-R7-C local productization is complete pending owner review and post-push hosted evidence. Its R7-C-N1 prerequisite remains owner-accepted at `c4dba80bd23534f372ae09f9285c0e1c5991d5e3`: the pinned decode-only source build passed build, audit, prefix-independent load, and real HEIF/AVIF decode on `win-x64`, `linux-x64`, and `osx-arm64`; macOS evidence is arm64, targets macOS 14.0, uses `@rpath` plus `@loader_path`, and has no build-prefix dependency. After R7-C acceptance, the owner-selected next product stage is the bounded Offline Color Picker described in [`ROADMAP.md`](ROADMAP.md), followed by monitor Color Management. Neither is implemented here.
+R7-C and its R7-C-N1 prerequisite are owner-accepted. The accepted prerequisite commit is `c4dba80bd23534f372ae09f9285c0e1c5991d5e3`, and normal hosted CI plus native/product integration are green across Windows/Linux/macOS and `win-x64`/`linux-x64`/`osx-arm64`. R8-A implementation and local Windows evidence are complete pending owner review. The next selected product stage after acceptance is monitor Color Management; it has not begun.
 
 ## Implemented application functionality
 
@@ -56,18 +56,21 @@ R7-C local productization is complete pending owner review and post-push hosted 
 - Read-only `MetadataExtractor` adapter behind project-owned typed photographic metadata, parsing retained encoded bytes lazily off the UI thread with bounded session cache and latest-wins presented-image authority.
 - Session-local Photo Info toggle on configurable `I`, checked Overlays menu entry, immediate oriented dimensions/MP/filename/format/encoded-size data, sparse camera/lens/exposure/capture details, and normalized persisted bottom-left floating placement.
 - Session-local Histogram toggle on configurable `G`, checked Overlays menu entry, normalized persisted bottom-right placement, and a lightweight 256-bin RGB plot using one shared channel scale.
+- Session-local Color Picker toggle on configurable `K`, checked Overlays menu entry, compact normalized persisted top-right placement, fixed click-to-sample semantics, and lightweight precision pointer feedback that does not redraw the photograph.
+- Exact presented-image source sampling across Fit/100%/zoom/pan/Peek/Blink and all EXIF orientations, with BGRA premultiplied-alpha recovery, reference-sRGB single-pixel normalization where trustworthy, and an Approximate state where source color meaning is known but unpreserved.
+- Embedded offline 1,800-entry curated color-name catalog with standard OKLab nearest matching, stable tie order, localized Transparent/Approximate semantics, and a duplicate-preserving fixed ten-click per-window FIFO that is never serialized.
 - Lazy retained-pixel histogram acquisition with exact BGRA8888/Premul counting below the work limit, deterministic whole-image sampling up to two million locations above it, transparent-pixel exclusion, partial-alpha unpremultiplication, cooperative cancellation, latest-wins publication, and a 128-entry session LRU.
 - Peek renders the canonical image's overlay; Blink selects only the comparison image's own overlay and cannot leak current markup onto it.
 - Traversal-excluded local imaging corpus policy plus hardened async session shutdown/cache release.
 
-Markup save/export, text, dedicated Highlighter, edit handles/layers, selected-reference A/B comparison, language/theme selection, Advanced Metadata, luminance/clipping histogram modes, metadata writing, animated WebP/APNG, HEIF/AVIF sequences or HDR/high precision, high-bit-depth/floating/multipage TIFF, RAW, file associations/thumbnails, and full monitor-aware ICC are not implemented.
+Markup save/export, text, dedicated Highlighter, edit handles/layers, persistent palettes/color libraries, selected-reference A/B comparison, language/theme selection, Advanced Metadata, luminance/clipping histogram modes, metadata writing, animated WebP/APNG, HEIF/AVIF sequences or HDR/high precision, high-bit-depth/floating/multipage TIFF, RAW, file associations/thumbnails, and full monitor-aware ICC are not implemented.
 
 ## Active blockers
 
 - Avalonia's direct-Skia lease used by the accepted initial renderer is explicitly unstable and must remain isolated.
 - Physical-pixel 100% is validated by pure tests at 1.00/1.25/1.50/2.00, but production runtime evidence exists only at `RenderScaling = 1.00`; per-monitor transitions still need real hardware coverage.
 - The monitor-aware color pipeline and raw embedded-profile extraction boundary have not been selected.
-- R7-C cross-platform product evidence still requires the post-push normal Windows/Linux/macOS CI plus native/product jobs running the actual backend on `win-x64`, `linux-x64`, and `osx-arm64`. Local Windows integration is complete; retained history and accepted prerequisite evidence are in [`experiments/R7-C-HEIF-AVIF-BACKEND-PROBE.md`](experiments/R7-C-HEIF-AVIF-BACKEND-PROBE.md).
+- R8-A Color Picker visual/input smoke is Windows-only at `RenderScaling = 1.00`; pure geometry covers 1.00/1.25/1.50/2.00, but real fractional-DPI and Linux/macOS cursor/panel/input feel remain unvalidated.
 - Codec support beyond JPEG/PNG/static WebP/bounded 8-bit TIFF/bounded HEIF/AVIF and a huge/region-rendered-image strategy remain unselected.
 - WebP EXIF orientation is not currently surfaced by SkiaSharp 3.119.4 `SKCodec.EncodedOrigin` in the controlled fixture; Fovium retains encoded geometry rather than adding a second eager orientation parser.
 - Hosted restore-build-test is confirmed on Windows/Linux/macOS for the accepted R7-B commit, including the managed TIFF suite. Manual Linux/macOS Avalonia/Skia runtime behavior remains unvalidated.

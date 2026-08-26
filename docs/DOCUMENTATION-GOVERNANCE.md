@@ -20,6 +20,7 @@ Each durable subject has one owner. Other documents may summarize and link but m
 | Current supported formats and per-format capability matrix | [`FORMAT-SUPPORT.md`](FORMAT-SUPPORT.md) |
 | Viewport, DPI, physical-pixel 100%, sampling research | [`RENDERING.md`](RENDERING.md) |
 | Source/destination color and transform direction | [`COLOR-MANAGEMENT.md`](COLOR-MANAGEMENT.md) |
+| Color Picker sampling, reference values, local catalog, and history | [`COLOR-PICKER.md`](COLOR-PICKER.md) |
 | Loading, cache, concurrency, limits, performance measurement | [`PERFORMANCE.md`](PERFORMANCE.md) |
 | C# implementation practice | [`CODING-GUIDELINES.md`](CODING-GUIDELINES.md) |
 | Test commands and execution evidence | [`TEST-EXECUTION.md`](TEST-EXECUTION.md) |

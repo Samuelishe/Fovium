@@ -15,6 +15,7 @@ Not authoritative for: The subjects summarized by linked documents.
 | [`FORMAT-SUPPORT.md`](FORMAT-SUPPORT.md) | Current supported formats and per-format decode/alpha/animation/metadata status | Checking or changing format-level capability |
 | [`RENDERING.md`](RENDERING.md) | Viewport semantics, DPI, physical-pixel 100%, zoom, pan, and R0 rendering evidence | Working on display or viewport behavior |
 | [`COLOR-MANAGEMENT.md`](COLOR-MANAGEMENT.md) | Source/destination profiles, transforms, multi-monitor behavior, and research boundary | Working on color or display profiles |
+| [`COLOR-PICKER.md`](COLOR-PICKER.md) | Offline click sampling, reference sRGB, local names, and ten-click history | Changing Color Picker behavior, math, catalog, input, or overlay |
 | [`PERFORMANCE.md`](PERFORMANCE.md) | Responsiveness, preload/cache policy, concurrency, limits, and measurement | Working on loading, navigation latency, memory, or diagnostics |
 | [`CODING-GUIDELINES.md`](CODING-GUIDELINES.md) | C# implementation and testing conventions | Writing or reviewing production code |
 | [`TEST-EXECUTION.md`](TEST-EXECUTION.md) | Local/CI test commands and evidence boundaries | Running, filtering, or interpreting tests |

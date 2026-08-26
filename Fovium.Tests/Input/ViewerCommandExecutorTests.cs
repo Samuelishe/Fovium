@@ -51,6 +51,7 @@ public sealed class ViewerCommandExecutorTests
     [InlineData((int)ViewerCommand.ToggleMarkupTools)]
     [InlineData((int)ViewerCommand.TogglePhotoInfo)]
     [InlineData((int)ViewerCommand.ToggleHistogram)]
+    [InlineData((int)ViewerCommand.ToggleColorPicker)]
     public async Task PresentationToggleCommandsUseSharedExecutor(int commandValue)
     {
         var target = new RecordingTarget();
@@ -183,6 +184,8 @@ public sealed class ViewerCommandExecutorTests
         public void TogglePhotoInfo() => PresentationToggleCount++;
 
         public void ToggleHistogram() => PresentationToggleCount++;
+
+        public void ToggleColorPicker() => PresentationToggleCount++;
 
         public void UndoMarkup() => MarkupActions.Add("undo");
 

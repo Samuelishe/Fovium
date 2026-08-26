@@ -28,6 +28,8 @@ resources/localization/ui/
 
 The catalogs are embedded into the production assembly; no localization package is used. Context-menu commands and overlay submenu, Photo Info and Histogram command/title/close chrome, the file-picker title, controlled image-load errors, Settings sections and typed command groups, contextual-scope hints, Stage/presenter customization, Hand and all markup tools/actions, effective-shortcut icon tooltips, EN/RU hold wording, capture/conflict dialogs, and shortcut states resolve through catalog keys rather than scattered locale branches. English uses “Opacity” and Russian consistently uses “Непрозрачность”, where 100% means fully opaque. Persisted command, scope/group, Matte-style, markup-tool, placement, and operation identities are never localized. Photo Info dates use the active locale while camera/lens/filename strings remain source data and unspecified EXIF clock time is never timezone-converted.
 
+R8-A localizes Color Picker command/panel chrome, empty hint, history label, Transparent semantic, Approximate tooltip, and RGB(A) format templates in EN/RU. The 1,800 canonical proper color names remain the reviewed upstream English names unless an optional reliable curated localized name is later added; Fovium does not machine-translate the catalog. Stable IDs, HEX digits, and decimal channel values remain locale-independent.
+
 ## Locale resolution
 
 Before an explicit user choice:

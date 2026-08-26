@@ -100,4 +100,18 @@ internal readonly record struct DrawingCursorPresentation(
             color,
             opacity);
     }
+
+    public static DrawingCursorPresentation CreateColorPicker(double renderScaling)
+    {
+        var scaling = double.IsFinite(renderScaling) && renderScaling > 0
+            ? renderScaling
+            : 1;
+        return new DrawingCursorPresentation(
+            DrawingCursorKind.Precision,
+            PrecisionDiameterPhysicalPixels / scaling,
+            OutlineWidthPhysicalPixels / scaling,
+            PrecisionDiameterPhysicalPixels / (2 * scaling),
+            new PresentationColor(0xFF, 0xFF, 0xFF),
+            1);
+    }
 }

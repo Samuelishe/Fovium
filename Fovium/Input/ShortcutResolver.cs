@@ -25,6 +25,12 @@ internal static class ShortcutResolver
             return null;
         }
 
+        if (context.ColorPickerEnabled &&
+            settings.Get(ViewerCommand.TemporaryMarkupHand) == gesture)
+        {
+            return ViewerCommand.TemporaryMarkupHand;
+        }
+
         foreach (var scope in ActiveScopes(context))
         {
             foreach (var definition in ViewerCommands.Definitions.Where(item => item.Scope == scope))

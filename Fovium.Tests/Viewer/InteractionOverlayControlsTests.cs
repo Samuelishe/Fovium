@@ -1,4 +1,5 @@
 using Avalonia.Media;
+using Fovium.Diagnostics;
 using Fovium.Presentation;
 using Fovium.Rendering;
 using Fovium.Viewer;
@@ -67,5 +68,30 @@ public sealed class InteractionOverlayControlsTests
 
         Assert.False(overlay.IsVisible);
         Assert.Equal(presentation, overlay.Presentation);
+    }
+
+    [Fact]
+    public void ThousandColorPickerMovesStayOnTransformBackedPointerLayer()
+    {
+        var diagnostics = new InteractionRenderDiagnostics(enabled: true);
+        var overlay = new PointerFeedbackOverlayControl();
+        overlay.ConfigureDiagnostics(diagnostics);
+        overlay.SetPresentation(DrawingCursorPresentation.CreateColorPicker(renderScaling: 1.25));
+        var transform = Assert.IsType<TranslateTransform>(overlay.RenderTransform);
+
+        for (var index = 0; index < 1000; index++)
+        {
+            diagnostics.RecordPointerMoved();
+            overlay.SetPointerPosition(new PointD(index, index / 2d));
+        }
+
+        var metrics = diagnostics.GetMetrics();
+        Assert.Equal(1000, metrics.PointerMovedCount);
+        Assert.Equal(0, metrics.PhotoPresentationRenderCount);
+        Assert.Equal(0, metrics.PhotoSkiaDrawCount);
+        Assert.Equal(0, metrics.MarkupOverlayDrawCount);
+        Assert.Same(transform, overlay.RenderTransform);
+        Assert.Equal(999, transform.X + (overlay.Width / 2), 8);
+        Assert.Equal(499.5, transform.Y + (overlay.Height / 2), 8);
     }
 }

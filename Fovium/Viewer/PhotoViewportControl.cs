@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 using Fovium.Diagnostics;
+using Fovium.ColorPicking;
 using Fovium.Imaging;
 using Fovium.Loading;
 using Fovium.Presentation;
@@ -49,6 +50,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
     private Cursor? _handViewerCursor;
     private ViewerSystemCursorMode _appliedSystemCursorMode = (ViewerSystemCursorMode)(-1);
     private InteractionRenderDiagnostics _interactionDiagnostics = new();
+    private bool _colorPickerEnabled;
 
     public PhotoViewportControl()
     {
@@ -62,6 +64,8 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
     public event EventHandler? ViewStateChanged;
 
     public event EventHandler? PresentedImageChanged;
+
+    public event EventHandler<PhotoSampleRequestedEventArgs>? ColorSampleRequested;
 
     public bool HasImage => _image is not null;
 
@@ -83,6 +87,18 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 
         image = new PresentedImageLease(lease.Acquire(), identity);
         return true;
+    }
+
+    public void SetColorPickerEnabled(bool enabled)
+    {
+        if (_colorPickerEnabled == enabled)
+        {
+            return;
+        }
+
+        _colorPickerEnabled = enabled;
+        UpdatePointerPresentation();
+        ApplyCursor();
     }
 
     internal MarkupRenderSnapshot CapturePresentedMarkup() =>
@@ -458,6 +474,25 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
             return;
         }
 
+        var colorPickerAction = ColorPickerInteraction.ResolvePrimaryClick(
+            _colorPickerEnabled,
+            _presentation?.TemporaryHandActive == true);
+        if (colorPickerAction == ColorPickerPrimaryClickAction.Pan &&
+            _inspectionMode == InspectionMode.None)
+        {
+            _lastDragPoint = e.GetPosition(this);
+            e.Pointer.Capture(this);
+            e.Handled = true;
+            return;
+        }
+
+        if (colorPickerAction == ColorPickerPrimaryClickAction.Sample)
+        {
+            RequestColorSample(e.GetPosition(this));
+            e.Handled = true;
+            return;
+        }
+
         if (_inspectionMode != InspectionMode.None)
         {
             if (_inspectionMode == InspectionMode.Peek100 && e.ClickCount != 2)
@@ -750,6 +785,24 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
             return default;
         }
 
+        if (presentation.TemporaryHandActive)
+        {
+            return DrawingCursorPresentation.Resolve(
+                true,
+                presentation.HighlightEnabled,
+                MarkupTool.Hand,
+                presentation.ActiveStrokePhysicalPixels,
+                presentation.ActiveColor,
+                presentation.ActiveOpacity,
+                presentation.Settings.HighlightRadiusPhysicalPixels,
+                _viewport.RenderScaling);
+        }
+
+        if (_colorPickerEnabled)
+        {
+            return DrawingCursorPresentation.CreateColorPicker(_viewport.RenderScaling);
+        }
+
         var useMarkupStyle = presentation.MarkupToolsVisible;
         var color = useMarkupStyle
             ? presentation.ActiveColor
@@ -805,6 +858,32 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
         }
 
         return _viewport.SourcePointAt(new PointD(pointer.X, pointer.Y));
+    }
+
+    private void RequestColorSample(Point pointer)
+    {
+        var handler = ColorSampleRequested;
+        if (handler is null ||
+            !TryAcquirePresentedImage(out var presented) ||
+            presented is null)
+        {
+            return;
+        }
+
+        using (presented)
+        {
+            var sourceSize = presented.Image.Descriptor.OrientedSize;
+            if (!PhotoSourceSamplingGeometry.TryMapViewportToOrientedPixel(
+                    GetDestination(),
+                    sourceSize,
+                    new PointD(pointer.X, pointer.Y),
+                    out var pixel))
+            {
+                return;
+            }
+
+            handler(this, new PhotoSampleRequestedEventArgs(presented, pixel));
+        }
     }
 
     private PointD GetClampedSourcePoint(Point pointer)

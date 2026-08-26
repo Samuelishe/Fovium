@@ -297,13 +297,13 @@ One project-owned dispatcher owns the existing two expensive-decode slots and co
 
 ## D-049 — HEIF/AVIF uses one Fovium-owned decode-only runtime
 
-Status: Owner-review-ready in R7-C.
+Status: Accepted in R7-C.
 
 Fovium builds and materializes its own app-local libheif 1.23.1 runtime; libde265 1.1.1 supplies HEVC decode and dav1d 1.5.4 supplies AV1 decode. A small project-owned direct binding resolves only `runtimes/<rid>/native` for proven `win-x64`, `linux-x64`, and `osx-arm64`, validates exact version plus HEVC/AV1 decoder presence and encoder absence, and never searches system codec locations. No network, system codec installation, broad native stack, encoder, or second native supply chain is required at runtime. A missing or broken bundle disables HEIF/AVIF recoverably without affecting JPEG, PNG, WebP, or TIFF.
 
 ## D-050 — HEIF/AVIF support is static, 8-bit, and SDR-fidelity-bounded
 
-Status: Owner-review-ready in R7-C.
+Status: Accepted in R7-C.
 
 One focused backend accepts one unambiguous HEVC or AV1 primary still, supports alpha explicitly exposed by libheif, ignores depth auxiliaries, and may present an SDR primary without reproducing an HDR gain map. Source precision above 8 bits is rejected rather than quantized; explicit PQ/HLG is rejected without tone mapping; sequences and independent-image collections are rejected rather than showing frame zero. Container transforms are applied exactly once by native decode. Output and exact encoded bytes converge into the normal `DecodedImage` BGRA8888/Premul boundary, with native context/image owners released after copy. HEIF/AVIF share the global two-slot decode gate, cache, Stage, Photo Info, Histogram, Peek/Blink, and markup paths.
 
@@ -312,3 +312,15 @@ One focused backend accepts one unambiguous HEVC or AV1 primary still, supports 
 Status: Accepted direction in R7-C.
 
 Core decode, navigation, Stage/presentation, Photo Info, Histogram, settings, markup, and the planned Color Picker/name matching work without a runtime network dependency. Development may download pinned source archives or public test vectors, but application startup and ordinary viewing never download codecs, query cloud services, or prompt for system codec installation.
+
+## D-052 — Color Picker commits retained photographic source pixels
+
+Status: Owner-review-ready in R8-A.
+
+Pointer motion never changes the selected sample or history. One primary click inside the exact rendered photograph retains the currently presented image, maps to the containing oriented source cell by floor with exclusive right/bottom edges, and reads that decoded BGRA8888/Premul pixel. Descriptor orientation is inverted exactly once; Blink therefore samples the visible comparison while Peek remains canonical. Partial alpha is unpremultiplied once and zero alpha is `Transparent`, never inferred Black. Values are reference sRGB rather than monitor framebuffer values; valid normalized non-sRGB uses one 1×1 Skia conversion and unpreserved profile meaning remains visibly Approximate. Picker click precedes markup, while hold-Space Hand and wheel retain pan/zoom ownership.
+
+## D-053 — Color names and recent samples are bounded, local, and reproducible
+
+Status: Owner-review-ready in R8-A.
+
+Fovium embeds a deterministic 1,800-entry curated derivative of the MIT-licensed `meodai/color-names` dataset and precomputes standard OKLab anchors once. A click performs a stable-order linear nearest search; no package, database, service, telemetry, or network lookup is used. Canonical names remain reviewed English with EN/RU surrounding UI. Per-viewer history is a duplicate-preserving ten-item FIFO displayed oldest-to-newest and survives navigation/hide/reopen only for that session; visibility/current/history are never persisted, while normalized overlay placement may be.

@@ -225,9 +225,9 @@ internal sealed class PresentationOverlaySession
             PresentationChangeKind.HistoryState);
     }
 
-    public bool BeginTemporaryHand()
+    public bool BeginTemporaryHand(bool allowWithoutMarkupTools = false)
     {
-        if (!MarkupToolsVisible || _temporaryHandActive)
+        if ((!MarkupToolsVisible && !allowWithoutMarkupTools) || _temporaryHandActive)
         {
             return false;
         }

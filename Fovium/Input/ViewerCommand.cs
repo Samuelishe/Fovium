@@ -35,6 +35,7 @@ internal enum ViewerCommand
     SelectArrowTool,
     TemporaryMarkupHand,
     ToggleHistogram,
+    ToggleColorPicker,
 }
 
 internal enum ViewerCommandTrigger
@@ -62,7 +63,8 @@ internal enum ViewerCommandGroup
 
 internal readonly record struct ViewerShortcutContext(
     bool MarkupToolsVisible,
-    bool HighlightEnabled)
+    bool HighlightEnabled,
+    bool ColorPickerEnabled = false)
 {
     public static ViewerShortcutContext Global { get; } = new(false, false);
 }
@@ -152,6 +154,7 @@ internal static class ViewerCommands
             ViewerCommandTrigger.Hold),
         new(ViewerCommand.TogglePhotoInfo, "viewer.togglePhotoInfo", ViewerCommandGroup.Presentation),
         new(ViewerCommand.ToggleHistogram, "viewer.toggleHistogram", ViewerCommandGroup.Presentation),
+        new(ViewerCommand.ToggleColorPicker, "viewer.toggleColorPicker", ViewerCommandGroup.Inspection),
     ];
 
     private static readonly IReadOnlyDictionary<ViewerCommand, ViewerCommandDefinition> ByCommand =

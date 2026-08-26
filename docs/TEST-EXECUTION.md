@@ -93,6 +93,8 @@ R7-C-N1 and R7-C-N1-F1 are complete and owner-accepted at `c4dba80bd23534f372ae0
 
 R7-C extends those jobs to materialize the built bundle, restore/build Fovium, and run the actual production `HeifImageDecodeBackend` tests with runtime presence mandatory. Normal CI remains the fast managed matrix. Cross-platform product acceptance requires both matrices green after owner push; local Windows success alone is not that hosted claim.
 
+R8-A adds deterministic in-memory tests for standard OKLab vectors; exact 1,800-entry embedded catalog integrity/basic anchors; exact/near/tie name matching; ten-item duplicate-preserving FIFO; uppercase RGB(A)/HEX; alpha 255/128/1/0 and one unpremultiplication; reference-sRGB direct/1×1 Skia/Approximate source states; containing-source-cell geometry with exclusive edges and render scaling 1.00/1.25/1.50/2.00; all eight EXIF orientations; picker/temporary-Hand/markup precedence; render-layer isolation; additive `K`; placement/settings non-persistence; menu state; and EN/RU chrome. The observational performance smoke reports initialization and 1,000 clicks without defining an SLA. Windows Release screenshot smoke covers empty, fixed sample, exactly ten rows after eleven duplicate clicks, hide/reopen retention, JPEG/HEIF/WebP/AVIF/TIFF/HIF/PNG navigation, fullscreen, Peek/Blink input, temporary Hand, and picker precedence while the Markup panel is visible. Real cross-platform/fractional-DPI pointer feel remains manual evidence.
+
 Run a clean native build locally with:
 
 ```powershell

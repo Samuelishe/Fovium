@@ -16,6 +16,12 @@ internal static class InteractionRenderRouting
     public static InteractionRenderLayer ForPointerPosition() =>
         InteractionRenderLayer.Pointer;
 
+    public static InteractionRenderLayer ForColorPickerPointerMotion() =>
+        InteractionRenderLayer.Pointer;
+
+    public static InteractionRenderLayer ForColorPickerSampleCommit() =>
+        InteractionRenderLayer.FloatingUi;
+
     public static InteractionRenderLayer ForDockPosition() =>
         InteractionRenderLayer.FloatingUi;
 

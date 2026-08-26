@@ -15,21 +15,25 @@ public sealed class ViewerOverlayMenuStateTests
             .WithBinding(ViewerCommand.ToggleHighlight, new ShortcutGesture("J"))
             .WithBinding(ViewerCommand.ToggleMarkupTools, null)
             .WithBinding(ViewerCommand.TogglePhotoInfo, new ShortcutGesture("K"))
-            .WithBinding(ViewerCommand.ToggleHistogram, new ShortcutGesture("G"));
+            .WithBinding(ViewerCommand.ToggleHistogram, new ShortcutGesture("G"))
+            .WithBinding(ViewerCommand.ToggleColorPicker, new ShortcutGesture("U"));
 
         var state = ViewerOverlayMenuState.Capture(
             presentation,
             photoInfoVisible: true,
             histogramVisible: true,
+            colorPickerVisible: true,
             shortcuts);
 
         Assert.True(state.PhotoInfoChecked);
         Assert.True(state.HistogramChecked);
+        Assert.True(state.ColorPickerChecked);
         Assert.True(state.HighlightChecked);
         Assert.True(state.MarkupChecked);
         Assert.Equal(new ShortcutGesture("J"), state.HighlightGesture);
         Assert.Null(state.MarkupGesture);
         Assert.Equal(new ShortcutGesture("K"), state.PhotoInfoGesture);
         Assert.Equal(new ShortcutGesture("G"), state.HistogramGesture);
+        Assert.Equal(new ShortcutGesture("U"), state.ColorPickerGesture);
     }
 }
