@@ -23,6 +23,7 @@ Not authoritative for: The subjects summarized by linked documents.
 | [`experiments/R0-RENDERING-PROBE.md`](experiments/R0-RENDERING-PROBE.md) | R0 setup, observations, comparisons, limitations, and recommendation | Implementing from or re-evaluating R0 evidence |
 | [`experiments/R7-C-HEIF-AVIF-BACKEND-PROBE.md`](experiments/R7-C-HEIF-AVIF-BACKEND-PROBE.md) | HEIF/AVIF backend and native-runtime packaging feasibility evidence | Re-evaluating the gated R7-C codec direction |
 | [`experiments/R8-B-MONITOR-COLOR-MANAGEMENT-PROBE.md`](experiments/R8-B-MONITOR-COLOR-MANAGEMENT-PROBE.md) | Monitor-profile discovery, Skia/Little CMS transforms, direct-target semantics, platform differences, and rendering-strategy evidence | Selecting or implementing the gated monitor color-management direction |
+| [`experiments/R8-B-W1-SEAMLESS-RENDERING-PROBE.md`](experiments/R8-B-W1-SEAMLESS-RENDERING-PROBE.md) | W1/F1/F2 interaction regressions, full-source and GPU/LUT candidates, measurements, and F3 selection | Changing geometry-independent Windows SDR managed rendering |
 | [`VERSIONING.md`](VERSIONING.md) | Display/numeric version semantics, checkpoint increments, and version metadata direction | Changing a project checkpoint or exposing a version |
 | [`SETTINGS.md`](SETTINGS.md) | Settings sections, preference ownership, persistence, migration, and reset policy | Designing settings or stored preferences |
 | [`LOCALIZATION.md`](LOCALIZATION.md) | Supported locales, locale resolution, fallback, and translation boundaries | Adding or changing localized UI text |

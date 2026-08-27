@@ -13,6 +13,12 @@ internal sealed record AvaloniaTargetEvidence(
     bool LeaseAvailable,
     bool LeaseSurfaceAvailable,
     bool CanvasSurfaceAvailable,
+    bool GrContextAvailable,
+    bool RuntimeShaderCompiled,
+    bool RuntimeShaderDrawn,
+    string? RuntimeShaderError,
+    int RuntimeShaderDrawIterations,
+    double RuntimeShaderDrawMilliseconds,
     string SurfaceColorSpace,
     string SnapshotColorSpace,
     string CanvasType,
@@ -96,7 +102,20 @@ internal sealed class TargetProbeControl : Control
             var feature = context.TryGetFeature<ISkiaSharpApiLeaseFeature>();
             if (feature is null)
             {
-                _record(new AvaloniaTargetEvidence(false, false, false, "unavailable", "unavailable", "unavailable", null));
+                _record(new AvaloniaTargetEvidence(
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    null,
+                    0,
+                    0,
+                    "unavailable",
+                    "unavailable",
+                    "unavailable",
+                    null));
                 return;
             }
 
@@ -115,10 +134,38 @@ internal sealed class TargetProbeControl : Control
             }
 
             lease.SkCanvas.Clear(new SKColor(31, 31, 31));
+            const string shaderSource = "half4 main(float2 position) { return half4(position.x / 640.0, position.y / 360.0, 0.25, 1.0); }";
+            using var effect = SKRuntimeEffect.CreateShader(shaderSource, out var shaderError);
+            var runtimeShaderCompiled = effect is not null;
+            var runtimeShaderDrawn = false;
+            const int runtimeShaderDrawIterations = 200;
+            var runtimeShaderDrawMilliseconds = 0d;
+            if (effect is not null)
+            {
+                using var shader = effect.ToShader();
+                using var paint = new SKPaint { Shader = shader };
+                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+                for (var iteration = 0; iteration < runtimeShaderDrawIterations; iteration++)
+                {
+                    lease.SkCanvas.DrawRect(new SKRect(0, 0, 640, 360), paint);
+                }
+
+                lease.SkCanvas.Flush();
+                stopwatch.Stop();
+                runtimeShaderDrawMilliseconds = stopwatch.Elapsed.TotalMilliseconds;
+                runtimeShaderDrawn = true;
+            }
+
             _record(new AvaloniaTargetEvidence(
                 true,
                 leaseSurface is not null,
                 canvasSurface is not null,
+                lease.GrContext is not null,
+                runtimeShaderCompiled,
+                runtimeShaderDrawn,
+                string.IsNullOrWhiteSpace(shaderError) ? null : shaderError,
+                runtimeShaderDrawIterations,
+                runtimeShaderDrawMilliseconds,
                 surfaceColorSpace,
                 snapshotColorSpace,
                 lease.SkCanvas.GetType().FullName ?? lease.SkCanvas.GetType().Name,

@@ -719,7 +719,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 
         DecodedImage.RenderLease? renderLease = null;
         DecodedImage.AmbientLease? ambientLease = null;
-        ManagedPhotoPresentationLease? managedPresentation = null;
+        ManagedPhotoSourceLease? managedSource = null;
         try
         {
             renderLease = cachedLease.Value.AcquireRenderLease();
@@ -737,7 +737,6 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
             var presentationStage = _inspectionImage is not null ? _inspectionStage! : _stage;
             var destination = GetDestination();
             var suppressLegacyPhoto = false;
-            var geometryOnlyBlankFallback = false;
             var photoPresentationVisible = true;
             var state = MonitorColorPolicy.Classify(
                 _monitorColorManagementEnabled,
@@ -754,44 +753,23 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
                 _displayProfile.Profile is { } profile &&
                 _managedPhotoCoordinator is { } coordinator)
             {
-                var geometry = new ManagedPhotoGeometry(
-                    new RectD(0, 0, Bounds.Width, Bounds.Height),
-                    destination,
-                    _viewport.RenderScaling,
-                    _viewport.UsesExactPixelSampling);
-                if (geometry.IsValid)
-                {
-                    var key = new ManagedPhotoKey(
-                        presentedNumericIdentity,
-                        profile.Identity,
-                        descriptor.EncodedSize,
-                        descriptor.Orientation,
-                        geometry);
-                    var acquired = coordinator.TryAcquirePresentation(
-                        key,
-                        out managedPresentation,
-                        out var pendingReason);
-                    var publication = ManagedPhotoPublicationPolicy.Resolve(acquired, pendingReason);
-                    suppressLegacyPhoto = publication.SuppressLegacyPhoto;
-                    photoPresentationVisible = publication.PhotoPresentationVisible;
-                    geometryOnlyBlankFallback = publication.GeometryOnlyBlackFallback;
+                var key = new ManagedPhotoKey(
+                    presentedNumericIdentity,
+                    profile.Identity,
+                    descriptor.EncodedSize,
+                    descriptor.Orientation);
+                var acquired = coordinator.TryAcquire(key, out managedSource);
+                suppressLegacyPhoto = !acquired;
+                photoPresentationVisible = acquired;
 
-                    if (_requestedManagedKey != key)
-                    {
-                        _requestedManagedKey = key;
-                        var deferForQuality = pendingReason ==
-                            ManagedPhotoPendingReason.QualityRefinementPending;
-                        coordinator.Request(
-                            new ManagedPhotoRenderRequest(
-                                key,
-                                descriptor,
-                                cachedLease.Value.AcquireRenderLease(),
-                                profile.Bytes),
-                            deferGeometryRefinement: deferForQuality,
-                            pendingReason,
-                            qualityRefinement: deferForQuality,
-                            ensureFullSourceBase: true);
-                    }
+                if (ManagedPhotoRequestPolicy.ShouldRequest(_requestedManagedKey, key))
+                {
+                    _requestedManagedKey = key;
+                    coordinator.Request(new ManagedPhotoRenderRequest(
+                        key,
+                        descriptor,
+                        cachedLease.Value.AcquireRenderLease(),
+                        profile.Bytes));
                 }
             }
             else
@@ -815,20 +793,19 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
                 ambientLease is null ? null : ambientIdentity,
                 _ambientFrameDiagnostics,
                 _interactionDiagnostics,
-                managedPresentation,
+                managedSource,
                 suppressLegacyPhoto,
-                _managedPhotoCoordinator,
-                geometryOnlyBlankFallback));
+                _managedPhotoCoordinator));
             SetPhotoPresentationVisible(photoPresentationVisible);
             renderLease = null;
             ambientLease = null;
-            managedPresentation = null;
+            managedSource = null;
         }
         finally
         {
             renderLease?.Dispose();
             ambientLease?.Dispose();
-            managedPresentation?.Dispose();
+            managedSource?.Dispose();
         }
     }
 

@@ -18,7 +18,7 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
 {
     private DecodedImage.RenderLease? _imageLease;
     private DecodedImage.AmbientLease? _ambientLease;
-    private ManagedPhotoPresentationLease? _managedPresentation;
+    private ManagedPhotoSourceLease? _managedSource;
     private readonly PixelSize _encodedSize;
     private readonly ExifOrientation _orientation;
     private readonly RectD _destination;
@@ -31,7 +31,6 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
     private readonly InteractionRenderDiagnostics _interactionDiagnostics;
     private readonly bool _suppressLegacyPhoto;
     private readonly ManagedPhotoPresentationCoordinator? _managedCoordinator;
-    private readonly bool _geometryOnlyBlankFallback;
 
     public SkiaPhotoDrawOperation(
         Rect bounds,
@@ -47,10 +46,9 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
         long? ambientIdentity,
         AmbientRenderFrameDiagnostics frameDiagnostics,
         InteractionRenderDiagnostics interactionDiagnostics,
-        ManagedPhotoPresentationLease? managedPresentation = null,
+        ManagedPhotoSourceLease? managedSource = null,
         bool suppressLegacyPhoto = false,
-        ManagedPhotoPresentationCoordinator? managedCoordinator = null,
-        bool geometryOnlyBlankFallback = false)
+        ManagedPhotoPresentationCoordinator? managedCoordinator = null)
     {
         Bounds = bounds;
         _imageLease = imageLease;
@@ -65,10 +63,9 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
         _ambientIdentity = ambientIdentity;
         _frameDiagnostics = frameDiagnostics;
         _interactionDiagnostics = interactionDiagnostics;
-        _managedPresentation = managedPresentation;
+        _managedSource = managedSource;
         _suppressLegacyPhoto = suppressLegacyPhoto;
         _managedCoordinator = managedCoordinator;
-        _geometryOnlyBlankFallback = geometryOnlyBlankFallback;
     }
 
     public Rect Bounds { get; }
@@ -109,57 +106,47 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
             _imageIdentity,
             _ambientIdentity,
             _frameDiagnostics);
-        var managedPresentation = _managedPresentation;
-        if (managedPresentation is not null)
+        var managedSource = _managedSource;
+        if (_suppressLegacyPhoto && managedSource is null)
         {
-            var managedSurface = managedPresentation.Surface;
-            using var managedPaint = new SKPaint { IsAntialias = false };
-            var source = new SKRect(
-                0,
-                0,
-                managedSurface.Image.Width,
-                managedSurface.Image.Height);
-            var managedDestination = managedPresentation.TargetDestination;
-            var destination = new SKRect(
-                (float)managedDestination.X,
-                (float)managedDestination.Y,
-                (float)(managedDestination.X + managedDestination.Width),
-                (float)(managedDestination.Y + managedDestination.Height));
-            canvas.DrawImage(
-                managedSurface.Image,
-                source,
-                destination,
-                managedPresentation.Quality == ManagedPhotoPresentationQuality.Exact
-                    ? new SKSamplingOptions(SKFilterMode.Nearest, SKMipmapMode.None)
-                    : new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear),
-                managedPaint);
-            _managedCoordinator?.RecordFrame(
-                managedPresentation.Quality,
-                managedPresentation.CoversVisiblePhoto);
             return;
         }
 
-        if (_suppressLegacyPhoto)
+        DrawPhoto(
+            canvas,
+            managedSource?.Source.Image ?? imageLease.Image,
+            _encodedSize,
+            _orientation,
+            _destination,
+            _exactPixelSampling);
+        if (managedSource is not null)
         {
-            if (_geometryOnlyBlankFallback)
-            {
-                _managedCoordinator?.RecordGeometryOnlyBlackFallback();
-            }
-
-            return;
+            _managedCoordinator?.RecordManagedSourceFrame();
         }
 
-        var affine = OrientationAffine.Create(_encodedSize, _orientation);
-        var orientedSize = OrientationTransform.GetOrientedSize(_encodedSize, _orientation);
-        var scaleX = _destination.Width / orientedSize.Width;
-        var scaleY = _destination.Height / orientedSize.Height;
+    }
+
+    public bool Equals(ICustomDrawOperation? other) => false;
+
+    internal static void DrawPhoto(
+        SKCanvas canvas,
+        SKImage image,
+        PixelSize encodedSize,
+        ExifOrientation orientation,
+        RectD destination,
+        bool exactPixelSampling)
+    {
+        var affine = OrientationAffine.Create(encodedSize, orientation);
+        var orientedSize = OrientationTransform.GetOrientedSize(encodedSize, orientation);
+        var scaleX = destination.Width / orientedSize.Width;
+        var scaleY = destination.Height / orientedSize.Height;
         var matrix = new SKMatrix(
             (float)(affine.A * scaleX),
             (float)(affine.B * scaleX),
-            (float)(_destination.X + affine.C * scaleX),
+            (float)(destination.X + affine.C * scaleX),
             (float)(affine.D * scaleY),
             (float)(affine.E * scaleY),
-            (float)(_destination.Y + affine.F * scaleY),
+            (float)(destination.Y + affine.F * scaleY),
             0,
             0,
             1);
@@ -169,25 +156,22 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
         {
             canvas.Concat(in matrix);
             using var paint = new SKPaint { IsAntialias = false };
-            var sampling = _exactPixelSampling
+            var sampling = exactPixelSampling
                 ? new SKSamplingOptions(SKFilterMode.Nearest, SKMipmapMode.None)
                 : new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear);
-            canvas.DrawImage(imageLease.Image, 0, 0, sampling, paint);
+            canvas.DrawImage(image, 0, 0, sampling, paint);
         }
         finally
         {
             canvas.Restore();
         }
-
     }
-
-    public bool Equals(ICustomDrawOperation? other) => false;
 
     public void Dispose()
     {
         Interlocked.Exchange(ref _imageLease, null)?.Dispose();
         Interlocked.Exchange(ref _ambientLease, null)?.Dispose();
-        Interlocked.Exchange(ref _managedPresentation, null)?.Dispose();
+        Interlocked.Exchange(ref _managedSource, null)?.Dispose();
     }
 
 }

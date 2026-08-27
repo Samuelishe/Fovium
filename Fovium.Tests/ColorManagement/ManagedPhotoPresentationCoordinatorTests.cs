@@ -15,23 +15,23 @@ public sealed class ManagedPhotoPresentationCoordinatorTests
         using var coordinator = new ManagedPhotoPresentationCoordinator(renderer);
         using var first = CreateRequest(image, 1);
         coordinator.Request(first with { Source = first.Source.Acquire() });
-        await renderer.WaitUntilStartedAsync(1);
+        await renderer.WaitUntilStartedAsync(first.Key);
 
         using var second = CreateRequest(image, 2);
         using var third = CreateRequest(image, 3);
         coordinator.Request(second with { Source = second.Source.Acquire() });
         coordinator.Request(third with { Source = third.Source.Acquire() });
-        renderer.Complete(1);
-        await renderer.WaitUntilStartedAsync(3);
-        renderer.Complete(3);
-        await renderer.WaitUntilCompletedAsync(3);
+        renderer.Complete(first.Key);
+        await renderer.WaitUntilStartedAsync(third.Key);
+        renderer.Complete(third.Key);
+        await renderer.WaitUntilCompletedAsync(third.Key);
 
         Assert.False(coordinator.TryAcquire(first.Key, out _));
         Assert.False(coordinator.TryAcquire(second.Key, out _));
         Assert.True(coordinator.TryAcquire(third.Key, out var current));
         using (current)
         {
-            Assert.Equal(3, current!.Value.Key.ImageIdentity);
+            Assert.Equal(3, current!.Source.Key.ImageIdentity);
         }
 
         var metrics = coordinator.Metrics;
@@ -39,7 +39,31 @@ public sealed class ManagedPhotoPresentationCoordinatorTests
         Assert.Equal(1, metrics.CoalescedRequests);
         Assert.Equal(1, metrics.Completed);
         Assert.Equal(1, metrics.StaleResults);
-        Assert.Equal([1L, 3L], renderer.Started);
+        Assert.Equal([1L, 3L], renderer.Started.Select(key => key.ImageIdentity));
+    }
+
+    [Fact]
+    public async Task DestinationChangeMakesActiveTransformStaleAndPublishesOnlyLatestProfile()
+    {
+        using var image = CreateImage();
+        var renderer = new ControllableRenderer();
+        using var coordinator = new ManagedPhotoPresentationCoordinator(renderer);
+        using var first = CreateRequest(image, image.Identity, "D1");
+        using var second = CreateRequest(image, image.Identity, "D2");
+        coordinator.Request(first with { Source = first.Source.Acquire() });
+        await renderer.WaitUntilStartedAsync(first.Key);
+
+        coordinator.Request(second with { Source = second.Source.Acquire() });
+        renderer.Complete(first.Key);
+        await renderer.WaitUntilStartedAsync(second.Key);
+        renderer.Complete(second.Key);
+        await renderer.WaitUntilCompletedAsync(second.Key);
+
+        Assert.False(coordinator.TryAcquire(first.Key, out _));
+        Assert.True(coordinator.TryAcquire(second.Key, out var current));
+        current?.Dispose();
+        Assert.Equal(1, coordinator.Metrics.StaleResults);
+        Assert.Equal(1, coordinator.Metrics.DestinationChanges);
     }
 
     [Fact]
@@ -50,10 +74,10 @@ public sealed class ManagedPhotoPresentationCoordinatorTests
         var coordinator = new ManagedPhotoPresentationCoordinator(renderer);
         using var request = CreateRequest(image, 9);
         coordinator.Request(request with { Source = request.Source.Acquire() });
-        await renderer.WaitUntilStartedAsync(9);
+        await renderer.WaitUntilStartedAsync(request.Key);
 
         coordinator.Dispose();
-        renderer.Complete(9);
+        renderer.Complete(request.Key);
         await renderer.WaitUntilDisposedAsync();
 
         Assert.False(coordinator.TryAcquire(request.Key, out _));
@@ -82,20 +106,17 @@ public sealed class ManagedPhotoPresentationCoordinatorTests
         Assert.Equal([expectedBlue, expectedGreen, expectedRed, alpha], output.ToArray());
     }
 
-    private static ManagedPhotoRenderRequest CreateRequest(DecodedImage image, long identity)
+    private static ManagedPhotoRenderRequest CreateRequest(
+        DecodedImage image,
+        long identity,
+        string destinationIdentity = "ABCDEF")
     {
-        var geometry = new ManagedPhotoGeometry(
-            new RectD(0, 0, 1, 1),
-            new RectD(0, 0, 1, 1),
-            1,
-            true);
         return new ManagedPhotoRenderRequest(
             new ManagedPhotoKey(
                 identity,
-                new DisplayProfileIdentity("ABCDEF", false),
+                new DisplayProfileIdentity(destinationIdentity, false),
                 new PixelSize(1, 1),
-                ExifOrientation.Normal,
-                geometry),
+                ExifOrientation.Normal),
             image.Descriptor,
             image.AcquireRenderLease(),
             DisplayIccProfileAdmissionTests.CreateProfileHeader());
@@ -132,38 +153,34 @@ public sealed class ManagedPhotoPresentationCoordinatorTests
     private sealed class ControllableRenderer : IManagedPhotoRenderer
     {
         private readonly object _sync = new();
-        private readonly Dictionary<long, TaskCompletionSource> _started = [];
-        private readonly Dictionary<long, TaskCompletionSource> _completion = [];
-        private readonly Dictionary<long, TaskCompletionSource> _completed = [];
+        private readonly Dictionary<ManagedPhotoKey, TaskCompletionSource> _started = [];
+        private readonly Dictionary<ManagedPhotoKey, TaskCompletionSource> _completion = [];
+        private readonly Dictionary<ManagedPhotoKey, TaskCompletionSource> _completed = [];
         private readonly TaskCompletionSource _disposed =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        public List<long> Started { get; } = [];
+        public List<ManagedPhotoKey> Started { get; } = [];
 
-        public ManagedPhotoSurface Render(ManagedPhotoRenderRequest request)
+        public ManagedPhotoSource Render(ManagedPhotoRenderRequest request)
         {
-            var identity = request.Key.ImageIdentity;
+            var key = request.Key;
             Task completion;
             lock (_sync)
             {
-                Started.Add(identity);
-                Get(_started, identity).TrySetResult();
-                completion = Get(_completion, identity).Task;
+                Started.Add(key);
+                Get(_started, key).TrySetResult();
+                completion = Get(_completion, key).Task;
             }
 
             completion.GetAwaiter().GetResult();
-            var coverage = ManagedPhotoCoveragePlanner.Create(
-                request.Key.Geometry,
-                request.Descriptor.OrientedSize);
             var bitmap = new SKBitmap(new SKImageInfo(
-                coverage.RasterPixelSize.Width,
-                coverage.RasterPixelSize.Height,
+                request.Key.EncodedSize.Width,
+                request.Key.EncodedSize.Height,
                 SKColorType.Bgra8888,
                 SKAlphaType.Premul));
             var image = SKImage.FromBitmap(bitmap);
-            var result = new ManagedPhotoSurface(
+            var result = new ManagedPhotoSource(
                 request.Key,
-                coverage,
                 bitmap,
                 image,
                 TimeSpan.Zero,
@@ -171,21 +188,21 @@ public sealed class ManagedPhotoPresentationCoordinatorTests
                 TimeSpan.Zero);
             lock (_sync)
             {
-                Get(_completed, identity).TrySetResult();
+                Get(_completed, key).TrySetResult();
             }
 
             return result;
         }
 
-        public Task WaitUntilStartedAsync(long identity) =>
-            GetSynchronized(_started, identity).Task.WaitAsync(TimeSpan.FromSeconds(5));
+        public Task WaitUntilStartedAsync(ManagedPhotoKey key) =>
+            GetSynchronized(_started, key).Task.WaitAsync(TimeSpan.FromSeconds(5));
 
-        public Task WaitUntilCompletedAsync(long identity) =>
-            GetSynchronized(_completed, identity).Task.WaitAsync(TimeSpan.FromSeconds(5));
+        public Task WaitUntilCompletedAsync(ManagedPhotoKey key) =>
+            GetSynchronized(_completed, key).Task.WaitAsync(TimeSpan.FromSeconds(5));
 
         public Task WaitUntilDisposedAsync() => _disposed.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
-        public void Complete(long identity) => GetSynchronized(_completion, identity).TrySetResult();
+        public void Complete(ManagedPhotoKey key) => GetSynchronized(_completion, key).TrySetResult();
 
         public void Dispose()
         {
@@ -201,23 +218,23 @@ public sealed class ManagedPhotoPresentationCoordinatorTests
         }
 
         private TaskCompletionSource GetSynchronized(
-            Dictionary<long, TaskCompletionSource> values,
-            long identity)
+            Dictionary<ManagedPhotoKey, TaskCompletionSource> values,
+            ManagedPhotoKey key)
         {
             lock (_sync)
             {
-                return Get(values, identity);
+                return Get(values, key);
             }
         }
 
         private static TaskCompletionSource Get(
-            Dictionary<long, TaskCompletionSource> values,
-            long identity)
+            Dictionary<ManagedPhotoKey, TaskCompletionSource> values,
+            ManagedPhotoKey key)
         {
-            if (!values.TryGetValue(identity, out var completion))
+            if (!values.TryGetValue(key, out var completion))
             {
                 completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-                values.Add(identity, completion);
+                values.Add(key, completion);
             }
 
             return completion;

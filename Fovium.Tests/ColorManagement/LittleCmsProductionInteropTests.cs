@@ -80,17 +80,11 @@ public sealed class LittleCmsProductionInteropTests
         using var source = CreateImage(displayP3, [0, 40, 100, 128]);
         using var renderer = new SkiaLittleCmsPhotoRenderer(
             new LittleCmsColorTransformEngine(availability));
-        var geometry = new ManagedPhotoGeometry(
-            new RectD(0, 0, 1, 1),
-            new RectD(0, 0, 1, 1),
-            1,
-            true);
         var key = new ManagedPhotoKey(
             source.Identity,
             DisplayProfileIdentity.FromBytes(profile, false),
             source.Descriptor.EncodedSize,
-            source.Descriptor.Orientation,
-            geometry);
+            source.Descriptor.Orientation);
         using var request = new ManagedPhotoRenderRequest(
             key,
             source.Descriptor,
