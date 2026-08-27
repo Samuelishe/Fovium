@@ -19,6 +19,7 @@ internal sealed partial class SettingsWindow : Window
     private readonly Localizer _localizer;
     private readonly RadioButton _keepCurrentScaleOption;
     private readonly RadioButton _fitEachImageOption;
+    private readonly CheckBox _monitorColorManagementOption;
     private readonly RadioButton _blackStageOption;
     private readonly RadioButton _neutralStageOption;
     private readonly RadioButton _customStageOption;
@@ -59,12 +60,14 @@ internal sealed partial class SettingsWindow : Window
         InitializeComponent();
 
         var viewingTab = FindRequired<TabItem>("ViewingTab");
+        var colorTab = FindRequired<TabItem>("ColorTab");
         var stageTab = FindRequired<TabItem>("StageTab");
         var presentationTab = FindRequired<TabItem>("PresentationTab");
         var controlsTab = FindRequired<TabItem>("ControlsTab");
         var aboutTab = FindRequired<TabItem>("AboutTab");
         _keepCurrentScaleOption = FindRequired<RadioButton>("KeepCurrentScaleOption");
         _fitEachImageOption = FindRequired<RadioButton>("FitEachImageOption");
+        _monitorColorManagementOption = FindRequired<CheckBox>("MonitorColorManagementOption");
         _blackStageOption = FindRequired<RadioButton>("BlackStageOption");
         _neutralStageOption = FindRequired<RadioButton>("NeutralStageOption");
         _customStageOption = FindRequired<RadioButton>("CustomStageOption");
@@ -97,11 +100,17 @@ internal sealed partial class SettingsWindow : Window
 
         Title = localizer[UiStrings.SettingsTitle];
         viewingTab.Header = localizer[UiStrings.SettingsViewing];
+        colorTab.Header = localizer[UiStrings.SettingsColor];
         stageTab.Header = localizer[UiStrings.SettingsStage];
         presentationTab.Header = localizer[UiStrings.SettingsPresentation];
         controlsTab.Header = localizer[UiStrings.SettingsControls];
         aboutTab.Header = localizer[UiStrings.SettingsAbout];
         FindRequired<TextBlock>("ScaleHeading").Text = localizer[UiStrings.SettingsScaleOnImageChange];
+        FindRequired<TextBlock>("MonitorColorManagementHeading").Text =
+            localizer[UiStrings.ColorMonitorManagement];
+        _monitorColorManagementOption.Content = localizer[UiStrings.ColorUseActiveMonitorProfile];
+        FindRequired<TextBlock>("MonitorColorManagementExplanation").Text =
+            localizer[UiStrings.ColorMonitorManagementExplanation];
         FindRequired<TextBlock>("BackgroundHeading").Text = localizer[UiStrings.StageBackground];
         FindRequired<TextBlock>("MatteHeading").Text = localizer[UiStrings.StageMatte];
         FindRequired<TextBlock>("ControlsHeading").Text = localizer[UiStrings.SettingsControls];
@@ -153,6 +162,14 @@ internal sealed partial class SettingsWindow : Window
     {
         _keepCurrentScaleOption.IsCheckedChanged += OnKeepCurrentScaleChanged;
         _fitEachImageOption.IsCheckedChanged += OnFitEachImageChanged;
+        _monitorColorManagementOption.IsCheckedChanged += async (_, _) =>
+        {
+            if (!_initializing)
+            {
+                await _settings.SetMonitorColorManagementEnabledAsync(
+                    _monitorColorManagementOption.IsChecked == true);
+            }
+        };
         _blackStageOption.IsCheckedChanged += (_, _) => SetBackgroundIfChecked(
             _blackStageOption,
             StageBackgroundMode.Black);
@@ -448,6 +465,7 @@ internal sealed partial class SettingsWindow : Window
             settings.ImageChangeViewPolicy == ImageChangeViewPolicy.KeepCurrentScale;
         _fitEachImageOption.IsChecked =
             settings.ImageChangeViewPolicy == ImageChangeViewPolicy.FitEachImage;
+        _monitorColorManagementOption.IsChecked = settings.MonitorColorManagementEnabled;
         _blackStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.Black;
         _neutralStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.Neutral;
         _customStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.Custom;

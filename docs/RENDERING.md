@@ -60,3 +60,9 @@ The production viewport remains independent of Avalonia and Skia. Fit is capped 
 ## Retained R0 evidence
 
 The disposable probe, exact comparisons, measured observations, and limitations are recorded in [`experiments/R0-RENDERING-PROBE.md`](experiments/R0-RENDERING-PROBE.md). R1 implemented the retained direction independently and manually exercised it on Windows at `RenderScaling = 1.00`; fractional/per-monitor and Linux/macOS runtime proof remain open. Color goals and unknowns remain owned by [`COLOR-MANAGEMENT.md`](COLOR-MANAGEMENT.md).
+
+## Windows SDR managed photograph presentation
+
+R8-B-W1 leaves viewport math authoritative. The same oriented destination rectangle, exact physical-100% alignment, nearest exact-pixel policy, and linear+mipmap fractional/downscale policy render into an unpremultiplied reference-sRGB bitmap sized only to the visible photograph intersection. Little CMS converts those bytes once to monitor-device RGB; alpha is retained and output is premultiplied once into an untagged final image. The direct-Skia operation draws Stage/Matte/Ambient in their existing UI domain, then draws either the matching managed raster or no photograph while required work is pending, followed by the independent markup/pointer layers. It never labels device-RGB bytes as sRGB.
+
+Destination changes and geometry changes are atomic by full identity. The canonical source lease and source-space mapping remain the authority for Color Picker, Histogram, Photo Info, markup, Peek, and Blink. Moving monitors therefore changes only photograph presentation pixels, not zoom, pan, physical 100%, source sampling, or overlay state.

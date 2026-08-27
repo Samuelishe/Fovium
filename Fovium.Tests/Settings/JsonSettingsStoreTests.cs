@@ -17,6 +17,7 @@ public sealed class JsonSettingsStoreTests : IDisposable
     {
         Assert.Equal(2, FoviumSettings.Default.SchemaVersion);
         Assert.Equal(ImageChangeViewPolicy.KeepCurrentScale, FoviumSettings.Default.ImageChangeViewPolicy);
+        Assert.True(FoviumSettings.Default.MonitorColorManagementEnabled);
         Assert.Equal(StageBackgroundMode.Black, FoviumSettings.Default.Stage.BackgroundMode);
         Assert.False(FoviumSettings.Default.Stage.MatteEnabled);
         Assert.Equal(StageDefaults.CustomBackgroundColor, FoviumSettings.Default.Stage.CustomBackgroundColor);
@@ -27,6 +28,32 @@ public sealed class JsonSettingsStoreTests : IDisposable
         Assert.Equal(StageDefaults.AmbientSaturation, FoviumSettings.Default.Stage.AmbientSaturation);
         Assert.Equal(StageDefaults.AmbientBlurSigmaPixels, FoviumSettings.Default.Stage.AmbientBlur);
         Assert.Equal(PresentationSettings.Default, FoviumSettings.Default.Presentation);
+    }
+
+    [Fact]
+    public async Task ExistingSettingsWithoutColorPreferenceDefaultToEnabled()
+    {
+        var directory = Directory.CreateTempSubdirectory("Fovium.Settings.ColorDefault.Tests.");
+        try
+        {
+            var path = Path.Combine(directory.FullName, "settings.json");
+            await File.WriteAllTextAsync(path, """
+                {
+                  "schemaVersion": 2,
+                  "imageChangeViewPolicy": "fitEachImage"
+                }
+                """);
+            var store = new JsonSettingsStore(path);
+
+            var result = await store.LoadAsync(CancellationToken.None);
+
+            Assert.True(result.Settings.MonitorColorManagementEnabled);
+            Assert.Equal(ImageChangeViewPolicy.FitEachImage, result.Settings.ImageChangeViewPolicy);
+        }
+        finally
+        {
+            directory.Delete(true);
+        }
     }
 
     [Fact]

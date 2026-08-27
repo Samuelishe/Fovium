@@ -30,6 +30,13 @@
              CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\artifacts\native\fovium-lcms2-$(FoviumNativeRid)\runtimes\$(FoviumNativeRid)\native')">
+    <Content Include="$(MSBuildThisFileDirectory)..\artifacts\native\fovium-lcms2-$(FoviumNativeRid)\runtimes\$(FoviumNativeRid)\native\**\*"
+             Link="runtimes\$(FoviumNativeRid)\native\%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <EmbeddedResource Include="..\resources\localization\ui\*.json"
                       Link="Localization\%(Filename)%(Extension)"

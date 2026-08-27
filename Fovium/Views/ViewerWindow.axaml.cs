@@ -9,6 +9,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Fovium.Application;
 using Fovium.ColorPicking;
+using Fovium.ColorManagement;
 using Fovium.Diagnostics;
 using Fovium.Histogram;
 using Fovium.Imaging;
@@ -41,6 +42,9 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
     private readonly IReadOnlyList<string> _startupPaths;
     private readonly CancellationTokenSource _lifetimeCancellation = new();
     private readonly DispatcherTimer _cursorTimer;
+    private readonly DispatcherTimer _displayProfileRefreshTimer;
+    private readonly IDisplayColorProfileProvider _displayProfileProvider;
+    private readonly SemaphoreSlim _displayProfileRefreshGate = new(1, 1);
     private readonly Cursor _visibleCursor = new(StandardCursorType.Arrow);
     private readonly Cursor _hiddenCursor = new(StandardCursorType.None);
     private readonly Cursor _handCursor = new(StandardCursorType.SizeAll);
@@ -75,6 +79,10 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
     private bool _shutdownStarted;
     private SettingsWindow? _settingsWindow;
     private WindowState _windowStateBeforeFullscreen = WindowState.Maximized;
+    private nint _currentColorMonitorHandle;
+    private int _displayProfileRefreshGeneration;
+    private bool _forceDisplayProfileRefresh;
+    private bool _appliedMonitorColorManagementEnabled;
 
     public ViewerWindow(
         ActivationService activation,
@@ -97,6 +105,14 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
 
         InitializeComponent();
         PhotoViewport.ConfigureInteractionDiagnostics(_interactionDiagnostics);
+        var lcmsAvailability = new LittleCmsRuntimeLocator().TryLoad();
+        PhotoViewport.ConfigureMonitorColorManagement(
+            new LittleCmsColorTransformEngine(lcmsAvailability),
+            settings.Current.MonitorColorManagementEnabled);
+        _appliedMonitorColorManagementEnabled = settings.Current.MonitorColorManagementEnabled;
+        _displayProfileProvider = OperatingSystem.IsWindows()
+            ? new WindowsDisplayColorProfileProvider()
+            : new UnsupportedDisplayColorProfileProvider();
         MarkupOverlay.ConfigureDiagnostics(_interactionDiagnostics);
         PointerFeedbackOverlay.ConfigureDiagnostics(_interactionDiagnostics);
         if (_ambientSoakTrace.IsEnabled)
@@ -198,6 +214,11 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
 
         _cursorTimer = new DispatcherTimer { Interval = CursorIdlePollInterval };
         _cursorTimer.Tick += OnCursorTimerTick;
+        _displayProfileRefreshTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(150),
+        };
+        _displayProfileRefreshTimer.Tick += OnDisplayProfileRefreshTimerTick;
         PhotoViewport.PointerActivity += OnPointerActivity;
         _stageCoordinator.PresentationChanged += OnStagePresentationChanged;
         _settings.SettingsChanged += OnSettingsChanged;
@@ -205,6 +226,9 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         Closing += OnClosing;
         Closed += OnClosed;
         Deactivated += OnDeactivated;
+        Activated += OnDisplayRefreshRequired;
+        PositionChanged += OnDisplayRefreshTrigger;
+        SizeChanged += OnDisplayRefreshTrigger;
         KeyDown += OnWindowKeyDown;
         KeyUp += OnWindowKeyUp;
     }
@@ -217,6 +241,8 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             RestartCursorTimer();
             await _settings.InitializeAsync(_lifetimeCancellation.Token);
             ApplySettings(_settings.Current);
+            Screens.Changed += OnDisplayRefreshRequired;
+            ScheduleDisplayProfileRefresh(forceProfileRefresh: true);
             if (_startupPaths.Count == 0)
             {
                 var selected = await PickFilesAsync();
@@ -317,11 +343,37 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
                 $"lastSamples={metrics.LastSampleCount}, sampled={metrics.LastWasSampled}.");
         }
 
+        if (string.Equals(
+            Environment.GetEnvironmentVariable("FOVIUM_COLOR_DIAGNOSTICS"),
+            "1",
+            StringComparison.Ordinal))
+        {
+            var metrics = PhotoViewport.MonitorColorMetrics;
+            Console.WriteLine(
+                $"Fovium color: state={PhotoViewport.MonitorColorState}, " +
+                $"requests={metrics?.Requests ?? 0}, coalesced={metrics?.CoalescedRequests ?? 0}, " +
+                $"completed={metrics?.Completed ?? 0}, stale={metrics?.StaleResults ?? 0}, " +
+                $"failures={metrics?.Failures ?? 0}, rasterBytes={metrics?.CurrentRasterBytes ?? 0}.");
+            Console.WriteLine(
+                $"Fovium color timing: raster={metrics?.LastRasterSize.Width ?? 0}x" +
+                $"{metrics?.LastRasterSize.Height ?? 0}, maxRasterBytes={metrics?.MaximumRasterBytes ?? 0}, " +
+                $"sourceRenderMs={metrics?.LastSourceRenderDuration.TotalMilliseconds ?? 0:F2}, " +
+                $"lcmsMs={metrics?.LastTransformDuration.TotalMilliseconds ?? 0:F2}, " +
+                $"finalizeMs={metrics?.LastFinalizationDuration.TotalMilliseconds ?? 0:F2}.");
+        }
+
         _lifetimeCancellation.Dispose();
         _visibleCursor.Dispose();
         _hiddenCursor.Dispose();
         _handCursor.Dispose();
         _settings.SettingsChanged -= OnSettingsChanged;
+        Screens.Changed -= OnDisplayRefreshRequired;
+        Activated -= OnDisplayRefreshRequired;
+        PositionChanged -= OnDisplayRefreshTrigger;
+        SizeChanged -= OnDisplayRefreshTrigger;
+        _displayProfileRefreshTimer.Stop();
+        _displayProfileRefreshTimer.Tick -= OnDisplayProfileRefreshTimerTick;
+        PhotoViewport.ShutdownMonitorColorManagement();
         _photoInfo.StateChanged -= OnPhotoInfoStateChanged;
         _histogram.StateChanged -= OnHistogramStateChanged;
         _colorPicker.Changed -= OnColorPickerChanged;
@@ -787,6 +839,104 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         _photoInfoFloatingOverlay.SetPlacement(settings.Presentation.PhotoInfoPlacement);
         _histogramFloatingOverlay.SetPlacement(settings.Presentation.HistogramPlacement);
         _colorPickerFloatingOverlay.SetPlacement(settings.Presentation.ColorPickerPlacement);
+        if (_appliedMonitorColorManagementEnabled != settings.MonitorColorManagementEnabled)
+        {
+            _appliedMonitorColorManagementEnabled = settings.MonitorColorManagementEnabled;
+            PhotoViewport.SetMonitorColorManagementEnabled(settings.MonitorColorManagementEnabled);
+            ScheduleDisplayProfileRefresh(forceProfileRefresh: true);
+        }
+    }
+
+    private void OnDisplayRefreshTrigger(object? sender, EventArgs e) =>
+        ScheduleDisplayProfileRefresh();
+
+    private void OnDisplayRefreshRequired(object? sender, EventArgs e) =>
+        ScheduleDisplayProfileRefresh(forceProfileRefresh: true);
+
+    private void ScheduleDisplayProfileRefresh(bool forceProfileRefresh = false)
+    {
+        if (_closed)
+        {
+            return;
+        }
+
+        _forceDisplayProfileRefresh |= forceProfileRefresh;
+        _displayProfileRefreshTimer.Stop();
+        _displayProfileRefreshTimer.Start();
+    }
+
+    private void OnDisplayProfileRefreshTimerTick(object? sender, EventArgs e)
+    {
+        _displayProfileRefreshTimer.Stop();
+        var forceProfileRefresh = _forceDisplayProfileRefresh;
+        _forceDisplayProfileRefresh = false;
+        _ = RefreshDisplayProfileAsync(forceProfileRefresh);
+    }
+
+    private async Task RefreshDisplayProfileAsync(bool forceProfileRefresh)
+    {
+        var handle = TryGetPlatformHandle()?.Handle ?? 0;
+        var generation = Interlocked.Increment(ref _displayProfileRefreshGeneration);
+        var currentMonitor = _currentColorMonitorHandle;
+        var gateAcquired = false;
+        DisplayProfileResolution resolution;
+        try
+        {
+            await _displayProfileRefreshGate.WaitAsync(_lifetimeCancellation.Token);
+            gateAcquired = true;
+            if (generation != Volatile.Read(ref _displayProfileRefreshGeneration))
+            {
+                return;
+            }
+
+            resolution = await Task.Run(
+                () => _displayProfileProvider.ResolveForWindow(
+                    handle,
+                    currentMonitor,
+                    forceProfileRefresh),
+                _lifetimeCancellation.Token);
+        }
+        catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
+        {
+            return;
+        }
+        catch (Exception exception) when (IsRecoverableBoundaryException(exception))
+        {
+            resolution = new DisplayProfileResolution(
+                MonitorColorState.DestinationUnavailable,
+                null,
+                $"Display profile refresh failed ({exception.GetType().Name}).");
+        }
+        finally
+        {
+            if (gateAcquired)
+            {
+                _displayProfileRefreshGate.Release();
+            }
+        }
+
+        if (_closed || generation != Volatile.Read(ref _displayProfileRefreshGeneration))
+        {
+            return;
+        }
+
+        _currentColorMonitorHandle = resolution.Profile?.MonitorHandle ?? _currentColorMonitorHandle;
+        if (string.Equals(
+            Environment.GetEnvironmentVariable("FOVIUM_COLOR_DIAGNOSTICS"),
+            "1",
+            StringComparison.Ordinal))
+        {
+            var profile = resolution.Profile;
+            Console.WriteLine(
+                $"Fovium color destination: state={resolution.State}, " +
+                $"advancedColor={resolution.AdvancedColorEnabled?.ToString() ?? "unknown"}, " +
+                $"bitsPerChannel={resolution.BitsPerColorChannel?.ToString() ?? "unknown"}, " +
+                $"profileDescription={profile?.Description ?? "none"}, " +
+                $"profileBytes={profile?.Bytes.Length ?? 0}, " +
+                $"profileHash={profile?.Identity.DiagnosticPrefix ?? "none"}, vcgt={profile?.HasVcgt ?? false}.");
+        }
+
+        PhotoViewport.SetDisplayProfile(resolution);
     }
 
     private void ApplyStage(StageSettings stage)

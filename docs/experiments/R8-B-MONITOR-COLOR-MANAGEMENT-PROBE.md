@@ -148,7 +148,7 @@ Two simulated destinations produced different presentation RGB while leaving the
 
 ## R8-B-N1 follow-up
 
-The owner subsequently accepted R8-B-P1 and authorized the separate R8-B-N1 native prerequisite. The tracked [`../../eng/native/lcms2/`](../../eng/native/lcms2/) owner pins official Little CMS 2.19 source and locally proves a Windows app-local runtime with matrix/TRC and programmatically generated ICC v4 CLUT transforms, controlled malformed-profile failure, dependency/architecture audit, build-prefix-independent loading, manifest hashes, and repeated smoke. N1 remains locally ready for hosted verification until `win-x64`, `linux-x64`, and `osx-arm64` all pass the dedicated native workflow. This does not alter the historical probe result or implement production Monitor Color Management; R8-B-W1 remains a later owner-scoped Windows SDR stage.
+The owner subsequently accepted R8-B-P1 and R8-B-N1. Accepted N1 commit `5155b7806703a657d89ab2923fd2936814a37a16` owns pinned Little CMS 2.19 under [`../../eng/native/lcms2/`](../../eng/native/lcms2/) and has green hosted `win-x64`, `linux-x64`, and `osx-arm64` native evidence plus normal CI. R8-B-W1 then implements the bounded Windows ordinary-SDR product path at `0.1.0.0008`: active-monitor profile discovery, app-local production interop, viewport-sized destination pixels, latest-wins publication, and explicit fallback. This appendix does not rewrite the historical probe result. macOS/Linux monitor output and Windows Advanced Color/HDR remain unimplemented.
 
 ## Primary references
 

@@ -16,10 +16,14 @@ internal static class UiStrings
     public const string MenuClose = "menu.close";
     public const string SettingsTitle = "settings.title";
     public const string SettingsViewing = "settings.viewing";
+    public const string SettingsColor = "settings.color";
     public const string SettingsAbout = "settings.about";
     public const string SettingsStage = "settings.stage";
     public const string SettingsControls = "settings.controls";
     public const string SettingsPresentation = "settings.presentation";
+    public const string ColorMonitorManagement = "color.monitorManagement";
+    public const string ColorUseActiveMonitorProfile = "color.useActiveMonitorProfile";
+    public const string ColorMonitorManagementExplanation = "color.monitorManagementExplanation";
     public const string StageBlack = "stage.black";
     public const string StageNeutral = "stage.neutral";
     public const string StageCustom = "stage.custom";

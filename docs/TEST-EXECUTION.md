@@ -117,3 +117,16 @@ bash eng/native/libheif/build.sh osx-arm64
 ```
 
 The scripts fail on host/RID mismatch, archive hash mismatch, non-local libheif loading, missing HEVC/AV1 decoders, present HEVC/AV1 encoders, forbidden codec/developer-path dependencies, or fixture decode failure. macOS additionally requires exact app-local install names, `@loader_path`, the configured deployment target, and the RID architecture. Smoke runs with the original build prefix renamed out of reach. Per-RID `manifest.json`, `dependency-audit.txt`, and `smoke-report.txt` are the detailed evidence owners.
+
+## R8-B-W1 Monitor Color Management
+
+Run production color tests with the accepted current-RID artifact materialized:
+
+```powershell
+$env:FOVIUM_REQUIRE_LCMS_TEST_RUNTIME = '1'
+dotnet test Fovium.Tests/Fovium.Tests.csproj -c Release --filter "FullyQualifiedName~Fovium.Tests.ColorManagement"
+```
+
+The project-authored fixtures under `eng/native/lcms2/fixtures/` are generated with pinned Little CMS 2.19 and prove both a matrix/TRC RGB display destination and a real `BToA0` CLUT RGB display destination. Tests verify app-local path/version, exact BGRA patches, relative colorimetric/BPC-off policy, alpha 255/128/1/0, untagged final device pixels, Display-P3→reference-sRGB normalization, canonical-source immutability, 16 MiB admission, monitor geometry/ties, output-state identity, source fallback, physical scale 1.00/1.25/1.50/2.00, visible-raster bounds, coalescing/latest-wins, shutdown during native work, and absence of presented-source events on destination change. The require variable turns missing runtime into failure; ordinary CI may exercise fake/pure paths without building native code.
+
+The separate `native-lcms2.yml` matrix builds/audits/smokes `win-x64`, `linux-x64`, and `osx-arm64`, materializes each bundle into Fovium output, verifies final hashes, and runs the actual production interop tests. This is cross-platform engine evidence, not physical-monitor support outside Windows. Local Windows smoke additionally records anonymized real HWND/profile state with `FOVIUM_COLOR_DIAGNOSTICS=1`; full profile paths are forbidden.

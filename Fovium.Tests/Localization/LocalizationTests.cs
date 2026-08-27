@@ -5,6 +5,23 @@ namespace Fovium.Tests.Localization;
 
 public sealed class LocalizationTests
 {
+    [Theory]
+    [InlineData("en", "Color", "Monitor color management")]
+    [InlineData("ru", "Цвет", "Управление цветом монитора")]
+    public void ColorSettingsStringsAreComplete(string language, string section, string heading)
+    {
+        var localizer = Localizer.Create(CultureInfo.GetCultureInfo(language));
+
+        Assert.Equal(section, localizer[UiStrings.SettingsColor]);
+        Assert.Equal(heading, localizer[UiStrings.ColorMonitorManagement]);
+        Assert.NotEqual(
+            UiStrings.ColorUseActiveMonitorProfile,
+            localizer[UiStrings.ColorUseActiveMonitorProfile]);
+        Assert.NotEqual(
+            UiStrings.ColorMonitorManagementExplanation,
+            localizer[UiStrings.ColorMonitorManagementExplanation]);
+    }
+
     [Fact]
     public void EnglishCultureResolvesToEnglish()
     {

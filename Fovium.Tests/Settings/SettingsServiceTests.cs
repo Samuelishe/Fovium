@@ -8,6 +8,22 @@ namespace Fovium.Tests.Settings;
 public sealed class SettingsServiceTests
 {
     [Fact]
+    public async Task MonitorColorManagementPreferencePersistsWithoutChangingOtherSettings()
+    {
+        var store = new RecordingSettingsStore();
+        using var service = new SettingsService(store);
+        await service.InitializeAsync(CancellationToken.None);
+
+        await service.SetMonitorColorManagementEnabledAsync(false);
+        await service.FlushAsync();
+
+        Assert.False(service.Current.MonitorColorManagementEnabled);
+        Assert.False(store.Saved?.MonitorColorManagementEnabled);
+        Assert.Equal(StageSettings.Default, service.Current.Stage);
+        Assert.Equal(PresentationSettings.Default, service.Current.Presentation);
+    }
+
+    [Fact]
     public async Task ReapplyingEquivalentSettingsDoesNotRaiseEventOrAutosave()
     {
         var store = new RecordingSettingsStore();

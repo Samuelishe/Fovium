@@ -14,6 +14,17 @@
         <RadioButton x:Name="FitEachImageOption" GroupName="ImageChangeViewPolicy" />
       </StackPanel>
     </TabItem>
+    <TabItem x:Name="ColorTab">
+      <StackPanel Margin="12,18" Spacing="12">
+        <TextBlock x:Name="MonitorColorManagementHeading" FontSize="18" FontWeight="SemiBold" />
+        <CheckBox x:Name="MonitorColorManagementOption" />
+        <TextBlock x:Name="MonitorColorManagementExplanation"
+                   Margin="24,0,0,0"
+                   MaxWidth="500"
+                   Opacity="0.72"
+                   TextWrapping="Wrap" />
+      </StackPanel>
+    </TabItem>
     <TabItem x:Name="StageTab">
       <ScrollViewer>
         <StackPanel Margin="12,18" Spacing="12">

@@ -72,6 +72,15 @@ internal sealed class SettingsService(ISettingsStore store) : IDisposable
                 : settings with { ImageChangeViewPolicy = policy },
             cancellationToken);
 
+    public Task SetMonitorColorManagementEnabledAsync(
+        bool enabled,
+        CancellationToken cancellationToken = default) =>
+        UpdateAsync(
+            settings => settings.MonitorColorManagementEnabled == enabled
+                ? settings
+                : settings with { MonitorColorManagementEnabled = enabled },
+            cancellationToken);
+
     public Task SetStageAsync(
         StageSettings stage,
         CancellationToken cancellationToken = default)
@@ -236,6 +245,7 @@ internal sealed class SettingsService(ISettingsStore store) : IDisposable
     private static bool AreEqual(FoviumSettings left, FoviumSettings right) =>
         left.SchemaVersion == right.SchemaVersion &&
         left.ImageChangeViewPolicy == right.ImageChangeViewPolicy &&
+        left.MonitorColorManagementEnabled == right.MonitorColorManagementEnabled &&
         left.Stage == right.Stage &&
         left.Presentation == right.Presentation &&
         SettingsEqual(left.Shortcuts, right.Shortcuts);

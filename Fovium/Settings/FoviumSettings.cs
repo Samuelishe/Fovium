@@ -19,6 +19,8 @@ internal sealed record FoviumSettings
     public ImageChangeViewPolicy ImageChangeViewPolicy { get; init; } =
         ImageChangeViewPolicy.KeepCurrentScale;
 
+    public bool MonitorColorManagementEnabled { get; init; } = true;
+
     public StageSettings Stage { get; init; } = StageSettings.Default;
 
     public ShortcutSettings Shortcuts { get; init; } = ShortcutSettings.Default;

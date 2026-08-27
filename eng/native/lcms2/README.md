@@ -1,8 +1,8 @@
 # Fovium Little CMS native runtime
 
-Role: Reproducible source-build owner for the future Fovium Monitor Color Management native prerequisite.
+Role: Reproducible source-build owner for Fovium's app-local Little CMS runtime.
 
-This directory builds the core Little CMS shared library from the pinned official `lcms2.19` release. It does not integrate Little CMS into production Fovium, enable Monitor Color Management, or change normal rendering. Generated sources, build trees, runtime bundles, and archives remain under ignored `artifacts/native/`.
+This directory builds the core Little CMS shared library from the pinned official `lcms2.19` release. R8-B-W1 consumes the resulting app-local runtime for Windows ordinary-SDR Monitor Color Management; macOS, Linux, and Windows Advanced Color/HDR monitor integration remain outside that product stage. Generated sources, build trees, runtime bundles, and archives remain under ignored `artifacts/native/`.
 
 ## Pin and license
 

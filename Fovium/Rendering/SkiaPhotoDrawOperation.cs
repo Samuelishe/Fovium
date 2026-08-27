@@ -4,7 +4,9 @@ using Avalonia.Platform;
 using Avalonia.Rendering.SceneGraph;
 using Avalonia.Skia;
 using Fovium.Diagnostics;
+using Fovium.ColorManagement;
 using Fovium.Imaging;
+using Fovium.Loading;
 using Fovium.Stage;
 using SkiaSharp;
 
@@ -16,6 +18,7 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
 {
     private DecodedImage.RenderLease? _imageLease;
     private DecodedImage.AmbientLease? _ambientLease;
+    private SharedResourceLease<ManagedPhotoSurface>? _managedSurface;
     private readonly PixelSize _encodedSize;
     private readonly ExifOrientation _orientation;
     private readonly RectD _destination;
@@ -26,6 +29,7 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
     private readonly long? _ambientIdentity;
     private readonly AmbientRenderFrameDiagnostics _frameDiagnostics;
     private readonly InteractionRenderDiagnostics _interactionDiagnostics;
+    private readonly bool _suppressLegacyPhoto;
 
     public SkiaPhotoDrawOperation(
         Rect bounds,
@@ -40,7 +44,9 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
         long imageIdentity,
         long? ambientIdentity,
         AmbientRenderFrameDiagnostics frameDiagnostics,
-        InteractionRenderDiagnostics interactionDiagnostics)
+        InteractionRenderDiagnostics interactionDiagnostics,
+        SharedResourceLease<ManagedPhotoSurface>? managedSurface = null,
+        bool suppressLegacyPhoto = false)
     {
         Bounds = bounds;
         _imageLease = imageLease;
@@ -55,6 +61,8 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
         _ambientIdentity = ambientIdentity;
         _frameDiagnostics = frameDiagnostics;
         _interactionDiagnostics = interactionDiagnostics;
+        _managedSurface = managedSurface;
+        _suppressLegacyPhoto = suppressLegacyPhoto;
     }
 
     public Rect Bounds { get; }
@@ -95,6 +103,35 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
             _imageIdentity,
             _ambientIdentity,
             _frameDiagnostics);
+        var managedSurface = _managedSurface;
+        if (managedSurface is not null)
+        {
+            using var managedPaint = new SKPaint { IsAntialias = false };
+            var source = new SKRect(
+                0,
+                0,
+                managedSurface.Value.Image.Width,
+                managedSurface.Value.Image.Height);
+            var managedDestination = managedSurface.Value.Destination;
+            var destination = new SKRect(
+                (float)managedDestination.X,
+                (float)managedDestination.Y,
+                (float)(managedDestination.X + managedDestination.Width),
+                (float)(managedDestination.Y + managedDestination.Height));
+            canvas.DrawImage(
+                managedSurface.Value.Image,
+                source,
+                destination,
+                new SKSamplingOptions(SKFilterMode.Nearest, SKMipmapMode.None),
+                managedPaint);
+            return;
+        }
+
+        if (_suppressLegacyPhoto)
+        {
+            return;
+        }
+
         var affine = OrientationAffine.Create(_encodedSize, _orientation);
         var orientedSize = OrientationTransform.GetOrientedSize(_encodedSize, _orientation);
         var scaleX = _destination.Width / orientedSize.Width;
@@ -133,6 +170,7 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
     {
         Interlocked.Exchange(ref _imageLease, null)?.Dispose();
         Interlocked.Exchange(ref _ambientLease, null)?.Dispose();
+        Interlocked.Exchange(ref _managedSurface, null)?.Dispose();
     }
 
 }

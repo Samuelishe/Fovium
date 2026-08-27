@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 using Fovium.Diagnostics;
+using Fovium.ColorManagement;
 using Fovium.ColorPicking;
 using Fovium.Imaging;
 using Fovium.Loading;
@@ -51,6 +52,17 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
     private ViewerSystemCursorMode _appliedSystemCursorMode = (ViewerSystemCursorMode)(-1);
     private InteractionRenderDiagnostics _interactionDiagnostics = new();
     private bool _colorPickerEnabled;
+    private ManagedPhotoPresentationCoordinator? _managedPhotoCoordinator;
+    private DisplayProfileResolution _displayProfile = new(
+        MonitorColorState.DestinationUnavailable,
+        null,
+        "No display profile has been resolved.");
+    private ManagedPhotoKey? _requestedManagedKey;
+    private bool _monitorColorManagementEnabled = true;
+    private bool _monitorColorEngineAvailable;
+    private bool _managedPresentationFailed;
+    private MonitorColorState _monitorColorState = MonitorColorState.PlatformUnsupported;
+    private bool _photoPresentationVisible;
 
     public PhotoViewportControl()
     {
@@ -67,9 +79,15 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 
     public event EventHandler<PhotoSampleRequestedEventArgs>? ColorSampleRequested;
 
+    public event EventHandler? MonitorColorStateChanged;
+
     public bool HasImage => _image is not null;
 
     public InspectionMode InspectionMode => _inspectionMode;
+
+    internal MonitorColorState MonitorColorState => _monitorColorState;
+
+    internal ManagedPhotoCoordinatorMetrics? MonitorColorMetrics => _managedPhotoCoordinator?.Metrics;
 
     internal string? PresentedImageIdentity => _inspectionImage is not null
         ? _inspectionImageIdentity
@@ -115,6 +133,69 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 
     internal void ConfigureInteractionDiagnostics(InteractionRenderDiagnostics diagnostics) =>
         _interactionDiagnostics = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
+
+    internal void ConfigureMonitorColorManagement(IColorTransformEngine engine, bool enabled)
+    {
+        ArgumentNullException.ThrowIfNull(engine);
+        if (_managedPhotoCoordinator is not null)
+        {
+            throw new InvalidOperationException("Monitor color management is already configured.");
+        }
+
+        _monitorColorManagementEnabled = enabled;
+        _monitorColorEngineAvailable = engine.IsAvailable;
+        _managedPhotoCoordinator = new ManagedPhotoPresentationCoordinator(
+            new SkiaLittleCmsPhotoRenderer(engine));
+        _managedPhotoCoordinator.PresentationChanged += OnManagedPresentationChanged;
+        _managedPhotoCoordinator.PresentationFailed += OnManagedPresentationFailed;
+        PublishPhotoPresentation();
+    }
+
+    internal void SetMonitorColorManagementEnabled(bool enabled)
+    {
+        if (_monitorColorManagementEnabled == enabled)
+        {
+            return;
+        }
+
+        _monitorColorManagementEnabled = enabled;
+        _requestedManagedKey = null;
+        _managedPresentationFailed = false;
+        _managedPhotoCoordinator?.Clear();
+        PublishPhotoPresentation();
+    }
+
+    internal void SetDisplayProfile(DisplayProfileResolution profile)
+    {
+        var unchanged = _displayProfile.State == profile.State &&
+            _displayProfile.AdvancedColorEnabled == profile.AdvancedColorEnabled &&
+            _displayProfile.Profile?.Identity == profile.Profile?.Identity;
+        _displayProfile = profile;
+        if (unchanged)
+        {
+            return;
+        }
+
+        _requestedManagedKey = null;
+        _managedPresentationFailed = false;
+        _managedPhotoCoordinator?.Clear();
+        PublishPhotoPresentation();
+    }
+
+    internal void ShutdownMonitorColorManagement()
+    {
+        var coordinator = _managedPhotoCoordinator;
+        if (coordinator is null)
+        {
+            return;
+        }
+
+        coordinator.PresentationChanged -= OnManagedPresentationChanged;
+        coordinator.PresentationFailed -= OnManagedPresentationFailed;
+        _managedPhotoCoordinator = null;
+        _requestedManagedKey = null;
+        coordinator.Dispose();
+    }
 
     internal ViewportAmbientPresentationState CaptureAmbientPresentationState()
     {
@@ -181,6 +262,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
         _image = image;
         _canonicalImageIdentity = imageIdentity;
         _viewport.SetImage(image.Value.Descriptor.OrientedSize, transfer);
+        ResetManagedPhotoRequest();
         _presentation?.SelectImage(imageIdentity);
         UpdateMarkupOverlay();
         PublishPhotoPresentation();
@@ -220,6 +302,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
         _ambient = ambient;
         _ambientImageIdentity = ambient is null ? null : presentation.ImageIdentity;
         _viewport.SetImage(image.Value.Descriptor.OrientedSize, transfer);
+        ResetManagedPhotoRequest();
         _presentation?.SelectImage(imageIdentity);
         UpdateMarkupOverlay();
         PublishPhotoPresentation();
@@ -256,6 +339,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
         var previousAmbient = _ambient;
         _image = null;
         _canonicalImageIdentity = null;
+        ResetManagedPhotoRequest();
         _presentation?.SelectImage(null);
         _ambient = null;
         _ambientImageIdentity = null;
@@ -629,11 +713,13 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
         if (cachedLease is null || Bounds.Width <= 0 || Bounds.Height <= 0)
         {
             _photoDrawHost.SetOperation(null);
+            SetPhotoPresentationVisible(false);
             return;
         }
 
         DecodedImage.RenderLease? renderLease = null;
         DecodedImage.AmbientLease? ambientLease = null;
+        SharedResourceLease<ManagedPhotoSurface>? managedSurface = null;
         try
         {
             renderLease = cachedLease.Value.AcquireRenderLease();
@@ -649,13 +735,64 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 
             var descriptor = cachedLease.Value.Descriptor;
             var presentationStage = _inspectionImage is not null ? _inspectionStage! : _stage;
+            var destination = GetDestination();
+            var suppressLegacyPhoto = false;
+            var state = MonitorColorPolicy.Classify(
+                _monitorColorManagementEnabled,
+                OperatingSystem.IsWindows(),
+                _monitorColorEngineAvailable,
+                _displayProfile,
+                descriptor.ColorState);
+            if (_managedPresentationFailed && state == MonitorColorState.Managed)
+            {
+                state = MonitorColorState.InvalidDestinationProfile;
+            }
+
+            if (state == MonitorColorState.Managed &&
+                _displayProfile.Profile is { } profile &&
+                _managedPhotoCoordinator is { } coordinator)
+            {
+                var geometry = new ManagedPhotoGeometry(
+                    new RectD(0, 0, Bounds.Width, Bounds.Height),
+                    destination,
+                    _viewport.RenderScaling,
+                    _viewport.UsesExactPixelSampling);
+                if (geometry.IsValid)
+                {
+                    var key = new ManagedPhotoKey(
+                        presentedNumericIdentity,
+                        profile.Identity,
+                        descriptor.EncodedSize,
+                        descriptor.Orientation,
+                        geometry);
+                    if (!coordinator.TryAcquire(key, out managedSurface))
+                    {
+                        suppressLegacyPhoto = true;
+                        if (_requestedManagedKey != key)
+                        {
+                            _requestedManagedKey = key;
+                            coordinator.Request(new ManagedPhotoRenderRequest(
+                                key,
+                                descriptor,
+                                cachedLease.Value.AcquireRenderLease(),
+                                profile.Bytes));
+                        }
+                    }
+                }
+            }
+            else
+            {
+                _requestedManagedKey = null;
+            }
+
+            SetMonitorColorState(state);
             _ambientFrameDiagnostics.RecordCustomDrawScheduled();
             _photoDrawHost.SetOperation(new SkiaPhotoDrawOperation(
                 new Rect(Bounds.Size),
                 renderLease,
                 descriptor.EncodedSize,
                 descriptor.Orientation,
-                GetDestination(),
+                destination,
                 _viewport.UsesExactPixelSampling,
                 presentationStage,
                 _viewport.RenderScaling,
@@ -663,15 +800,60 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
                 presentedNumericIdentity,
                 ambientLease is null ? null : ambientIdentity,
                 _ambientFrameDiagnostics,
-                _interactionDiagnostics));
+                _interactionDiagnostics,
+                managedSurface,
+                suppressLegacyPhoto));
+            SetPhotoPresentationVisible(!suppressLegacyPhoto);
             renderLease = null;
             ambientLease = null;
+            managedSurface = null;
         }
         finally
         {
             renderLease?.Dispose();
             ambientLease?.Dispose();
+            managedSurface?.Dispose();
         }
+    }
+
+    private void ResetManagedPhotoRequest()
+    {
+        _requestedManagedKey = null;
+        _managedPresentationFailed = false;
+        _managedPhotoCoordinator?.Clear();
+    }
+
+    private void OnManagedPresentationChanged(object? sender, EventArgs e) =>
+        Avalonia.Threading.Dispatcher.UIThread.Post(PublishPhotoPresentation);
+
+    private void OnManagedPresentationFailed(object? sender, EventArgs e)
+    {
+        _managedPresentationFailed = true;
+        Avalonia.Threading.Dispatcher.UIThread.Post(PublishPhotoPresentation);
+    }
+
+    private void SetMonitorColorState(MonitorColorState state)
+    {
+        if (_monitorColorState == state)
+        {
+            return;
+        }
+
+        _monitorColorState = state;
+        MonitorColorStateChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void SetPhotoPresentationVisible(bool visible)
+    {
+        if (_photoPresentationVisible == visible)
+        {
+            return;
+        }
+
+        _photoPresentationVisible = visible;
+        UpdateMarkupOverlay();
+        UpdatePointerPresentation();
+        ApplyCursor();
     }
 
     private void OnScalingChanged(object? sender, EventArgs e) => UpdateViewportMetrics();
@@ -780,7 +962,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 
     private DrawingCursorPresentation GetPointerFeedback()
     {
-        if (_presentation is not { } presentation)
+        if (!_photoPresentationVisible || _presentation is not { } presentation)
         {
             return default;
         }
@@ -834,7 +1016,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
         }
 
         var image = _inspectionImage ?? _image;
-        if (image is null || _presentation is null)
+        if (!_photoPresentationVisible || image is null || _presentation is null)
         {
             _markupOverlay.SetPresentation(null);
             return;
@@ -850,6 +1032,11 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 
     private PointD? TryGetSourcePoint(Point pointer)
     {
+        if (!_photoPresentationVisible)
+        {
+            return null;
+        }
+
         var destination = GetDestination();
         if (pointer.X < destination.X || pointer.X > destination.X + destination.Width ||
             pointer.Y < destination.Y || pointer.Y > destination.Y + destination.Height)
@@ -863,7 +1050,8 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
     private void RequestColorSample(Point pointer)
     {
         var handler = ColorSampleRequested;
-        if (handler is null ||
+        if (!_photoPresentationVisible ||
+            handler is null ||
             !TryAcquirePresentedImage(out var presented) ||
             presented is null)
         {

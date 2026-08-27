@@ -29,6 +29,9 @@
     <Content Include="..\eng\native\libheif\fixtures\*.heic;..\eng\native\libheif\fixtures\*.avif"
              Link="TestData\Heif\%(Filename)%(Extension)"
              CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\eng\native\lcms2\fixtures\generated\*.icc"
+             Link="TestData\ColorManagement\%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
