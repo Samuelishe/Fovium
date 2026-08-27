@@ -146,6 +146,10 @@ Two simulated destinations produced different presentation RGB while leaving the
 
 **BLOCKED.** The probe establishes a viable Windows SDR architecture and enough evidence to scope the next bounded prerequisite, but a universal Skia-only implementation is disproved by a valid LUT display profile. The owner must explicitly decide whether to authorize a reproducible Little CMS native-runtime stage. Real macOS target/compositor evidence, an X11 profile-source decision, and Wayland surface-description integration also remain platform gates; real multi-monitor hardware transition evidence remains pending.
 
+## R8-B-N1 follow-up
+
+The owner subsequently accepted R8-B-P1 and authorized the separate R8-B-N1 native prerequisite. The tracked [`../../eng/native/lcms2/`](../../eng/native/lcms2/) owner pins official Little CMS 2.19 source and locally proves a Windows app-local runtime with matrix/TRC and programmatically generated ICC v4 CLUT transforms, controlled malformed-profile failure, dependency/architecture audit, build-prefix-independent loading, manifest hashes, and repeated smoke. N1 remains locally ready for hosted verification until `win-x64`, `linux-x64`, and `osx-arm64` all pass the dedicated native workflow. This does not alter the historical probe result or implement production Monitor Color Management; R8-B-W1 remains a later owner-scoped Windows SDR stage.
+
 ## Primary references
 
 - [Skia color management](https://docs.skia.org/docs/user/color/)

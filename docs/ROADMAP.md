@@ -99,7 +99,11 @@ Core Fovium functionality remains offline: decode, navigation, Stage/presentatio
 
 ## Monitor Color Management
 
-R8-B-P1 is owner-review-ready as a bounded architecture/rendering probe at unchanged version `0.1.0.0007`. It establishes current source-state truth, Windows display-profile discovery, the untagged Avalonia direct-Skia target, matrix/TRC transform accuracy, a valid LUT-profile Skia limitation, platform-specific double-management boundaries, and the memory case for a viewport-sized derived presentation. Production Color Management remains unimplemented and blocked on owner selection of the next native/platform prerequisite described by the [probe](experiments/R8-B-MONITOR-COLOR-MANAGEMENT-PROBE.md).
+R8-B-P1 is owner-accepted as a bounded architecture/rendering probe at unchanged version `0.1.0.0007`. It establishes current source-state truth, Windows display-profile discovery, the untagged Avalonia direct-Skia target, matrix/TRC transform accuracy, a valid LUT-profile Skia limitation, platform-specific double-management boundaries, and the memory case for a viewport-sized derived presentation.
+
+R8-B-N1 is locally ready for hosted verification as the reproducible Little CMS 2.19 native-runtime prerequisite. It owns an independent pinned source build, app-local RID bundles, license/provenance manifests, binary audits, build-prefix-independent loading, and native matrix/TRC, CLUT, malformed-input, and modest concurrency smoke. Local evidence is `win-x64`; acceptance still requires green `win-x64`, `linux-x64`, and `osx-arm64` hosted jobs plus normal CI.
+
+After N1 acceptance, the next recommended bounded production stage is R8-B-W1: Windows SDR Monitor Color Management. Do not begin W1 from N1 automatically. Production Color Management remains unimplemented; later macOS, Linux X11, Wayland, Advanced Color/HDR, and real multi-monitor work remain separate platform stages described by the [probe](experiments/R8-B-MONITOR-COLOR-MANAGEMENT-PROBE.md).
 
 ## Later / separate platform milestones
 

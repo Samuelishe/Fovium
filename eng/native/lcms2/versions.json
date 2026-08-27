@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "component": "Little CMS",
+    "version": "2.19",
+    "encodedVersion": 2190,
+    "tag": "lcms2.19",
+    "commit": "b76633e60c8387a77268fb3359277ca25b5fd75c",
+    "sourceUrl": "https://github.com/mm2/Little-CMS",
+    "archiveUrl": "https://github.com/mm2/Little-CMS/releases/download/lcms2.19/lcms2-2.19.tar.gz",
+    "archiveFile": "lcms2-2.19.tar.gz",
+    "archiveSha256": "49e7e134e4299733dd0eda434fa468997a28ab3d33fa397c642b03644f552216",
+    "sourceDirectory": "lcms2-2.19",
+    "license": "MIT",
+    "licenseFile": "LICENSE",
+    "licenseSha256": "6dbd60437f8ef91d8de1f08ad75882547fd4931bfcc3566a0735f28db1484d31",
+    "copyright": "Copyright (c) 2023 Marti Maria Saguer"
+  },
+  "tooling": {
+    "minimumPython": "3.12.0",
+    "minimumCMake": "3.28.0",
+    "macosDeploymentTarget": "14.0",
+    "windowsLinkerReproducibilityFlag": "/Brepro",
+    "sourceDateEpoch": "1776988800"
+  },
+  "build": {
+    "configuration": "Release",
+    "smokeIterations": 100,
+    "cmakeOptions": {
+      "BUILD_SHARED_LIBS": "ON",
+      "LCMS2_BUILD_SHARED": "ON",
+      "LCMS2_BUILD_STATIC": "OFF",
+      "LCMS2_BUILD_TOOLS": "OFF",
+      "LCMS2_BUILD_TESTS": "OFF",
+      "LCMS2_WITH_JPEG": "OFF",
+      "LCMS2_WITH_TIFF": "OFF",
+      "LCMS2_WITH_ZLIB": "OFF",
+      "LCMS2_WITH_THREADS": "ON",
+      "LCMS2_WITH_FASTFLOAT": "OFF",
+      "LCMS2_WITH_THREADED_PLUGIN": "OFF"
+    }
+  },
+  "requiredRids": [
+    "win-x64",
+    "linux-x64",
+    "osx-arm64"
+  ],
+  "additionalRids": [
+    "osx-x64"
+  ]
+}
