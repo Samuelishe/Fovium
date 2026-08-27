@@ -96,6 +96,42 @@ public sealed class ManagedPhotoRendererGeometryTests
         Assert.True(coverage.OverscanFactor < ManagedPhotoCoveragePlanner.PreferredOverscanFactor);
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void BaseAndDetailPreservePremultipliedAlphaThroughTheSameManagedPipeline(
+        bool baseRole)
+    {
+        var role = baseRole ? ManagedPhotoSurfaceRole.Base : ManagedPhotoSurfaceRole.Detail;
+        using var image = CreateAlphaImage();
+        using var renderer = new SkiaLittleCmsPhotoRenderer(new CopyTransformEngine());
+        var geometry = new ManagedPhotoGeometry(
+            new RectD(0, 0, 2, 1),
+            new RectD(0, 0, 2, 1),
+            1,
+            true);
+        var key = new ManagedPhotoKey(
+            image.Identity,
+            new DisplayProfileIdentity("identity", false),
+            image.Descriptor.EncodedSize,
+            image.Descriptor.Orientation,
+            geometry);
+        using var request = new ManagedPhotoRenderRequest(
+            key,
+            image.Descriptor,
+            image.AcquireRenderLease(),
+            DisplayIccProfileAdmissionTests.CreateProfileHeader())
+        {
+            Role = role,
+        };
+
+        using var surface = renderer.Render(request);
+        using var sourcePixels = image.AcquirePixelLease();
+
+        Assert.Equal(role, surface.Role);
+        Assert.Equal(sourcePixels.PixelBytes.ToArray(), surface.CopyPixelBytes());
+    }
+
     private static DecodedImage CreateImage(int width, int height)
     {
         using var colorSpace = SKColorSpace.CreateSrgb();
@@ -104,6 +140,36 @@ public sealed class ManagedPhotoRendererGeometryTests
         bitmap.Erase(new SKColor(30, 60, 90, 255));
         var skImage = SKImage.FromBitmap(bitmap);
         var size = new PixelSize(width, height);
+        return new DecodedImage(
+            [],
+            new ImageDescriptor(
+                "memory",
+                ImageFormatId.Png,
+                size,
+                size,
+                ExifOrientation.Normal,
+                1,
+                SourceColorState.NormalizedSrgb,
+                false,
+                "Bgra8888/Premul",
+                bitmap.ByteCount,
+                bitmap.ByteCount,
+                TimeSpan.Zero,
+                TimeSpan.Zero,
+                TimeSpan.Zero),
+            bitmap,
+            skImage);
+    }
+
+    private static DecodedImage CreateAlphaImage()
+    {
+        using var colorSpace = SKColorSpace.CreateSrgb();
+        var info = new SKImageInfo(2, 1, SKColorType.Bgra8888, SKAlphaType.Premul, colorSpace);
+        var bitmap = new SKBitmap(info);
+        bitmap.SetPixel(0, 0, new SKColor(200, 100, 50, 128));
+        bitmap.SetPixel(1, 0, new SKColor(25, 50, 75, 0));
+        var skImage = SKImage.FromBitmap(bitmap);
+        var size = new PixelSize(2, 1);
         return new DecodedImage(
             [],
             new ImageDescriptor(

@@ -779,17 +779,18 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
                     if (_requestedManagedKey != key)
                     {
                         _requestedManagedKey = key;
-                        var isProxy = managedPresentation?.Quality ==
-                            ManagedPhotoPresentationQuality.Proxy;
+                        var deferForQuality = pendingReason ==
+                            ManagedPhotoPendingReason.QualityRefinementPending;
                         coordinator.Request(
                             new ManagedPhotoRenderRequest(
                                 key,
                                 descriptor,
                                 cachedLease.Value.AcquireRenderLease(),
                                 profile.Bytes),
-                            deferGeometryRefinement: isProxy,
+                            deferGeometryRefinement: deferForQuality,
                             pendingReason,
-                            qualityRefinement: managedPresentation?.UnderResolved == true);
+                            qualityRefinement: deferForQuality,
+                            ensureFullSourceBase: true);
                     }
                 }
             }

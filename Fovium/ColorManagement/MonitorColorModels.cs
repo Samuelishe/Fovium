@@ -244,6 +244,52 @@ internal static class ManagedPhotoCoveragePlanner
     }
 }
 
+internal static class ManagedPhotoBaseCoveragePlanner
+{
+    public const long MaximumBaseRasterBytes = 32L * 1024 * 1024;
+
+    public static ManagedPhotoCoverage Create(ManagedPhotoGeometry geometry, PixelSize orientedSize)
+    {
+        if (!geometry.IsValid || orientedSize.Width <= 0 || orientedSize.Height <= 0)
+        {
+            throw new ArgumentException("Managed photo base coverage requires valid geometry and source size.");
+        }
+
+        var maximumWidth = Math.Max(
+            1,
+            checked((int)Math.Floor(geometry.ViewportBounds.Width * geometry.RenderScaling)));
+        var maximumHeight = Math.Max(
+            1,
+            checked((int)Math.Floor(geometry.ViewportBounds.Height * geometry.RenderScaling)));
+        var sourceAspect = orientedSize.Width / (double)orientedSize.Height;
+        var width = maximumWidth;
+        var height = Math.Max(1, checked((int)Math.Floor(width / sourceAspect)));
+        if (height > maximumHeight)
+        {
+            height = maximumHeight;
+            width = Math.Max(1, checked((int)Math.Floor(height * sourceAspect)));
+        }
+
+        var capped = false;
+        var retainedBytes = checked((long)width * height * 4);
+        while (retainedBytes > MaximumBaseRasterBytes)
+        {
+            capped = true;
+            var factor = Math.Sqrt(MaximumBaseRasterBytes / (double)retainedBytes) * 0.999;
+            width = Math.Max(1, checked((int)Math.Floor(width * factor)));
+            height = Math.Max(1, checked((int)Math.Floor(height * factor)));
+            retainedBytes = checked((long)width * height * 4);
+        }
+
+        return new ManagedPhotoCoverage(
+            new RectD(0, 0, orientedSize.Width, orientedSize.Height),
+            geometry.PhotoDestination,
+            new PixelSize(width, height),
+            1,
+            capped);
+    }
+}
+
 internal readonly record struct ManagedPhotoKey(
     long ImageIdentity,
     DisplayProfileIdentity DestinationIdentity,
@@ -269,7 +315,9 @@ internal static class ManagedPhotoPublicationPolicy
             SuppressLegacyPhoto: true,
             PhotoPresentationVisible: false,
             GeometryOnlyBlackFallback:
-                pendingReason == ManagedPhotoPendingReason.GeometryRefinementPending);
+                pendingReason is ManagedPhotoPendingReason.GeometryRefinementPending or
+                    ManagedPhotoPendingReason.CoverageRefinementPending or
+                    ManagedPhotoPendingReason.QualityRefinementPending);
 }
 
 internal static class MonitorColorPolicy

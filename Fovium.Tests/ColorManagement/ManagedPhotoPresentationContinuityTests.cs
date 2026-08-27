@@ -39,12 +39,12 @@ public sealed class ManagedPhotoPresentationContinuityTests
             g1,
             g0,
             ManagedPhotoPresentationQuality.Proxy,
-            ManagedPhotoPendingReason.GeometryRefinementPending,
+            ManagedPhotoPendingReason.QualityRefinementPending,
             expectedUnderResolution: true);
         coordinator.Request(
             CreateRequest(image, g1),
             deferGeometryRefinement: true,
-            ManagedPhotoPendingReason.GeometryRefinementPending,
+            ManagedPhotoPendingReason.QualityRefinementPending,
             qualityRefinement: true);
 
         AssertPresentation(
@@ -52,24 +52,24 @@ public sealed class ManagedPhotoPresentationContinuityTests
             g2,
             g0,
             ManagedPhotoPresentationQuality.Proxy,
-            ManagedPhotoPendingReason.GeometryRefinementPending,
+            ManagedPhotoPendingReason.QualityRefinementPending,
             expectedUnderResolution: true);
         coordinator.Request(
             CreateRequest(image, g2),
             deferGeometryRefinement: true,
-            ManagedPhotoPendingReason.GeometryRefinementPending,
+            ManagedPhotoPendingReason.QualityRefinementPending,
             qualityRefinement: true);
         AssertPresentation(
             coordinator,
             g3,
             g0,
             ManagedPhotoPresentationQuality.Proxy,
-            ManagedPhotoPendingReason.GeometryRefinementPending,
+            ManagedPhotoPendingReason.QualityRefinementPending,
             expectedUnderResolution: false);
         coordinator.Request(
             CreateRequest(image, g3),
             deferGeometryRefinement: true,
-            ManagedPhotoPendingReason.GeometryRefinementPending,
+            ManagedPhotoPendingReason.QualityRefinementPending,
             qualityRefinement: false);
 
         Assert.Equal([g0], renderer.Started);
@@ -85,7 +85,7 @@ public sealed class ManagedPhotoPresentationContinuityTests
             g3,
             g0,
             ManagedPhotoPresentationQuality.Proxy,
-            ManagedPhotoPendingReason.GeometryRefinementPending,
+            ManagedPhotoPendingReason.QualityRefinementPending,
             expectedUnderResolution: false);
 
         var g3Published = NextPresentationChange(coordinator);
@@ -148,7 +148,7 @@ public sealed class ManagedPhotoPresentationContinuityTests
     }
 
     [Fact]
-    public async Task ProxyReuseRequiresCoverageOfTheLatestVisibleSourceRegion()
+    public async Task PartialDetailCannotSatisfyLargerVisibleSourceRegion()
     {
         using var image = CreateImage(20, 20);
         var renderer = new ControllableRenderer();
@@ -169,7 +169,7 @@ public sealed class ManagedPhotoPresentationContinuityTests
         {
             Assert.NotNull(proxy);
             Assert.Equal(ManagedPhotoPresentationQuality.Proxy, proxy.Quality);
-            Assert.Equal(ManagedPhotoPendingReason.GeometryRefinementPending, coveredReason);
+            Assert.Equal(ManagedPhotoPendingReason.QualityRefinementPending, coveredReason);
             Assert.True(proxy.CoversVisiblePhoto);
             Assert.Equal(
                 ManagedPhotoCoveragePlanner.MapSourceToDestination(
@@ -179,22 +179,15 @@ public sealed class ManagedPhotoPresentationContinuityTests
                 proxy.TargetDestination);
         }
 
-        Assert.True(coordinator.TryAcquirePresentation(
+        AssertUnavailable(
+            coordinator,
             partiallyCovered,
-            out var partialProxy,
-            out var partialReason));
-        using (partialProxy)
-        {
-            Assert.NotNull(partialProxy);
-            Assert.Equal(ManagedPhotoPresentationQuality.Proxy, partialProxy.Quality);
-            Assert.Equal(ManagedPhotoPendingReason.GeometryRefinementPending, partialReason);
-            Assert.False(partialProxy.CoversVisiblePhoto);
-        }
+            ManagedPhotoPendingReason.CoverageRefinementPending);
 
         AssertUnavailable(
             coordinator,
             disjoint,
-            ManagedPhotoPendingReason.GeometryRefinementPending);
+            ManagedPhotoPendingReason.CoverageRefinementPending);
     }
 
     [Fact]
@@ -296,26 +289,26 @@ public sealed class ManagedPhotoPresentationContinuityTests
             refinement,
             lowResolution,
             ManagedPhotoPresentationQuality.Proxy,
-            ManagedPhotoPendingReason.GeometryRefinementPending,
+            ManagedPhotoPendingReason.QualityRefinementPending,
             expectedUnderResolution: true);
 
         coordinator.Request(
             CreateRequest(image, refinement),
             deferGeometryRefinement: false,
-            ManagedPhotoPendingReason.GeometryRefinementPending,
+            ManagedPhotoPendingReason.QualityRefinementPending,
             qualityRefinement: true);
         await renderer.WaitUntilStartedAsync(refinement);
 
         Assert.Equal(1, coordinator.Metrics.QualityRefinementRequests);
         Assert.Equal(
-            ManagedPhotoPendingReason.GeometryRefinementPending,
+            ManagedPhotoPendingReason.QualityRefinementPending,
             coordinator.Metrics.LastPendingReason);
         AssertPresentation(
             coordinator,
             refinement,
             lowResolution,
             ManagedPhotoPresentationQuality.Proxy,
-            ManagedPhotoPendingReason.GeometryRefinementPending,
+            ManagedPhotoPendingReason.QualityRefinementPending,
             expectedUnderResolution: true);
 
         var refinementPublished = NextPresentationChange(coordinator);

@@ -353,19 +353,30 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
                 $"Fovium color: state={PhotoViewport.MonitorColorState}, " +
                 $"requests={metrics?.Requests ?? 0}, coalesced={metrics?.CoalescedRequests ?? 0}, " +
                 $"completed={metrics?.Completed ?? 0}, stale={metrics?.StaleResults ?? 0}, " +
-                $"failures={metrics?.Failures ?? 0}, rasterBytes={metrics?.CurrentRasterBytes ?? 0}.");
+                $"failures={metrics?.Failures ?? 0}, rasterBytes={metrics?.CurrentRasterBytes ?? 0}, " +
+                $"baseBytes={metrics?.BaseRasterBytes ?? 0}, detailBytes={metrics?.DetailRasterBytes ?? 0}, " +
+                $"maxCombinedBytes={metrics?.MaximumCombinedRasterBytes ?? 0}.");
             Console.WriteLine(
                 $"Fovium color timing: raster={metrics?.LastRasterSize.Width ?? 0}x" +
                 $"{metrics?.LastRasterSize.Height ?? 0}, maxRasterBytes={metrics?.MaximumRasterBytes ?? 0}, " +
                 $"sourceRenderMs={metrics?.LastSourceRenderDuration.TotalMilliseconds ?? 0:F2}, " +
                 $"lcmsMs={metrics?.LastTransformDuration.TotalMilliseconds ?? 0:F2}, " +
-                $"finalizeMs={metrics?.LastFinalizationDuration.TotalMilliseconds ?? 0:F2}.");
+                $"finalizeMs={metrics?.LastFinalizationDuration.TotalMilliseconds ?? 0:F2}, " +
+                $"requestToWorkerMs={metrics?.LastRequestToWorkerStartDuration.TotalMilliseconds ?? 0:F2}, " +
+                $"coverageRequestToWorkerMs={metrics?.LastCoverageRequestToWorkerStartDuration.TotalMilliseconds ?? 0:F2}, " +
+                $"qualityRequestToWorkerMs={metrics?.LastQualityRequestToWorkerStartDuration.TotalMilliseconds ?? 0:F2}, " +
+                $"publicationToFrameMs={metrics?.LastPublicationToFrameDuration.TotalMilliseconds ?? 0:F2}.");
             Console.WriteLine(
                 $"Fovium color interaction: geometryRequests={metrics?.GeometryRequests ?? 0}, " +
                 $"exactRequests={metrics?.ExactPresentationRequests ?? 0}, " +
                 $"proxyFrames={metrics?.ProxyFrames ?? 0}, exactFrames={metrics?.ExactFrames ?? 0}, " +
+                $"baseFrames={metrics?.BaseFrames ?? 0}, baseFallbackFrames={metrics?.BaseFallbackFrames ?? 0}, " +
                 $"geometryBlackFrames={metrics?.GeometryOnlyBlackFallbackFrames ?? 0}, " +
+                $"incompletePhotoFrames={metrics?.ManagedIncompletePhotoFrames ?? 0}, " +
+                $"partialCoverageRejected={metrics?.PartialCoverageRejected ?? 0}, " +
                 $"overscanHits={metrics?.OverscanHits ?? 0}, overscanMisses={metrics?.OverscanMisses ?? 0}, " +
+                $"coverageHits={metrics?.CoverageHits ?? 0}, coverageMisses={metrics?.CoverageMisses ?? 0}, " +
+                $"coverageRefinements={metrics?.CoverageRefinementRequests ?? 0}, " +
                 $"qualityRefinements={metrics?.QualityRefinementRequests ?? 0}, " +
                 $"sourceChanges={metrics?.SourceChanges ?? 0}, destinationChanges={metrics?.DestinationChanges ?? 0}, " +
                 $"pendingReason={metrics?.LastPendingReason.ToString() ?? "none"}, " +

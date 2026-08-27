@@ -133,7 +133,9 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
                     ? new SKSamplingOptions(SKFilterMode.Nearest, SKMipmapMode.None)
                     : new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear),
                 managedPaint);
-            _managedCoordinator?.RecordFrame(managedPresentation.Quality);
+            _managedCoordinator?.RecordFrame(
+                managedPresentation.Quality,
+                managedPresentation.CoversVisiblePhoto);
             return;
         }
 

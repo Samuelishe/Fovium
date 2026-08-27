@@ -18,7 +18,8 @@ internal sealed class ManagedPhotoSurface : IDisposable
         SKImage image,
         TimeSpan sourceRenderDuration,
         TimeSpan transformDuration,
-        TimeSpan finalizationDuration)
+        TimeSpan finalizationDuration,
+        ManagedPhotoSurfaceRole role = ManagedPhotoSurfaceRole.Detail)
     {
         Key = key;
         Coverage = coverage;
@@ -27,6 +28,7 @@ internal sealed class ManagedPhotoSurface : IDisposable
         SourceRenderDuration = sourceRenderDuration;
         TransformDuration = transformDuration;
         FinalizationDuration = finalizationDuration;
+        Role = role;
     }
 
     public ManagedPhotoKey Key { get; }
@@ -53,6 +55,8 @@ internal sealed class ManagedPhotoSurface : IDisposable
 
     public TimeSpan FinalizationDuration { get; }
 
+    public ManagedPhotoSurfaceRole Role { get; }
+
     public void Dispose()
     {
         Interlocked.Exchange(ref _image, null)?.Dispose();
@@ -60,10 +64,17 @@ internal sealed class ManagedPhotoSurface : IDisposable
     }
 }
 
+internal enum ManagedPhotoSurfaceRole
+{
+    Base,
+    Detail,
+}
+
 internal enum ManagedPhotoPresentationQuality
 {
     Exact,
     Proxy,
+    Base,
 }
 
 internal enum ManagedPhotoPendingReason
@@ -73,6 +84,8 @@ internal enum ManagedPhotoPendingReason
     SourceChanged,
     DestinationChanged,
     GeometryRefinementPending,
+    CoverageRefinementPending,
+    QualityRefinementPending,
 }
 
 internal sealed class ManagedPhotoPresentationLease : IDisposable
@@ -113,6 +126,8 @@ internal sealed record ManagedPhotoRenderRequest(
     DecodedImage.RenderLease Source,
     byte[] DestinationProfile) : IDisposable
 {
+    public ManagedPhotoSurfaceRole Role { get; init; } = ManagedPhotoSurfaceRole.Detail;
+
     public void Dispose() => Source.Dispose();
 }
 
@@ -143,9 +158,13 @@ internal sealed class SkiaLittleCmsPhotoRenderer : IManagedPhotoRenderer
             throw new ArgumentException("Managed photo geometry is invalid.", nameof(request));
         }
 
-        var coverage = ManagedPhotoCoveragePlanner.Create(
-            request.Key.Geometry,
-            request.Descriptor.OrientedSize);
+        var coverage = request.Role == ManagedPhotoSurfaceRole.Base
+            ? ManagedPhotoBaseCoveragePlanner.Create(
+                request.Key.Geometry,
+                request.Descriptor.OrientedSize)
+            : ManagedPhotoCoveragePlanner.Create(
+                request.Key.Geometry,
+                request.Descriptor.OrientedSize);
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         using var referenceBitmap = RenderReferenceSrgb(request, coverage);
         var sourceRenderDuration = stopwatch.Elapsed;
@@ -175,7 +194,8 @@ internal sealed class SkiaLittleCmsPhotoRenderer : IManagedPhotoRenderer
                 finalImage,
                 sourceRenderDuration,
                 transformDuration,
-                finalizationDuration);
+                finalizationDuration,
+                request.Role);
         }
         catch
         {
@@ -229,8 +249,6 @@ internal sealed class SkiaLittleCmsPhotoRenderer : IManagedPhotoRenderer
         ManagedPhotoRenderRequest request,
         ManagedPhotoCoverage coverage)
     {
-        var geometry = request.Key.Geometry;
-        var rasterDestination = coverage.RasterDestination;
         var pixelWidth = coverage.RasterPixelSize.Width;
         var pixelHeight = coverage.RasterPixelSize.Height;
         using var referenceColorSpace = SKColorSpace.CreateSrgb();
@@ -246,22 +264,23 @@ internal sealed class SkiaLittleCmsPhotoRenderer : IManagedPhotoRenderer
             using var canvas = new SKCanvas(bitmap);
             canvas.Clear(SKColors.Transparent);
             var affine = OrientationAffine.Create(request.Descriptor.EncodedSize, request.Descriptor.Orientation);
-            var oriented = request.Descriptor.OrientedSize;
-            var scaleX = geometry.PhotoDestination.Width / oriented.Width * geometry.RenderScaling;
-            var scaleY = geometry.PhotoDestination.Height / oriented.Height * geometry.RenderScaling;
+            var sourceCoverage = coverage.OrientedSourceRect;
+            var scaleX = pixelWidth / sourceCoverage.Width;
+            var scaleY = pixelHeight / sourceCoverage.Height;
             var matrix = new SKMatrix(
                 (float)(affine.A * scaleX),
                 (float)(affine.B * scaleX),
-                (float)((geometry.PhotoDestination.X - rasterDestination.X) * geometry.RenderScaling + affine.C * scaleX),
+                (float)((affine.C - sourceCoverage.X) * scaleX),
                 (float)(affine.D * scaleY),
                 (float)(affine.E * scaleY),
-                (float)((geometry.PhotoDestination.Y - rasterDestination.Y) * geometry.RenderScaling + affine.F * scaleY),
+                (float)((affine.F - sourceCoverage.Y) * scaleY),
                 0,
                 0,
                 1);
             canvas.Concat(in matrix);
             using var paint = new SKPaint { IsAntialias = false };
-            var sampling = geometry.ExactPixelSampling
+            var sampling = request.Role == ManagedPhotoSurfaceRole.Detail &&
+                request.Key.Geometry.ExactPixelSampling
                 ? new SKSamplingOptions(SKFilterMode.Nearest, SKMipmapMode.None)
                 : new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear);
             canvas.DrawImage(request.Source.Image, 0, 0, sampling, paint);
@@ -326,7 +345,21 @@ internal readonly record struct ManagedPhotoCoordinatorMetrics(
     long SourceChanges,
     long DestinationChanges,
     ManagedPhotoPendingReason LastPendingReason,
-    double LastOverscanFactor);
+    double LastOverscanFactor,
+    long BaseRasterBytes,
+    long DetailRasterBytes,
+    long MaximumCombinedRasterBytes,
+    long BaseFrames,
+    long BaseFallbackFrames,
+    long PartialCoverageRejected,
+    long CoverageRefinementRequests,
+    long CoverageHits,
+    long CoverageMisses,
+    long ManagedIncompletePhotoFrames,
+    TimeSpan LastRequestToWorkerStartDuration,
+    TimeSpan LastCoverageRequestToWorkerStartDuration,
+    TimeSpan LastQualityRequestToWorkerStartDuration,
+    TimeSpan LastPublicationToFrameDuration);
 
 internal interface IManagedPhotoRefinementScheduler : IDisposable
 {
@@ -417,15 +450,26 @@ internal sealed class ManagedPhotoPresentationCoordinator : IDisposable
     private readonly IManagedPhotoRenderer _renderer;
     private readonly IManagedPhotoRefinementScheduler _refinementScheduler;
     private ManagedPhotoRenderRequest? _pending;
-    private SharedResource<ManagedPhotoSurface>? _current;
+    private SharedResource<ManagedPhotoSurface>? _base;
+    private SharedResource<ManagedPhotoSurface>? _detail;
     private Task _worker = Task.CompletedTask;
     private long _generation;
+    private long _identityGeneration;
+    private long _pendingGeneration;
+    private long _pendingIdentityGeneration;
+    private long _pendingRequestedTimestamp;
+    private ManagedPhotoPendingReason _pendingReason;
+    private bool _pendingRequiresBase;
+    private ManagedPhotoSurfaceRole? _activeRole;
+    private ManagedPhotoKey? _activeKey;
+    private long _activeIdentityGeneration;
     private long _requests;
     private long _coalescedRequests;
     private long _completed;
     private long _staleResults;
     private long _failures;
     private long _maximumRasterBytes;
+    private long _maximumCombinedRasterBytes;
     private PixelSize _lastRasterSize;
     private TimeSpan _lastSourceRenderDuration;
     private TimeSpan _lastTransformDuration;
@@ -438,6 +482,18 @@ internal sealed class ManagedPhotoPresentationCoordinator : IDisposable
     private long _overscanHits;
     private long _overscanMisses;
     private long _qualityRefinementRequests;
+    private long _coverageRefinementRequests;
+    private long _baseFrames;
+    private long _baseFallbackFrames;
+    private long _partialCoverageRejected;
+    private long _coverageHits;
+    private long _coverageMisses;
+    private long _managedIncompletePhotoFrames;
+    private long _lastPublicationTimestamp;
+    private TimeSpan _lastRequestToWorkerStartDuration;
+    private TimeSpan _lastCoverageRequestToWorkerStartDuration;
+    private TimeSpan _lastQualityRequestToWorkerStartDuration;
+    private TimeSpan _lastPublicationToFrameDuration;
     private long _sourceChanges;
     private long _destinationChanges;
     private ManagedPhotoPendingReason _lastPendingReason;
@@ -471,9 +527,7 @@ internal sealed class ManagedPhotoPresentationCoordinator : IDisposable
                     _failures,
                     _active ? 1 : 0,
                     _pending is null ? 0 : 1,
-                    _current is not null && _current.TryGetValue(out var surface)
-                        ? surface!.RetainedBytes
-                        : 0,
+                    RetainedBytes(_base) + RetainedBytes(_detail),
                     _maximumRasterBytes,
                     _lastRasterSize,
                     _lastSourceRenderDuration,
@@ -490,7 +544,21 @@ internal sealed class ManagedPhotoPresentationCoordinator : IDisposable
                     _sourceChanges,
                     _destinationChanges,
                     _lastPendingReason,
-                    _lastOverscanFactor);
+                    _lastOverscanFactor,
+                    RetainedBytes(_base),
+                    RetainedBytes(_detail),
+                    _maximumCombinedRasterBytes,
+                    _baseFrames,
+                    _baseFallbackFrames,
+                    _partialCoverageRejected,
+                    _coverageRefinementRequests,
+                    _coverageHits,
+                    _coverageMisses,
+                    _managedIncompletePhotoFrames,
+                    _lastRequestToWorkerStartDuration,
+                    _lastCoverageRequestToWorkerStartDuration,
+                    _lastQualityRequestToWorkerStartDuration,
+                    _lastPublicationToFrameDuration);
             }
         }
     }
@@ -499,13 +567,15 @@ internal sealed class ManagedPhotoPresentationCoordinator : IDisposable
         request,
         deferGeometryRefinement: false,
         ManagedPhotoPendingReason.NoPresentationYet,
-        qualityRefinement: false);
+        qualityRefinement: false,
+        ensureFullSourceBase: false);
 
     public void Request(
         ManagedPhotoRenderRequest request,
         bool deferGeometryRefinement,
         ManagedPhotoPendingReason pendingReason,
-        bool qualityRefinement)
+        bool qualityRefinement,
+        bool ensureFullSourceBase = false)
     {
         ArgumentNullException.ThrowIfNull(request);
         ManagedPhotoRenderRequest? replaced;
@@ -514,12 +584,24 @@ internal sealed class ManagedPhotoPresentationCoordinator : IDisposable
             ObjectDisposedException.ThrowIf(_disposed, this);
             _requests++;
             _generation++;
+            var identityChanged = _lastRequestedKey is { } previous &&
+                !HasSamePresentationIdentity(previous, request.Key);
+            if (identityChanged)
+            {
+                _identityGeneration++;
+            }
+
             RecordRequestTransition(request.Key);
             _lastRequestedKey = request.Key;
             _lastPendingReason = pendingReason;
             if (qualityRefinement)
             {
                 _qualityRefinementRequests++;
+            }
+
+            if (pendingReason == ManagedPhotoPendingReason.CoverageRefinementPending)
+            {
+                _coverageRefinementRequests++;
             }
 
             replaced = _pending;
@@ -529,17 +611,21 @@ internal sealed class ManagedPhotoPresentationCoordinator : IDisposable
             }
 
             _pending = request;
+            _pendingGeneration = _generation;
+            _pendingIdentityGeneration = _identityGeneration;
+            _pendingRequestedTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
+            _pendingReason = pendingReason;
+            _pendingRequiresBase = ensureFullSourceBase && !HasCompatibleBaseOrBaseWork(request.Key);
             if (!_active)
             {
-                if (deferGeometryRefinement)
+                if (deferGeometryRefinement && !_pendingRequiresBase)
                 {
                     _refinementScheduler.Schedule(StartDeferredWorker);
                 }
                 else
                 {
                     _refinementScheduler.Cancel();
-                    _active = true;
-                    _worker = Task.Run(Process);
+                    StartWorkerLocked();
                 }
             }
         }
@@ -551,13 +637,14 @@ internal sealed class ManagedPhotoPresentationCoordinator : IDisposable
     {
         lock (_sync)
         {
-            if (_current is null || !_current.TryGetValue(out var value) || value!.Key != key)
+            var candidate = ExactResource(key);
+            if (candidate is null)
             {
                 surface = null;
                 return false;
             }
 
-            surface = _current.Acquire();
+            surface = candidate.Acquire();
             return true;
         }
     }
@@ -569,99 +656,67 @@ internal sealed class ManagedPhotoPresentationCoordinator : IDisposable
     {
         lock (_sync)
         {
-            if (_current is null || !_current.TryGetValue(out var value))
-            {
-                presentation = null;
-                unavailableReason = ManagedPhotoPendingReason.NoPresentationYet;
-                return false;
-            }
-
-            var current = value!;
-            var currentKey = current.Key;
-            if (currentKey.ImageIdentity != requestedKey.ImageIdentity ||
-                currentKey.EncodedSize != requestedKey.EncodedSize ||
-                currentKey.Orientation != requestedKey.Orientation)
-            {
-                presentation = null;
-                unavailableReason = ManagedPhotoPendingReason.SourceChanged;
-                return false;
-            }
-
-            if (currentKey.DestinationIdentity != requestedKey.DestinationIdentity)
-            {
-                presentation = null;
-                unavailableReason = ManagedPhotoPendingReason.DestinationChanged;
-                return false;
-            }
-
             var orientedSize = OrientationTransform.GetOrientedSize(
                 requestedKey.EncodedSize,
                 requestedKey.Orientation);
             var requestedVisibleSource = ManagedPhotoCoveragePlanner.VisibleSourceRect(
                 requestedKey.Geometry,
                 orientedSize);
-            if (!ManagedPhotoCoveragePlanner.Intersects(
-                    current.OrientedSourceCoverage,
-                    requestedVisibleSource))
+
+            if (TryAcquireFullyCoveringDetail(
+                    requestedKey,
+                    orientedSize,
+                    requestedVisibleSource,
+                    out presentation,
+                    out unavailableReason))
             {
-                presentation = null;
-                unavailableReason = ManagedPhotoPendingReason.GeometryRefinementPending;
-                _overscanMisses++;
-                return false;
+                return true;
             }
 
-            var coversVisible = ManagedPhotoCoveragePlanner.Contains(
-                current.OrientedSourceCoverage,
-                requestedVisibleSource);
-            if (coversVisible)
+            if (TryAcquireFullyCoveringBase(
+                    requestedKey,
+                    orientedSize,
+                    requestedVisibleSource,
+                    out presentation,
+                    out unavailableReason))
             {
-                _overscanHits++;
-            }
-            else
-            {
-                _overscanMisses++;
+                return true;
             }
 
-            var targetDestination = ManagedPhotoCoveragePlanner.MapSourceToDestination(
-                current.OrientedSourceCoverage,
-                requestedKey.Geometry.PhotoDestination,
-                orientedSize);
-            var requestedDensityX = requestedKey.Geometry.PhotoDestination.Width *
-                requestedKey.Geometry.RenderScaling / orientedSize.Width;
-            var requestedDensityY = requestedKey.Geometry.PhotoDestination.Height *
-                requestedKey.Geometry.RenderScaling / orientedSize.Height;
-            var currentDensityX = current.PixelSize.Width / current.OrientedSourceCoverage.Width;
-            var currentDensityY = current.PixelSize.Height / current.OrientedSourceCoverage.Height;
-            var densityRatio = Math.Min(
-                currentDensityX / requestedDensityX,
-                currentDensityY / requestedDensityY);
-            var quality = currentKey == requestedKey
-                ? ManagedPhotoPresentationQuality.Exact
-                : ManagedPhotoPresentationQuality.Proxy;
-            presentation = new ManagedPhotoPresentationLease(
-                _current.Acquire(),
-                targetDestination,
-                quality,
-                coversVisible,
-                densityRatio < 0.75);
-            unavailableReason = quality == ManagedPhotoPresentationQuality.Exact
-                ? ManagedPhotoPendingReason.None
-                : ManagedPhotoPendingReason.GeometryRefinementPending;
-            return true;
+            presentation = null;
+            unavailableReason = DetermineUnavailableReason(requestedKey);
+            return false;
         }
     }
 
-    public void RecordFrame(ManagedPhotoPresentationQuality quality)
+    public void RecordFrame(ManagedPhotoPresentationQuality quality, bool coversVisiblePhoto = true)
     {
         lock (_sync)
         {
+            if (!coversVisiblePhoto)
+            {
+                _managedIncompletePhotoFrames++;
+                return;
+            }
+
+            if (_lastPublicationTimestamp != 0)
+            {
+                _lastPublicationToFrameDuration =
+                    System.Diagnostics.Stopwatch.GetElapsedTime(_lastPublicationTimestamp);
+            }
+
             if (quality == ManagedPhotoPresentationQuality.Exact)
             {
                 _exactFrames++;
             }
-            else
+            else if (quality == ManagedPhotoPresentationQuality.Proxy)
             {
                 _proxyFrames++;
+            }
+            else
+            {
+                _baseFrames++;
+                _baseFallbackFrames++;
             }
         }
     }
@@ -674,29 +729,171 @@ internal sealed class ManagedPhotoPresentationCoordinator : IDisposable
         }
     }
 
+    private bool TryAcquireFullyCoveringDetail(
+        ManagedPhotoKey requestedKey,
+        PixelSize orientedSize,
+        RectD requestedVisibleSource,
+        out ManagedPhotoPresentationLease? presentation,
+        out ManagedPhotoPendingReason pendingReason)
+    {
+        if (_detail is null ||
+            !_detail.TryGetValue(out var value) ||
+            !HasSamePresentationIdentity(value!.Key, requestedKey))
+        {
+            presentation = null;
+            pendingReason = ManagedPhotoPendingReason.CoverageRefinementPending;
+            return false;
+        }
+
+        var detail = value!;
+        if (!ManagedPhotoCoveragePlanner.Contains(detail.OrientedSourceCoverage, requestedVisibleSource))
+        {
+            if (ManagedPhotoCoveragePlanner.Intersects(
+                    detail.OrientedSourceCoverage,
+                    requestedVisibleSource))
+            {
+                _partialCoverageRejected++;
+            }
+
+            _overscanMisses++;
+            _coverageMisses++;
+            presentation = null;
+            pendingReason = ManagedPhotoPendingReason.CoverageRefinementPending;
+            return false;
+        }
+
+        _overscanHits++;
+        _coverageHits++;
+        var quality = detail.Key == requestedKey
+            ? ManagedPhotoPresentationQuality.Exact
+            : ManagedPhotoPresentationQuality.Proxy;
+        presentation = CreateLease(
+            _detail,
+            detail,
+            requestedKey,
+            orientedSize,
+            quality);
+        pendingReason = quality == ManagedPhotoPresentationQuality.Exact
+            ? ManagedPhotoPendingReason.None
+            : ManagedPhotoPendingReason.QualityRefinementPending;
+        return true;
+    }
+
+    private bool TryAcquireFullyCoveringBase(
+        ManagedPhotoKey requestedKey,
+        PixelSize orientedSize,
+        RectD requestedVisibleSource,
+        out ManagedPhotoPresentationLease? presentation,
+        out ManagedPhotoPendingReason pendingReason)
+    {
+        if (_base is null ||
+            !_base.TryGetValue(out var value) ||
+            !HasSamePresentationIdentity(value!.Key, requestedKey) ||
+            !ManagedPhotoCoveragePlanner.Contains(value.OrientedSourceCoverage, requestedVisibleSource))
+        {
+            presentation = null;
+            pendingReason = ManagedPhotoPendingReason.CoverageRefinementPending;
+            return false;
+        }
+
+        _coverageHits++;
+        var baseSurface = value!;
+        var underResolved = IsUnderResolved(baseSurface, requestedKey, orientedSize);
+        var quality = baseSurface.Key == requestedKey && !underResolved
+            ? ManagedPhotoPresentationQuality.Exact
+            : ManagedPhotoPresentationQuality.Base;
+        presentation = CreateLease(
+            _base,
+            baseSurface,
+            requestedKey,
+            orientedSize,
+            quality);
+        pendingReason = quality == ManagedPhotoPresentationQuality.Exact
+            ? ManagedPhotoPendingReason.None
+            : ManagedPhotoPendingReason.CoverageRefinementPending;
+        return true;
+    }
+
+    private static ManagedPhotoPresentationLease CreateLease(
+        SharedResource<ManagedPhotoSurface> resource,
+        ManagedPhotoSurface surface,
+        ManagedPhotoKey requestedKey,
+        PixelSize orientedSize,
+        ManagedPhotoPresentationQuality quality) => new(
+            resource.Acquire(),
+            ManagedPhotoCoveragePlanner.MapSourceToDestination(
+                surface.OrientedSourceCoverage,
+                requestedKey.Geometry.PhotoDestination,
+                orientedSize),
+            quality,
+            coversVisiblePhoto: true,
+            IsUnderResolved(surface, requestedKey, orientedSize));
+
+    private static bool IsUnderResolved(
+        ManagedPhotoSurface surface,
+        ManagedPhotoKey requestedKey,
+        PixelSize orientedSize)
+    {
+        var requestedDensityX = requestedKey.Geometry.PhotoDestination.Width *
+            requestedKey.Geometry.RenderScaling / orientedSize.Width;
+        var requestedDensityY = requestedKey.Geometry.PhotoDestination.Height *
+            requestedKey.Geometry.RenderScaling / orientedSize.Height;
+        var currentDensityX = surface.PixelSize.Width / surface.OrientedSourceCoverage.Width;
+        var currentDensityY = surface.PixelSize.Height / surface.OrientedSourceCoverage.Height;
+        var densityRatio = Math.Min(
+            currentDensityX / requestedDensityX,
+            currentDensityY / requestedDensityY);
+        return densityRatio < 0.75;
+    }
+
+    private ManagedPhotoPendingReason DetermineUnavailableReason(ManagedPhotoKey requestedKey)
+    {
+        var candidate = FirstAvailableSurface();
+        if (candidate is null)
+        {
+            return ManagedPhotoPendingReason.NoPresentationYet;
+        }
+
+        if (!HasSameSourceIdentity(candidate.Key, requestedKey))
+        {
+            return ManagedPhotoPendingReason.SourceChanged;
+        }
+
+        return candidate.Key.DestinationIdentity != requestedKey.DestinationIdentity
+            ? ManagedPhotoPendingReason.DestinationChanged
+            : ManagedPhotoPendingReason.CoverageRefinementPending;
+    }
+
     public void Clear()
     {
         ManagedPhotoRenderRequest? pending;
-        SharedResource<ManagedPhotoSurface>? current;
+        SharedResource<ManagedPhotoSurface>? baseSurface;
+        SharedResource<ManagedPhotoSurface>? detail;
         lock (_sync)
         {
             _generation++;
+            _identityGeneration++;
             _refinementScheduler.Cancel();
             pending = _pending;
             _pending = null;
-            current = _current;
-            _current = null;
+            _pendingRequiresBase = false;
+            baseSurface = _base;
+            detail = _detail;
+            _base = null;
+            _detail = null;
         }
 
         pending?.Dispose();
-        current?.ReleaseOwner();
+        baseSurface?.ReleaseOwner();
+        detail?.ReleaseOwner();
         PresentationChanged?.Invoke(this, EventArgs.Empty);
     }
 
     public void Dispose()
     {
         ManagedPhotoRenderRequest? pending;
-        SharedResource<ManagedPhotoSurface>? current;
+        SharedResource<ManagedPhotoSurface>? baseSurface;
+        SharedResource<ManagedPhotoSurface>? detail;
         var disposeRenderer = false;
         lock (_sync)
         {
@@ -707,16 +904,21 @@ internal sealed class ManagedPhotoPresentationCoordinator : IDisposable
 
             _disposed = true;
             _generation++;
+            _identityGeneration++;
             _refinementScheduler.Cancel();
             pending = _pending;
             _pending = null;
-            current = _current;
-            _current = null;
+            _pendingRequiresBase = false;
+            baseSurface = _base;
+            detail = _detail;
+            _base = null;
+            _detail = null;
             disposeRenderer = !_active;
         }
 
         pending?.Dispose();
-        current?.ReleaseOwner();
+        baseSurface?.ReleaseOwner();
+        detail?.ReleaseOwner();
         if (disposeRenderer)
         {
             _renderer.Dispose();
@@ -725,26 +927,26 @@ internal sealed class ManagedPhotoPresentationCoordinator : IDisposable
         _refinementScheduler.Dispose();
     }
 
-    private void Process()
+    private void Process(ManagedPhotoWork initialWork)
     {
+        var work = initialWork;
         while (true)
         {
-            ManagedPhotoRenderRequest? request;
-            long generation;
-            lock (_sync)
+            if (work.Request.Role == ManagedPhotoSurfaceRole.Detail)
             {
-                request = _pending;
-                _pending = null;
-                generation = _generation;
-                if (request is null)
+                lock (_sync)
                 {
-                    _active = false;
-                    if (_disposed)
+                    var requestToWorker =
+                        System.Diagnostics.Stopwatch.GetElapsedTime(work.RequestedTimestamp);
+                    _lastRequestToWorkerStartDuration = requestToWorker;
+                    if (work.PendingReason == ManagedPhotoPendingReason.CoverageRefinementPending)
                     {
-                        _renderer.Dispose();
+                        _lastCoverageRequestToWorkerStartDuration = requestToWorker;
                     }
-
-                    return;
+                    else if (work.PendingReason == ManagedPhotoPendingReason.QualityRefinementPending)
+                    {
+                        _lastQualityRequestToWorkerStartDuration = requestToWorker;
+                    }
                 }
             }
 
@@ -752,7 +954,7 @@ internal sealed class ManagedPhotoPresentationCoordinator : IDisposable
             Exception? failure = null;
             try
             {
-                result = _renderer.Render(request);
+                result = _renderer.Render(work.Request);
             }
             catch (Exception exception) when (exception is
                 InvalidDataException or InvalidOperationException or ArgumentException or
@@ -762,15 +964,24 @@ internal sealed class ManagedPhotoPresentationCoordinator : IDisposable
             }
             finally
             {
-                request.Dispose();
+                work.Request.Dispose();
             }
 
             SharedResource<ManagedPhotoSurface>? previous = null;
+            ManagedPhotoRenderRequest? redundantPending = null;
             var changed = false;
             var failed = false;
+            ManagedPhotoWork? next;
+            var disposeRenderer = false;
             lock (_sync)
             {
-                if (_disposed || generation != _generation)
+                var isCurrent = !_disposed &&
+                    (work.Request.Role == ManagedPhotoSurfaceRole.Base
+                        ? work.IdentityGeneration == _identityGeneration &&
+                            _lastRequestedKey is { } requested &&
+                            HasSamePresentationIdentity(work.Request.Key, requested)
+                        : work.Generation == _generation);
+                if (!isCurrent)
                 {
                     _staleResults++;
                 }
@@ -778,25 +989,77 @@ internal sealed class ManagedPhotoPresentationCoordinator : IDisposable
                 {
                     _failures++;
                     failed = true;
+                    if (work.Request.Role == ManagedPhotoSurfaceRole.Base)
+                    {
+                        redundantPending = _pending;
+                        _pending = null;
+                        _pendingRequiresBase = false;
+                    }
                 }
                 else
                 {
-                    previous = _current;
-                    _current = new SharedResource<ManagedPhotoSurface>(result);
-                    _lastRasterSize = result.PixelSize;
-                    _maximumRasterBytes = Math.Max(_maximumRasterBytes, result.RetainedBytes);
-                    _lastSourceRenderDuration = result.SourceRenderDuration;
-                    _lastTransformDuration = result.TransformDuration;
-                    _lastFinalizationDuration = result.FinalizationDuration;
-                    _lastOverscanFactor = result.Coverage.OverscanFactor;
-                    _lastPendingReason = ManagedPhotoPendingReason.None;
+                    var published = result;
+                    if (work.Request.Role == ManagedPhotoSurfaceRole.Base)
+                    {
+                        previous = _base;
+                        _base = new SharedResource<ManagedPhotoSurface>(published);
+                        if (_pending is { } pending &&
+                            _pendingGeneration == _generation &&
+                            published.Key == pending.Key &&
+                            !IsUnderResolved(
+                                published,
+                                pending.Key,
+                                pending.Descriptor.OrientedSize))
+                        {
+                            redundantPending = _pending;
+                            _pending = null;
+                        }
+                    }
+                    else
+                    {
+                        previous = _detail;
+                        _detail = new SharedResource<ManagedPhotoSurface>(published);
+                    }
+
+                    _lastRasterSize = published.PixelSize;
+                    _maximumRasterBytes = Math.Max(_maximumRasterBytes, published.RetainedBytes);
+                    _maximumCombinedRasterBytes = Math.Max(
+                        _maximumCombinedRasterBytes,
+                        RetainedBytes(_base) + RetainedBytes(_detail));
+                    _lastSourceRenderDuration = published.SourceRenderDuration;
+                    _lastTransformDuration = published.TransformDuration;
+                    _lastFinalizationDuration = published.FinalizationDuration;
+                    _lastOverscanFactor = published.Coverage.OverscanFactor;
+                    _lastPendingReason = _pending is null
+                        ? ManagedPhotoPendingReason.None
+                        : work.Request.Role == ManagedPhotoSurfaceRole.Base
+                            ? ManagedPhotoPendingReason.CoverageRefinementPending
+                            : _lastPendingReason;
+                    _lastPublicationTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
                     result = null;
                     _completed++;
                     changed = true;
                 }
+
+                next = TakeNextWorkLocked();
+                if (next is null)
+                {
+                    _active = false;
+                    _activeRole = null;
+                    _activeKey = null;
+                    _activeIdentityGeneration = 0;
+                    disposeRenderer = _disposed;
+                }
+                else
+                {
+                    _activeRole = next.Value.Request.Role;
+                    _activeKey = next.Value.Request.Key;
+                    _activeIdentityGeneration = next.Value.IdentityGeneration;
+                }
             }
 
             result?.Dispose();
+            redundantPending?.Dispose();
             previous?.ReleaseOwner();
             if (failed)
             {
@@ -807,6 +1070,17 @@ internal sealed class ManagedPhotoPresentationCoordinator : IDisposable
                 PresentationChanged?.Invoke(this, EventArgs.Empty);
             }
 
+            if (next is null)
+            {
+                if (disposeRenderer)
+                {
+                    _renderer.Dispose();
+                }
+
+                return;
+            }
+
+            work = next.Value;
         }
     }
 
@@ -819,10 +1093,127 @@ internal sealed class ManagedPhotoPresentationCoordinator : IDisposable
                 return;
             }
 
-            _active = true;
-            _worker = Task.Run(Process);
+            StartWorkerLocked();
         }
     }
+
+    private void StartWorkerLocked()
+    {
+        var work = TakeNextWorkLocked();
+        if (work is null)
+        {
+            return;
+        }
+
+        _active = true;
+        _activeRole = work.Value.Request.Role;
+        _activeKey = work.Value.Request.Key;
+        _activeIdentityGeneration = work.Value.IdentityGeneration;
+        _worker = Task.Run(() => Process(work.Value));
+    }
+
+    private ManagedPhotoWork? TakeNextWorkLocked()
+    {
+        if (_pending is null)
+        {
+            return null;
+        }
+
+        if (_pendingRequiresBase)
+        {
+            _pendingRequiresBase = false;
+            return new ManagedPhotoWork(
+                _pending with
+                {
+                    Source = _pending.Source.Acquire(),
+                    Role = ManagedPhotoSurfaceRole.Base,
+                },
+                _pendingGeneration,
+                _pendingIdentityGeneration,
+                _pendingRequestedTimestamp,
+                _pendingReason);
+        }
+
+        var request = _pending;
+        _pending = null;
+        return new ManagedPhotoWork(
+            request,
+            _pendingGeneration,
+            _pendingIdentityGeneration,
+            _pendingRequestedTimestamp,
+            _pendingReason);
+    }
+
+    private bool HasCompatibleBaseOrBaseWork(ManagedPhotoKey key)
+    {
+        if (_base is not null &&
+            _base.TryGetValue(out var baseSurface) &&
+            HasSamePresentationIdentity(baseSurface!.Key, key))
+        {
+            return true;
+        }
+
+        return _activeRole == ManagedPhotoSurfaceRole.Base &&
+            _activeIdentityGeneration == _identityGeneration &&
+            _activeKey is { } activeKey &&
+            HasSamePresentationIdentity(activeKey, key);
+    }
+
+    private SharedResource<ManagedPhotoSurface>? ExactResource(ManagedPhotoKey key)
+    {
+        if (_detail is not null &&
+            _detail.TryGetValue(out var detail) &&
+            detail!.Key == key)
+        {
+            return _detail;
+        }
+
+        if (_base is not null &&
+            _base.TryGetValue(out var baseSurface) &&
+            baseSurface!.Key == key &&
+            !IsUnderResolved(
+                baseSurface,
+                key,
+                OrientationTransform.GetOrientedSize(key.EncodedSize, key.Orientation)))
+        {
+            return _base;
+        }
+
+        return null;
+    }
+
+    private ManagedPhotoSurface? FirstAvailableSurface()
+    {
+        if (_detail is not null && _detail.TryGetValue(out var detail))
+        {
+            return detail;
+        }
+
+        return _base is not null && _base.TryGetValue(out var baseSurface)
+            ? baseSurface
+            : null;
+    }
+
+    private static bool HasSamePresentationIdentity(ManagedPhotoKey left, ManagedPhotoKey right) =>
+        HasSameSourceIdentity(left, right) &&
+        left.DestinationIdentity == right.DestinationIdentity;
+
+    private static bool HasSameSourceIdentity(ManagedPhotoKey left, ManagedPhotoKey right) =>
+        left.ImageIdentity == right.ImageIdentity &&
+        left.EncodedSize == right.EncodedSize &&
+        left.Orientation == right.Orientation;
+
+    private static long RetainedBytes(SharedResource<ManagedPhotoSurface>? resource) =>
+        resource is not null && resource.TryGetValue(out var surface)
+            ? surface!.RetainedBytes
+            : 0;
+
+    private readonly record struct ManagedPhotoWork(
+        ManagedPhotoRenderRequest Request,
+        long Generation,
+        long IdentityGeneration,
+        long RequestedTimestamp,
+        ManagedPhotoPendingReason PendingReason);
 
     private void RecordRequestTransition(ManagedPhotoKey key)
     {
