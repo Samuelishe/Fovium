@@ -40,7 +40,7 @@ public sealed class HistogramCoordinatorTests
         Assert.Equal(1, reader.CallCount);
 
         var published = NextStateChange(coordinator);
-        reader.Complete(7, CreateResult(7));
+        reader.CompleteSynchronously(7, CreateResult(7));
         await published;
         Assert.False(coordinator.CurrentState!.IsLoading);
         Assert.Equal(1, coordinator.CurrentState.Data!.Red[7]);
@@ -61,19 +61,38 @@ public sealed class HistogramCoordinatorTests
         var reader = new ControllableReader();
         using var coordinator = new HistogramCoordinator(source, reader);
         coordinator.SetVisible(true);
+
+        Assert.Equal(1, reader.CallCount);
+        Assert.Equal("image-1", coordinator.CurrentState!.PresentationIdentity);
+        Assert.True(coordinator.CurrentState.IsLoading);
+        Assert.Null(coordinator.CurrentState.Data);
+
         source.Set(CreateImage(2));
+
+        Assert.Equal(2, reader.CallCount);
+        Assert.Equal("image-2", coordinator.CurrentState!.PresentationIdentity);
         Assert.True(coordinator.CurrentState!.IsLoading);
         Assert.Null(coordinator.CurrentState.Data);
+
         source.Set(CreateImage(3));
+
+        Assert.Equal(3, reader.CallCount);
         Assert.Equal("image-3", coordinator.CurrentState!.PresentationIdentity);
+        Assert.True(coordinator.CurrentState.IsLoading);
         Assert.Null(coordinator.CurrentState.Data);
 
         var currentPublished = NextStateChange(coordinator);
-        reader.Complete(3, CreateResult(3));
+        reader.CompleteSynchronously(3, CreateResult(3));
         await currentPublished;
-        reader.Complete(1, CreateResult(1));
-        reader.Complete(2, CreateResult(2));
-        await YieldUntilAsync(() => coordinator.Metrics.StaleResults == 2);
+
+        Assert.False(coordinator.CurrentState!.IsLoading);
+        Assert.Equal("image-3", coordinator.CurrentState.PresentationIdentity);
+        Assert.Equal(1, coordinator.CurrentState.Data!.Red[3]);
+
+        reader.CompleteSynchronously(1, CreateResult(1));
+        Assert.Equal(1, coordinator.Metrics.StaleResults);
+        reader.CompleteSynchronously(2, CreateResult(2));
+        Assert.Equal(2, coordinator.Metrics.StaleResults);
 
         Assert.Equal("image-3", coordinator.CurrentState!.PresentationIdentity);
         Assert.Equal(1, coordinator.CurrentState.Data!.Red[3]);
@@ -89,14 +108,14 @@ public sealed class HistogramCoordinatorTests
         using var coordinator = new HistogramCoordinator(source, reader);
         coordinator.SetVisible(true);
         var canonicalPublished = NextStateChange(coordinator);
-        reader.Complete(2, CreateResult(2));
+        reader.CompleteSynchronously(2, CreateResult(2));
         await canonicalPublished;
 
         source.Set(CreateImage(1));
         Assert.Equal("image-1", coordinator.CurrentState!.PresentationIdentity);
         Assert.Null(coordinator.CurrentState.Data);
         var comparisonPublished = NextStateChange(coordinator);
-        reader.Complete(1, CreateResult(1));
+        reader.CompleteSynchronously(1, CreateResult(1));
         await comparisonPublished;
 
         source.Present("image-2");
@@ -116,7 +135,7 @@ public sealed class HistogramCoordinatorTests
         using var coordinator = new HistogramCoordinator(source, reader);
         coordinator.SetVisible(true);
         var published = NextStateChange(coordinator);
-        reader.Complete(4, CreateResult(4));
+        reader.CompleteSynchronously(4, CreateResult(4));
         await published;
 
         source.SimulateViewportOnlyChange();
@@ -151,7 +170,7 @@ public sealed class HistogramCoordinatorTests
         using var coordinator = new HistogramCoordinator(source, reader);
         coordinator.SetVisible(true);
         var published = NextStateChange(coordinator);
-        reader.Complete(5, CreateResult(5));
+        reader.CompleteSynchronously(5, CreateResult(5));
         await published;
         coordinator.SetVisible(false);
         coordinator.SetVisible(true);
@@ -174,7 +193,7 @@ public sealed class HistogramCoordinatorTests
         coordinator.SetVisible(true);
         var published = NextStateChange(coordinator);
 
-        reader.Complete(9, HistogramReadResult.Failed);
+        reader.CompleteSynchronously(9, HistogramReadResult.Failed);
         await published;
 
         Assert.True(coordinator.IsVisible);
@@ -229,16 +248,18 @@ public sealed class HistogramCoordinatorTests
         {
             CallCount++;
             var marker = image.EncodedSource[0];
-            var completion = new TaskCompletionSource<HistogramReadResult>(
-                TaskCreationOptions.RunContinuationsAsynchronously);
+            var completion = new TaskCompletionSource<HistogramReadResult>();
             _pending.Add(marker, completion);
             return completion.Task;
         }
 
-        public void Complete(byte marker, HistogramReadResult result)
+        public void CompleteSynchronously(byte marker, HistogramReadResult result)
         {
             var completion = _pending[marker];
             _pending.Remove(marker);
+
+            // Test-owned inline completion makes this return only after the
+            // coordinator has processed the controlled reader result.
             completion.SetResult(result);
         }
     }
