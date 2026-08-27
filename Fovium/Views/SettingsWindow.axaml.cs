@@ -19,6 +19,8 @@ internal sealed partial class SettingsWindow : Window
     private readonly Localizer _localizer;
     private readonly RadioButton _keepCurrentScaleOption;
     private readonly RadioButton _fitEachImageOption;
+    private readonly Slider _photoPresentationMarginSlider;
+    private readonly TextBlock _photoPresentationMarginValue;
     private readonly CheckBox _monitorColorManagementOption;
     private readonly RadioButton _blackStageOption;
     private readonly RadioButton _neutralStageOption;
@@ -67,6 +69,8 @@ internal sealed partial class SettingsWindow : Window
         var aboutTab = FindRequired<TabItem>("AboutTab");
         _keepCurrentScaleOption = FindRequired<RadioButton>("KeepCurrentScaleOption");
         _fitEachImageOption = FindRequired<RadioButton>("FitEachImageOption");
+        _photoPresentationMarginSlider = FindRequired<Slider>("PhotoPresentationMarginSlider");
+        _photoPresentationMarginValue = FindRequired<TextBlock>("PhotoPresentationMarginValue");
         _monitorColorManagementOption = FindRequired<CheckBox>("MonitorColorManagementOption");
         _blackStageOption = FindRequired<RadioButton>("BlackStageOption");
         _neutralStageOption = FindRequired<RadioButton>("NeutralStageOption");
@@ -106,6 +110,12 @@ internal sealed partial class SettingsWindow : Window
         controlsTab.Header = localizer[UiStrings.SettingsControls];
         aboutTab.Header = localizer[UiStrings.SettingsAbout];
         FindRequired<TextBlock>("ScaleHeading").Text = localizer[UiStrings.SettingsScaleOnImageChange];
+        FindRequired<TextBlock>("PhotoPresentationHeading").Text =
+            localizer[UiStrings.SettingsPhotoPresentationView];
+        FindRequired<TextBlock>("PhotoPresentationMarginLabel").Text =
+            localizer[UiStrings.SettingsPhotoPresentationEdgeMargin];
+        FindRequired<TextBlock>("PhotoPresentationExplanation").Text =
+            localizer[UiStrings.SettingsPhotoPresentationExplanation];
         FindRequired<TextBlock>("MonitorColorManagementHeading").Text =
             localizer[UiStrings.ColorMonitorManagement];
         _monitorColorManagementOption.Content = localizer[UiStrings.ColorUseActiveMonitorProfile];
@@ -162,6 +172,7 @@ internal sealed partial class SettingsWindow : Window
     {
         _keepCurrentScaleOption.IsCheckedChanged += OnKeepCurrentScaleChanged;
         _fitEachImageOption.IsCheckedChanged += OnFitEachImageChanged;
+        _photoPresentationMarginSlider.ValueChanged += OnPhotoPresentationMarginChanged;
         _monitorColorManagementOption.IsCheckedChanged += async (_, _) =>
         {
             if (!_initializing)
@@ -294,6 +305,21 @@ internal sealed partial class SettingsWindow : Window
         {
             await _settings.SetImageChangeViewPolicyAsync(ImageChangeViewPolicy.FitEachImage);
         }
+    }
+
+    private async void OnPhotoPresentationMarginChanged(
+        object? sender,
+        RangeBaseValueChangedEventArgs e)
+    {
+        if (_initializing)
+        {
+            return;
+        }
+
+        var margin = Math.Round(_photoPresentationMarginSlider.Value * 2) / 2;
+        UpdatePhotoPresentationMarginText(margin);
+        await _settings.SetPhotoPresentationViewAsync(
+            _settings.Current.PhotoPresentationView with { EdgeMarginPercent = margin });
     }
 
     private async void SetBackgroundIfChecked(RadioButton option, StageBackgroundMode mode)
@@ -465,6 +491,8 @@ internal sealed partial class SettingsWindow : Window
             settings.ImageChangeViewPolicy == ImageChangeViewPolicy.KeepCurrentScale;
         _fitEachImageOption.IsChecked =
             settings.ImageChangeViewPolicy == ImageChangeViewPolicy.FitEachImage;
+        _photoPresentationMarginSlider.Value = settings.PhotoPresentationView.EdgeMarginPercent;
+        UpdatePhotoPresentationMarginText(settings.PhotoPresentationView.EdgeMarginPercent);
         _monitorColorManagementOption.IsChecked = settings.MonitorColorManagementEnabled;
         _blackStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.Black;
         _neutralStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.Neutral;
@@ -503,6 +531,9 @@ internal sealed partial class SettingsWindow : Window
 
     private void UpdateMatteWidthText(double width) =>
         _matteWidthValue.Text = $"{width:0} px";
+
+    private void UpdatePhotoPresentationMarginText(double margin) =>
+        _photoPresentationMarginValue.Text = $"{margin:0.#}%";
 
     private string LocalizeMatteStyle(MatteStyle style) => _localizer[style switch
     {

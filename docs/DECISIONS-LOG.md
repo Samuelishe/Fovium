@@ -327,8 +327,16 @@ Fovium embeds a deterministic 1,800-entry curated derivative of the MIT-licensed
 
 ## D-054 — Windows ordinary-SDR Color Management is photograph-only and app-local
 
-Status: Color policy retained; geometry-independent F3 rendering correction is locally ready for owner/hosted verification.
+Status: Accepted through the F3 geometry-independent source and F4 atomic-publication corrections.
 
 On Windows only when Advanced Color is disabled, Fovium resolves the active monitor from the real viewer HWND, admits the assigned bounded RGB display ICC, and converts one encoded-size unpremultiplied reference-sRGB source to monitor-device RGB through app-local Little CMS 2.19. Initial policy is relative colorimetric with black-point compensation off; VCGT is not applied; alpha is copied and premultiplied once; final device bytes are untagged. Destination identity is profile-byte SHA-256 plus output mode, never path. The managed source has canonical dimensions/orientation and enters the same direct-Skia spatial path, so geometry does not enter its key. The canonical decoded source and retained encoded bytes remain unchanged, so Color Picker stays reference sRGB and Histogram stays source-domain; Stage, Matte, Ambient, and markup remain UI-domain.
 
 One worker owns one active synchronous conversion plus one latest pending source/destination request. Source/destination generation rejects stale publication; geometry causes zero CMM operations and presentation pixels never enter the decoded-image LRU. The enabled-by-default setting persists only the user choice. Missing engine, unavailable/invalid profile, unsupported source, non-Windows platform, and Windows Advanced Color/HDR are recoverable legacy-presentation fallbacks. macOS, Linux/X11/Wayland, Windows HDR/high-depth output, arbitrary ICC override, intent UI, soft proofing, and gamut warning remain outside this decision.
+
+## D-055 — Photo Presentation is a session-local Matte-inclusive layout mode
+
+Status: Locally ready in R9-A.
+
+Photo Presentation View starts disabled, is toggled by stable Global Viewing command `viewer.togglePhotoPresentation` (`F6` default), and persists only its edge-margin configuration. One pure geometry owner fits each actually presented oriented photograph plus canonical Matte outer extent inside an equal inset measured as a percentage of the shorter physical viewport dimension; default is `4%`, range `0–15%`. Stage is background, not fit content. Normal image-change policy is untouched and leaving the mode enters ordinary Fit.
+
+The mode disables wheel/command/double-click zoom, drag/Hand pan, Peek, and initially Blink rather than exposing incorrect comparison geometry. Picker, Histogram, Photo Info, Highlight, and non-Hand markup remain. Layout, resize, fullscreen, Matte, and margin changes are synchronous geometry only and never cause CMM work. F4 atomic publication remains authoritative: pending target geometry cannot appear before matching photograph pixels and source-bound authority.

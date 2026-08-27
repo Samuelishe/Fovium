@@ -30,6 +30,8 @@ The catalogs are embedded into the production assembly; no localization package 
 
 R8-A localizes Color Picker command/panel chrome, empty hint, history label, Transparent semantic, Approximate tooltip, and RGB(A) format templates in EN/RU. The 1,800 canonical proper color names remain the reviewed upstream English names unless an optional reliable curated localized name is later added; Fovium does not machine-translate the catalog. Stable IDs, HEX digits, and decimal channel values remain locale-independent.
 
+R9-A localizes Photo Presentation command/context-menu copy, its Viewing subsection, Edge margin label, and the explanation that the photograph plus Matte stays inside the presentation margin. The stable `viewer.togglePhotoPresentation` identity, serialized property names, percentage value, and active session state are locale-independent; English fallback remains mandatory.
+
 ## Locale resolution
 
 Before an explicit user choice:

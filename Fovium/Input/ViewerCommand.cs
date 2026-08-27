@@ -8,6 +8,7 @@ internal enum ViewerCommand
     ZoomOut,
     Fit,
     ActualSize,
+    TogglePhotoPresentation,
     ToggleMatte,
     Fullscreen,
     Open,
@@ -155,6 +156,10 @@ internal static class ViewerCommands
         new(ViewerCommand.TogglePhotoInfo, "viewer.togglePhotoInfo", ViewerCommandGroup.Presentation),
         new(ViewerCommand.ToggleHistogram, "viewer.toggleHistogram", ViewerCommandGroup.Presentation),
         new(ViewerCommand.ToggleColorPicker, "viewer.toggleColorPicker", ViewerCommandGroup.Inspection),
+        new(
+            ViewerCommand.TogglePhotoPresentation,
+            "viewer.togglePhotoPresentation",
+            ViewerCommandGroup.Viewing),
     ];
 
     private static readonly IReadOnlyDictionary<ViewerCommand, ViewerCommandDefinition> ByCommand =

@@ -32,6 +32,7 @@ Temporary overlays are acceptable only in response to a direct action and should
 | `I` | Show/hide the movable Photo Info panel for the currently presented photograph (default binding) |
 | `G` | Show/hide the movable RGB Histogram panel for the currently presented photograph (default binding) |
 | `K` | Show/hide the movable photographic Color Picker panel (default binding) |
+| `F6` | Toggle session-local Photo Presentation View (default binding) |
 | `Ctrl+Z` | Undo the current image's last markup operation; cancel an unfinished draft first (default binding) |
 | `Ctrl+Y` | Redo the current image's next markup operation (default binding) |
 | `C` | Clear the current image's markup as one undoable operation while the markup dock is visible (default binding) |
@@ -43,6 +44,12 @@ Temporary overlays are acceptable only in response to a direct action and should
 | `Esc` | Cancel active Peek/Blink; otherwise leave fullscreen; otherwise close the viewer |
 
 The effective bindings except `Esc` are user-configurable in Settings → Controls. Peek and Blink are hold commands: the resolved full gesture begins the action once, while release of its primary key ends it even if modifiers changed. The first active hold wins; repeat key-down and a second hold are ignored. Any persistent viewer command, focus loss, sequence replacement, Settings/context-menu transition, shutdown, or `Esc` first restores the temporary presentation. Fullscreen preserves ordinary zoom/pan behavior, and Peek/Blink work identically there after any active hold is canceled before a fullscreen transition.
+
+## Photo Presentation View
+
+Photo Presentation View is an explicit session-local viewing mode and starts disabled on every launch. Its checked context-menu item and configurable `viewer.togglePhotoPresentation` command share one viewport state authority. Each currently presented portrait, landscape, square, or panoramic image is independently fitted as one visual object: photograph plus optional Matte, centered inside an edge-inset presentation rectangle. The persisted margin is a percentage of the shorter physical viewport dimension (`4%` default, normalized to `0–15%`) and therefore has consistent visual proportion across DPI. Stage remains the background outside that object.
+
+The mode owns geometry. Wheel, `+`, `-`, `0`, `1`, double-click, drag pan, permanent/temporary Hand, Peek, and Blink are unavailable and do not exit the mode; explicit navigation, fullscreen, Color Picker, Histogram, Photo Info, Cursor Highlight, and drawing tools remain available. Blink is initially disabled because comparison photographs with a different aspect ratio require independent presentation layout. Entering or resizing recomputes only pure geometry; leaving sets the current photograph to ordinary Fit and restores every normal input. The user's persisted normal image-change policy is never modified.
 
 When highlight is active, a translucent configured circle follows the pointer over photograph and Stage and the system cursor is hidden only while it is inside the photo viewport. Highlight-scoped `[`/`]` change its persisted physical radius by four pixels. Markup scope takes precedence when its dock is visible, so the same bindings instead adjust markup thickness; this cross-scope reuse is intentional and conflict-free. The highlight does not alter navigation, viewport state, Peek, Blink, or drawing input.
 
@@ -69,6 +76,8 @@ Peek temporarily sets physical scale to exactly `1.0`. A pointer over the photog
 Left/right navigation operates over supported, safe, decodable neighboring files in the opened image's directory. It should feel seamless rather than inserting a routine black frame or spinner between photographs. Unsupported, corrupt, or unsafe images may be skipped without ending navigation. Internal loading policy belongs to [`PERFORMANCE.md`](PERFORMANCE.md) and image viability belongs to [`IMAGING-PIPELINE.md`](IMAGING-PIPELINE.md).
 
 By default, navigation preserves physical scale and normalized point of interest for non-Fit views; an intentionally reduced common scale stays reduced. Fit remains semantic Fit. The user may instead select **Fit each image**, which centers every navigated image in Fit. A newly opened sequence always begins in Fit. The preference is owned by [`SETTINGS.md`](SETTINGS.md).
+
+While Photo Presentation View is active, that ordinary policy is temporarily overridden: every newly presented source is fitted independently together with its Matte. F4 atomic publication remains authoritative, so a pending portrait/landscape target cannot expose future geometry or Matte before its matching photograph.
 
 ## Context menu, metadata, and Stage
 

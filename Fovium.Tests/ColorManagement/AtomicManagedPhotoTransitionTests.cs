@@ -6,6 +6,7 @@ using Fovium.Loading;
 using Fovium.Metadata;
 using Fovium.Presentation;
 using Fovium.Rendering;
+using Fovium.Settings;
 using Fovium.Stage;
 using Fovium.Tests.Stage;
 using Fovium.Viewer;
@@ -33,17 +34,24 @@ public sealed class AtomicManagedPhotoTransitionTests
         try
         {
             await PresentAsync(viewport, renderer, portrait, CreateStage(MatteStyle.Solid));
+            viewport.SetPhotoPresentationViewEnabled(true);
             var before = viewport.CaptureAtomicPresentationState();
+            var beforeLayout = Assert.IsType<PhotoPresentationLayoutResult>(
+                viewport.CapturePhotoPresentationLayout());
+            var cmmRequests = viewport.MonitorColorMetrics!.Value.Requests;
 
             Request(viewport, landscape, CreateStage((MatteStyle)matteStyle));
             await renderer.WaitUntilStartedAsync(landscape.Image.Identity);
             var pending = viewport.CaptureAtomicPresentationState();
+            var pendingLayout = Assert.IsType<PhotoPresentationLayoutResult>(
+                viewport.CapturePhotoPresentationLayout());
 
             Assert.Equal(portrait.Image.Identity, pending.PresentedNumericIdentity);
             Assert.Equal("portrait.png", pending.PresentedIdentity);
             Assert.Equal(before.PresentedOrientedSize, pending.PresentedOrientedSize);
             Assert.Equal(before.PresentedDestination, pending.PresentedDestination);
             Assert.Equal(before.PresentedStage, pending.PresentedStage);
+            Assert.Equal(beforeLayout, pendingLayout);
             Assert.Equal(landscape.Image.Identity, pending.PendingNumericIdentity);
             Assert.Equal("landscape.png", pending.PendingIdentity);
             Assert.Equal("portrait.png", overlay.CurrentImageIdentity);
@@ -57,6 +65,8 @@ public sealed class AtomicManagedPhotoTransitionTests
             Assert.Equal(1, publications);
             await CompleteAsync(viewport, renderer, landscape.Image.Identity);
             var committed = viewport.CaptureAtomicPresentationState();
+            var committedLayout = Assert.IsType<PhotoPresentationLayoutResult>(
+                viewport.CapturePhotoPresentationLayout());
 
             Assert.Equal(landscape.Image.Identity, committed.PresentedNumericIdentity);
             Assert.Equal("landscape.png", committed.PresentedIdentity);
@@ -67,6 +77,9 @@ public sealed class AtomicManagedPhotoTransitionTests
             Assert.True(committed.HasManagedSource);
             Assert.Equal("landscape.png", overlay.CurrentImageIdentity);
             Assert.Equal(2, publications);
+            Assert.NotEqual(beforeLayout.PhotoDestination, committedLayout.PhotoDestination);
+            Assert.Equal(cmmRequests + 1, viewport.MonitorColorMetrics!.Value.Requests);
+            Assert.Equal(0, viewport.MonitorColorMetrics!.Value.GeometryRequests);
             Assert.Equal(0, viewport.MonitorColorMetrics!.Value.MatteWithoutPhotoFrames);
         }
         finally
@@ -339,6 +352,112 @@ public sealed class AtomicManagedPhotoTransitionTests
             Assert.Equal(requests, viewport.MonitorColorMetrics!.Value.Requests);
             Assert.Single(renderer.Started);
             Assert.True(viewport.CaptureAtomicPresentationState().HasManagedSource);
+        }
+        finally
+        {
+            Shutdown(viewport);
+        }
+    }
+
+    [Fact]
+    public async Task PresentationViewSuppressesGeometryCommandsAndRestoresThemAfterExit()
+    {
+        using var image = new ImageResource("A.png", new RenderPixelSize(6000, 4000));
+        var renderer = new ControllableRenderer();
+        var (viewport, _) = CreateViewport(renderer);
+
+        try
+        {
+            await PresentAsync(viewport, renderer, image, CreateStage(MatteStyle.Solid));
+            viewport.SetPhotoPresentationViewEnabled(true);
+            var before = Assert.IsType<PhotoPresentationLayoutResult>(
+                viewport.CapturePhotoPresentationLayout());
+
+            viewport.ZoomByStepsAtCenter(4);
+            viewport.Fit();
+            viewport.SetPhotographic100AtCenter();
+
+            Assert.False(viewport.BeginPeek100());
+            Assert.Equal(before, viewport.CapturePhotoPresentationLayout());
+            Assert.Equal(ViewTransfer.Fit, viewport.CaptureViewTransfer());
+
+            viewport.SetPhotoPresentationViewEnabled(false);
+            viewport.ZoomByStepsAtCenter(2);
+            var restoredInteraction = viewport.CaptureViewTransfer();
+
+            Assert.Equal(ViewportMode.Manual, restoredInteraction.Mode);
+            Assert.True(restoredInteraction.PhysicalScale > 0);
+            Assert.False(viewport.PhotoPresentationViewEnabled);
+        }
+        finally
+        {
+            Shutdown(viewport);
+        }
+    }
+
+    [Fact]
+    public async Task PresentationSettingsAndMatteRecomputeWithoutRepublishingConsumersMarkupOrCmm()
+    {
+        using var image = new ImageResource("A.png", new RenderPixelSize(6000, 4000));
+        var renderer = new ControllableRenderer();
+        var (viewport, overlay) = CreateViewport(renderer);
+        var histogramReader = new ImmediateHistogramReader();
+        var metadataReader = new ImmediateMetadataReader();
+
+        try
+        {
+            await PresentAsync(viewport, renderer, image, CreateStage(MatteStyle.Solid));
+            using var histogram = new HistogramCoordinator(viewport, histogramReader);
+            using var photoInfo = new PhotoInfoCoordinator(viewport, metadataReader);
+            histogram.SetVisible(true);
+            photoInfo.SetVisible(true);
+            Assert.True(overlay.ToggleMarkupTools());
+            Assert.True(overlay.BeginDrawing(new PointD(100, 100), 1));
+            Assert.True(overlay.EndDrawing(new PointD(300, 200)));
+            var markupBefore = Assert.Single(overlay.GetRenderSnapshot("A.png").Operations);
+            Assert.True(viewport.TryAcquirePresentedImage(out var pickerBefore));
+            var presentedPublications = 0;
+            viewport.PresentedImageChanged += (_, _) => presentedPublications++;
+            var requests = viewport.MonitorColorMetrics!.Value.Requests;
+
+            using (pickerBefore)
+            {
+                viewport.SetPhotoPresentationViewEnabled(true);
+                var initial = Assert.IsType<PhotoPresentationLayoutResult>(
+                    viewport.CapturePhotoPresentationLayout());
+                viewport.SetPhotoPresentationViewSettings(
+                    new PhotoPresentationViewSettings { EdgeMarginPercent = 11 });
+                var marginChanged = Assert.IsType<PhotoPresentationLayoutResult>(
+                    viewport.CapturePhotoPresentationLayout());
+                using (var stage = CreateStagePresentation(
+                           image,
+                           CreateStage(MatteStyle.Angular) with { MatteWidthPhysicalPixels = 120 }))
+                {
+                    viewport.SetStage(stage);
+                }
+
+                var matteChanged = Assert.IsType<PhotoPresentationLayoutResult>(
+                    viewport.CapturePhotoPresentationLayout());
+                Assert.True(viewport.TryAcquirePresentedImage(out var pickerAfter));
+                using (pickerAfter)
+                {
+                    Assert.Equal(pickerBefore!.Image.Identity, pickerAfter!.Image.Identity);
+                    Assert.Equal(pickerBefore.PresentationIdentity, pickerAfter.PresentationIdentity);
+                }
+
+                Assert.NotEqual(initial.PresentationBounds, marginChanged.PresentationBounds);
+                Assert.NotEqual(marginChanged.OuterPresentationBounds, matteChanged.OuterPresentationBounds);
+            }
+
+            Assert.Equal("A.png", histogram.CurrentState!.PresentationIdentity);
+            Assert.Equal("A.png", photoInfo.CurrentState!.Base.SourcePath);
+            Assert.Equal(1, histogramReader.CallCount);
+            Assert.Equal(1, metadataReader.CallCount);
+            Assert.Same(markupBefore, Assert.Single(overlay.GetRenderSnapshot("A.png").Operations));
+            Assert.Equal(0, presentedPublications);
+            Assert.Equal(requests, viewport.MonitorColorMetrics!.Value.Requests);
+            Assert.Equal(0, viewport.MonitorColorMetrics!.Value.GeometryRequests);
+            Assert.Single(renderer.Started);
         }
         finally
         {

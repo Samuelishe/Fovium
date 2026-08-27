@@ -103,7 +103,17 @@ R8-B-P1 is owner-accepted as a bounded architecture/rendering probe at unchanged
 
 R8-B-N1 is owner-accepted at `5155b7806703a657d89ab2923fd2936814a37a16`. Its independent pinned Little CMS 2.19 source build, app-local RID bundles, license/provenance manifests, binary audits, build-prefix-independent loading, and matrix/TRC/CLUT/malformed/concurrency smoke are green on hosted `win-x64`, `linux-x64`, and `osx-arm64`; normal CI is also green.
 
-R8-B-W1-F3 is locally ready for owner/hosted verification at `0.1.0.0008`. It retains enabled-by-default, photograph-only Windows ordinary-SDR management through the active monitor ICC and app-local Little CMS, but replaces the rejected W1/F1/F2 viewport-raster family with one geometry-independent encoded-size managed source. Zoom, pan, resize, Peek, Fit, and 100% reuse the accepted photo renderer and cause no CMM work or managed-raster replacement. The evidence and Candidate A/B comparison are in the [seamless rendering probe](experiments/R8-B-W1-SEAMLESS-RENDERING-PROBE.md). Later macOS, Linux X11, Wayland, Windows Advanced Color/HDR, high-depth output, and broader real multi-monitor validation remain separate stages. Do not begin another platform automatically; general format expansion (BMP, ICO, SVG, bounded PSD composite, and later formats) remains separate.
+R8-B-W1 and its F1–F4 corrective chain are owner-accepted at `0.1.0.0008`. The final architecture retains enabled-by-default, photograph-only Windows ordinary-SDR management through the active monitor ICC and app-local Little CMS, replaces the rejected viewport-raster family with one geometry-independent encoded-size managed source, and publishes new-source photo, Matte/Ambient, geometry, overlays, and presented identity atomically. Zoom, pan, resize, Peek, Fit, and 100% reuse the accepted photo renderer and cause no CMM work or managed-raster replacement. The evidence and Candidate A/B comparison are in the [seamless rendering probe](experiments/R8-B-W1-SEAMLESS-RENDERING-PROBE.md). Later macOS, Linux X11, Wayland, Windows Advanced Color/HDR, high-depth output, and broader real multi-monitor validation remain separate stages.
+
+## R9 — Presentation viewing
+
+### R9-A — Photo Presentation View
+
+Locally ready at `0.1.0.0009`: add a session-local `F6` viewing mode that independently fits every portrait, landscape, square, or panorama together with its optional Matte inside a persisted physical-percentage presentation margin. Normal viewer zoom/pan and saved image-change policy remain unchanged; presentation geometry is synchronous and causes zero Color Management work. Blink is deliberately unavailable in this initial mode rather than using the wrong comparison layout.
+
+### R9-B — Slideshow
+
+Selected next stage after R9-A owner/hosted acceptance. It may drive the existing Photo Presentation layout through explicit start, persisted interval, and a deliberate stop-at-last versus loop policy. Timers, automatic navigation, end behavior, and slideshow state are not implemented in R9-A.
 
 ## Later / separate platform milestones
 

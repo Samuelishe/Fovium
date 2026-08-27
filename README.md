@@ -28,6 +28,7 @@ Zero-UI is intentional: normal viewing removes persistent chrome rather than sur
 - photographer-oriented inspection with whole-viewport **Peek 100%** and non-navigating **Blink Compare**;
 - session-local presenter tools with image-bound markup, Ellipse, per-stroke opacity, constrained drawing, true partial erasing, per-image Undo/Redo, contextual controls, accurate drawing cursors, and a configurable cursor highlight;
 - a deliberate photographic **Stage** with Black, Neutral, Custom, or Ambient backgrounds plus an independent Matte;
+- a session-local **Photo Presentation View** that independently fits each photograph together with its optional Matte inside a configurable edge margin;
 - on-demand movable Photo Info and decoded-RGB Histogram overlays that follow the actually presented photograph, including Blink;
 - an offline click-to-sample photographic Color Picker with reference-sRGB HEX/RGB(A), one local OKLab-nearest human name, and ten-click session history;
 - JPEG, PNG, static WebP, bounded static 8-bit TIFF, bounded static 8-bit SDR HEIF/HEIC, and bounded static 8-bit SDR AVIF through one content-detected format-capability foundation;
@@ -37,7 +38,7 @@ See the canonical [UX contract](docs/UX-CONTRACT.md), [rendering contract](docs/
 
 ## Current status
 
-The current locally complete checkpoint is **`0.1.0.0008`**. R8-B-W1 adds enabled-by-default, photograph-only Monitor Color Management for ordinary Windows SDR: Fovium uses the active monitor's assigned RGB display ICC through its app-local Little CMS 2.19 runtime, while Advanced Color/HDR and every unavailable/invalid case retain the existing rendering path. Color Picker values remain stable reference sRGB, Histogram remains source-domain, and Stage/Matte/Ambient/markup remain UI-domain colors. macOS, Linux, and Windows HDR monitor-aware output are not claimed.
+The current locally complete checkpoint is **`0.1.0.0009`**. R9-A adds Photo Presentation View: `F6` switches to an independently fitted, Matte-aware layout for every portrait, landscape, square, or panoramic photograph while preserving the ordinary viewer as the startup/default mode. R8-B-W1 remains enabled-by-default, photograph-only Monitor Color Management for ordinary Windows SDR through the active display ICC and app-local Little CMS 2.19; macOS, Linux, and Windows HDR monitor-aware output are not claimed.
 
 This is an alpha milestone, not a feature-complete or stable release claim. Animated WebP/APNG, HEIF/AVIF sequences, high-bit-depth/HDR picker semantics, high-bit-depth/multipage TIFF, RAW, Advanced Metadata, persistent palettes, luminance/clipping histogram modes, metadata writing, full monitor-aware ICC, platform associations, markup export/object editing, and selected-reference A/B comparison are not implemented. The current matrix is [FORMAT-SUPPORT.md](docs/FORMAT-SUPPORT.md); Color Picker semantics are in [COLOR-PICKER.md](docs/COLOR-PICKER.md), and the canonical handoff is [PROJECT-STATE.md](docs/PROJECT-STATE.md).
 

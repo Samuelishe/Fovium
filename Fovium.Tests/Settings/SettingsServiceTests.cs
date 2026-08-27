@@ -24,6 +24,25 @@ public sealed class SettingsServiceTests
     }
 
     [Fact]
+    public async Task PhotoPresentationMarginNormalizesAndPersistsWithoutChangingOtherSettings()
+    {
+        var store = new RecordingSettingsStore();
+        using var service = new SettingsService(store);
+        var before = service.Current;
+
+        await service.SetPhotoPresentationViewAsync(
+            new PhotoPresentationViewSettings { EdgeMarginPercent = 999 });
+
+        Assert.Equal(
+            PhotoPresentationViewSettings.MaximumEdgeMarginPercent,
+            service.Current.PhotoPresentationView.EdgeMarginPercent);
+        Assert.Equal(service.Current.PhotoPresentationView, store.Saved?.PhotoPresentationView);
+        Assert.Equal(before.Stage, service.Current.Stage);
+        Assert.Equal(before.Presentation, service.Current.Presentation);
+        Assert.Equal(before.MonitorColorManagementEnabled, service.Current.MonitorColorManagementEnabled);
+    }
+
+    [Fact]
     public async Task ReapplyingEquivalentSettingsDoesNotRaiseEventOrAutosave()
     {
         var store = new RecordingSettingsStore();

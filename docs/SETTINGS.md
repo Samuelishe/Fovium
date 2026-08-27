@@ -39,6 +39,7 @@ Locale behavior is owned by [`LOCALIZATION.md`](LOCALIZATION.md).
 ### Viewing
 
 - **Scale when changing images** is implemented with `Keep current scale` (default) and `Fit each image`. Fit remains semantic Fit; a non-Fit view preserves physical scale and normalized point of interest, including a deliberately reduced scale.
+- **Photo Presentation** stores only an edge margin percentage, default `4%`, normalized to `0–15%` and exposed in `0.5%` steps. The inset applies to the complete photograph plus optional Matte and is calculated from the shorter physical viewport dimension. The mode's enabled state is session-local, starts false, and is controlled by the viewer command/context menu rather than persistence.
 - future discrete zoom-step or zoom-sensitivity control;
 - mouse behavior;
 - navigation behavior that is genuinely user-configurable.
@@ -62,6 +63,8 @@ R6-A adds Global Presentation command `viewer.togglePhotoInfo`, default `I`, thr
 R6-B adds Global Presentation command `viewer.toggleHistogram`, default `G`, with the same additive conflict preservation. Schema v2 stores normalized Histogram placement, default bottom-right. Histogram visibility is session-local and starts false; no appearance settings or new Settings section are introduced.
 
 R8-A adds Global Inspection command `viewer.toggleColorPicker`, default `K`, through the same additive conflict-preserving normalization. Schema v2 stores only normalized Color Picker placement, default top-right. Picker visibility, current sample, and its ten-click history are per-viewer-session state and never serialized. Existing Controls customization is preserved and no Color Picker Settings page or schema bump is introduced.
+
+R9-A adds Global Viewing command `viewer.togglePhotoPresentation`, default `F6`, with the same additive conflict preservation. If an existing customized Global command already owns `F6`, it remains authoritative and the new command is Unassigned. Only `PhotoPresentationView.EdgeMarginPercent` is serialized; active mode is never written.
 
 ### Presentation
 
@@ -96,7 +99,7 @@ Copied diagnostics may include only genuinely known values such as Fovium versio
 
 Ordinary preferences use platform-appropriate per-user application-data storage. They do not require a database, catalog, or project-local file.
 
-The readable JSON document uses `schemaVersion = 2` in the platform-appropriate per-user application-data directory. Its explicit v1→v2 migration maps the former four-value Stage enum to background plus independent Matte while preserving image-change policy. R3-F2 Matte geometry through R5-F3 additive Presentation/command/placement fields remain backward-compatible and do not change the schema. Missing opacity normalizes to `1.00`; missing dock placement uses top-center. New commands receive defaults only when their gesture is free within the same code-owned scope, so deliberate Highlight/Markup bracket duplication remains valid. One narrow idempotent evolution recognizes exactly the untouched previous pair `Blink=C` plus `Clear=Ctrl+Delete` and changes it to `Blink=Shift+C` plus `Clear=C`; if either member differs, both effective customizations are preserved. Existing customization always wins and a colliding same-scope new command becomes Unassigned. It writes through a same-directory temporary file and replacement, tolerates unknown properties/command IDs, and falls back to deterministic defaults on missing, malformed, inaccessible, or unsupported-schema input.
+The readable JSON document uses `schemaVersion = 2` in the platform-appropriate per-user application-data directory. Its explicit v1→v2 migration maps the former four-value Stage enum to background plus independent Matte while preserving image-change policy. R3-F2 Matte geometry through R9-A additive Presentation/command/placement/layout fields remain backward-compatible and do not change the schema. Missing Photo Presentation configuration receives a `4%` edge margin; active mode is not serialized. Missing opacity normalizes to `1.00`; missing dock placement uses top-center. New commands receive defaults only when their gesture is free within the same code-owned scope, so deliberate Highlight/Markup bracket duplication remains valid. One narrow idempotent evolution recognizes exactly the untouched previous pair `Blink=C` plus `Clear=Ctrl+Delete` and changes it to `Blink=Shift+C` plus `Clear=C`; if either member differs, both effective customizations are preserved. Existing customization always wins and a colliding same-scope new command becomes Unassigned. It writes through a same-directory temporary file and replacement, tolerates unknown properties/command IDs, and falls back to deterministic defaults on missing, malformed, inaccessible, or unsupported-schema input.
 
 Settings normally autosave after a valid non-destructive preference change. Do not require Save or Apply buttons without evidence that deferred application is necessary. Destructive or system-owned actions remain explicit.
 

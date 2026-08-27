@@ -93,6 +93,7 @@ The displayed checkpoint is not a substitute for a Git commit, tag, or branch. G
 | `0.1.0.0006` | R7-C | Bounded static 8-bit SDR HEIF/HEIC and AVIF support through the app-owned decode-only runtime |
 | `0.1.0.0007` | R8-A | Offline click-to-sample photographic Color Picker with reference-sRGB values, local OKLab names, and ten-click session history |
 | `0.1.0.0008` | R8-B-W1 | Windows ordinary-SDR photograph Monitor Color Management through active display ICC and app-local Little CMS 2.19 |
+| `0.1.0.0009` | R9-A | Session-local Photo Presentation View with independent Matte-inclusive fitting and physical edge margin |
 
 The `0.0.0.xxxx` line records the completed foundation and early product-construction checkpoints. The explicit owner-controlled `0.1.0.0000` transition marks the first substantial usable Fovium alpha; it does not claim feature completeness, a stable API, production release status, or `1.0` quality. Current implementation state remains owned by [`PROJECT-STATE.md`](PROJECT-STATE.md).
 
@@ -101,9 +102,9 @@ The `0.0.0.xxxx` line records the completed foundation and early product-constru
 The root `Directory.Build.props` is the canonical source for the current components and formatted display identity. It supplies the production `Fovium` assembly with:
 
 ```text
-InformationalVersion = 0.1.0.0008
-AssemblyVersion      = 0.1.0.8
-FileVersion          = 0.1.0.8
+InformationalVersion = 0.1.0.0009
+AssemblyVersion      = 0.1.0.9
+FileVersion          = 0.1.0.9
 ```
 
 From that source:

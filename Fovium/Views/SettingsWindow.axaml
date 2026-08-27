@@ -12,6 +12,27 @@
         <TextBlock x:Name="ScaleHeading" FontSize="18" FontWeight="SemiBold" />
         <RadioButton x:Name="KeepCurrentScaleOption" GroupName="ImageChangeViewPolicy" />
         <RadioButton x:Name="FitEachImageOption" GroupName="ImageChangeViewPolicy" />
+        <Separator Margin="0,4" />
+        <TextBlock x:Name="PhotoPresentationHeading" FontSize="18" FontWeight="SemiBold" />
+        <TextBlock x:Name="PhotoPresentationExplanation"
+                   MaxWidth="500"
+                   Opacity="0.72"
+                   TextWrapping="Wrap" />
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+          <TextBlock x:Name="PhotoPresentationMarginLabel" VerticalAlignment="Center" />
+          <Slider x:Name="PhotoPresentationMarginSlider"
+                  Grid.Column="1"
+                  MinWidth="180"
+                  Minimum="0"
+                  Maximum="15"
+                  TickFrequency="0.5"
+                  IsSnapToTickEnabled="True" />
+          <TextBlock x:Name="PhotoPresentationMarginValue"
+                     Grid.Column="2"
+                     Width="48"
+                     TextAlignment="Right"
+                     VerticalAlignment="Center" />
+        </Grid>
       </StackPanel>
     </TabItem>
     <TabItem x:Name="ColorTab">

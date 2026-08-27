@@ -46,6 +46,17 @@ public sealed class ViewerCommandExecutorTests
         Assert.Equal(0, target.FitCount);
     }
 
+    [Fact]
+    public async Task PhotoPresentationCommandUsesDedicatedSessionToggle()
+    {
+        var target = new RecordingTarget();
+
+        await new ViewerCommandExecutor(target).ExecuteAsync(ViewerCommand.TogglePhotoPresentation);
+
+        Assert.Equal(1, target.PhotoPresentationToggleCount);
+        Assert.Equal(0, target.PresentationToggleCount);
+    }
+
     [Theory]
     [InlineData((int)ViewerCommand.ToggleHighlight)]
     [InlineData((int)ViewerCommand.ToggleMarkupTools)]
@@ -145,6 +156,8 @@ public sealed class ViewerCommandExecutorTests
 
         public int PresentationToggleCount { get; private set; }
 
+        public int PhotoPresentationToggleCount { get; private set; }
+
         public List<string> MarkupActions { get; } = [];
 
         public double ThicknessAdjustment { get; private set; }
@@ -164,6 +177,8 @@ public sealed class ViewerCommandExecutorTests
         public void Fit() => FitCount++;
 
         public void SetPhotographic100AtCenter() => ActualSizeCount++;
+
+        public void TogglePhotoPresentation() => PhotoPresentationToggleCount++;
 
         public Task ToggleMatteAsync() => Task.CompletedTask;
 

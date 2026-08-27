@@ -81,6 +81,19 @@ internal sealed class SettingsService(ISettingsStore store) : IDisposable
                 : settings with { MonitorColorManagementEnabled = enabled },
             cancellationToken);
 
+    public Task SetPhotoPresentationViewAsync(
+        PhotoPresentationViewSettings photoPresentationView,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(photoPresentationView);
+        var normalized = photoPresentationView.Normalize();
+        return UpdateAsync(
+            settings => settings.PhotoPresentationView == normalized
+                ? settings
+                : settings with { PhotoPresentationView = normalized },
+            cancellationToken);
+    }
+
     public Task SetStageAsync(
         StageSettings stage,
         CancellationToken cancellationToken = default)
@@ -246,6 +259,7 @@ internal sealed class SettingsService(ISettingsStore store) : IDisposable
         left.SchemaVersion == right.SchemaVersion &&
         left.ImageChangeViewPolicy == right.ImageChangeViewPolicy &&
         left.MonitorColorManagementEnabled == right.MonitorColorManagementEnabled &&
+        left.PhotoPresentationView == right.PhotoPresentationView &&
         left.Stage == right.Stage &&
         left.Presentation == right.Presentation &&
         SettingsEqual(left.Shortcuts, right.Shortcuts);

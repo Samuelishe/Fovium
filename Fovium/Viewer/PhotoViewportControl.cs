@@ -7,9 +7,11 @@ using Fovium.Diagnostics;
 using Fovium.ColorManagement;
 using Fovium.ColorPicking;
 using Fovium.Imaging;
+using Fovium.Input;
 using Fovium.Loading;
 using Fovium.Presentation;
 using Fovium.Rendering;
+using Fovium.Settings;
 using Fovium.Stage;
 
 namespace Fovium.Viewer;
@@ -141,6 +143,9 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
     private bool _managedPresentationFailed;
     private MonitorColorState _monitorColorState = MonitorColorState.PlatformUnsupported;
     private bool _photoPresentationVisible;
+    private bool _photoPresentationViewEnabled;
+    private PhotoPresentationViewSettings _photoPresentationViewSettings =
+        PhotoPresentationViewSettings.Default;
 
     public PhotoViewportControl()
     {
@@ -162,6 +167,8 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
     public bool HasImage => _image is not null;
 
     public InspectionMode InspectionMode => _inspectionMode;
+
+    internal bool PhotoPresentationViewEnabled => _photoPresentationViewEnabled;
 
     internal MonitorColorState MonitorColorState => _monitorColorState;
 
@@ -218,7 +225,58 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
         _presentation?.GetRenderSnapshot(PresentedImageIdentity) ?? MarkupRenderSnapshot.Empty;
 
     public ViewTransfer CaptureViewTransfer() =>
-        _image is null ? ViewTransfer.Fit : _viewport.CaptureTransfer();
+        _image is null || _photoPresentationViewEnabled
+            ? ViewTransfer.Fit
+            : _viewport.CaptureTransfer();
+
+    internal PhotoPresentationLayoutResult? CapturePhotoPresentationLayout()
+    {
+        if (!_photoPresentationViewEnabled || GetPresentedImageLease() is not { } image)
+        {
+            return null;
+        }
+
+        return CalculatePhotoPresentationLayout(image.Value.Descriptor.OrientedSize);
+    }
+
+    internal void SetPhotoPresentationViewEnabled(bool enabled)
+    {
+        if (_photoPresentationViewEnabled == enabled)
+        {
+            return;
+        }
+
+        _photoPresentationViewEnabled = enabled;
+        _lastDragPoint = null;
+        _wheelAccumulator = 0;
+        if (enabled)
+        {
+            _presentation?.EndTemporaryHand();
+        }
+
+        if (!enabled && _image is not null)
+        {
+            _viewport.Fit();
+        }
+
+        InvalidateAndReport();
+    }
+
+    internal void SetPhotoPresentationViewSettings(PhotoPresentationViewSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        var normalized = settings.Normalize();
+        if (_photoPresentationViewSettings == normalized)
+        {
+            return;
+        }
+
+        _photoPresentationViewSettings = normalized;
+        if (_photoPresentationViewEnabled)
+        {
+            InvalidateAndReport();
+        }
+    }
 
     internal AmbientRenderFrameMetrics GetAmbientRenderFrameMetrics() =>
         _ambientFrameDiagnostics.GetMetrics();
@@ -505,7 +563,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 
     public void Fit()
     {
-        if (_image is null)
+        if (_image is null || _photoPresentationViewEnabled)
         {
             return;
         }
@@ -516,7 +574,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 
     public void SetPhotographic100AtCenter()
     {
-        if (_image is null)
+        if (_image is null || _photoPresentationViewEnabled)
         {
             return;
         }
@@ -528,7 +586,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 
     public void ZoomByStepsAtCenter(int steps)
     {
-        if (_image is null || steps == 0)
+        if (_image is null || _photoPresentationViewEnabled || steps == 0)
         {
             return;
         }
@@ -540,7 +598,11 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 
     public bool BeginPeek100()
     {
-        if (_image is null || _inspectionMode != InspectionMode.None)
+        if (_image is null ||
+            !PhotoPresentationInputPolicy.Allows(
+                PhotoPresentationInteraction.Peek,
+                _photoPresentationViewEnabled) ||
+            _inspectionMode != InspectionMode.None)
         {
             return false;
         }
@@ -556,7 +618,11 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 
     public bool BeginBlinkCompare()
     {
-        if (_image is null || _inspectionMode != InspectionMode.None)
+        if (_image is null ||
+            !PhotoPresentationInputPolicy.Allows(
+                PhotoPresentationInteraction.Blink,
+                _photoPresentationViewEnabled) ||
+            _inspectionMode != InspectionMode.None)
         {
             return false;
         }
@@ -681,6 +747,14 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
             e.Handled = true;
             return;
         }
+        if (!PhotoPresentationInputPolicy.Allows(
+                PhotoPresentationInteraction.WheelZoom,
+                _photoPresentationViewEnabled))
+        {
+            _wheelAccumulator = 0;
+            e.Handled = true;
+            return;
+        }
         if (_image is null)
         {
             return;
@@ -717,6 +791,14 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
         if (colorPickerAction == ColorPickerPrimaryClickAction.Pan &&
             _inspectionMode == InspectionMode.None)
         {
+            if (!PhotoPresentationInputPolicy.Allows(
+                    PhotoPresentationInteraction.HandPan,
+                    _photoPresentationViewEnabled))
+            {
+                e.Handled = true;
+                return;
+            }
+
             _lastDragPoint = e.GetPosition(this);
             e.Pointer.Capture(this);
             e.Handled = true;
@@ -725,7 +807,13 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 
         if (colorPickerAction == ColorPickerPrimaryClickAction.Sample)
         {
-            RequestColorSample(e.GetPosition(this));
+            if (PhotoPresentationInputPolicy.Allows(
+                    PhotoPresentationInteraction.ColorSampling,
+                    _photoPresentationViewEnabled))
+            {
+                RequestColorSample(e.GetPosition(this));
+            }
+
             e.Handled = true;
             return;
         }
@@ -748,6 +836,14 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
             if (MarkupPointerInteraction.ForTool(presentation.EffectiveTool) ==
                 MarkupPointerGesture.Pan)
             {
+                if (!PhotoPresentationInputPolicy.Allows(
+                        PhotoPresentationInteraction.HandPan,
+                        _photoPresentationViewEnabled))
+                {
+                    e.Handled = true;
+                    return;
+                }
+
                 _lastDragPoint = pointer;
                 e.Pointer.Capture(this);
                 e.Handled = true;
@@ -755,10 +851,13 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
             }
 
             var source = TryGetSourcePoint(pointer);
-            if (source is not null && presentation.BeginDrawing(
+            if (PhotoPresentationInputPolicy.Allows(
+                    PhotoPresentationInteraction.MarkupDrawing,
+                    _photoPresentationViewEnabled) &&
+                source is not null && presentation.BeginDrawing(
                     source.Value,
-                    _viewport.PhysicalScale,
-                    _viewport.SourceSize))
+                    GetPresentedPhysicalScale(),
+                    GetPresentedOrientedSize()))
             {
                 _drawingPointer = e.Pointer;
                 e.Pointer.Capture(this);
@@ -770,6 +869,14 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 
         if (e.ClickCount == 2)
         {
+            if (!PhotoPresentationInputPolicy.Allows(
+                    PhotoPresentationInteraction.DoubleClickZoom,
+                    _photoPresentationViewEnabled))
+            {
+                e.Handled = true;
+                return;
+            }
+
             var pointer = e.GetPosition(this);
             _viewport.ToggleFitAnd100(new PointD(pointer.X, pointer.Y));
             _lastDragPoint = null;
@@ -778,8 +885,14 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
             return;
         }
 
-        _lastDragPoint = e.GetPosition(this);
-        e.Pointer.Capture(this);
+        if (PhotoPresentationInputPolicy.Allows(
+                PhotoPresentationInteraction.DragPan,
+                _photoPresentationViewEnabled))
+        {
+            _lastDragPoint = e.GetPosition(this);
+            e.Pointer.Capture(this);
+        }
+
         e.Handled = true;
     }
 
@@ -804,6 +917,16 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
         var previous = _lastDragPoint;
         if (previous is null || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
         {
+            return;
+        }
+
+        if (!PhotoPresentationInputPolicy.Allows(
+                PhotoPresentationInteraction.DragPan,
+                _photoPresentationViewEnabled))
+        {
+            _lastDragPoint = null;
+            e.Pointer.Capture(null);
+            e.Handled = true;
             return;
         }
 
@@ -850,6 +973,12 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 
     private RectD GetDestination()
     {
+        if (_photoPresentationViewEnabled && GetPresentedImageLease() is { } image)
+        {
+            return CalculatePhotoPresentationLayout(image.Value.Descriptor.OrientedSize)
+                .PhotoDestination;
+        }
+
         var destination = _viewport.DestinationDip;
         if (!_viewport.UsesExactPixelSampling)
         {
@@ -859,6 +988,32 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
         var aligned = _viewport.PhysicalAlignedOrigin();
         return destination with { X = aligned.X, Y = aligned.Y };
     }
+
+    private PhotoPresentationLayoutResult CalculatePhotoPresentationLayout(
+        Fovium.Rendering.PixelSize sourceSize) =>
+        PhotoPresentationLayout.Calculate(
+            _viewport.ViewportSize,
+            _viewport.RenderScaling,
+            sourceSize,
+            GetPresentedStage(),
+            _photoPresentationViewSettings.EdgeMarginPercent);
+
+    private SharedResourceLease<DecodedImage>? GetPresentedImageLease() =>
+        _inspectionImage ?? _image;
+
+    private StageSettings GetPresentedStage() =>
+        _inspectionImage is not null ? _inspectionStage! : _stage;
+
+    private Fovium.Rendering.PixelSize GetPresentedOrientedSize() =>
+        GetPresentedImageLease()?.Value.Descriptor.OrientedSize ?? _viewport.SourceSize;
+
+    private double GetPresentedPhysicalScale() => _photoPresentationViewEnabled
+        ? CalculatePhotoPresentationLayout(GetPresentedOrientedSize()).PhysicalScale
+        : _viewport.PhysicalScale;
+
+    private bool UsesExactPixelSampling() => _photoPresentationViewEnabled
+        ? CalculatePhotoPresentationLayout(GetPresentedOrientedSize()).UsesExactPixelSampling
+        : _viewport.UsesExactPixelSampling;
 
     private void PublishPhotoPresentation()
     {
@@ -932,7 +1087,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
                 descriptor.EncodedSize,
                 descriptor.Orientation,
                 destination,
-                _viewport.UsesExactPixelSampling,
+                UsesExactPixelSampling(),
                 presentationStage,
                 _viewport.RenderScaling,
                 ambientLease,
@@ -1386,6 +1541,21 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
                 _viewport.RenderScaling);
         }
 
+        if (_photoPresentationViewEnabled &&
+            presentation.MarkupToolsVisible &&
+            presentation.EffectiveTool == MarkupTool.Hand)
+        {
+            return DrawingCursorPresentation.Resolve(
+                false,
+                presentation.HighlightEnabled,
+                MarkupTool.Hand,
+                presentation.ActiveStrokePhysicalPixels,
+                presentation.Settings.HighlightColor,
+                presentation.Settings.HighlightOpacity,
+                presentation.Settings.HighlightRadiusPhysicalPixels,
+                _viewport.RenderScaling);
+        }
+
         if (_colorPickerEnabled)
         {
             return DrawingCursorPresentation.CreateColorPicker(_viewport.RenderScaling);
@@ -1450,7 +1620,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
             return null;
         }
 
-        return _viewport.SourcePointAt(new PointD(pointer.X, pointer.Y));
+        return MapViewportPointToSource(new PointD(pointer.X, pointer.Y));
     }
 
     private void RequestColorSample(Point pointer)
@@ -1482,11 +1652,25 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 
     private PointD GetClampedSourcePoint(Point pointer)
     {
-        var source = _viewport.SourcePointAt(new PointD(pointer.X, pointer.Y));
-        var size = _viewport.SourceSize;
+        var source = MapViewportPointToSource(new PointD(pointer.X, pointer.Y));
+        var size = GetPresentedOrientedSize();
         return new PointD(
             Math.Clamp(source.X, 0, size.Width),
             Math.Clamp(source.Y, 0, size.Height));
+    }
+
+    private PointD MapViewportPointToSource(PointD point)
+    {
+        if (!_photoPresentationViewEnabled)
+        {
+            return _viewport.SourcePointAt(point);
+        }
+
+        var destination = GetDestination();
+        var size = GetPresentedOrientedSize();
+        return new PointD(
+            (point.X - destination.X) * size.Width / destination.Width,
+            (point.Y - destination.Y) * size.Height / destination.Height);
     }
 
     private static MarkupDrawingModifiers ToDrawingModifiers(KeyModifiers modifiers) =>

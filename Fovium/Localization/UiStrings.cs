@@ -59,6 +59,7 @@ internal static class UiStrings
     public const string CommandZoomOut = "command.zoomOut";
     public const string CommandFit = "command.fit";
     public const string CommandActualSize = "command.actualSize";
+    public const string CommandTogglePhotoPresentation = "command.togglePhotoPresentation";
     public const string CommandToggleMatte = "command.toggleMatte";
     public const string CommandFullscreen = "command.fullscreen";
     public const string CommandOpen = "command.open";
@@ -131,6 +132,11 @@ internal static class UiStrings
     public const string SettingsScaleOnImageChange = "settings.scaleOnImageChange";
     public const string SettingsKeepCurrentScale = "settings.keepCurrentScale";
     public const string SettingsFitEachImage = "settings.fitEachImage";
+    public const string SettingsPhotoPresentationView = "settings.photoPresentationView";
+    public const string SettingsPhotoPresentationEdgeMargin =
+        "settings.photoPresentationEdgeMargin";
+    public const string SettingsPhotoPresentationExplanation =
+        "settings.photoPresentationExplanation";
     public const string SettingsVersion = "settings.version";
     public const string PickerTitle = "picker.title";
     public const string PickerImageType = "picker.imageType";
@@ -148,6 +154,7 @@ internal static class UiStrings
         ViewerCommand.ZoomOut => CommandZoomOut,
         ViewerCommand.Fit => CommandFit,
         ViewerCommand.ActualSize => CommandActualSize,
+        ViewerCommand.TogglePhotoPresentation => CommandTogglePhotoPresentation,
         ViewerCommand.ToggleMatte => CommandToggleMatte,
         ViewerCommand.Fullscreen => CommandFullscreen,
         ViewerCommand.Open => CommandOpen,

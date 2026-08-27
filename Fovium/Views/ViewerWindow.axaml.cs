@@ -66,6 +66,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
     private readonly MenuItem _nextMenuItem;
     private readonly IReadOnlyDictionary<StageBackgroundMode, MenuItem> _stageBackgroundMenuItems;
     private readonly MenuItem _matteMenuItem;
+    private readonly MenuItem _photoPresentationMenuItem;
     private readonly MenuItem _photoInfoMenuItem;
     private readonly MenuItem _histogramMenuItem;
     private readonly MenuItem _colorPickerMenuItem;
@@ -189,6 +190,10 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             FoviumIcon.Next);
         _stageBackgroundMenuItems = CreateStageBackgroundMenuItems();
         _matteMenuItem = CreateMatteMenuItem();
+        _photoPresentationMenuItem = CreateCommandMenuItem(
+            UiStrings.CommandTogglePhotoPresentation,
+            ViewerCommand.TogglePhotoPresentation);
+        _photoPresentationMenuItem.ToggleType = MenuItemToggleType.CheckBox;
         _photoInfoMenuItem = CreateOverlayToggleMenuItem(
             UiStrings.CommandTogglePhotoInfo,
             ViewerCommand.TogglePhotoInfo,
@@ -425,6 +430,13 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
                         _colorPicker.IsVisible)) is { } command)
             {
                 e.Handled = true;
+                if (!PhotoPresentationInputPolicy.Allows(
+                        command,
+                        PhotoViewport.PhotoPresentationViewEnabled))
+                {
+                    return;
+                }
+
                 var definition = ViewerCommands.GetDefinition(command);
                 if (definition.Trigger == ViewerCommandTrigger.Hold &&
                     AvaloniaShortcutGestureAdapter.TryGetPrimaryKey(e.Key, out var primaryKey))
@@ -475,6 +487,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
                     UiStrings.MenuActualSize,
                     ViewerCommand.ActualSize,
                     FoviumIcon.ActualSize),
+                _photoPresentationMenuItem,
                 CreateCommandMenuItem(
                     UiStrings.MenuFullscreen,
                     ViewerCommand.Fullscreen,
@@ -533,6 +546,11 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             }
 
             _matteMenuItem.IsChecked = _settings.Current.Stage.MatteEnabled;
+            _photoPresentationMenuItem.IsChecked = PhotoViewport.PhotoPresentationViewEnabled;
+            _commandMenuItems[ViewerCommand.Fit].IsEnabled =
+                !PhotoViewport.PhotoPresentationViewEnabled;
+            _commandMenuItems[ViewerCommand.ActualSize].IsEnabled =
+                !PhotoViewport.PhotoPresentationViewEnabled;
             var overlays = ViewerOverlayMenuState.Capture(
                 _presentation,
                 _photoInfo.IsVisible,
@@ -843,6 +861,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
     private void ApplySettings(FoviumSettings settings)
     {
         ApplyStage(settings.Stage);
+        PhotoViewport.SetPhotoPresentationViewSettings(settings.PhotoPresentationView);
         _presentation.ApplySettings(settings.Presentation);
         ApplyMarkupToolsUi();
         UpdateMarkupToolTips();
@@ -1004,6 +1023,13 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
     private Task ExecutePersistentCommandAsync(ViewerCommand command)
     {
         _holdController.Cancel();
+        if (!PhotoPresentationInputPolicy.Allows(
+                command,
+                PhotoViewport.PhotoPresentationViewEnabled))
+        {
+            return Task.CompletedTask;
+        }
+
         return _commandExecutor.ExecuteAsync(command);
     }
 
@@ -1070,6 +1096,13 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
 
     void IViewerCommandTarget.SetPhotographic100AtCenter() =>
         PhotoViewport.SetPhotographic100AtCenter();
+
+    void IViewerCommandTarget.TogglePhotoPresentation()
+    {
+        _presentation.EndTemporaryHand();
+        PhotoViewport.SetPhotoPresentationViewEnabled(
+            !PhotoViewport.PhotoPresentationViewEnabled);
+    }
 
     Task IViewerCommandTarget.ToggleMatteAsync() =>
         _settings.ToggleMatteAsync(_lifetimeCancellation.Token);
