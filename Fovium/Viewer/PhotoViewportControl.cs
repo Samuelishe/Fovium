@@ -719,7 +719,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 
         DecodedImage.RenderLease? renderLease = null;
         DecodedImage.AmbientLease? ambientLease = null;
-        SharedResourceLease<ManagedPhotoSurface>? managedSurface = null;
+        ManagedPhotoPresentationLease? managedPresentation = null;
         try
         {
             renderLease = cachedLease.Value.AcquireRenderLease();
@@ -737,6 +737,8 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
             var presentationStage = _inspectionImage is not null ? _inspectionStage! : _stage;
             var destination = GetDestination();
             var suppressLegacyPhoto = false;
+            var geometryOnlyBlankFallback = false;
+            var photoPresentationVisible = true;
             var state = MonitorColorPolicy.Classify(
                 _monitorColorManagementEnabled,
                 OperatingSystem.IsWindows(),
@@ -765,18 +767,29 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
                         descriptor.EncodedSize,
                         descriptor.Orientation,
                         geometry);
-                    if (!coordinator.TryAcquire(key, out managedSurface))
+                    var acquired = coordinator.TryAcquirePresentation(
+                        key,
+                        out managedPresentation,
+                        out var pendingReason);
+                    var publication = ManagedPhotoPublicationPolicy.Resolve(acquired, pendingReason);
+                    suppressLegacyPhoto = publication.SuppressLegacyPhoto;
+                    photoPresentationVisible = publication.PhotoPresentationVisible;
+                    geometryOnlyBlankFallback = publication.GeometryOnlyBlackFallback;
+
+                    if (_requestedManagedKey != key)
                     {
-                        suppressLegacyPhoto = true;
-                        if (_requestedManagedKey != key)
-                        {
-                            _requestedManagedKey = key;
-                            coordinator.Request(new ManagedPhotoRenderRequest(
+                        _requestedManagedKey = key;
+                        var isProxy = managedPresentation?.Quality ==
+                            ManagedPhotoPresentationQuality.Proxy;
+                        coordinator.Request(
+                            new ManagedPhotoRenderRequest(
                                 key,
                                 descriptor,
                                 cachedLease.Value.AcquireRenderLease(),
-                                profile.Bytes));
-                        }
+                                profile.Bytes),
+                            deferGeometryRefinement: isProxy,
+                            pendingReason,
+                            qualityRefinement: managedPresentation?.UnderResolved == true);
                     }
                 }
             }
@@ -801,18 +814,20 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
                 ambientLease is null ? null : ambientIdentity,
                 _ambientFrameDiagnostics,
                 _interactionDiagnostics,
-                managedSurface,
-                suppressLegacyPhoto));
-            SetPhotoPresentationVisible(!suppressLegacyPhoto);
+                managedPresentation,
+                suppressLegacyPhoto,
+                _managedPhotoCoordinator,
+                geometryOnlyBlankFallback));
+            SetPhotoPresentationVisible(photoPresentationVisible);
             renderLease = null;
             ambientLease = null;
-            managedSurface = null;
+            managedPresentation = null;
         }
         finally
         {
             renderLease?.Dispose();
             ambientLease?.Dispose();
-            managedSurface?.Dispose();
+            managedPresentation?.Dispose();
         }
     }
 

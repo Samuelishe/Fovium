@@ -152,11 +152,18 @@ public sealed class ManagedPhotoPresentationCoordinatorTests
             }
 
             completion.GetAwaiter().GetResult();
-            var bitmap = new SKBitmap(new SKImageInfo(1, 1, SKColorType.Bgra8888, SKAlphaType.Premul));
+            var coverage = ManagedPhotoCoveragePlanner.Create(
+                request.Key.Geometry,
+                request.Descriptor.OrientedSize);
+            var bitmap = new SKBitmap(new SKImageInfo(
+                coverage.RasterPixelSize.Width,
+                coverage.RasterPixelSize.Height,
+                SKColorType.Bgra8888,
+                SKAlphaType.Premul));
             var image = SKImage.FromBitmap(bitmap);
             var result = new ManagedPhotoSurface(
                 request.Key,
-                request.Key.Geometry.VisiblePhotoBounds,
+                coverage,
                 bitmap,
                 image,
                 TimeSpan.Zero,

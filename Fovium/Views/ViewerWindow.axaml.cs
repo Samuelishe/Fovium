@@ -360,6 +360,16 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
                 $"sourceRenderMs={metrics?.LastSourceRenderDuration.TotalMilliseconds ?? 0:F2}, " +
                 $"lcmsMs={metrics?.LastTransformDuration.TotalMilliseconds ?? 0:F2}, " +
                 $"finalizeMs={metrics?.LastFinalizationDuration.TotalMilliseconds ?? 0:F2}.");
+            Console.WriteLine(
+                $"Fovium color interaction: geometryRequests={metrics?.GeometryRequests ?? 0}, " +
+                $"exactRequests={metrics?.ExactPresentationRequests ?? 0}, " +
+                $"proxyFrames={metrics?.ProxyFrames ?? 0}, exactFrames={metrics?.ExactFrames ?? 0}, " +
+                $"geometryBlackFrames={metrics?.GeometryOnlyBlackFallbackFrames ?? 0}, " +
+                $"overscanHits={metrics?.OverscanHits ?? 0}, overscanMisses={metrics?.OverscanMisses ?? 0}, " +
+                $"qualityRefinements={metrics?.QualityRefinementRequests ?? 0}, " +
+                $"sourceChanges={metrics?.SourceChanges ?? 0}, destinationChanges={metrics?.DestinationChanges ?? 0}, " +
+                $"pendingReason={metrics?.LastPendingReason.ToString() ?? "none"}, " +
+                $"overscanFactor={metrics?.LastOverscanFactor ?? 0:F3}.");
         }
 
         _lifetimeCancellation.Dispose();

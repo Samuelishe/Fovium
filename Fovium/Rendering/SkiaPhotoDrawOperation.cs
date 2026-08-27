@@ -18,7 +18,7 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
 {
     private DecodedImage.RenderLease? _imageLease;
     private DecodedImage.AmbientLease? _ambientLease;
-    private SharedResourceLease<ManagedPhotoSurface>? _managedSurface;
+    private ManagedPhotoPresentationLease? _managedPresentation;
     private readonly PixelSize _encodedSize;
     private readonly ExifOrientation _orientation;
     private readonly RectD _destination;
@@ -30,6 +30,8 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
     private readonly AmbientRenderFrameDiagnostics _frameDiagnostics;
     private readonly InteractionRenderDiagnostics _interactionDiagnostics;
     private readonly bool _suppressLegacyPhoto;
+    private readonly ManagedPhotoPresentationCoordinator? _managedCoordinator;
+    private readonly bool _geometryOnlyBlankFallback;
 
     public SkiaPhotoDrawOperation(
         Rect bounds,
@@ -45,8 +47,10 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
         long? ambientIdentity,
         AmbientRenderFrameDiagnostics frameDiagnostics,
         InteractionRenderDiagnostics interactionDiagnostics,
-        SharedResourceLease<ManagedPhotoSurface>? managedSurface = null,
-        bool suppressLegacyPhoto = false)
+        ManagedPhotoPresentationLease? managedPresentation = null,
+        bool suppressLegacyPhoto = false,
+        ManagedPhotoPresentationCoordinator? managedCoordinator = null,
+        bool geometryOnlyBlankFallback = false)
     {
         Bounds = bounds;
         _imageLease = imageLease;
@@ -61,8 +65,10 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
         _ambientIdentity = ambientIdentity;
         _frameDiagnostics = frameDiagnostics;
         _interactionDiagnostics = interactionDiagnostics;
-        _managedSurface = managedSurface;
+        _managedPresentation = managedPresentation;
         _suppressLegacyPhoto = suppressLegacyPhoto;
+        _managedCoordinator = managedCoordinator;
+        _geometryOnlyBlankFallback = geometryOnlyBlankFallback;
     }
 
     public Rect Bounds { get; }
@@ -103,32 +109,41 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
             _imageIdentity,
             _ambientIdentity,
             _frameDiagnostics);
-        var managedSurface = _managedSurface;
-        if (managedSurface is not null)
+        var managedPresentation = _managedPresentation;
+        if (managedPresentation is not null)
         {
+            var managedSurface = managedPresentation.Surface;
             using var managedPaint = new SKPaint { IsAntialias = false };
             var source = new SKRect(
                 0,
                 0,
-                managedSurface.Value.Image.Width,
-                managedSurface.Value.Image.Height);
-            var managedDestination = managedSurface.Value.Destination;
+                managedSurface.Image.Width,
+                managedSurface.Image.Height);
+            var managedDestination = managedPresentation.TargetDestination;
             var destination = new SKRect(
                 (float)managedDestination.X,
                 (float)managedDestination.Y,
                 (float)(managedDestination.X + managedDestination.Width),
                 (float)(managedDestination.Y + managedDestination.Height));
             canvas.DrawImage(
-                managedSurface.Value.Image,
+                managedSurface.Image,
                 source,
                 destination,
-                new SKSamplingOptions(SKFilterMode.Nearest, SKMipmapMode.None),
+                managedPresentation.Quality == ManagedPhotoPresentationQuality.Exact
+                    ? new SKSamplingOptions(SKFilterMode.Nearest, SKMipmapMode.None)
+                    : new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear),
                 managedPaint);
+            _managedCoordinator?.RecordFrame(managedPresentation.Quality);
             return;
         }
 
         if (_suppressLegacyPhoto)
         {
+            if (_geometryOnlyBlankFallback)
+            {
+                _managedCoordinator?.RecordGeometryOnlyBlackFallback();
+            }
+
             return;
         }
 
@@ -170,7 +185,7 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
     {
         Interlocked.Exchange(ref _imageLease, null)?.Dispose();
         Interlocked.Exchange(ref _ambientLease, null)?.Dispose();
-        Interlocked.Exchange(ref _managedSurface, null)?.Dispose();
+        Interlocked.Exchange(ref _managedPresentation, null)?.Dispose();
     }
 
 }

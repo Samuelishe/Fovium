@@ -44,7 +44,7 @@ public sealed class ManagedPhotoRendererGeometryTests
     }
 
     [Fact]
-    public void RasterContainsOnlyVisiblePhotographIntersectionAndNotPureStageArea()
+    public void RasterAddsPreferredOverscanInsideThePhotographWithoutIncludingPureStageArea()
     {
         using var image = CreateImage(4000, 3000);
         using var renderer = new SkiaLittleCmsPhotoRenderer(new CopyTransformEngine());
@@ -67,9 +67,33 @@ public sealed class ManagedPhotoRendererGeometryTests
 
         using var surface = renderer.Render(request);
 
-        Assert.Equal(new RectD(0, 0, 800, 600), surface.Destination);
-        Assert.Equal(new PixelSize(800, 600), surface.PixelSize);
+        Assert.Equal(new RectD(-160, -120, 1120, 840), surface.Destination);
+        Assert.Equal(new PixelSize(1120, 840), surface.PixelSize);
+        Assert.Equal(ManagedPhotoCoveragePlanner.PreferredOverscanFactor, surface.Coverage.OverscanFactor);
+        Assert.False(surface.Coverage.OverscanCapped);
         Assert.NotEqual(image.Descriptor.EncodedSize, surface.PixelSize);
+    }
+
+    [Fact]
+    public void OverscanRasterIsCappedAtFortyEightMebibytesAfterPixelRounding()
+    {
+        var geometry = new ManagedPhotoGeometry(
+            new RectD(0, 0, 3000, 3000),
+            new RectD(-1000, -1000, 5000, 5000),
+            1,
+            false);
+
+        var coverage = ManagedPhotoCoveragePlanner.Create(
+            geometry,
+            new PixelSize(5000, 5000));
+
+        Assert.True(coverage.OverscanCapped);
+        Assert.True(
+            coverage.RetainedBytes <= ManagedPhotoCoveragePlanner.MaximumOverscanRasterBytes,
+            $"Expected at most {ManagedPhotoCoveragePlanner.MaximumOverscanRasterBytes} bytes, " +
+            $"but planned {coverage.RetainedBytes} bytes.");
+        Assert.True(coverage.OverscanFactor > 1);
+        Assert.True(coverage.OverscanFactor < ManagedPhotoCoveragePlanner.PreferredOverscanFactor);
     }
 
     private static DecodedImage CreateImage(int width, int height)
