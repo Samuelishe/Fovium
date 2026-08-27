@@ -43,6 +43,42 @@ public sealed class SettingsServiceTests
     }
 
     [Fact]
+    public async Task RapidSettingsWindowResizeChangesCoalesceAndPersistOnlyLatestSize()
+    {
+        var store = new RecordingSettingsStore();
+        using var service = new SettingsService(store);
+
+        var first = service.SetSettingsWindowSizeAsync(
+            new SettingsWindowSizeSettings { WidthDip = 900, HeightDip = 650 });
+        var second = service.SetSettingsWindowSizeAsync(
+            new SettingsWindowSizeSettings { WidthDip = 920, HeightDip = 670 });
+        var latest = service.SetSettingsWindowSizeAsync(
+            new SettingsWindowSizeSettings { WidthDip = 945, HeightDip = 695 });
+        await Task.WhenAll(first, second, latest);
+        await service.FlushAsync();
+
+        Assert.Equal(1, store.SaveCount);
+        Assert.Equal(945, store.Saved?.SettingsWindowSize.WidthDip);
+        Assert.Equal(695, store.Saved?.SettingsWindowSize.HeightDip);
+    }
+
+    [Fact]
+    public async Task FinalCloseFlushWaitsForLatestPendingWindowSizePersistence()
+    {
+        var store = new RecordingSettingsStore();
+        using var service = new SettingsService(store);
+        var latest = new SettingsWindowSizeSettings { WidthDip = 938, HeightDip = 684 };
+
+        var pending = service.SetSettingsWindowSizeAsync(latest);
+        var closeFlush = service.FlushAsync();
+        await Task.WhenAll(pending, closeFlush);
+
+        Assert.Equal(latest, service.Current.SettingsWindowSize);
+        Assert.Equal(latest, store.Saved?.SettingsWindowSize);
+        Assert.Equal(1, store.SaveCount);
+    }
+
+    [Fact]
     public async Task ReapplyingEquivalentSettingsDoesNotRaiseEventOrAutosave()
     {
         var store = new RecordingSettingsStore();

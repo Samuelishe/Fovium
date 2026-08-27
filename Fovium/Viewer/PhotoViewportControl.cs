@@ -143,7 +143,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
     private bool _managedPresentationFailed;
     private MonitorColorState _monitorColorState = MonitorColorState.PlatformUnsupported;
     private bool _photoPresentationVisible;
-    private bool _photoPresentationViewEnabled;
+    private readonly PhotoPresentationViewSession _photoPresentationView = new();
     private PhotoPresentationViewSettings _photoPresentationViewSettings =
         PhotoPresentationViewSettings.Default;
 
@@ -152,6 +152,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
         ClipToBounds = true;
         Focusable = true;
         CacheMode = new BitmapCache { SnapsToDevicePixels = true };
+        _photoPresentationView.Changed += OnPhotoPresentationViewChanged;
     }
 
     public event EventHandler? PointerActivity;
@@ -168,7 +169,9 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 
     public InspectionMode InspectionMode => _inspectionMode;
 
-    internal bool PhotoPresentationViewEnabled => _photoPresentationViewEnabled;
+    internal bool PhotoPresentationViewEnabled => _photoPresentationView.IsEnabled;
+
+    internal PhotoPresentationViewSession PhotoPresentationView => _photoPresentationView;
 
     internal MonitorColorState MonitorColorState => _monitorColorState;
 
@@ -225,13 +228,13 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
         _presentation?.GetRenderSnapshot(PresentedImageIdentity) ?? MarkupRenderSnapshot.Empty;
 
     public ViewTransfer CaptureViewTransfer() =>
-        _image is null || _photoPresentationViewEnabled
+        _image is null || _photoPresentationView.IsEnabled
             ? ViewTransfer.Fit
             : _viewport.CaptureTransfer();
 
     internal PhotoPresentationLayoutResult? CapturePhotoPresentationLayout()
     {
-        if (!_photoPresentationViewEnabled || GetPresentedImageLease() is not { } image)
+        if (!_photoPresentationView.IsEnabled || GetPresentedImageLease() is not { } image)
         {
             return null;
         }
@@ -239,22 +242,19 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
         return CalculatePhotoPresentationLayout(image.Value.Descriptor.OrientedSize);
     }
 
-    internal void SetPhotoPresentationViewEnabled(bool enabled)
-    {
-        if (_photoPresentationViewEnabled == enabled)
-        {
-            return;
-        }
+    internal void SetPhotoPresentationViewEnabled(bool enabled) =>
+        _photoPresentationView.SetEnabled(enabled);
 
-        _photoPresentationViewEnabled = enabled;
+    private void OnPhotoPresentationViewChanged(object? sender, EventArgs e)
+    {
         _lastDragPoint = null;
         _wheelAccumulator = 0;
-        if (enabled)
+        if (_photoPresentationView.IsEnabled)
         {
             _presentation?.EndTemporaryHand();
         }
 
-        if (!enabled && _image is not null)
+        if (!_photoPresentationView.IsEnabled && _image is not null)
         {
             _viewport.Fit();
         }
@@ -272,7 +272,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
         }
 
         _photoPresentationViewSettings = normalized;
-        if (_photoPresentationViewEnabled)
+        if (_photoPresentationView.IsEnabled)
         {
             InvalidateAndReport();
         }
@@ -563,7 +563,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 
     public void Fit()
     {
-        if (_image is null || _photoPresentationViewEnabled)
+        if (_image is null || _photoPresentationView.IsEnabled)
         {
             return;
         }
@@ -574,7 +574,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 
     public void SetPhotographic100AtCenter()
     {
-        if (_image is null || _photoPresentationViewEnabled)
+        if (_image is null || _photoPresentationView.IsEnabled)
         {
             return;
         }
@@ -586,7 +586,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 
     public void ZoomByStepsAtCenter(int steps)
     {
-        if (_image is null || _photoPresentationViewEnabled || steps == 0)
+        if (_image is null || _photoPresentationView.IsEnabled || steps == 0)
         {
             return;
         }
@@ -601,7 +601,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
         if (_image is null ||
             !PhotoPresentationInputPolicy.Allows(
                 PhotoPresentationInteraction.Peek,
-                _photoPresentationViewEnabled) ||
+                _photoPresentationView.IsEnabled) ||
             _inspectionMode != InspectionMode.None)
         {
             return false;
@@ -621,7 +621,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
         if (_image is null ||
             !PhotoPresentationInputPolicy.Allows(
                 PhotoPresentationInteraction.Blink,
-                _photoPresentationViewEnabled) ||
+                _photoPresentationView.IsEnabled) ||
             _inspectionMode != InspectionMode.None)
         {
             return false;
@@ -749,7 +749,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
         }
         if (!PhotoPresentationInputPolicy.Allows(
                 PhotoPresentationInteraction.WheelZoom,
-                _photoPresentationViewEnabled))
+                _photoPresentationView.IsEnabled))
         {
             _wheelAccumulator = 0;
             e.Handled = true;
@@ -793,7 +793,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
         {
             if (!PhotoPresentationInputPolicy.Allows(
                     PhotoPresentationInteraction.HandPan,
-                    _photoPresentationViewEnabled))
+                    _photoPresentationView.IsEnabled))
             {
                 e.Handled = true;
                 return;
@@ -809,7 +809,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
         {
             if (PhotoPresentationInputPolicy.Allows(
                     PhotoPresentationInteraction.ColorSampling,
-                    _photoPresentationViewEnabled))
+                    _photoPresentationView.IsEnabled))
             {
                 RequestColorSample(e.GetPosition(this));
             }
@@ -838,7 +838,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
             {
                 if (!PhotoPresentationInputPolicy.Allows(
                         PhotoPresentationInteraction.HandPan,
-                        _photoPresentationViewEnabled))
+                        _photoPresentationView.IsEnabled))
                 {
                     e.Handled = true;
                     return;
@@ -853,7 +853,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
             var source = TryGetSourcePoint(pointer);
             if (PhotoPresentationInputPolicy.Allows(
                     PhotoPresentationInteraction.MarkupDrawing,
-                    _photoPresentationViewEnabled) &&
+                    _photoPresentationView.IsEnabled) &&
                 source is not null && presentation.BeginDrawing(
                     source.Value,
                     GetPresentedPhysicalScale(),
@@ -871,7 +871,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
         {
             if (!PhotoPresentationInputPolicy.Allows(
                     PhotoPresentationInteraction.DoubleClickZoom,
-                    _photoPresentationViewEnabled))
+                    _photoPresentationView.IsEnabled))
             {
                 e.Handled = true;
                 return;
@@ -887,7 +887,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 
         if (PhotoPresentationInputPolicy.Allows(
                 PhotoPresentationInteraction.DragPan,
-                _photoPresentationViewEnabled))
+                _photoPresentationView.IsEnabled))
         {
             _lastDragPoint = e.GetPosition(this);
             e.Pointer.Capture(this);
@@ -922,7 +922,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 
         if (!PhotoPresentationInputPolicy.Allows(
                 PhotoPresentationInteraction.DragPan,
-                _photoPresentationViewEnabled))
+                _photoPresentationView.IsEnabled))
         {
             _lastDragPoint = null;
             e.Pointer.Capture(null);
@@ -973,7 +973,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 
     private RectD GetDestination()
     {
-        if (_photoPresentationViewEnabled && GetPresentedImageLease() is { } image)
+        if (_photoPresentationView.IsEnabled && GetPresentedImageLease() is { } image)
         {
             return CalculatePhotoPresentationLayout(image.Value.Descriptor.OrientedSize)
                 .PhotoDestination;
@@ -1007,11 +1007,11 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
     private Fovium.Rendering.PixelSize GetPresentedOrientedSize() =>
         GetPresentedImageLease()?.Value.Descriptor.OrientedSize ?? _viewport.SourceSize;
 
-    private double GetPresentedPhysicalScale() => _photoPresentationViewEnabled
+    private double GetPresentedPhysicalScale() => _photoPresentationView.IsEnabled
         ? CalculatePhotoPresentationLayout(GetPresentedOrientedSize()).PhysicalScale
         : _viewport.PhysicalScale;
 
-    private bool UsesExactPixelSampling() => _photoPresentationViewEnabled
+    private bool UsesExactPixelSampling() => _photoPresentationView.IsEnabled
         ? CalculatePhotoPresentationLayout(GetPresentedOrientedSize()).UsesExactPixelSampling
         : _viewport.UsesExactPixelSampling;
 
@@ -1541,7 +1541,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
                 _viewport.RenderScaling);
         }
 
-        if (_photoPresentationViewEnabled &&
+        if (_photoPresentationView.IsEnabled &&
             presentation.MarkupToolsVisible &&
             presentation.EffectiveTool == MarkupTool.Hand)
         {
@@ -1661,7 +1661,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 
     private PointD MapViewportPointToSource(PointD point)
     {
-        if (!_photoPresentationViewEnabled)
+        if (!_photoPresentationView.IsEnabled)
         {
             return _viewport.SourcePointAt(point);
         }

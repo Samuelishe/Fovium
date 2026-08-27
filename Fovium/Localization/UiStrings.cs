@@ -133,6 +133,8 @@ internal static class UiStrings
     public const string SettingsKeepCurrentScale = "settings.keepCurrentScale";
     public const string SettingsFitEachImage = "settings.fitEachImage";
     public const string SettingsPhotoPresentationView = "settings.photoPresentationView";
+    public const string SettingsEnablePhotoPresentation =
+        "settings.enablePhotoPresentation";
     public const string SettingsPhotoPresentationEdgeMargin =
         "settings.photoPresentationEdgeMargin";
     public const string SettingsPhotoPresentationExplanation =

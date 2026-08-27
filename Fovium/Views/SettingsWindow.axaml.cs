@@ -10,6 +10,7 @@ using Fovium.Localization;
 using Fovium.Presentation;
 using Fovium.Settings;
 using Fovium.Stage;
+using Fovium.Viewer;
 
 namespace Fovium.Views;
 
@@ -17,8 +18,10 @@ internal sealed partial class SettingsWindow : Window
 {
     private readonly SettingsService _settings;
     private readonly Localizer _localizer;
+    private readonly PhotoPresentationViewSession _photoPresentationView;
     private readonly RadioButton _keepCurrentScaleOption;
     private readonly RadioButton _fitEachImageOption;
+    private readonly CheckBox _photoPresentationEnabledOption;
     private readonly Slider _photoPresentationMarginSlider;
     private readonly TextBlock _photoPresentationMarginValue;
     private readonly CheckBox _monitorColorManagementOption;
@@ -52,14 +55,28 @@ internal sealed partial class SettingsWindow : Window
     private readonly TextBlock _defaultStrokeValue;
     private readonly TextBlock _defaultMarkupOpacityValue;
     private readonly Dictionary<ViewerCommand, Button> _shortcutButtons = [];
+    private readonly Avalonia.Threading.DispatcherTimer _windowSizePersistenceTimer;
     private ViewerCommand? _capturingCommand;
+    private Avalonia.Size? _pendingWindowSize;
     private bool _initializing = true;
 
-    public SettingsWindow(SettingsService settings, Localizer localizer)
+    public SettingsWindow(
+        SettingsService settings,
+        Localizer localizer,
+        PhotoPresentationViewSession photoPresentationView,
+        Avalonia.Size initialSize)
     {
         _settings = settings;
         _localizer = localizer;
+        _photoPresentationView = photoPresentationView;
         InitializeComponent();
+        Width = initialSize.Width;
+        Height = initialSize.Height;
+        _windowSizePersistenceTimer = new Avalonia.Threading.DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(200),
+        };
+        _windowSizePersistenceTimer.Tick += OnWindowSizePersistenceTimerTick;
 
         var viewingTab = FindRequired<TabItem>("ViewingTab");
         var colorTab = FindRequired<TabItem>("ColorTab");
@@ -69,6 +86,8 @@ internal sealed partial class SettingsWindow : Window
         var aboutTab = FindRequired<TabItem>("AboutTab");
         _keepCurrentScaleOption = FindRequired<RadioButton>("KeepCurrentScaleOption");
         _fitEachImageOption = FindRequired<RadioButton>("FitEachImageOption");
+        _photoPresentationEnabledOption =
+            FindRequired<CheckBox>("PhotoPresentationEnabledOption");
         _photoPresentationMarginSlider = FindRequired<Slider>("PhotoPresentationMarginSlider");
         _photoPresentationMarginValue = FindRequired<TextBlock>("PhotoPresentationMarginValue");
         _monitorColorManagementOption = FindRequired<CheckBox>("MonitorColorManagementOption");
@@ -112,6 +131,8 @@ internal sealed partial class SettingsWindow : Window
         FindRequired<TextBlock>("ScaleHeading").Text = localizer[UiStrings.SettingsScaleOnImageChange];
         FindRequired<TextBlock>("PhotoPresentationHeading").Text =
             localizer[UiStrings.SettingsPhotoPresentationView];
+        _photoPresentationEnabledOption.Content =
+            localizer[UiStrings.SettingsEnablePhotoPresentation];
         FindRequired<TextBlock>("PhotoPresentationMarginLabel").Text =
             localizer[UiStrings.SettingsPhotoPresentationEdgeMargin];
         FindRequired<TextBlock>("PhotoPresentationExplanation").Text =
@@ -159,8 +180,11 @@ internal sealed partial class SettingsWindow : Window
 
         CreateShortcutRows();
         ApplySettings(settings.Current);
+        ApplyPhotoPresentationViewState();
         SubscribeEvents();
         _settings.SettingsChanged += OnSettingsChanged;
+        _photoPresentationView.Changed += OnPhotoPresentationViewChanged;
+        Resized += OnWindowResized;
         Closed += OnClosed;
         KeyDown += OnShortcutCaptureKeyDown;
         _initializing = false;
@@ -172,6 +196,14 @@ internal sealed partial class SettingsWindow : Window
     {
         _keepCurrentScaleOption.IsCheckedChanged += OnKeepCurrentScaleChanged;
         _fitEachImageOption.IsCheckedChanged += OnFitEachImageChanged;
+        _photoPresentationEnabledOption.IsCheckedChanged += (_, _) =>
+        {
+            if (!_initializing)
+            {
+                _photoPresentationView.SetEnabled(
+                    _photoPresentationEnabledOption.IsChecked == true);
+            }
+        };
         _photoPresentationMarginSlider.ValueChanged += OnPhotoPresentationMarginChanged;
         _monitorColorManagementOption.IsCheckedChanged += async (_, _) =>
         {
@@ -484,6 +516,25 @@ internal sealed partial class SettingsWindow : Window
         }
     }
 
+    private void OnPhotoPresentationViewChanged(object? sender, EventArgs e)
+    {
+        if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+        {
+            ApplyPhotoPresentationViewState();
+        }
+        else
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(ApplyPhotoPresentationViewState);
+        }
+    }
+
+    private void ApplyPhotoPresentationViewState()
+    {
+        _initializing = true;
+        _photoPresentationEnabledOption.IsChecked = _photoPresentationView.IsEnabled;
+        _initializing = false;
+    }
+
     private void ApplySettings(FoviumSettings settings)
     {
         _initializing = true;
@@ -562,7 +613,45 @@ internal sealed partial class SettingsWindow : Window
     private void OnClosed(object? sender, EventArgs e)
     {
         _capturingCommand = null;
+        PersistPendingWindowSize();
+        _windowSizePersistenceTimer.Stop();
+        _windowSizePersistenceTimer.Tick -= OnWindowSizePersistenceTimerTick;
         _settings.SettingsChanged -= OnSettingsChanged;
+        _photoPresentationView.Changed -= OnPhotoPresentationViewChanged;
+        Resized -= OnWindowResized;
+    }
+
+    private void OnWindowResized(object? sender, WindowResizedEventArgs e)
+    {
+        if (e.Reason != WindowResizeReason.User || WindowState != WindowState.Normal)
+        {
+            return;
+        }
+
+        _pendingWindowSize = e.ClientSize;
+        _windowSizePersistenceTimer.Stop();
+        _windowSizePersistenceTimer.Start();
+    }
+
+    private void OnWindowSizePersistenceTimerTick(object? sender, EventArgs e)
+    {
+        _windowSizePersistenceTimer.Stop();
+        PersistPendingWindowSize();
+    }
+
+    private void PersistPendingWindowSize()
+    {
+        if (_pendingWindowSize is not { } size)
+        {
+            return;
+        }
+
+        _pendingWindowSize = null;
+        _ = _settings.SetSettingsWindowSizeAsync(new SettingsWindowSizeSettings
+        {
+            WidthDip = size.Width,
+            HeightDip = size.Height,
+        });
     }
 
     private static void SetSwatch(Border border, StageColor color) =>

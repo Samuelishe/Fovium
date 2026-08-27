@@ -20,6 +20,7 @@
   "settings.keepCurrentScale": "Сохранять текущий масштаб",
   "settings.fitEachImage": "Вписывать каждое изображение",
   "settings.photoPresentationView": "Режим фотопрезентации",
+  "settings.enablePhotoPresentation": "Включить режим фотопрезентации",
   "settings.photoPresentationEdgeMargin": "Отступ от краёв",
   "settings.photoPresentationExplanation": "Фотография и паспарту остаются внутри презентационного отступа от краёв экрана.",
   "color.monitorManagement": "Управление цветом монитора",

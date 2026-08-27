@@ -194,6 +194,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             UiStrings.CommandTogglePhotoPresentation,
             ViewerCommand.TogglePhotoPresentation);
         _photoPresentationMenuItem.ToggleType = MenuItemToggleType.CheckBox;
+        PhotoViewport.PhotoPresentationView.Changed += OnPhotoPresentationViewChanged;
         _photoInfoMenuItem = CreateOverlayToggleMenuItem(
             UiStrings.CommandTogglePhotoInfo,
             ViewerCommand.TogglePhotoInfo,
@@ -383,6 +384,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         _hiddenCursor.Dispose();
         _handCursor.Dispose();
         _settings.SettingsChanged -= OnSettingsChanged;
+        PhotoViewport.PhotoPresentationView.Changed -= OnPhotoPresentationViewChanged;
         Screens.Changed -= OnDisplayRefreshRequired;
         Activated -= OnDisplayRefreshRequired;
         PositionChanged -= OnDisplayRefreshTrigger;
@@ -836,7 +838,20 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             return;
         }
 
-        var window = new SettingsWindow(_settings, _localizer);
+        var preferredSize = _settings.Current.SettingsWindowSize;
+        var screen = Screens.ScreenFromWindow(this) ?? Screens.Primary;
+        var initialSize = screen is null
+            ? new Size(preferredSize.WidthDip, preferredSize.HeightDip)
+            : SettingsWindowSizePolicy.Resolve(
+                preferredSize,
+                screen.WorkingArea.Width,
+                screen.WorkingArea.Height,
+                screen.Scaling);
+        var window = new SettingsWindow(
+            _settings,
+            _localizer,
+            PhotoViewport.PhotoPresentationView,
+            initialSize);
         _settingsWindow = window;
         window.Closed += (_, _) =>
         {
@@ -875,6 +890,15 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             PhotoViewport.SetMonitorColorManagementEnabled(settings.MonitorColorManagementEnabled);
             ScheduleDisplayProfileRefresh(forceProfileRefresh: true);
         }
+    }
+
+    private void OnPhotoPresentationViewChanged(object? sender, EventArgs e)
+    {
+        _photoPresentationMenuItem.IsChecked = PhotoViewport.PhotoPresentationViewEnabled;
+        _commandMenuItems[ViewerCommand.Fit].IsEnabled =
+            !PhotoViewport.PhotoPresentationViewEnabled;
+        _commandMenuItems[ViewerCommand.ActualSize].IsEnabled =
+            !PhotoViewport.PhotoPresentationViewEnabled;
     }
 
     private void OnDisplayRefreshTrigger(object? sender, EventArgs e) =>
@@ -1100,8 +1124,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
     void IViewerCommandTarget.TogglePhotoPresentation()
     {
         _presentation.EndTemporaryHand();
-        PhotoViewport.SetPhotoPresentationViewEnabled(
-            !PhotoViewport.PhotoPresentationViewEnabled);
+        PhotoViewport.PhotoPresentationView.Toggle();
     }
 
     Task IViewerCommandTarget.ToggleMatteAsync() =>

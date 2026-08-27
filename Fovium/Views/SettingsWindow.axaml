@@ -1,8 +1,8 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="Fovium.Views.SettingsWindow"
-        Width="680"
-        Height="580"
+        Width="920"
+        Height="680"
         MinWidth="560"
         MinHeight="440"
         WindowStartupLocation="CenterOwner">
@@ -14,7 +14,9 @@
         <RadioButton x:Name="FitEachImageOption" GroupName="ImageChangeViewPolicy" />
         <Separator Margin="0,4" />
         <TextBlock x:Name="PhotoPresentationHeading" FontSize="18" FontWeight="SemiBold" />
+        <CheckBox x:Name="PhotoPresentationEnabledOption" />
         <TextBlock x:Name="PhotoPresentationExplanation"
+                   Margin="24,0,0,0"
                    MaxWidth="500"
                    Opacity="0.72"
                    TextWrapping="Wrap" />

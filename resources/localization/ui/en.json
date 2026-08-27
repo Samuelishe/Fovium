@@ -20,6 +20,7 @@
   "settings.keepCurrentScale": "Keep current scale",
   "settings.fitEachImage": "Fit each image",
   "settings.photoPresentationView": "Photo Presentation view",
+  "settings.enablePhotoPresentation": "Enable Photo Presentation",
   "settings.photoPresentationEdgeMargin": "Edge margin",
   "settings.photoPresentationExplanation": "Keep the photograph and Matte inside a presentation margin from the screen edges.",
   "color.monitorManagement": "Monitor color management",

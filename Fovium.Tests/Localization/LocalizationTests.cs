@@ -100,6 +100,21 @@ public sealed class LocalizationTests
     }
 
     [Theory]
+    [InlineData("en-US", "Enable Photo Presentation")]
+    [InlineData("ru-RU", "Включить режим фотопрезентации")]
+    public void PhotoPresentationLiveCheckboxHasExactLocalizedLabel(
+        string cultureName,
+        string expected)
+    {
+        var localizer = Localizer.Create(CultureInfo.GetCultureInfo(cultureName));
+
+        Assert.Equal(expected, localizer[UiStrings.SettingsEnablePhotoPresentation]);
+        Assert.NotEqual(
+            UiStrings.SettingsEnablePhotoPresentation,
+            localizer[UiStrings.SettingsEnablePhotoPresentation]);
+    }
+
+    [Theory]
     [InlineData("en-US", "Stage", "Black", "Neutral", "Custom", "Ambient", "Matte")]
     [InlineData("ru-RU", "Фон", "Чёрный", "Нейтральный", "Свой цвет", "Ambient", "Паспарту")]
     public void StageCatalogsContainEveryBackgroundAndIndependentMatte(
