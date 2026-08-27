@@ -109,6 +109,11 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
         var managedSource = _managedSource;
         if (_suppressLegacyPhoto && managedSource is null)
         {
+            if (_stage.MatteEnabled)
+            {
+                _managedCoordinator?.RecordMatteWithoutPhotoFrame();
+            }
+
             return;
         }
 

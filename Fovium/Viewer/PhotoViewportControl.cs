@@ -20,6 +20,80 @@ internal readonly record struct ViewportAmbientPresentationState(
     StageBackgroundMode BackgroundMode,
     bool HasMatchingAmbient);
 
+internal readonly record struct AtomicPhotoPresentationState(
+    long? PresentedNumericIdentity,
+    string? PresentedIdentity,
+    Fovium.Rendering.PixelSize? PresentedOrientedSize,
+    RectD? PresentedDestination,
+    StageSettings? PresentedStage,
+    long? PresentedAmbientIdentity,
+    long? PendingNumericIdentity,
+    string? PendingIdentity,
+    Fovium.Rendering.PixelSize? PendingOrientedSize,
+    StageSettings? PendingStage,
+    bool PhotoPresentationVisible,
+    bool HasManagedSource);
+
+internal sealed class PendingPhotoPresentation : IDisposable
+{
+    private SharedResourceLease<DecodedImage>? _image;
+    private DecodedImage.AmbientLease? _ambient;
+
+    public PendingPhotoPresentation(
+        SharedResourceLease<DecodedImage> image,
+        ViewTransfer transfer,
+        string identity,
+        StageSettings stage,
+        DecodedImage.AmbientLease? ambient,
+        long? ambientIdentity)
+    {
+        _image = image;
+        Transfer = transfer;
+        Identity = identity;
+        Stage = stage;
+        _ambient = ambient;
+        AmbientIdentity = ambientIdentity;
+        RequestedTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
+    }
+
+    public SharedResourceLease<DecodedImage> Image => _image
+        ?? throw new ObjectDisposedException(nameof(PendingPhotoPresentation));
+
+    public long NumericIdentity => Image.Value.Identity;
+
+    public ViewTransfer Transfer { get; }
+
+    public string Identity { get; }
+
+    public StageSettings Stage { get; private set; }
+
+    public long? AmbientIdentity { get; private set; }
+
+    public long RequestedTimestamp { get; }
+
+    public ManagedPhotoKey? ManagedKey { get; set; }
+
+    public void UpdateStage(StageSettings stage, DecodedImage.AmbientLease? ambient, long? ambientIdentity)
+    {
+        var previous = _ambient;
+        Stage = stage;
+        _ambient = ambient;
+        AmbientIdentity = ambientIdentity;
+        previous?.Dispose();
+    }
+
+    public SharedResourceLease<DecodedImage> TakeImage() => Interlocked.Exchange(ref _image, null)
+        ?? throw new ObjectDisposedException(nameof(PendingPhotoPresentation));
+
+    public DecodedImage.AmbientLease? TakeAmbient() => Interlocked.Exchange(ref _ambient, null);
+
+    public void Dispose()
+    {
+        Interlocked.Exchange(ref _image, null)?.Dispose();
+        Interlocked.Exchange(ref _ambient, null)?.Dispose();
+    }
+}
+
 internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 {
     private readonly ViewportModel _viewport = new();
@@ -53,13 +127,17 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
     private InteractionRenderDiagnostics _interactionDiagnostics = new();
     private bool _colorPickerEnabled;
     private ManagedPhotoPresentationCoordinator? _managedPhotoCoordinator;
+    private ManagedPhotoSourceLease? _managedSource;
+    private PendingPhotoPresentation? _pendingPresentation;
     private DisplayProfileResolution _displayProfile = new(
         MonitorColorState.DestinationUnavailable,
         null,
         "No display profile has been resolved.");
+    private bool _displayProfileResolved;
     private ManagedPhotoKey? _requestedManagedKey;
     private bool _monitorColorManagementEnabled = true;
     private bool _monitorColorEngineAvailable;
+    private bool _monitorColorPlatformSupported = OperatingSystem.IsWindows();
     private bool _managedPresentationFailed;
     private MonitorColorState _monitorColorState = MonitorColorState.PlatformUnsupported;
     private bool _photoPresentationVisible;
@@ -88,6 +166,23 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
     internal MonitorColorState MonitorColorState => _monitorColorState;
 
     internal ManagedPhotoCoordinatorMetrics? MonitorColorMetrics => _managedPhotoCoordinator?.Metrics;
+
+    internal Task WaitForManagedPhotoIdleAsync() =>
+        _managedPhotoCoordinator?.WaitForIdleAsync() ?? Task.CompletedTask;
+
+    internal AtomicPhotoPresentationState CaptureAtomicPresentationState() => new(
+        _image?.Value.Identity,
+        _canonicalImageIdentity,
+        _image?.Value.Descriptor.OrientedSize,
+        _image is null ? null : GetDestination(),
+        _image is null ? null : _stage,
+        _ambientImageIdentity,
+        _pendingPresentation?.NumericIdentity,
+        _pendingPresentation?.Identity,
+        _pendingPresentation?.Image.Value.Descriptor.OrientedSize,
+        _pendingPresentation?.Stage,
+        _photoPresentationVisible,
+        _managedSource is not null);
 
     internal string? PresentedImageIdentity => _inspectionImage is not null
         ? _inspectionImageIdentity
@@ -148,7 +243,28 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
             new SkiaLittleCmsPhotoRenderer(engine));
         _managedPhotoCoordinator.PresentationChanged += OnManagedPresentationChanged;
         _managedPhotoCoordinator.PresentationFailed += OnManagedPresentationFailed;
-        PublishPhotoPresentation();
+        PrepareCurrentManagedSource();
+    }
+
+    internal void ConfigureMonitorColorManagement(
+        IManagedPhotoRenderer renderer,
+        bool enabled,
+        bool engineAvailable,
+        bool platformSupported)
+    {
+        ArgumentNullException.ThrowIfNull(renderer);
+        if (_managedPhotoCoordinator is not null)
+        {
+            throw new InvalidOperationException("Monitor color management is already configured.");
+        }
+
+        _monitorColorManagementEnabled = enabled;
+        _monitorColorEngineAvailable = engineAvailable;
+        _monitorColorPlatformSupported = platformSupported;
+        _managedPhotoCoordinator = new ManagedPhotoPresentationCoordinator(renderer);
+        _managedPhotoCoordinator.PresentationChanged += OnManagedPresentationChanged;
+        _managedPhotoCoordinator.PresentationFailed += OnManagedPresentationFailed;
+        PrepareCurrentManagedSource();
     }
 
     internal void SetMonitorColorManagementEnabled(bool enabled)
@@ -162,16 +278,30 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
         _requestedManagedKey = null;
         _managedPresentationFailed = false;
         _managedPhotoCoordinator?.Clear();
-        PublishPhotoPresentation();
+        DisposeManagedSource();
+        if (!enabled && _pendingPresentation is not null)
+        {
+            CommitPendingPresentation(null, false);
+        }
+        else if (_pendingPresentation is not null)
+        {
+            PreparePendingPresentation();
+        }
+        else
+        {
+            PrepareCurrentManagedSource();
+        }
     }
 
     internal void SetDisplayProfile(DisplayProfileResolution profile)
     {
+        var wasResolved = _displayProfileResolved;
+        _displayProfileResolved = true;
         var unchanged = _displayProfile.State == profile.State &&
             _displayProfile.AdvancedColorEnabled == profile.AdvancedColorEnabled &&
             _displayProfile.Profile?.Identity == profile.Profile?.Identity;
         _displayProfile = profile;
-        if (unchanged)
+        if (wasResolved && unchanged)
         {
             return;
         }
@@ -179,7 +309,15 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
         _requestedManagedKey = null;
         _managedPresentationFailed = false;
         _managedPhotoCoordinator?.Clear();
-        PublishPhotoPresentation();
+        DisposeManagedSource();
+        if (_pendingPresentation is not null)
+        {
+            PreparePendingPresentation();
+        }
+        else
+        {
+            PrepareCurrentManagedSource();
+        }
     }
 
     internal void ShutdownMonitorColorManagement()
@@ -194,6 +332,8 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
         coordinator.PresentationFailed -= OnManagedPresentationFailed;
         _managedPhotoCoordinator = null;
         _requestedManagedKey = null;
+        DisposeManagedSource();
+        DisposePendingPresentation();
         coordinator.Dispose();
     }
 
@@ -265,7 +405,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
         ResetManagedPhotoRequest();
         _presentation?.SelectImage(imageIdentity);
         UpdateMarkupOverlay();
-        PublishPhotoPresentation();
+        PrepareCurrentManagedSource();
         PresentedImageChanged?.Invoke(this, EventArgs.Empty);
         previous?.Dispose();
         previousAmbient?.Dispose();
@@ -286,50 +426,61 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
             throw new InvalidOperationException("Stage presentation identity does not match the photograph.");
         }
 
-        var ambient = presentation.TakeAmbient();
-        if (!presentation.Stage.BackgroundMode.RequiresAmbient())
+        var ambient = TakeMatchingAmbient(presentation);
+        DiscardInspection();
+
+        if (_image?.Value.Identity == image.Value.Identity &&
+            string.Equals(_canonicalImageIdentity, imageIdentity, StringComparison.Ordinal))
         {
-            ambient?.Dispose();
-            ambient = null;
+            DisposePendingPresentation();
+            _managedPhotoCoordinator?.Clear();
+            _requestedManagedKey = _managedSource?.Source.Key;
+            ReplaceCurrentStage(presentation.Stage, ambient, presentation.ImageIdentity);
+            image.Dispose();
+            PublishPhotoPresentation();
+            return;
         }
 
-        DiscardInspection();
-        var previousImage = _image;
-        var previousAmbient = _ambient;
-        _image = image;
-        _canonicalImageIdentity = imageIdentity;
-        _stage = presentation.Stage;
-        _ambient = ambient;
-        _ambientImageIdentity = ambient is null ? null : presentation.ImageIdentity;
-        _viewport.SetImage(image.Value.Descriptor.OrientedSize, transfer);
-        ResetManagedPhotoRequest();
-        _presentation?.SelectImage(imageIdentity);
-        UpdateMarkupOverlay();
-        PublishPhotoPresentation();
-        PresentedImageChanged?.Invoke(this, EventArgs.Empty);
-        previousImage?.Dispose();
-        previousAmbient?.Dispose();
-        RaiseViewStateChanged();
+        var pending = new PendingPhotoPresentation(
+            image,
+            transfer,
+            imageIdentity,
+            presentation.Stage,
+            ambient,
+            ambient is null ? null : presentation.ImageIdentity);
+        var previousPending = _pendingPresentation;
+        _pendingPresentation = pending;
+        previousPending?.Dispose();
+        _requestedManagedKey = null;
+        _managedPresentationFailed = false;
+        PreparePendingPresentation();
     }
 
     public void SetStage(StagePresentation presentation)
     {
         ArgumentNullException.ThrowIfNull(presentation);
-        var ambient = presentation.TakeAmbient();
-        var currentIdentity = _image?.Value.Identity;
-        if (!presentation.Stage.BackgroundMode.RequiresAmbient() ||
-            presentation.ImageIdentity != currentIdentity)
+        var ambient = TakeMatchingAmbient(presentation);
+        if (_pendingPresentation is { } pending && presentation.ImageIdentity == pending.NumericIdentity)
         {
-            ambient?.Dispose();
-            ambient = null;
+            pending.UpdateStage(
+                presentation.Stage,
+                ambient,
+                ambient is null ? null : presentation.ImageIdentity);
+            return;
         }
 
-        var previous = _ambient;
-        _stage = presentation.Stage;
-        _ambient = ambient;
-        _ambientImageIdentity = ambient is null ? null : presentation.ImageIdentity;
-        PublishPhotoPresentation();
-        previous?.Dispose();
+        if (_image?.Value.Identity == presentation.ImageIdentity ||
+            (_image is null && _pendingPresentation is null && presentation.ImageIdentity is null))
+        {
+            ReplaceCurrentStage(
+                presentation.Stage,
+                ambient,
+                ambient is null ? null : presentation.ImageIdentity);
+            PublishPhotoPresentation();
+            return;
+        }
+
+        ambient?.Dispose();
     }
 
     public void ClearImage()
@@ -337,6 +488,8 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
         DiscardInspection();
         var previous = _image;
         var previousAmbient = _ambient;
+        DisposePendingPresentation();
+        DisposeManagedSource();
         _image = null;
         _canonicalImageIdentity = null;
         ResetManagedPhotoRequest();
@@ -738,12 +891,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
             var destination = GetDestination();
             var suppressLegacyPhoto = false;
             var photoPresentationVisible = true;
-            var state = MonitorColorPolicy.Classify(
-                _monitorColorManagementEnabled,
-                OperatingSystem.IsWindows(),
-                _monitorColorEngineAvailable,
-                _displayProfile,
-                descriptor.ColorState);
+            var state = ClassifyMonitorState(descriptor);
             if (_managedPresentationFailed && state == MonitorColorState.Managed)
             {
                 state = MonitorColorState.InvalidDestinationProfile;
@@ -753,16 +901,15 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
                 _displayProfile.Profile is { } profile &&
                 _managedPhotoCoordinator is { } coordinator)
             {
-                var key = new ManagedPhotoKey(
-                    presentedNumericIdentity,
-                    profile.Identity,
-                    descriptor.EncodedSize,
-                    descriptor.Orientation);
-                var acquired = coordinator.TryAcquire(key, out managedSource);
+                var key = CreateManagedKey(cachedLease.Value, profile.Identity);
+                var acquired = _inspectionImage is not null
+                    ? coordinator.TryAcquire(key, out managedSource)
+                    : TryAcquirePublishedManagedSource(key, out managedSource);
                 suppressLegacyPhoto = !acquired;
                 photoPresentationVisible = acquired;
 
-                if (ManagedPhotoRequestPolicy.ShouldRequest(_requestedManagedKey, key))
+                if (_inspectionImage is not null &&
+                    ManagedPhotoRequestPolicy.ShouldRequest(_requestedManagedKey, key))
                 {
                     _requestedManagedKey = key;
                     coordinator.Request(new ManagedPhotoRenderRequest(
@@ -813,16 +960,282 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
     {
         _requestedManagedKey = null;
         _managedPresentationFailed = false;
+        DisposeManagedSource();
+        DisposePendingPresentation();
         _managedPhotoCoordinator?.Clear();
     }
 
-    private void OnManagedPresentationChanged(object? sender, EventArgs e) =>
-        Avalonia.Threading.Dispatcher.UIThread.Post(PublishPhotoPresentation);
+    private void OnManagedPresentationChanged(object? sender, ManagedPhotoPresentationEventArgs e) =>
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => ProcessManagedPresentationAvailability(e.Key));
 
-    private void OnManagedPresentationFailed(object? sender, EventArgs e)
+    private void OnManagedPresentationFailed(object? sender, ManagedPhotoPresentationEventArgs e) =>
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => ProcessManagedPresentationFailure(e.Key));
+
+    internal void ProcessManagedPresentationAvailability() =>
+        ProcessManagedPresentationAvailability(null);
+
+    private void ProcessManagedPresentationAvailability(ManagedPhotoKey? completedKey)
     {
-        _managedPresentationFailed = true;
-        Avalonia.Threading.Dispatcher.UIThread.Post(PublishPhotoPresentation);
+        if (_managedPhotoCoordinator is not { } coordinator)
+        {
+            return;
+        }
+
+        if (_pendingPresentation is { ManagedKey: { } pendingKey } &&
+            (completedKey is null || completedKey == pendingKey) &&
+            coordinator.TryAcquire(pendingKey, out var pendingSource) &&
+            pendingSource is not null)
+        {
+            CommitPendingPresentation(pendingSource, false);
+            return;
+        }
+
+        if (_inspectionImage is not null)
+        {
+            PublishPhotoPresentation();
+            return;
+        }
+
+        if (_image is not null && TryCreateManagedKey(_image.Value, out var currentKey) &&
+            coordinator.TryAcquire(currentKey, out var currentSource) && currentSource is not null)
+        {
+            var previous = _managedSource;
+            _managedSource = currentSource;
+            _requestedManagedKey = currentKey;
+            _managedPresentationFailed = false;
+            PublishPhotoPresentation();
+            previous?.Dispose();
+        }
+    }
+
+    internal void ProcessManagedPresentationFailure() =>
+        ProcessManagedPresentationFailure(_requestedManagedKey);
+
+    private void ProcessManagedPresentationFailure(ManagedPhotoKey? failedKey)
+    {
+        if (failedKey is null)
+        {
+            return;
+        }
+
+        if (_pendingPresentation is { } pending && pending.ManagedKey == failedKey)
+        {
+            CommitPendingPresentation(null, true);
+            return;
+        }
+
+        if (_image is not null && TryCreateManagedKey(_image.Value, out var currentKey) &&
+            currentKey == failedKey)
+        {
+            _managedPresentationFailed = true;
+            PublishPhotoPresentation();
+        }
+    }
+
+    private void PreparePendingPresentation()
+    {
+        var pending = _pendingPresentation;
+        if (pending is null)
+        {
+            return;
+        }
+
+        if (!_displayProfileResolved && _monitorColorManagementEnabled &&
+            _monitorColorPlatformSupported && _monitorColorEngineAvailable)
+        {
+            return;
+        }
+
+        var state = ClassifyMonitorState(pending.Image.Value.Descriptor);
+        SetMonitorColorState(state);
+        if (state != MonitorColorState.Managed ||
+            _displayProfile.Profile is not { } profile ||
+            _managedPhotoCoordinator is not { } coordinator)
+        {
+            CommitPendingPresentation(null, false);
+            return;
+        }
+
+        var key = CreateManagedKey(pending.Image.Value, profile.Identity);
+        pending.ManagedKey = key;
+        if (coordinator.TryAcquire(key, out var ready) && ready is not null)
+        {
+            CommitPendingPresentation(ready, false);
+            return;
+        }
+
+        if (!ManagedPhotoRequestPolicy.ShouldRequest(_requestedManagedKey, key))
+        {
+            return;
+        }
+
+        _requestedManagedKey = key;
+        coordinator.Request(new ManagedPhotoRenderRequest(
+            key,
+            pending.Image.Value.Descriptor,
+            pending.Image.Value.AcquireRenderLease(),
+            profile.Bytes));
+    }
+
+    private void PrepareCurrentManagedSource()
+    {
+        if (_image is null)
+        {
+            PublishPhotoPresentation();
+            return;
+        }
+
+        var state = ClassifyMonitorState(_image.Value.Descriptor);
+        SetMonitorColorState(state);
+        if (state != MonitorColorState.Managed ||
+            _displayProfile.Profile is not { } profile ||
+            _managedPhotoCoordinator is not { } coordinator)
+        {
+            PublishPhotoPresentation();
+            return;
+        }
+
+        var key = CreateManagedKey(_image.Value, profile.Identity);
+        if (coordinator.TryAcquire(key, out var ready) && ready is not null)
+        {
+            var previous = _managedSource;
+            _managedSource = ready;
+            _requestedManagedKey = key;
+            PublishPhotoPresentation();
+            previous?.Dispose();
+            return;
+        }
+
+        if (ManagedPhotoRequestPolicy.ShouldRequest(_requestedManagedKey, key))
+        {
+            _requestedManagedKey = key;
+            coordinator.Request(new ManagedPhotoRenderRequest(
+                key,
+                _image.Value.Descriptor,
+                _image.Value.AcquireRenderLease(),
+                profile.Bytes));
+        }
+
+        PublishPhotoPresentation();
+    }
+
+    private void CommitPendingPresentation(ManagedPhotoSourceLease? managedSource, bool managedFailure)
+    {
+        var pending = _pendingPresentation;
+        if (pending is null)
+        {
+            managedSource?.Dispose();
+            return;
+        }
+
+        _pendingPresentation = null;
+        var nextImage = pending.TakeImage();
+        var nextAmbient = pending.TakeAmbient();
+        var previousImage = _image;
+        var previousAmbient = _ambient;
+        var previousManagedSource = _managedSource;
+
+        _image = nextImage;
+        _canonicalImageIdentity = pending.Identity;
+        _stage = pending.Stage;
+        _ambient = nextAmbient;
+        _ambientImageIdentity = nextAmbient is null ? null : pending.AmbientIdentity;
+        _managedSource = managedSource;
+        _requestedManagedKey = managedSource?.Source.Key;
+        _managedPresentationFailed = managedFailure;
+        _viewport.SetImage(nextImage.Value.Descriptor.OrientedSize, pending.Transfer);
+        _presentation?.SelectImage(pending.Identity);
+        PublishPhotoPresentation();
+        UpdateMarkupOverlay();
+        PresentedImageChanged?.Invoke(this, EventArgs.Empty);
+        _managedPhotoCoordinator?.RecordAtomicPresentationCommit(
+            System.Diagnostics.Stopwatch.GetElapsedTime(pending.RequestedTimestamp));
+        pending.Dispose();
+        previousImage?.Dispose();
+        previousAmbient?.Dispose();
+        previousManagedSource?.Dispose();
+        RaiseViewStateChanged();
+    }
+
+    private bool TryAcquirePublishedManagedSource(
+        ManagedPhotoKey key,
+        out ManagedPhotoSourceLease? source)
+    {
+        if (_managedSource is null || _managedSource.Source.Key != key)
+        {
+            source = null;
+            return false;
+        }
+
+        source = _managedSource.Acquire();
+        return true;
+    }
+
+    private MonitorColorState ClassifyMonitorState(ImageDescriptor descriptor) =>
+        MonitorColorPolicy.Classify(
+            _monitorColorManagementEnabled,
+            _monitorColorPlatformSupported,
+            _monitorColorEngineAvailable,
+            _displayProfile,
+            descriptor.ColorState);
+
+    private bool TryCreateManagedKey(DecodedImage image, out ManagedPhotoKey key)
+    {
+        if (ClassifyMonitorState(image.Descriptor) != MonitorColorState.Managed ||
+            _displayProfile.Profile is not { } profile)
+        {
+            key = default;
+            return false;
+        }
+
+        key = CreateManagedKey(image, profile.Identity);
+        return true;
+    }
+
+    private static ManagedPhotoKey CreateManagedKey(
+        DecodedImage image,
+        DisplayProfileIdentity destinationIdentity) => new(
+        image.Identity,
+        destinationIdentity,
+        image.Descriptor.EncodedSize,
+        image.Descriptor.Orientation);
+
+    private static DecodedImage.AmbientLease? TakeMatchingAmbient(StagePresentation presentation)
+    {
+        var ambient = presentation.TakeAmbient();
+        if (presentation.Stage.BackgroundMode.RequiresAmbient())
+        {
+            return ambient;
+        }
+
+        ambient?.Dispose();
+        return null;
+    }
+
+    private void ReplaceCurrentStage(
+        StageSettings stage,
+        DecodedImage.AmbientLease? ambient,
+        long? ambientIdentity)
+    {
+        var previous = _ambient;
+        _stage = stage;
+        _ambient = ambient;
+        _ambientImageIdentity = ambientIdentity;
+        previous?.Dispose();
+    }
+
+    private void DisposeManagedSource()
+    {
+        var source = _managedSource;
+        _managedSource = null;
+        source?.Dispose();
+    }
+
+    private void DisposePendingPresentation()
+    {
+        var pending = _pendingPresentation;
+        _pendingPresentation = null;
+        pending?.Dispose();
     }
 
     private void SetMonitorColorState(MonitorColorState state)

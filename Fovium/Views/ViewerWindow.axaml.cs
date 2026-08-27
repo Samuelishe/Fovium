@@ -366,7 +366,11 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
                 $"Fovium color interaction: geometryRequests={metrics?.GeometryRequests ?? 0}, " +
                 $"managedSourceFrames={metrics?.ManagedSourceFrames ?? 0}, " +
                 $"sourceChanges={metrics?.SourceChanges ?? 0}, destinationChanges={metrics?.DestinationChanges ?? 0}, " +
-                $"active={metrics?.Active ?? 0}, pending={metrics?.Pending ?? 0}.");
+                $"active={metrics?.Active ?? 0}, pending={metrics?.Pending ?? 0}, " +
+                $"matteWithoutPhotoFrames={metrics?.MatteWithoutPhotoFrames ?? 0}, " +
+                $"atomicCommits={metrics?.AtomicPresentationCommits ?? 0}, " +
+                $"lastAtomicWaitMs={metrics?.LastAtomicPresentationWait.TotalMilliseconds ?? 0:F2}, " +
+                $"maxAtomicWaitMs={metrics?.MaximumAtomicPresentationWait.TotalMilliseconds ?? 0:F2}.");
         }
 
         _lifetimeCancellation.Dispose();

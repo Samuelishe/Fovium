@@ -64,6 +64,13 @@ internal sealed class ManagedPhotoSourceLease : IDisposable
     public ManagedPhotoSource Source => Volatile.Read(ref _source)?.Value
         ?? throw new ObjectDisposedException(nameof(ManagedPhotoSourceLease));
 
+    public ManagedPhotoSourceLease Acquire()
+    {
+        var source = Volatile.Read(ref _source)
+            ?? throw new ObjectDisposedException(nameof(ManagedPhotoSourceLease));
+        return new ManagedPhotoSourceLease(source.Acquire());
+    }
+
     public void Dispose() => Interlocked.Exchange(ref _source, null)?.Dispose();
 }
 
@@ -79,6 +86,11 @@ internal sealed record ManagedPhotoRenderRequest(
 internal interface IManagedPhotoRenderer : IDisposable
 {
     ManagedPhotoSource Render(ManagedPhotoRenderRequest request);
+}
+
+internal sealed class ManagedPhotoPresentationEventArgs(ManagedPhotoKey key) : EventArgs
+{
+    public ManagedPhotoKey Key { get; } = key;
 }
 
 internal sealed class SkiaLittleCmsPhotoRenderer : IManagedPhotoRenderer
@@ -246,7 +258,11 @@ internal readonly record struct ManagedPhotoCoordinatorMetrics(
     long SourceChanges,
     long DestinationChanges,
     long GeometryRequests,
-    long ManagedSourceFrames);
+    long ManagedSourceFrames,
+    long MatteWithoutPhotoFrames,
+    long AtomicPresentationCommits,
+    TimeSpan LastAtomicPresentationWait,
+    TimeSpan MaximumAtomicPresentationWait);
 
 internal sealed class ManagedPhotoPresentationCoordinator : IDisposable
 {
@@ -274,15 +290,20 @@ internal sealed class ManagedPhotoPresentationCoordinator : IDisposable
     private long _sourceChanges;
     private long _destinationChanges;
     private long _managedSourceFrames;
+    private long _matteWithoutPhotoFrames;
+    private long _atomicPresentationCommits;
+    private TimeSpan _lastAtomicPresentationWait;
+    private TimeSpan _maximumAtomicPresentationWait;
+    private TaskCompletionSource _idleCompletion = CompletedIdleCompletion();
 
     public ManagedPhotoPresentationCoordinator(IManagedPhotoRenderer renderer)
     {
         _renderer = renderer ?? throw new ArgumentNullException(nameof(renderer));
     }
 
-    public event EventHandler? PresentationChanged;
+    public event EventHandler<ManagedPhotoPresentationEventArgs>? PresentationChanged;
 
-    public event EventHandler? PresentationFailed;
+    public event EventHandler<ManagedPhotoPresentationEventArgs>? PresentationFailed;
 
     public ManagedPhotoCoordinatorMetrics Metrics
     {
@@ -308,7 +329,11 @@ internal sealed class ManagedPhotoPresentationCoordinator : IDisposable
                     _sourceChanges,
                     _destinationChanges,
                     0,
-                    _managedSourceFrames);
+                    _managedSourceFrames,
+                    _matteWithoutPhotoFrames,
+                    _atomicPresentationCommits,
+                    _lastAtomicPresentationWait,
+                    _maximumAtomicPresentationWait);
             }
         }
     }
@@ -335,6 +360,7 @@ internal sealed class ManagedPhotoPresentationCoordinator : IDisposable
             _pendingTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
             if (!_active)
             {
+                _idleCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 StartWorkerLocked();
             }
         }
@@ -360,6 +386,14 @@ internal sealed class ManagedPhotoPresentationCoordinator : IDisposable
         }
     }
 
+    internal Task WaitForIdleAsync()
+    {
+        lock (_sync)
+        {
+            return _idleCompletion.Task;
+        }
+    }
+
     public void RecordManagedSourceFrame()
     {
         lock (_sync)
@@ -368,6 +402,34 @@ internal sealed class ManagedPhotoPresentationCoordinator : IDisposable
             {
                 _managedSourceFrames++;
             }
+        }
+    }
+
+    public void RecordMatteWithoutPhotoFrame()
+    {
+        lock (_sync)
+        {
+            if (!_disposed)
+            {
+                _matteWithoutPhotoFrames++;
+            }
+        }
+    }
+
+    public void RecordAtomicPresentationCommit(TimeSpan wait)
+    {
+        lock (_sync)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _atomicPresentationCommits++;
+            _lastAtomicPresentationWait = wait;
+            _maximumAtomicPresentationWait = TimeSpan.FromTicks(Math.Max(
+                _maximumAtomicPresentationWait.Ticks,
+                wait.Ticks));
         }
     }
 
@@ -467,6 +529,7 @@ internal sealed class ManagedPhotoPresentationCoordinator : IDisposable
             var failed = false;
             ManagedPhotoWork? next;
             var disposeRenderer = false;
+            TaskCompletionSource? idleCompletion = null;
             lock (_sync)
             {
                 var isCurrent = !_disposed && work.Generation == _generation;
@@ -498,6 +561,7 @@ internal sealed class ManagedPhotoPresentationCoordinator : IDisposable
                 {
                     _active = false;
                     disposeRenderer = _disposed;
+                    idleCompletion = _idleCompletion;
                 }
             }
 
@@ -505,12 +569,14 @@ internal sealed class ManagedPhotoPresentationCoordinator : IDisposable
             previous?.ReleaseOwner();
             if (failed)
             {
-                PresentationFailed?.Invoke(this, EventArgs.Empty);
+                PresentationFailed?.Invoke(this, new ManagedPhotoPresentationEventArgs(work.Request.Key));
             }
             else if (changed)
             {
-                PresentationChanged?.Invoke(this, EventArgs.Empty);
+                PresentationChanged?.Invoke(this, new ManagedPhotoPresentationEventArgs(work.Request.Key));
             }
+
+            idleCompletion?.TrySetResult();
 
             if (next is null)
             {
@@ -561,6 +627,13 @@ internal sealed class ManagedPhotoPresentationCoordinator : IDisposable
         resource is not null && resource.TryGetValue(out var source)
             ? source!.RetainedBytes
             : 0;
+
+    private static TaskCompletionSource CompletedIdleCompletion()
+    {
+        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        completion.SetResult();
+        return completion;
+    }
 
     private readonly record struct ManagedPhotoWork(
         ManagedPhotoRenderRequest Request,
