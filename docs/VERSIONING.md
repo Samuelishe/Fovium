@@ -35,37 +35,71 @@ Fovium displays its version as:
 0.1.0.0005
 0.1.0.0006
 0.1.0.0007
+0.1.0.0008
+0.1.0.0009
+0.1.0.0010
 ```
 
 CLR assembly and file-version fields are numeric and do not preserve meaningful leading zeros. Their early-line equivalents are `0.0.0.1` through `0.0.0.13`; the promoted milestone is `0.1.0.0`. The human-facing informational version preserves the four-digit BUILD.
 
 ## Component semantics
 
+This policy applies prospectively from the accepted R9-A-F1 checkpoint. Earlier checkpoint numbers remain historical facts and are not reclassified or renumbered.
+
 ### MAJOR
 
-An owner-controlled major product milestone. A future `1.0.0.0000` transition is explicit, never automatic.
+MAJOR identifies an owner-controlled mature product generation. `1.0.0.0000` is an explicit product/release decision and is never assigned automatically.
 
 ### MINOR
 
-An owner-controlled major user-visible product milestone. Creating the first executable does not automatically make the project `0.1.0.0000`; that transition requires an explicit owner decision.
+MINOR identifies a major roadmap or release-line transition comprising a substantial new product chapter. It changes only when a roadmap milestone explicitly defines a new product line, for example `0.1.x` → `0.2.0.0000`.
+
+When MINOR increments, PATCH resets to `0` and BUILD resets to `0000`.
 
 ### PATCH
 
-An owner-controlled meaningful functional milestone within the current MINOR. Small fixes and polish do not automatically consume PATCH values.
+PATCH increments for a new standalone user-visible capability, such as Slideshow, a meaningful new image-format capability, or another independently useful viewer feature.
+
+When PATCH increments, BUILD resets to `0000`. For example, a new standalone feature after `0.1.0.0010` begins at `0.1.1.0000`.
 
 ### BUILD
 
-A sequential accepted repository or product checkpoint. Documentation and foundation stages may consume BUILD values because the version also identifies project state.
+BUILD increments for an accepted corrective or polish checkpoint within the current feature line. This includes bug fixes, UX corrections, performance corrections, regression repairs, and refinements of the capability introduced by the current PATCH line.
 
-Rules:
+For example:
 
-- increment once for an accepted coherent checkpoint;
-- do not increment for failed attempts, ordinary compiles, or intermediate edits;
-- never reuse an earlier BUILD value;
-- reset BUILD to `0000` when MAJOR, MINOR, or PATCH changes;
-- do not define automatic rollover after `9999`; an explicit owner decision must select the next version line.
+```text
+0.1.1.0000  standalone feature
+0.1.1.0001  corrective checkpoint
+0.1.1.0002  polish checkpoint
+```
 
-The displayed checkpoint is not a substitute for a Git commit, tag, or branch. Git remains authoritative for source history.
+BUILD remains four digits in the human-facing `InformationalVersion`. CLR `AssemblyVersion` and `FileVersion` use the numeric equivalent without meaningful leading zeros.
+
+### No product version change
+
+The product version does not change for work that does not alter accepted product behavior, including:
+
+- architecture probes and experiments;
+- test-only corrections;
+- documentation-only corrections;
+- CI/build-only corrections;
+- native prerequisite or supply-chain stages that have not yet entered shipped product behavior.
+
+If infrastructure work materially changes shipped product capability, classify the resulting product behavior instead of the implementation category.
+
+## Deterministic classification
+
+Classify every future stage in this order:
+
+1. New roadmap or release line: increment MINOR, then reset PATCH to `0` and BUILD to `0000`.
+2. New standalone user-visible capability: increment PATCH and reset BUILD to `0000`.
+3. Fix, polish, or refinement of the current capability: increment BUILD.
+4. No accepted product-behavior change: keep the version unchanged.
+
+MAJOR remains an explicit OWNER decision only. Ordinary future stages that fit steps 1–4 do not require a separate version-selection question.
+
+The displayed checkpoint is not a substitute for a Git commit, tag, or branch. Git remains authoritative for source history. Failed attempts, ordinary compiles, and intermediate edits do not consume versions; an accepted checkpoint must never reuse an earlier version. No automatic rollover after BUILD `9999` is defined.
 
 ## Accepted checkpoints
 
@@ -94,17 +128,22 @@ The displayed checkpoint is not a substitute for a Git commit, tag, or branch. G
 | `0.1.0.0007` | R8-A | Offline click-to-sample photographic Color Picker with reference-sRGB values, local OKLab names, and ten-click session history |
 | `0.1.0.0008` | R8-B-W1 | Windows ordinary-SDR photograph Monitor Color Management through active display ICC and app-local Little CMS 2.19 |
 | `0.1.0.0009` | R9-A | Session-local Photo Presentation View with independent Matte-inclusive fitting and physical edge margin |
+| `0.1.0.0010` | R9-A-F1 | Photo Presentation discoverability and Settings-window size persistence/centering UX corrective |
 
 The `0.0.0.xxxx` line records the completed foundation and early product-construction checkpoints. The explicit owner-controlled `0.1.0.0000` transition marks the first substantial usable Fovium alpha; it does not claim feature completeness, a stable API, production release status, or `1.0` quality. Current implementation state remains owned by [`PROJECT-STATE.md`](PROJECT-STATE.md).
+
+## Planned checkpoint
+
+R9-B Slideshow is the next planned standalone user-visible capability and is therefore expected to start at `0.1.1.0000`. This is planning guidance, not an implemented or accepted checkpoint.
 
 ## Future code and packaging source
 
 The root `Directory.Build.props` is the canonical source for the current components and formatted display identity. It supplies the production `Fovium` assembly with:
 
 ```text
-InformationalVersion = 0.1.0.0009
-AssemblyVersion      = 0.1.0.9
-FileVersion          = 0.1.0.9
+InformationalVersion = 0.1.0.0010
+AssemblyVersion      = 0.1.0.10
+FileVersion          = 0.1.0.10
 ```
 
 From that source:

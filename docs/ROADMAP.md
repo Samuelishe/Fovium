@@ -111,9 +111,13 @@ R8-B-W1 and its F1–F4 corrective chain are owner-accepted at `0.1.0.0008`. The
 
 Locally ready at `0.1.0.0009`: add a session-local `F6` viewing mode that independently fits every portrait, landscape, square, or panorama together with its optional Matte inside a persisted physical-percentage presentation margin. Normal viewer zoom/pan and saved image-change policy remain unchanged; presentation geometry is synchronous and causes zero Color Management work. Blink is deliberately unavailable in this initial mode rather than using the wrong comparison layout.
 
+### R9-A-F1 — Photo Presentation and Settings UX correction
+
+Locally OWNER-accepted at `0.1.0.0010`: expose the same session-local Photo Presentation authority through Settings, `F6`, and the checked context menu; use a comfortable Settings-window default; persist only validated logical client dimensions; and re-center every opening over its owner. The historical R9-A feature checkpoint remains `0.1.0.0009`.
+
 ### R9-B — Slideshow
 
-Selected next stage after R9-A owner/hosted acceptance. It may drive the existing Photo Presentation layout through explicit start, persisted interval, and a deliberate stop-at-last versus loop policy. Timers, automatic navigation, end behavior, and slideshow state are not implemented in R9-A.
+Selected next standalone user-visible capability after R9-A-F1 owner/hosted acceptance, planned to begin at `0.1.1.0000`. It may drive the existing Photo Presentation layout through explicit start, persisted interval, and a deliberate stop-at-last versus loop policy. Timers, automatic navigation, end behavior, and slideshow state are not implemented in R9-A or R9-A-F1.
 
 ## Later / separate platform milestones
 
