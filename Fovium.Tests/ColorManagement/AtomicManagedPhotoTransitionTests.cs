@@ -445,8 +445,9 @@ public sealed class AtomicManagedPhotoTransitionTests
                     Assert.Equal(pickerBefore.PresentationIdentity, pickerAfter.PresentationIdentity);
                 }
 
-                Assert.NotEqual(initial.PresentationBounds, marginChanged.PresentationBounds);
-                Assert.NotEqual(marginChanged.OuterPresentationBounds, matteChanged.OuterPresentationBounds);
+                Assert.NotEqual(initial.PhotoPresentationBounds, marginChanged.PhotoPresentationBounds);
+                Assert.NotEqual(initial.PhotoDestination, marginChanged.PhotoDestination);
+                Assert.Equal(marginChanged, matteChanged);
             }
 
             Assert.Equal("A.png", histogram.CurrentState!.PresentationIdentity);

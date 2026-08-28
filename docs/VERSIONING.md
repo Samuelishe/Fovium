@@ -131,21 +131,22 @@ The displayed checkpoint is not a substitute for a Git commit, tag, or branch. G
 | `0.1.0.0010` | R9-A-F1 | Photo Presentation discoverability and Settings-window size persistence/centering UX corrective |
 | `0.1.1.0000` | R9-B | Session-local Slideshow with publication-based timing, Stop/Loop, and one bounded prepared next frame |
 | `0.1.1.0001` | R9-B-F1 | Slideshow view-mode independence and viewer focus-chrome correction |
+| `0.1.1.0002` | R9-A-F2 | Photo Presentation scale made independent of Matte |
 
 The `0.0.0.xxxx` line records the completed foundation and early product-construction checkpoints. The explicit owner-controlled `0.1.0.0000` transition marks the first substantial usable Fovium alpha; it does not claim feature completeness, a stable API, production release status, or `1.0` quality. Current implementation state remains owned by [`PROJECT-STATE.md`](PROJECT-STATE.md).
 
 ## Current checkpoint
 
-R9-B-F1 is the locally complete corrective checkpoint at `0.1.1.0001`. It preserves R9-B's PATCH line while incrementing BUILD for view-mode independence and local viewer focus-chrome correction.
+R9-A-F2 is the locally complete corrective checkpoint at `0.1.1.0002`. It preserves R9-B's PATCH line while incrementing BUILD for the older Photo Presentation layout correction that makes photograph scale independent of Matte.
 
 ## Future code and packaging source
 
 The root `Directory.Build.props` is the canonical source for the current components and formatted display identity. It supplies the production `Fovium` assembly with:
 
 ```text
-InformationalVersion = 0.1.1.0001
-AssemblyVersion      = 0.1.1.1
-FileVersion          = 0.1.1.1
+InformationalVersion = 0.1.1.0002
+AssemblyVersion      = 0.1.1.2
+FileVersion          = 0.1.1.2
 ```
 
 From that source:

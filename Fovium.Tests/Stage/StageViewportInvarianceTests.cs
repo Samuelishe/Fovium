@@ -5,6 +5,54 @@ namespace Fovium.Tests.Stage;
 
 public sealed class StageViewportInvarianceTests
 {
+    [Theory]
+    [MemberData(
+        nameof(PhotoPresentationLayoutTests.MatteVariants),
+        MemberType = typeof(PhotoPresentationLayoutTests))]
+    public void NormalViewerMatteVariantsNeverMoveResolvedPhotoDestination(
+        bool matteEnabled,
+        double matteWidth,
+        int matteStyleValue,
+        byte red,
+        byte green,
+        byte blue)
+    {
+        var destination = new RectD(40.25, -18.5, 1024.75, 683.5);
+        var stage = (StageSettings.Default with
+        {
+            MatteEnabled = matteEnabled,
+            MatteWidthPhysicalPixels = matteWidth,
+            MatteStyle = (MatteStyle)matteStyleValue,
+            MatteColor = new StageColor(red, green, blue),
+        }).Normalize();
+
+        var result = StageGeometry.CalculateRenderGeometry(
+            stage,
+            destination,
+            ambientSize: null,
+            new LogicalSize(1200, 800),
+            renderScaling: 2);
+
+        Assert.Equal(destination, result.PhotoDestination);
+        if (matteWidth == 1)
+        {
+            Assert.Equal(
+                StageDefaults.MatteWidthMinimumPhysicalPixels,
+                stage.MatteWidthPhysicalPixels);
+        }
+
+        if (matteEnabled)
+        {
+            var matte = Assert.IsType<MatteRenderGeometry>(result.Matte);
+            Assert.Equal(destination, matte.BackingDestination);
+            Assert.Equal((MatteStyle)matteStyleValue, matte.Style);
+        }
+        else
+        {
+            Assert.Null(result.Matte);
+        }
+    }
+
     public static TheoryData<int, int> BackgroundAndStyleCases => new()
     {
         { (int)StageBackgroundMode.Black, (int)MatteStyle.Solid },

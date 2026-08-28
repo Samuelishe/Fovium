@@ -5,11 +5,10 @@ namespace Fovium.Stage;
 
 internal readonly record struct PhotoPresentationLayoutResult(
     RectD PhotoDestination,
-    RectD OuterPresentationBounds,
-    RectD PresentationBounds,
+    RectD PhotoPresentationBounds,
     double MarginPhysicalPixels,
     double PhysicalScale,
-    bool FitsRequestedBounds)
+    bool PhotoFitsPresentationBounds)
 {
     public bool UsesExactPixelSampling =>
         Math.Abs(PhysicalScale - Math.Round(PhysicalScale)) <= 1e-9;
@@ -19,11 +18,9 @@ internal static class PhotoPresentationLayout
 {
     private const double MinimumPhotoPhysicalPixels = 1;
 
-    public static PhotoPresentationLayoutResult Calculate(
-        LogicalSize viewport,
+    public static PhotoPresentationLayoutResult Calculate(LogicalSize viewport,
         double renderScaling,
         PixelSize orientedPhotoSize,
-        StageSettings stage,
         double edgeMarginPercent)
     {
         if (!viewport.IsValid)
@@ -41,7 +38,6 @@ internal static class PhotoPresentationLayout
             throw new ArgumentOutOfRangeException(nameof(orientedPhotoSize));
         }
 
-        ArgumentNullException.ThrowIfNull(stage);
         if (!double.IsFinite(edgeMarginPercent) ||
             edgeMarginPercent < PhotoPresentationViewSettings.MinimumEdgeMarginPercent ||
             edgeMarginPercent > PhotoPresentationViewSettings.MaximumEdgeMarginPercent)
@@ -49,26 +45,20 @@ internal static class PhotoPresentationLayout
             throw new ArgumentOutOfRangeException(nameof(edgeMarginPercent));
         }
 
-        var normalizedStage = stage.Normalize();
         var viewportPhysicalWidth = viewport.Width * renderScaling;
         var viewportPhysicalHeight = viewport.Height * renderScaling;
         var requestedMarginPhysical =
             Math.Min(viewportPhysicalWidth, viewportPhysicalHeight) * edgeMarginPercent / 100;
-        var mattePhysical = normalizedStage.MatteEnabled
-            ? normalizedStage.MatteWidthPhysicalPixels
-            : 0;
-
         var maximumFeasibleMargin = Math.Max(
             0,
-            (Math.Min(viewportPhysicalWidth, viewportPhysicalHeight) -
-             (2 * mattePhysical) - MinimumPhotoPhysicalPixels) / 2);
+            (Math.Min(viewportPhysicalWidth, viewportPhysicalHeight) - MinimumPhotoPhysicalPixels) / 2);
         var marginPhysical = Math.Min(requestedMarginPhysical, maximumFeasibleMargin);
         var availablePhotoWidth = Math.Max(
             MinimumPhotoPhysicalPixels,
-            viewportPhysicalWidth - (2 * (marginPhysical + mattePhysical)));
+            viewportPhysicalWidth - (2 * marginPhysical));
         var availablePhotoHeight = Math.Max(
             MinimumPhotoPhysicalPixels,
-            viewportPhysicalHeight - (2 * (marginPhysical + mattePhysical)));
+            viewportPhysicalHeight - (2 * marginPhysical));
         var physicalScale = Math.Min(
             1,
             Math.Min(
@@ -92,29 +82,20 @@ internal static class PhotoPresentationLayout
             photoYPhysical / renderScaling,
             photoWidthDip,
             photoHeightDip);
-        var presentationBounds = new RectD(
+        var photoPresentationBounds = new RectD(
             marginPhysical / renderScaling,
             marginPhysical / renderScaling,
             Math.Max(MinimumPhotoPhysicalPixels / renderScaling, viewport.Width - (2 * marginPhysical / renderScaling)),
             Math.Max(MinimumPhotoPhysicalPixels / renderScaling, viewport.Height - (2 * marginPhysical / renderScaling)));
-        var outerBounds = normalizedStage.MatteEnabled
-            ? StageGeometry.CalculateMatte(
-                photoDestination,
-                viewport,
-                renderScaling,
-                normalizedStage.MatteStyle,
-                normalizedStage.MatteWidthPhysicalPixels).OuterBounds
-            : photoDestination;
-        var fitsRequestedBounds = Math.Abs(marginPhysical - requestedMarginPhysical) <= 1e-9 &&
-            Contains(presentationBounds, outerBounds);
+        var photoFitsPresentationBounds = Math.Abs(marginPhysical - requestedMarginPhysical) <= 1e-9 &&
+            Contains(photoPresentationBounds, photoDestination);
 
         return new PhotoPresentationLayoutResult(
             photoDestination,
-            outerBounds,
-            presentationBounds,
+            photoPresentationBounds,
             marginPhysical,
             physicalScale,
-            fitsRequestedBounds);
+            photoFitsPresentationBounds);
     }
 
     private static bool Contains(RectD outer, RectD inner) =>

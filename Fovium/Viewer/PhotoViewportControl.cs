@@ -1079,14 +1079,10 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
             _viewport.ViewportSize,
             _viewport.RenderScaling,
             sourceSize,
-            GetPresentedStage(),
             _photoPresentationViewSettings.EdgeMarginPercent);
 
     private SharedResourceLease<DecodedImage>? GetPresentedImageLease() =>
         _inspectionImage ?? _image;
-
-    private StageSettings GetPresentedStage() =>
-        _inspectionImage is not null ? _inspectionStage! : _stage;
 
     private Fovium.Rendering.PixelSize GetPresentedOrientedSize() =>
         GetPresentedImageLease()?.Value.Descriptor.OrientedSize ?? _viewport.SourceSize;

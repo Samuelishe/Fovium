@@ -50,7 +50,7 @@ The main photograph viewport may receive and retain logical keyboard focus for v
 
 ## Photo Presentation View
 
-Photo Presentation View is an explicit session-local viewing mode and starts disabled on every launch. Its checked context-menu item, configurable `viewer.togglePhotoPresentation` command, and live Viewing Settings checkbox share one viewport session-state authority; Settings does not create or persist another mode flag. Each currently presented portrait, landscape, square, or panoramic image is independently fitted as one visual object: photograph plus optional Matte, centered inside an edge-inset presentation rectangle. The persisted margin is a percentage of the shorter physical viewport dimension (`4%` default, normalized to `0–15%`) and therefore has consistent visual proportion across DPI. Stage remains the background outside that object.
+Photo Presentation View is an explicit session-local viewing mode and starts disabled on every launch. Its checked context-menu item, configurable `viewer.togglePhotoPresentation` command, and live Viewing Settings checkbox share one viewport session-state authority; Settings does not create or persist another mode flag. Each currently presented portrait, landscape, square, or panoramic photograph is independently fitted and centered inside an edge-inset presentation rectangle. The persisted margin constrains the photograph and is a percentage of the shorter physical viewport dimension (`4%` default, normalized to `0–15%`), so it has consistent visual proportion across DPI. Matte is drawn around that resolved photograph and never participates in its scale calculation; an extreme Matte may extend beyond the margin and clip at the viewport. Stage remains the background outside the photograph and Matte.
 
 Settings uses a stable comfortable first-open client size, remembers only user-selected logical width/height, and applies a current-work-area clamp when opening. It never restores desktop coordinates or window state, so each new instance is centered over the current viewer owner even after its dimensions have been restored.
 
@@ -88,7 +88,7 @@ Left/right navigation operates over supported, safe, decodable neighboring files
 
 By default, navigation preserves physical scale and normalized point of interest for non-Fit views; an intentionally reduced common scale stays reduced. Fit remains semantic Fit. The user may instead select **Fit each image**, which centers every navigated image in Fit. A newly opened sequence always begins in Fit. The preference is owned by [`SETTINGS.md`](SETTINGS.md).
 
-While Photo Presentation View is active, that ordinary policy is temporarily overridden: every newly presented source is fitted independently together with its Matte. F4 atomic publication remains authoritative, so a pending portrait/landscape target cannot expose future geometry or Matte before its matching photograph.
+While Photo Presentation View is active, that ordinary policy is temporarily overridden: every newly presented photograph is fitted independently inside its configured margin, then the current Matte is drawn around the resolved photo bounds. F4 atomic publication remains authoritative, so a pending portrait/landscape target cannot expose future geometry or Matte before its matching photograph.
 
 ## Context menu, metadata, and Stage
 

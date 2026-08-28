@@ -22,7 +22,7 @@
   "settings.photoPresentationView": "Photo Presentation view",
   "settings.enablePhotoPresentation": "Enable Photo Presentation",
   "settings.photoPresentationEdgeMargin": "Edge margin",
-  "settings.photoPresentationExplanation": "Keep the photograph and Matte inside a presentation margin from the screen edges.",
+  "settings.photoPresentationExplanation": "The photograph stays inside the presentation margin. Matte is drawn around it without changing the photograph scale.",
   "slideshow.title": "Slideshow",
   "slideshow.start": "Start slideshow",
   "slideshow.stop": "Stop slideshow",

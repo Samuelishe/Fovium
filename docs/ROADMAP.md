@@ -121,7 +121,11 @@ Accepted at `0.1.1.0000`: timed navigation over the existing natural/failure-ski
 
 ### R9-B-F1 — Slideshow view-mode and focus-chrome correction
 
-Locally complete at `0.1.1.0001`: Slideshow is only timed navigation and no longer owns or changes Photo Presentation or Normal Viewer policy. All four Slideshow/Photo Presentation state combinations are valid, F6 remains live during playback, and the focusable zero-UI photograph viewport explicitly suppresses its local Avalonia focus adorner without disabling keyboard input. Owner review/commit and hosted CI remain before selecting another roadmap stage.
+Accepted at `0.1.1.0001`: Slideshow is only timed navigation and no longer owns or changes Photo Presentation or Normal Viewer policy. All four Slideshow/Photo Presentation state combinations are valid, F6 remains live during playback, and the focusable zero-UI photograph viewport explicitly suppresses its local Avalonia focus adorner without disabling keyboard input.
+
+### R9-A-F2 — Photo Presentation Matte-independent scale correction
+
+Locally complete at `0.1.1.0002`: Photo Presentation Edge Margin constrains only the oriented photograph. Existing Stage geometry draws Matte around the resolved photo without changing its destination, physical scale, source mapping, or markup alignment; extreme Matte may clip at the viewport. Normal Viewer, Slideshow scheduling, and geometry-independent Color Management remain unchanged. Owner review/commit and hosted CI remain before selecting another roadmap stage.
 
 ## Later / separate platform milestones
 

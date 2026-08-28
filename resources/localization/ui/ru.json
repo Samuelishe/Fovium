@@ -22,7 +22,7 @@
   "settings.photoPresentationView": "Режим фотопрезентации",
   "settings.enablePhotoPresentation": "Включить режим фотопрезентации",
   "settings.photoPresentationEdgeMargin": "Отступ от краёв",
-  "settings.photoPresentationExplanation": "Фотография и паспарту остаются внутри презентационного отступа от краёв экрана.",
+  "settings.photoPresentationExplanation": "Фотография остаётся внутри презентационного отступа. Паспарту рисуется вокруг неё и не изменяет масштаб фотографии.",
   "slideshow.title": "Слайд-шоу",
   "slideshow.start": "Запустить слайд-шоу",
   "slideshow.stop": "Остановить слайд-шоу",

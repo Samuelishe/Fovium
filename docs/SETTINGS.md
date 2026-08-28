@@ -39,7 +39,7 @@ Locale behavior is owned by [`LOCALIZATION.md`](LOCALIZATION.md).
 ### Viewing
 
 - **Scale when changing images** is implemented with `Keep current scale` (default) and `Fit each image`. Fit remains semantic Fit; a non-Fit view preserves physical scale and normalized point of interest, including a deliberately reduced scale.
-- **Photo Presentation** stores only an edge margin percentage, default `4%`, normalized to `0–15%` and exposed in `0.5%` steps. The inset applies to the complete photograph plus optional Matte and is calculated from the shorter physical viewport dimension. The mode's enabled state is session-local, starts false, and is controlled live by one shared authority exposed through the viewer command, context menu, and Viewing Settings checkbox; it is never persisted.
+- **Photo Presentation** stores only an edge margin percentage, default `4%`, normalized to `0–15%` and exposed in `0.5%` steps. The inset constrains the photograph and is calculated from the shorter physical viewport dimension. Matte is drawn around the resolved photograph without changing its scale and may extend beyond the margin; Matte configuration remains owned by Stage. The mode's enabled state is session-local, starts false, and is controlled live by one shared authority exposed through the viewer command, context menu, and Viewing Settings checkbox; it is never persisted.
 - future discrete zoom-step or zoom-sensitivity control;
 - mouse behavior;
 - navigation behavior that is genuinely user-configurable.
