@@ -1,3 +1,4 @@
+using Fovium.Rendering;
 using Fovium.Settings;
 using Fovium.Slideshow;
 using Fovium.Viewer;
@@ -7,15 +8,39 @@ namespace Fovium.Tests.Slideshow;
 public sealed class SlideshowSessionTests
 {
     [Fact]
+    public void ControllerBoundaryHasNoPhotoPresentationOrViewPolicyDependency()
+    {
+        var constructorParameterTypes = typeof(SlideshowSession)
+            .GetConstructors(
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.Public |
+                System.Reflection.BindingFlags.NonPublic)
+            .SelectMany(constructor => constructor.GetParameters())
+            .Select(parameter => parameter.ParameterType)
+            .ToArray();
+
+        Assert.NotEmpty(constructorParameterTypes);
+        Assert.DoesNotContain(typeof(PhotoPresentationViewSession), constructorParameterTypes);
+
+        var advance = typeof(ISlideshowNavigator).GetMethod(nameof(ISlideshowNavigator.AdvanceAsync));
+        Assert.NotNull(advance);
+        Assert.Equal(
+            [
+                typeof(SlideshowPresentedSlide),
+                typeof(SlideshowEndBehavior),
+                typeof(CancellationToken),
+            ],
+            advance.GetParameters().Select(parameter => parameter.ParameterType));
+    }
+
+    [Fact]
     public async Task TimerRestartsForFullDurationOnlyAfterActualPublication()
     {
         var scheduler = new ControlledScheduler();
         var navigator = new ControlledNavigator(Slide(0, 1, "A"));
         var settings = SlideshowSettings.Default;
-        var presentation = new PhotoPresentationViewSession();
         using var session = new SlideshowSession(
             navigator,
-            presentation,
             () => settings,
             scheduler);
 
@@ -113,10 +138,8 @@ public sealed class SlideshowSessionTests
         var scheduler = new ControlledScheduler();
         var navigator = new ControlledNavigator(Slide(0, 1, "A"));
         var settings = SlideshowSettings.Default;
-        var presentation = new PhotoPresentationViewSession();
         using var session = new SlideshowSession(
             navigator,
-            presentation,
             () => settings,
             scheduler);
 
@@ -135,10 +158,8 @@ public sealed class SlideshowSessionTests
         var scheduler = new ControlledScheduler();
         var navigator = new ControlledNavigator(Slide(0, 1, "A"));
         var settings = SlideshowSettings.Default;
-        var presentation = new PhotoPresentationViewSession();
         using var session = new SlideshowSession(
             navigator,
-            presentation,
             () => settings,
             scheduler);
 
@@ -224,7 +245,7 @@ public sealed class SlideshowSessionTests
     }
 
     [Fact]
-    public async Task ManualStopWinsTimerAdvanceRaceAndRestoresOwnedPresentation()
+    public async Task ManualStopWinsTimerAdvanceRace()
     {
         var scheduler = new ControlledScheduler();
         var advance = new TaskCompletionSource<SlideshowAdvanceStatus>(
@@ -233,10 +254,8 @@ public sealed class SlideshowSessionTests
         {
             Advance = advance.Task,
         };
-        var presentation = new PhotoPresentationViewSession();
         using var session = new SlideshowSession(
             navigator,
-            presentation,
             () => SlideshowSettings.Default,
             scheduler);
 
@@ -248,13 +267,13 @@ public sealed class SlideshowSessionTests
         await Task.Yield();
 
         Assert.False(session.IsRunning);
-        Assert.False(presentation.IsEnabled);
         Assert.Equal(1, navigator.CancelCount);
         Assert.Single(scheduler.Delays);
+        Assert.Equal(1, session.Metrics.Stops);
     }
 
     [Fact]
-    public async Task StopAtEndNaturallyStopsWithoutFinalLayoutSnap()
+    public async Task StopAtEndNaturallyStopsWithoutAdvancingPastFinalSlide()
     {
         var scheduler = new ControlledScheduler();
         var navigator = new ControlledNavigator(Slide(2, 3, "C"))
@@ -262,10 +281,8 @@ public sealed class SlideshowSessionTests
             Preparation = Task.FromResult(new SlideshowPreparationResult(
                 SlideshowPreparationStatus.NoOtherViableImage)),
         };
-        var presentation = new PhotoPresentationViewSession();
         using var session = new SlideshowSession(
             navigator,
-            presentation,
             () => SlideshowSettings.Default,
             scheduler);
 
@@ -273,9 +290,9 @@ public sealed class SlideshowSessionTests
         scheduler.Complete(0);
         await WaitUntilAsync(() => !session.IsRunning);
 
-        Assert.True(presentation.IsEnabled);
         Assert.Equal(1, session.Metrics.NaturalStops);
         Assert.Equal(0, navigator.AdvanceCount);
+        Assert.Equal(Slide(2, 3, "C"), navigator.Presented);
     }
 
     [Fact]
@@ -288,10 +305,8 @@ public sealed class SlideshowSessionTests
                 SlideshowPreparationStatus.NoOtherViableImage)),
         };
         var settings = SlideshowSettings.Default with { EndBehavior = SlideshowEndBehavior.Loop };
-        var presentation = new PhotoPresentationViewSession();
         using var session = new SlideshowSession(
             navigator,
-            presentation,
             () => settings,
             scheduler);
 
@@ -300,7 +315,6 @@ public sealed class SlideshowSessionTests
         await WaitUntilAsync(() => session.Metrics.Quiescent);
 
         Assert.True(session.IsRunning);
-        Assert.True(presentation.IsEnabled);
         Assert.Equal(0, navigator.AdvanceCount);
         Assert.Single(scheduler.Delays);
     }
@@ -311,10 +325,8 @@ public sealed class SlideshowSessionTests
         var scheduler = new ControlledScheduler();
         var navigator = new ControlledNavigator(Slide(1, 2, "B"));
         var settings = SlideshowSettings.Default with { EndBehavior = SlideshowEndBehavior.Loop };
-        var presentation = new PhotoPresentationViewSession();
         using var session = new SlideshowSession(
             navigator,
-            presentation,
             () => settings,
             scheduler);
 
@@ -338,46 +350,120 @@ public sealed class SlideshowSessionTests
         Assert.Equal(TimeSpan.FromSeconds(5), scheduler.Delays[3].Duration);
     }
 
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void SlideshowAndPhotoPresentationSupportEveryIndependentStateCombination(
+        bool slideshowRunning,
+        bool presentationEnabled)
+    {
+        var presentation = new PhotoPresentationViewSession();
+        presentation.SetEnabled(presentationEnabled);
+        var scheduler = new ControlledScheduler();
+        using var session = new SlideshowSession(
+            new ControlledNavigator(Slide(0, 1, "A")),
+            () => SlideshowSettings.Default,
+            scheduler);
+
+        if (slideshowRunning)
+        {
+            session.Start();
+        }
+
+        Assert.Equal(slideshowRunning, session.IsRunning);
+        Assert.Equal(presentationEnabled, presentation.IsEnabled);
+        Assert.Equal(slideshowRunning ? 1 : 0, scheduler.Delays.Count);
+    }
+
     [Fact]
-    public void PresentationThatWasAlreadyEnabledRemainsEnabledOnManualStop()
+    public void ExternalPhotoPresentationToggleWhileRunningDoesNotStopOrRestartTimer()
     {
         var presentation = new PhotoPresentationViewSession();
         presentation.SetEnabled(true);
+        var scheduler = new ControlledScheduler();
+        var navigator = new ControlledNavigator(Slide(0, 1, "A"));
+        using var session = new SlideshowSession(
+            navigator,
+            () => SlideshowSettings.Default,
+            scheduler);
+
+        session.Start();
+        var originalDelay = Assert.Single(scheduler.Delays);
+        presentation.Toggle(); // The same Photo Presentation authority used by F6.
+        presentation.Toggle();
+
+        Assert.True(session.IsRunning);
+        Assert.True(presentation.IsEnabled);
+        Assert.Same(originalDelay, Assert.Single(scheduler.Delays));
+        Assert.False(originalDelay.Canceled);
+        Assert.Single(navigator.PreparationEndBehaviors);
+        Assert.Equal(0, session.Metrics.Stops);
+        Assert.Equal(0, session.Metrics.ManualNavigationResets);
+        Assert.Equal(0, session.Metrics.TimerExpirations);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SlideshowStartAndStopNeverMutatePhotoPresentationState(bool presentationEnabled)
+    {
+        var presentation = new PhotoPresentationViewSession();
+        presentation.SetEnabled(presentationEnabled);
+        var presentationChanges = 0;
+        presentation.Changed += (_, _) => presentationChanges++;
+        var scheduler = new ControlledScheduler();
         using var session = new SlideshowSession(
             new ControlledNavigator(Slide(0, 1, "A")),
-            presentation,
             () => SlideshowSettings.Default,
-            new ControlledScheduler());
+            scheduler);
 
         session.Start();
         session.Stop();
 
-        Assert.True(presentation.IsEnabled);
+        Assert.False(session.IsRunning);
+        Assert.Equal(presentationEnabled, presentation.IsEnabled);
+        Assert.Equal(0, presentationChanges);
+        Assert.True(Assert.Single(scheduler.Delays).Canceled);
+        Assert.Equal(1, session.Metrics.Starts);
+        Assert.Equal(1, session.Metrics.Stops);
     }
 
-    [Fact]
-    public void TurningPresentationOffWhileRunningStopsSlideshowAndKeepsItOff()
+    [Theory]
+    [InlineData(false, (int)ImageChangeViewPolicy.KeepCurrentScale)]
+    [InlineData(false, (int)ImageChangeViewPolicy.FitEachImage)]
+    [InlineData(true, (int)ImageChangeViewPolicy.KeepCurrentScale)]
+    [InlineData(true, (int)ImageChangeViewPolicy.FitEachImage)]
+    public void NormalNavigationPolicyRemainsAuthoritativeAtSlideshowBoundary(
+        bool slideshowRunning,
+        int policyValue)
     {
-        var presentation = new PhotoPresentationViewSession();
-        presentation.SetEnabled(true);
-        using var session = new SlideshowSession(
+        using var session = CreateSession(
             new ControlledNavigator(Slide(0, 1, "A")),
-            presentation,
-            () => SlideshowSettings.Default,
             new ControlledScheduler());
+        if (slideshowRunning)
+        {
+            session.Start();
+        }
 
-        session.Start();
-        presentation.SetEnabled(false);
+        var policy = (ImageChangeViewPolicy)policyValue;
+        var current = new ViewTransfer(
+            ViewportMode.Manual,
+            1.7,
+            new NormalizedPoint(0.78, 0.24));
+        var transfer = ImageChangeViewPolicyResolver.ForNavigation(policy, current);
 
-        Assert.False(session.IsRunning);
-        Assert.False(presentation.IsEnabled);
+        Assert.Equal(slideshowRunning, session.IsRunning);
+        Assert.Equal(
+            policy == ImageChangeViewPolicy.KeepCurrentScale ? current : ViewTransfer.Fit,
+            transfer);
     }
 
     private static SlideshowSession CreateSession(
         ControlledNavigator navigator,
         ControlledScheduler scheduler) => new(
         navigator,
-        new PhotoPresentationViewSession(),
         () => SlideshowSettings.Default,
         scheduler);
 

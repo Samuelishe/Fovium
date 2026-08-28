@@ -3,8 +3,8 @@
     <FoviumVersionMajor>0</FoviumVersionMajor>
     <FoviumVersionMinor>1</FoviumVersionMinor>
     <FoviumVersionPatch>1</FoviumVersionPatch>
-    <FoviumVersionBuild>0000</FoviumVersionBuild>
-    <FoviumNumericBuild>0</FoviumNumericBuild>
+    <FoviumVersionBuild>0001</FoviumVersionBuild>
+    <FoviumNumericBuild>1</FoviumNumericBuild>
     <FoviumDisplayVersion>$(FoviumVersionMajor).$(FoviumVersionMinor).$(FoviumVersionPatch).$(FoviumVersionBuild)</FoviumDisplayVersion>
     <FoviumNumericVersion>$(FoviumVersionMajor).$(FoviumVersionMinor).$(FoviumVersionPatch).$(FoviumNumericBuild)</FoviumNumericVersion>
   </PropertyGroup>

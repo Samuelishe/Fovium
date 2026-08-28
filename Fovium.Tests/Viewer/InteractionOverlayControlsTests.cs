@@ -1,3 +1,4 @@
+using Avalonia.Controls;
 using Avalonia.Media;
 using Fovium.Diagnostics;
 using Fovium.Presentation;
@@ -8,6 +9,16 @@ namespace Fovium.Tests.Viewer;
 
 public sealed class InteractionOverlayControlsTests
 {
+    [Fact]
+    public void PhotoViewportSuppressesFocusChromeWithoutDisablingKeyboardFocus()
+    {
+        var viewport = new PhotoViewportControl();
+
+        Assert.True(viewport.Focusable);
+        Assert.True(viewport.IsSet(Control.FocusAdornerProperty));
+        Assert.Null(viewport.FocusAdorner);
+    }
+
     [Fact]
     public void PhotoPresentationUsesCompositorBitmapIsolation()
     {

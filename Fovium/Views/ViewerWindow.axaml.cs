@@ -184,7 +184,6 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         _appliedSlideshowSettings = settings.Current.Slideshow;
         _slideshow = new SlideshowSession(
             this,
-            PhotoViewport.PhotoPresentationView,
             () => _settings.Current.Slideshow);
         _slideshow.Changed += OnSlideshowChanged;
         PhotoViewport.PresentedImageChanged += OnSlideshowPresentedImageChanged;

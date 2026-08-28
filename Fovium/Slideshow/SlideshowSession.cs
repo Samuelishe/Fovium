@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using Fovium.Settings;
-using Fovium.Viewer;
 
 namespace Fovium.Slideshow;
 
@@ -82,7 +81,6 @@ internal readonly record struct SlideshowMetrics(
 internal sealed class SlideshowSession : IDisposable
 {
     private readonly ISlideshowNavigator _navigator;
-    private readonly PhotoPresentationViewSession _photoPresentationView;
     private readonly Func<SlideshowSettings> _settings;
     private readonly ISlideshowTimerScheduler _timerScheduler;
     private CancellationTokenSource? _cycleCancellation;
@@ -92,10 +90,8 @@ internal sealed class SlideshowSession : IDisposable
     private long _manualNavigationGeneration;
     private long _presentedTimestamp;
     private long _transitionStartedTimestamp;
-    private bool _ownsPhotoPresentation;
     private bool _awaitingPresentation;
     private bool _automaticAdvancePending;
-    private bool _suppressPhotoPresentationObservation;
     private bool _disposed;
     private bool _quiescent;
     private long _starts;
@@ -115,16 +111,12 @@ internal sealed class SlideshowSession : IDisposable
 
     public SlideshowSession(
         ISlideshowNavigator navigator,
-        PhotoPresentationViewSession photoPresentationView,
         Func<SlideshowSettings> settings,
         ISlideshowTimerScheduler? timerScheduler = null)
     {
         _navigator = navigator ?? throw new ArgumentNullException(nameof(navigator));
-        _photoPresentationView = photoPresentationView
-            ?? throw new ArgumentNullException(nameof(photoPresentationView));
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         _timerScheduler = timerScheduler ?? new MonotonicSlideshowTimerScheduler();
-        _photoPresentationView.Changed += OnPhotoPresentationViewChanged;
     }
 
     public event EventHandler? Changed;
@@ -174,11 +166,6 @@ internal sealed class SlideshowSession : IDisposable
         _awaitingPresentation = _navigator.IsNavigationPending;
         _automaticAdvancePending = false;
         _currentSlide = _navigator.PresentedSlide;
-        _ownsPhotoPresentation = !_photoPresentationView.IsEnabled;
-        if (_ownsPhotoPresentation)
-        {
-            SetPhotoPresentationEnabled(true);
-        }
 
         _starts++;
         Changed?.Invoke(this, EventArgs.Empty);
@@ -188,7 +175,7 @@ internal sealed class SlideshowSession : IDisposable
         }
     }
 
-    public void Stop() => StopCore(restorePhotoPresentation: true, natural: false);
+    public void Stop() => StopCore(natural: false);
 
     public void NotifyPresented(SlideshowPresentedSlide presented)
     {
@@ -294,9 +281,8 @@ internal sealed class SlideshowSession : IDisposable
             return;
         }
 
-        StopCore(restorePhotoPresentation: true, natural: false);
+        StopCore(natural: false);
         _disposed = true;
-        _photoPresentationView.Changed -= OnPhotoPresentationViewChanged;
     }
 
     private void BeginPresentedCycle(SlideshowPresentedSlide presented)
@@ -410,7 +396,7 @@ internal sealed class SlideshowSession : IDisposable
             {
                 if (endBehavior == SlideshowEndBehavior.StopAtEnd)
                 {
-                    StopCore(restorePhotoPresentation: false, natural: true);
+                    StopCore(natural: true);
                 }
                 else
                 {
@@ -443,7 +429,7 @@ internal sealed class SlideshowSession : IDisposable
             {
                 if (endBehavior == SlideshowEndBehavior.StopAtEnd)
                 {
-                    StopCore(restorePhotoPresentation: false, natural: true);
+                    StopCore(natural: true);
                 }
                 else
                 {
@@ -463,7 +449,7 @@ internal sealed class SlideshowSession : IDisposable
         generation == _cycleGeneration &&
         _currentSlide == current;
 
-    private void StopCore(bool restorePhotoPresentation, bool natural)
+    private void StopCore(bool natural)
     {
         if (!IsRunning)
         {
@@ -487,19 +473,10 @@ internal sealed class SlideshowSession : IDisposable
         if (natural)
         {
             _naturalStops++;
-            // Natural completion deliberately transfers the enabled presentation view to the
-            // visible session state, avoiding an abrupt final-frame layout change.
-            _ownsPhotoPresentation = false;
         }
         else
         {
             _stops++;
-            if (restorePhotoPresentation && _ownsPhotoPresentation)
-            {
-                SetPhotoPresentationEnabled(false);
-            }
-
-            _ownsPhotoPresentation = false;
         }
 
         Changed?.Invoke(this, EventArgs.Empty);
@@ -515,26 +492,4 @@ internal sealed class SlideshowSession : IDisposable
         cancellation?.Dispose();
     }
 
-    private void SetPhotoPresentationEnabled(bool enabled)
-    {
-        _suppressPhotoPresentationObservation = true;
-        try
-        {
-            _photoPresentationView.SetEnabled(enabled);
-        }
-        finally
-        {
-            _suppressPhotoPresentationObservation = false;
-        }
-    }
-
-    private void OnPhotoPresentationViewChanged(object? sender, EventArgs e)
-    {
-        if (!_suppressPhotoPresentationObservation &&
-            IsRunning &&
-            !_photoPresentationView.IsEnabled)
-        {
-            StopCore(restorePhotoPresentation: false, natural: false);
-        }
-    }
 }

@@ -152,6 +152,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
     {
         ClipToBounds = true;
         Focusable = true;
+        FocusAdorner = null;
         CacheMode = new BitmapCache { SnapsToDevicePixels = true };
         _photoPresentationView.Changed += OnPhotoPresentationViewChanged;
     }

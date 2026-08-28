@@ -117,7 +117,11 @@ Locally OWNER-accepted at `0.1.0.0010`: expose the same session-local Photo Pres
 
 ### R9-B — Slideshow
 
-Locally complete at `0.1.1.0000`: timed navigation over the existing natural/failure-skipping image sequence, publication-based duration, Stop-at-end or Loop, manual-navigation reset, and one memory-bounded prepared managed next. `F5`, the checked context menu, and live Presentation Settings control share session state; only duration/end behavior persist. Slideshow reuses Photo Presentation View as its only geometry owner and the existing F4 atomic publication/Color Management path. Owner review/commit and hosted CI remain before selecting another roadmap stage.
+Accepted at `0.1.1.0000`: timed navigation over the existing natural/failure-skipping image sequence, publication-based duration, Stop-at-end or Loop, manual-navigation reset, and one memory-bounded prepared managed next. `F5`, the checked context menu, and live Presentation Settings control share session state; only duration/end behavior persist. The existing F4 atomic publication/Color Management path remains authoritative.
+
+### R9-B-F1 — Slideshow view-mode and focus-chrome correction
+
+Locally complete at `0.1.1.0001`: Slideshow is only timed navigation and no longer owns or changes Photo Presentation or Normal Viewer policy. All four Slideshow/Photo Presentation state combinations are valid, F6 remains live during playback, and the focusable zero-UI photograph viewport explicitly suppresses its local Avalonia focus adorner without disabling keyboard input. Owner review/commit and hosted CI remain before selecting another roadmap stage.
 
 ## Later / separate platform milestones
 
