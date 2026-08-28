@@ -21,13 +21,14 @@ using Fovium.Navigation;
 using Fovium.Presentation;
 using Fovium.Rendering;
 using Fovium.Settings;
+using Fovium.Slideshow;
 using Fovium.Stage;
 using Fovium.Viewer;
 using ViewerNavigationDirection = Fovium.Navigation.NavigationDirection;
 
 namespace Fovium.Views;
 
-internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
+internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlideshowNavigator
 {
     private static readonly TimeSpan CursorHideDelay = TimeSpan.FromSeconds(1.75);
     private static readonly TimeSpan CursorIdlePollInterval = TimeSpan.FromMilliseconds(250);
@@ -56,6 +57,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
     private readonly PhotoInfoCoordinator _photoInfo;
     private readonly HistogramCoordinator _histogram;
     private readonly ColorPickerSession _colorPicker;
+    private readonly SlideshowSession _slideshow;
     private readonly PhotoColorSampler _photoColorSampler;
     private readonly FloatingOverlayInteraction _markupFloatingOverlay;
     private readonly FloatingOverlayInteraction _photoInfoFloatingOverlay;
@@ -67,6 +69,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
     private readonly IReadOnlyDictionary<StageBackgroundMode, MenuItem> _stageBackgroundMenuItems;
     private readonly MenuItem _matteMenuItem;
     private readonly MenuItem _photoPresentationMenuItem;
+    private readonly MenuItem _slideshowMenuItem;
     private readonly MenuItem _photoInfoMenuItem;
     private readonly MenuItem _histogramMenuItem;
     private readonly MenuItem _colorPickerMenuItem;
@@ -84,6 +87,8 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
     private int _displayProfileRefreshGeneration;
     private bool _forceDisplayProfileRefresh;
     private bool _appliedMonitorColorManagementEnabled;
+    private SlideshowSettings _appliedSlideshowSettings;
+    private int _presentedSequenceIndex = -1;
 
     public ViewerWindow(
         ActivationService activation,
@@ -176,6 +181,13 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
         _holdController = new ViewerHoldController(new ViewerHoldActionRouter(
             _inspectionCoordinator,
             new MarkupTemporaryHandHoldAction(_presentation, () => _colorPicker.IsVisible)));
+        _appliedSlideshowSettings = settings.Current.Slideshow;
+        _slideshow = new SlideshowSession(
+            this,
+            PhotoViewport.PhotoPresentationView,
+            () => _settings.Current.Slideshow);
+        _slideshow.Changed += OnSlideshowChanged;
+        PhotoViewport.PresentedImageChanged += OnSlideshowPresentedImageChanged;
         ConfigureMarkupTools();
         ConfigurePhotoInfo();
         ConfigureHistogram();
@@ -194,6 +206,10 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             UiStrings.CommandTogglePhotoPresentation,
             ViewerCommand.TogglePhotoPresentation);
         _photoPresentationMenuItem.ToggleType = MenuItemToggleType.CheckBox;
+        _slideshowMenuItem = CreateCommandMenuItem(
+            UiStrings.CommandToggleSlideshow,
+            ViewerCommand.ToggleSlideshow);
+        _slideshowMenuItem.ToggleType = MenuItemToggleType.CheckBox;
         PhotoViewport.PhotoPresentationView.Changed += OnPhotoPresentationViewChanged;
         _photoInfoMenuItem = CreateOverlayToggleMenuItem(
             UiStrings.CommandTogglePhotoInfo,
@@ -379,12 +395,38 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
                 $"maxAtomicWaitMs={metrics?.MaximumAtomicPresentationWait.TotalMilliseconds ?? 0:F2}.");
         }
 
+        if (string.Equals(
+            Environment.GetEnvironmentVariable("FOVIUM_SLIDESHOW_DIAGNOSTICS"),
+            "1",
+            StringComparison.Ordinal))
+        {
+            var metrics = _slideshow.Metrics;
+            var preparedBytes = PhotoViewport.MonitorColorMetrics?.CurrentRasterBytes ?? 0;
+            Console.WriteLine(
+                $"Fovium slideshow: running={metrics.Running}, quiescent={metrics.Quiescent}, " +
+                $"starts={metrics.Starts}, stops={metrics.Stops}, naturalStops={metrics.NaturalStops}, " +
+                $"loops={metrics.Loops}, expirations={metrics.TimerExpirations}, " +
+                $"manualResets={metrics.ManualNavigationResets}, presented={metrics.PresentedSlideCount}, " +
+                $"preparedHits={metrics.PreparedNextHits}, misses={metrics.PreparedNextMisses}, " +
+                $"rejectedByMemory={metrics.PreparedNextRejectedByMemory}, stale={metrics.PreparedNextStale}.");
+            Console.WriteLine(
+                $"Fovium slideshow timing/memory: lastPresentedMs={metrics.LastPresentedDuration.TotalMilliseconds:F2}, " +
+                $"lastTransitionWaitMs={metrics.LastTransitionWait.TotalMilliseconds:F2}, " +
+                $"lastPreparedBytes={metrics.LastPreparedManagedBytes}, " +
+                $"currentManagedBytes={PhotoViewport.CurrentManagedSourceBytes}, " +
+                $"coordinatorPreparedBytes={preparedBytes}, " +
+                $"currentPlusPreparedBytes={PhotoViewport.CurrentManagedSourceBytes + preparedBytes}.");
+        }
+
         _lifetimeCancellation.Dispose();
         _visibleCursor.Dispose();
         _hiddenCursor.Dispose();
         _handCursor.Dispose();
         _settings.SettingsChanged -= OnSettingsChanged;
         PhotoViewport.PhotoPresentationView.Changed -= OnPhotoPresentationViewChanged;
+        PhotoViewport.PresentedImageChanged -= OnSlideshowPresentedImageChanged;
+        _slideshow.Changed -= OnSlideshowChanged;
+        _slideshow.Dispose();
         Screens.Changed -= OnDisplayRefreshRequired;
         Activated -= OnDisplayRefreshRequired;
         PositionChanged -= OnDisplayRefreshTrigger;
@@ -408,18 +450,24 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             if (e.Key == Key.Escape)
             {
                 e.Handled = true;
-                if (_holdController.Cancel())
+                switch (ViewerEscapePolicy.Resolve(
+                            _holdController.Cancel(),
+                            _slideshow.IsRunning,
+                            WindowState == WindowState.FullScreen))
                 {
-                    return;
-                }
-
-                if (WindowState == WindowState.FullScreen)
-                {
-                    LeaveFullscreen();
-                }
-                else
-                {
-                    Close();
+                    case ViewerEscapeAction.None:
+                        return;
+                    case ViewerEscapeAction.StopSlideshow:
+                        _slideshow.Stop();
+                        return;
+                    case ViewerEscapeAction.LeaveFullscreen:
+                        LeaveFullscreen();
+                        return;
+                    case ViewerEscapeAction.CloseViewer:
+                        Close();
+                        return;
+                    default:
+                        throw new ArgumentOutOfRangeException();
                 }
             }
             else if (AvaloniaShortcutGestureAdapter.TryCreate(e, out var gesture) &&
@@ -489,6 +537,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
                     UiStrings.MenuActualSize,
                     ViewerCommand.ActualSize,
                     FoviumIcon.ActualSize),
+                _slideshowMenuItem,
                 _photoPresentationMenuItem,
                 CreateCommandMenuItem(
                     UiStrings.MenuFullscreen,
@@ -548,6 +597,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             }
 
             _matteMenuItem.IsChecked = _settings.Current.Stage.MatteEnabled;
+            _slideshowMenuItem.IsChecked = _slideshow.IsRunning;
             _photoPresentationMenuItem.IsChecked = PhotoViewport.PhotoPresentationViewEnabled;
             _commandMenuItems[ViewerCommand.Fit].IsEnabled =
                 !PhotoViewport.PhotoPresentationViewEnabled;
@@ -732,6 +782,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
 
     private async Task OpenPathsAsync(IReadOnlyList<string> paths)
     {
+        _slideshow.Stop();
         _holdController.Cancel();
         CompleteAmbientSoakTransition();
         var plan = ActivationPlan.Create(paths);
@@ -750,6 +801,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
 
     private async Task NavigateAsync(ViewerNavigationDirection direction)
     {
+        var slideshowNavigationGeneration = _slideshow.NotifyManualNavigationStarted();
         _holdController.Cancel();
         CompleteAmbientSoakTransition();
         var result = await _session.NavigateAsync(direction, _lifetimeCancellation.Token);
@@ -757,6 +809,11 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             _settings.Current.ImageChangeViewPolicy,
             PhotoViewport.CaptureViewTransfer());
         ApplySelection(result, transfer, showFailure: false);
+        if (result.Status != SelectionStatus.Published)
+        {
+            _slideshow.NotifyManualNavigationCompletedWithoutPresentation(
+                slideshowNavigationGeneration);
+        }
     }
 
     private void ApplySelection(
@@ -851,6 +908,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             _settings,
             _localizer,
             PhotoViewport.PhotoPresentationView,
+            _slideshow,
             initialSize);
         _settingsWindow = window;
         window.Closed += (_, _) =>
@@ -875,6 +933,8 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
 
     private void ApplySettings(FoviumSettings settings)
     {
+        var previousSlideshow = _appliedSlideshowSettings;
+        _appliedSlideshowSettings = settings.Slideshow;
         ApplyStage(settings.Stage);
         PhotoViewport.SetPhotoPresentationViewSettings(settings.PhotoPresentationView);
         _presentation.ApplySettings(settings.Presentation);
@@ -889,6 +949,18 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             _appliedMonitorColorManagementEnabled = settings.MonitorColorManagementEnabled;
             PhotoViewport.SetMonitorColorManagementEnabled(settings.MonitorColorManagementEnabled);
             ScheduleDisplayProfileRefresh(forceProfileRefresh: true);
+            _slideshow.NotifyDestinationChanged();
+        }
+
+
+        if (previousSlideshow.SlideDurationSeconds != settings.Slideshow.SlideDurationSeconds)
+        {
+            _slideshow.NotifyDurationChanged();
+        }
+
+        if (previousSlideshow.EndBehavior != settings.Slideshow.EndBehavior)
+        {
+            _slideshow.NotifyEndBehaviorChanged();
         }
     }
 
@@ -899,6 +971,18 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
             !PhotoViewport.PhotoPresentationViewEnabled;
         _commandMenuItems[ViewerCommand.ActualSize].IsEnabled =
             !PhotoViewport.PhotoPresentationViewEnabled;
+    }
+
+    private void OnSlideshowChanged(object? sender, EventArgs e) =>
+        _slideshowMenuItem.IsChecked = _slideshow.IsRunning;
+
+    private void OnSlideshowPresentedImageChanged(object? sender, EventArgs e)
+    {
+        _presentedSequenceIndex = _session.CurrentIndex;
+        if (((ISlideshowNavigator)this).PresentedSlide is { } presented)
+        {
+            _slideshow.NotifyPresented(presented);
+        }
     }
 
     private void OnDisplayRefreshTrigger(object? sender, EventArgs e) =>
@@ -990,7 +1074,10 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
                 $"profileHash={profile?.Identity.DiagnosticPrefix ?? "none"}, vcgt={profile?.HasVcgt ?? false}.");
         }
 
-        PhotoViewport.SetDisplayProfile(resolution);
+        if (PhotoViewport.SetDisplayProfile(resolution))
+        {
+            _slideshow.NotifyDestinationChanged();
+        }
     }
 
     private void ApplyStage(StageSettings stage)
@@ -1121,10 +1208,116 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget
     void IViewerCommandTarget.SetPhotographic100AtCenter() =>
         PhotoViewport.SetPhotographic100AtCenter();
 
+    void IViewerCommandTarget.ToggleSlideshow() => _slideshow.Toggle();
+
     void IViewerCommandTarget.TogglePhotoPresentation()
     {
         _presentation.EndTemporaryHand();
         PhotoViewport.PhotoPresentationView.Toggle();
+    }
+
+    bool ISlideshowNavigator.IsNavigationPending =>
+        _session.IsNavigationPending ||
+        (_presentedSequenceIndex >= 0 && _presentedSequenceIndex != _session.CurrentIndex);
+
+    SlideshowPresentedSlide? ISlideshowNavigator.PresentedSlide
+    {
+        get
+        {
+            if (!PhotoViewport.TryAcquirePresentedImage(out var presented) || presented is null)
+            {
+                return null;
+            }
+
+            using (presented)
+            {
+                return new SlideshowPresentedSlide(
+                    _presentedSequenceIndex >= 0 ? _presentedSequenceIndex : _session.CurrentIndex,
+                    presented.ImageIdentity,
+                    presented.PresentationIdentity);
+            }
+        }
+    }
+
+    async Task<SlideshowPreparationResult> ISlideshowNavigator.PrepareNextAsync(
+        SlideshowPresentedSlide expectedCurrent,
+        SlideshowEndBehavior endBehavior,
+        CancellationToken cancellationToken)
+    {
+        var current = ((ISlideshowNavigator)this).PresentedSlide;
+        if (current != expectedCurrent || _session.IsNavigationPending)
+        {
+            return new SlideshowPreparationResult(SlideshowPreparationStatus.Stale);
+        }
+
+        var acquired = await _session.AcquireNeighborForInspectionAsync(
+            ViewerNavigationDirection.Next,
+            wrap: endBehavior == SlideshowEndBehavior.Loop,
+            cancellationToken);
+        if (acquired.Status != InspectionAcquisitionStatus.Acquired || acquired.Image is null)
+        {
+            acquired.Image?.Dispose();
+            return new SlideshowPreparationResult(
+                acquired.Status is InspectionAcquisitionStatus.Canceled or
+                    InspectionAcquisitionStatus.Stale
+                    ? SlideshowPreparationStatus.Stale
+                    : SlideshowPreparationStatus.NoOtherViableImage);
+        }
+
+        using (acquired.Image)
+        {
+            if (((ISlideshowNavigator)this).PresentedSlide != expectedCurrent ||
+                acquired.Index == expectedCurrent.SequenceIndex)
+            {
+                return new SlideshowPreparationResult(SlideshowPreparationStatus.Stale);
+            }
+
+            return await PhotoViewport.PrepareSlideshowNextAsync(
+                acquired.Image,
+                cancellationToken);
+        }
+    }
+
+    async Task<SlideshowAdvanceStatus> ISlideshowNavigator.AdvanceAsync(
+        SlideshowPresentedSlide expectedCurrent,
+        SlideshowEndBehavior endBehavior,
+        CancellationToken cancellationToken)
+    {
+        if (((ISlideshowNavigator)this).PresentedSlide != expectedCurrent)
+        {
+            return SlideshowAdvanceStatus.Canceled;
+        }
+
+        var result = await _session.NavigateAsync(
+            ViewerNavigationDirection.Next,
+            wrap: endBehavior == SlideshowEndBehavior.Loop,
+            cancellationToken);
+        if (cancellationToken.IsCancellationRequested)
+        {
+            result.Image?.Dispose();
+            _session.CancelPendingAndReanchor(expectedCurrent.SequenceIndex);
+            return SlideshowAdvanceStatus.Canceled;
+        }
+
+        if (result.Status != SelectionStatus.Published || result.Image is null)
+        {
+            result.Image?.Dispose();
+            return result.Status is SelectionStatus.NoMove or SelectionStatus.NoViableCandidate
+                ? SlideshowAdvanceStatus.NoOtherViableImage
+                : SlideshowAdvanceStatus.Canceled;
+        }
+
+        var transfer = ImageChangeViewPolicyResolver.ForNavigation(
+            _settings.Current.ImageChangeViewPolicy,
+            PhotoViewport.CaptureViewTransfer());
+        ApplySelection(result, transfer, showFailure: false);
+        return SlideshowAdvanceStatus.PresentationPending;
+    }
+
+    void ISlideshowNavigator.CancelAutomaticAdvance(SlideshowPresentedSlide presentedSlide)
+    {
+        PhotoViewport.CancelPendingPresentation();
+        _session.CancelPendingAndReanchor(presentedSlide.SequenceIndex);
     }
 
     Task IViewerCommandTarget.ToggleMatteAsync() =>

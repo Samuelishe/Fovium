@@ -94,6 +94,19 @@ internal sealed class SettingsService(ISettingsStore store) : IDisposable
             cancellationToken);
     }
 
+    public Task SetSlideshowAsync(
+        SlideshowSettings slideshow,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(slideshow);
+        var normalized = slideshow.Normalize();
+        return UpdateAsync(
+            settings => settings.Slideshow == normalized
+                ? settings
+                : settings with { Slideshow = normalized },
+            cancellationToken);
+    }
+
     public Task SetSettingsWindowSizeAsync(
         SettingsWindowSizeSettings size,
         CancellationToken cancellationToken = default)
@@ -273,6 +286,7 @@ internal sealed class SettingsService(ISettingsStore store) : IDisposable
         left.ImageChangeViewPolicy == right.ImageChangeViewPolicy &&
         left.MonitorColorManagementEnabled == right.MonitorColorManagementEnabled &&
         left.PhotoPresentationView == right.PhotoPresentationView &&
+        left.Slideshow == right.Slideshow &&
         left.SettingsWindowSize == right.SettingsWindowSize &&
         left.Stage == right.Stage &&
         left.Presentation == right.Presentation &&

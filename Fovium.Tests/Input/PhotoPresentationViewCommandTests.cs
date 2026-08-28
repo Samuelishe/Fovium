@@ -63,6 +63,7 @@ public sealed class PhotoPresentationViewCommandTests
     [Theory]
     [InlineData((int)ViewerCommand.PreviousImage)]
     [InlineData((int)ViewerCommand.NextImage)]
+    [InlineData((int)ViewerCommand.ToggleSlideshow)]
     [InlineData((int)ViewerCommand.TogglePhotoPresentation)]
     [InlineData((int)ViewerCommand.ToggleMatte)]
     [InlineData((int)ViewerCommand.Fullscreen)]
@@ -86,11 +87,15 @@ public sealed class PhotoPresentationViewCommandTests
     }
 
     [Fact]
-    public void BoundedFeatureDoesNotAddSlideshowCommands()
+    public void SlideshowCommandHasStableIdDefaultF5AndViewingAuthority()
     {
-        Assert.DoesNotContain(
-            ViewerCommands.Definitions,
-            definition => definition.Id.Contains("slideshow", StringComparison.OrdinalIgnoreCase));
+        var definition = ViewerCommands.GetDefinition(ViewerCommand.ToggleSlideshow);
+
+        Assert.Equal("viewer.toggleSlideshow", definition.Id);
+        Assert.Equal(ViewerCommandGroup.Viewing, definition.Group);
+        Assert.Equal(ViewerCommandScope.Global, definition.Scope);
+        Assert.Equal(ViewerCommandTrigger.Press, definition.Trigger);
+        Assert.Equal(new ShortcutGesture("F5"), ShortcutSettings.Default.Get(definition.Command));
     }
 
     [Theory]

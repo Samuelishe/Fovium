@@ -15,6 +15,7 @@ Each durable subject has one owner. Other documents may summarize and link but m
 | Current checkpoint, focus, functionality, and blockers | [`PROJECT-STATE.md`](PROJECT-STATE.md) |
 | Product identity, long-term boundaries, Stage, Peek/Blink direction | [`PROJECT-VISION.md`](PROJECT-VISION.md) |
 | User-visible interaction | [`UX-CONTRACT.md`](UX-CONTRACT.md) |
+| Slideshow session, timing, end behavior, and prepared-next ownership | [`SLIDESHOW.md`](SLIDESHOW.md) |
 | Responsibility and dependency boundaries | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
 | Probe, decode, formats, orientation, source representation | [`IMAGING-PIPELINE.md`](IMAGING-PIPELINE.md) |
 | Current supported formats and per-format capability matrix | [`FORMAT-SUPPORT.md`](FORMAT-SUPPORT.md) |

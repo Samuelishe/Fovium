@@ -117,7 +117,7 @@ Locally OWNER-accepted at `0.1.0.0010`: expose the same session-local Photo Pres
 
 ### R9-B — Slideshow
 
-Selected next standalone user-visible capability after R9-A-F1 owner/hosted acceptance, planned to begin at `0.1.1.0000`. It may drive the existing Photo Presentation layout through explicit start, persisted interval, and a deliberate stop-at-last versus loop policy. Timers, automatic navigation, end behavior, and slideshow state are not implemented in R9-A or R9-A-F1.
+Locally complete at `0.1.1.0000`: timed navigation over the existing natural/failure-skipping image sequence, publication-based duration, Stop-at-end or Loop, manual-navigation reset, and one memory-bounded prepared managed next. `F5`, the checked context menu, and live Presentation Settings control share session state; only duration/end behavior persist. Slideshow reuses Photo Presentation View as its only geometry owner and the existing F4 atomic publication/Color Management path. Owner review/commit and hosted CI remain before selecting another roadmap stage.
 
 ## Later / separate platform milestones
 

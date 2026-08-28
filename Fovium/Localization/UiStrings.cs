@@ -59,6 +59,7 @@ internal static class UiStrings
     public const string CommandZoomOut = "command.zoomOut";
     public const string CommandFit = "command.fit";
     public const string CommandActualSize = "command.actualSize";
+    public const string CommandToggleSlideshow = "command.toggleSlideshow";
     public const string CommandTogglePhotoPresentation = "command.togglePhotoPresentation";
     public const string CommandToggleMatte = "command.toggleMatte";
     public const string CommandFullscreen = "command.fullscreen";
@@ -139,6 +140,14 @@ internal static class UiStrings
         "settings.photoPresentationEdgeMargin";
     public const string SettingsPhotoPresentationExplanation =
         "settings.photoPresentationExplanation";
+    public const string Slideshow = "slideshow.title";
+    public const string SlideshowStart = "slideshow.start";
+    public const string SlideshowStop = "slideshow.stop";
+    public const string SlideshowSlideDuration = "slideshow.slideDuration";
+    public const string SlideshowSeconds = "slideshow.seconds";
+    public const string SlideshowAtEnd = "slideshow.atEnd";
+    public const string SlideshowStopOnLast = "slideshow.stopOnLast";
+    public const string SlideshowStartAgain = "slideshow.startAgain";
     public const string SettingsVersion = "settings.version";
     public const string PickerTitle = "picker.title";
     public const string PickerImageType = "picker.imageType";
@@ -156,6 +165,7 @@ internal static class UiStrings
         ViewerCommand.ZoomOut => CommandZoomOut,
         ViewerCommand.Fit => CommandFit,
         ViewerCommand.ActualSize => CommandActualSize,
+        ViewerCommand.ToggleSlideshow => CommandToggleSlideshow,
         ViewerCommand.TogglePhotoPresentation => CommandTogglePhotoPresentation,
         ViewerCommand.ToggleMatte => CommandToggleMatte,
         ViewerCommand.Fullscreen => CommandFullscreen,

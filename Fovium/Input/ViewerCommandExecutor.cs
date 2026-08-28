@@ -12,6 +12,8 @@ internal interface IViewerCommandTarget
 
     void SetPhotographic100AtCenter();
 
+    void ToggleSlideshow();
+
     void TogglePhotoPresentation();
 
     Task ToggleMatteAsync();
@@ -76,6 +78,7 @@ internal sealed class ViewerCommandExecutor(IViewerCommandTarget target)
             ViewerCommand.ZoomOut => Execute(() => target.ZoomByStepsAtCenter(-1)),
             ViewerCommand.Fit => Execute(target.Fit),
             ViewerCommand.ActualSize => Execute(target.SetPhotographic100AtCenter),
+            ViewerCommand.ToggleSlideshow => Execute(target.ToggleSlideshow),
             ViewerCommand.TogglePhotoPresentation => Execute(target.TogglePhotoPresentation),
             ViewerCommand.ToggleMatte => target.ToggleMatteAsync(),
             ViewerCommand.Fullscreen => Execute(target.ToggleFullscreen),

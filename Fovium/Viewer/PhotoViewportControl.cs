@@ -12,6 +12,7 @@ using Fovium.Loading;
 using Fovium.Presentation;
 using Fovium.Rendering;
 using Fovium.Settings;
+using Fovium.Slideshow;
 using Fovium.Stage;
 
 namespace Fovium.Viewer;
@@ -177,8 +178,74 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 
     internal ManagedPhotoCoordinatorMetrics? MonitorColorMetrics => _managedPhotoCoordinator?.Metrics;
 
+    internal long CurrentManagedSourceBytes => _managedSource?.Source.RetainedBytes ?? 0;
+
     internal Task WaitForManagedPhotoIdleAsync() =>
         _managedPhotoCoordinator?.WaitForIdleAsync() ?? Task.CompletedTask;
+
+    internal async Task<SlideshowPreparationResult> PrepareSlideshowNextAsync(
+        SharedResourceLease<DecodedImage> image,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var descriptor = image.Value.Descriptor;
+        if (ClassifyMonitorState(descriptor) != MonitorColorState.Managed ||
+            _displayProfile.Profile is not { } profile ||
+            _managedPhotoCoordinator is not { } coordinator)
+        {
+            return new SlideshowPreparationResult(
+                SlideshowPreparationStatus.NotRequired,
+                PreparationDuration: stopwatch.Elapsed);
+        }
+
+        var key = CreateManagedKey(image.Value, profile.Identity);
+        if (coordinator.TryAcquire(key, out var existing) && existing is not null)
+        {
+            using (existing)
+            {
+                return new SlideshowPreparationResult(
+                    SlideshowPreparationStatus.Ready,
+                    existing.Source.RetainedBytes,
+                    stopwatch.Elapsed);
+            }
+        }
+
+        var nextBytes = checked((long)descriptor.EncodedSize.Width * descriptor.EncodedSize.Height * 4);
+        var currentBytes = _managedSource?.Source.RetainedBytes ?? 0;
+        if (!SlideshowManagedPreloadPolicy.IsAdmitted(currentBytes, nextBytes))
+        {
+            return new SlideshowPreparationResult(
+                SlideshowPreparationStatus.RejectedByMemory,
+                nextBytes,
+                stopwatch.Elapsed);
+        }
+
+        coordinator.Request(new ManagedPhotoRenderRequest(
+            key,
+            descriptor,
+            image.Value.AcquireRenderLease(),
+            profile.Bytes));
+        await coordinator.WaitForIdleAsync().WaitAsync(cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (_displayProfile.Profile?.Identity != key.DestinationIdentity ||
+            !coordinator.TryAcquire(key, out var prepared) ||
+            prepared is null)
+        {
+            return new SlideshowPreparationResult(
+                SlideshowPreparationStatus.Stale,
+                nextBytes,
+                stopwatch.Elapsed);
+        }
+
+        using (prepared)
+        {
+            return new SlideshowPreparationResult(
+                SlideshowPreparationStatus.Ready,
+                prepared.Source.RetainedBytes,
+                stopwatch.Elapsed);
+        }
+    }
 
     internal AtomicPhotoPresentationState CaptureAtomicPresentationState() => new(
         _image?.Value.Identity,
@@ -351,7 +418,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
         }
     }
 
-    internal void SetDisplayProfile(DisplayProfileResolution profile)
+    internal bool SetDisplayProfile(DisplayProfileResolution profile)
     {
         var wasResolved = _displayProfileResolved;
         _displayProfileResolved = true;
@@ -361,7 +428,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
         _displayProfile = profile;
         if (wasResolved && unchanged)
         {
-            return;
+            return false;
         }
 
         _requestedManagedKey = null;
@@ -376,6 +443,8 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
         {
             PrepareCurrentManagedSource();
         }
+
+        return true;
     }
 
     internal void ShutdownMonitorColorManagement()
@@ -987,6 +1056,20 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 
         var aligned = _viewport.PhysicalAlignedOrigin();
         return destination with { X = aligned.X, Y = aligned.Y };
+    }
+
+    internal void CancelPendingPresentation()
+    {
+        if (_pendingPresentation is null)
+        {
+            return;
+        }
+
+        DisposePendingPresentation();
+        _managedPhotoCoordinator?.Clear();
+        _requestedManagedKey = _managedSource?.Source.Key;
+        _managedPresentationFailed = false;
+        PublishPhotoPresentation();
     }
 
     private PhotoPresentationLayoutResult CalculatePhotoPresentationLayout(

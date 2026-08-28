@@ -40,4 +40,33 @@ internal sealed class ImageSequence
             yield return index;
         }
     }
+
+    public IEnumerable<int> EnumerateAfter(
+        int currentIndex,
+        NavigationDirection direction,
+        bool wrap)
+    {
+        if (currentIndex < 0 || currentIndex >= Paths.Count)
+        {
+            throw new ArgumentOutOfRangeException(nameof(currentIndex));
+        }
+
+        var step = (int)direction;
+        var index = currentIndex;
+        for (var visited = 0; visited < Paths.Count - 1; visited++)
+        {
+            index += step;
+            if (index < 0 || index >= Paths.Count)
+            {
+                if (!wrap)
+                {
+                    yield break;
+                }
+
+                index = direction == NavigationDirection.Next ? 0 : Paths.Count - 1;
+            }
+
+            yield return index;
+        }
+    }
 }

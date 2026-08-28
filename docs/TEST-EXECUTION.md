@@ -140,3 +140,20 @@ dotnet test Fovium.Tests/Fovium.Tests.csproj -c Release --filter "FullyQualified
 ```
 
 The suite covers seven required aspect ratios across RenderScaling `1.00`/`1.25`/`1.50`/`2.00`, Matte off plus Solid/Rounded/Soft/Angular, physical percentage margins, no upscale beyond photographic 100%, tiny-window safety, independent orientation layout, live Matte/margin/resize/fullscreen calculation, session-only activation, additive `F6` conflict handling, geometry-input suppression/restoration, and explicit Blink unavailability. Controlled F4 publication retains the old portrait/landscape layout until matching pixels are ready and atomically switches photo, Matte, Picker/Histogram/Photo Info/markup authority with zero geometry CMM requests. Release manual smoke remains required for visual balance, context-menu state, fullscreen, and return to ordinary Fit/zoom.
+
+## R9-B Slideshow
+
+The deterministic controller/sequence/prepared-next/input/settings suite uses controlled schedulers and completion sources; it must not sleep for configured slide durations:
+
+```powershell
+dotnet test Fovium.Tests/Fovium.Tests.csproj -c Release --filter "FullyQualifiedName~Slideshow|FullyQualifiedName~ViewerEscapePolicy|FullyQualifiedName~ImageSequenceTests|FullyQualifiedName~ViewerSessionTests|FullyQualifiedName~ViewerCommandExecutorTests|FullyQualifiedName~SettingsServiceTests|FullyQualifiedName~LocalizationTests"
+```
+
+Real local decode/CMM cadence and retained-byte evidence is opt-in and uses ignored local imaging assets. Separate paths with the platform path separator:
+
+```powershell
+$env:FOVIUM_SLIDESHOW_PERF_IMAGES = 'C:\path\15mp.png;C:\path\24mp.png'
+dotnet test Fovium.Tests/Fovium.Tests.csproj -c Release --filter "FullyQualifiedName~SlideshowPerformanceSmokeTests" --logger "console;verbosity=detailed"
+```
+
+`FOVIUM_SLIDESHOW_DIAGNOSTICS=1` prints bounded starts/stops/natural stops/loops, expirations, manual resets, presented count, prepared hits/misses/rejections/stale results, last visible duration/transition wait, and current/prepared managed bytes at viewer shutdown. These counters and local screenshots/logs are diagnostic evidence, not committed resources. Desktop acceptance remains a real Windows mixed-orientation run covering F5, checked menu, live Settings, Stop-at-end, Loop, Right Arrow, F11, Esc, Matte continuity, and zero geometry-only CMM work.

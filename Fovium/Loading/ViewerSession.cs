@@ -187,6 +187,39 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
     public bool RefreshCachedCost(string path, T expectedValue) =>
         _cache.RefreshCost(path, expectedValue);
 
+    public bool CancelPendingAndReanchor(int presentedIndex)
+    {
+        ImageSequence sequence;
+        long sessionIdentity;
+        long generation;
+        lock (_sync)
+        {
+            ThrowIfDisposed();
+            if (_sequence is null ||
+                presentedIndex < 0 ||
+                presentedIndex >= _sequence.Paths.Count)
+            {
+                return false;
+            }
+
+            sequence = _sequence;
+            CancelForegroundAndPreload();
+            _currentIndex = presentedIndex;
+            _requestedIndex = presentedIndex;
+            sessionIdentity = _sessionIdentity;
+            generation = ++_generation;
+            _cache.Protect(sequence.Paths[presentedIndex]);
+        }
+
+        StartAdjacentPreload(
+            sequence,
+            presentedIndex,
+            sessionIdentity,
+            generation,
+            preferredDirection: NavigationDirection.Next);
+        return true;
+    }
+
     public Task WaitForAdjacentPreloadAsync(CancellationToken cancellationToken)
     {
         Task preload;
@@ -266,10 +299,16 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
 
     public Task<SelectionResult<T>> NavigateAsync(
         NavigationDirection direction,
+        CancellationToken cancellationToken = default) =>
+        NavigateAsync(direction, wrap: false, cancellationToken);
+
+    public Task<SelectionResult<T>> NavigateAsync(
+        NavigationDirection direction,
+        bool wrap,
         CancellationToken cancellationToken = default)
     {
         ImageSequence sequence;
-        int requestedIndex;
+        int fromIndex;
         long sessionIdentity;
         long generation;
         CancellationToken token;
@@ -277,14 +316,20 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
         lock (_sync)
         {
             ThrowIfDisposed();
-            if (_sequence is null || !_sequence.CanMoveFrom(_requestedIndex, direction))
+            if (_sequence is null)
             {
                 return Task.FromResult(SelectionResult<T>.Simple(SelectionStatus.NoMove, _generation));
             }
 
             sequence = _sequence;
-            requestedIndex = _requestedIndex + (int)direction;
-            _requestedIndex = requestedIndex;
+            fromIndex = _requestedIndex;
+            using var candidates = sequence.EnumerateAfter(fromIndex, direction, wrap).GetEnumerator();
+            if (!candidates.MoveNext())
+            {
+                return Task.FromResult(SelectionResult<T>.Simple(SelectionStatus.NoMove, _generation));
+            }
+
+            _requestedIndex = candidates.Current;
             sessionIdentity = _sessionIdentity;
             CancelForegroundAndPreload();
             generation = ++_generation;
@@ -297,8 +342,9 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
 
         var task = LoadViableAsync(
             sequence,
-            requestedIndex,
+            fromIndex,
             direction,
+            wrap,
             sessionIdentity,
             generation,
             token);
@@ -308,6 +354,12 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
 
     public Task<InspectionAcquisitionResult<T>> AcquireNeighborForInspectionAsync(
         NavigationDirection direction,
+        CancellationToken cancellationToken = default) =>
+        AcquireNeighborForInspectionAsync(direction, wrap: false, cancellationToken);
+
+    public Task<InspectionAcquisitionResult<T>> AcquireNeighborForInspectionAsync(
+        NavigationDirection direction,
+        bool wrap,
         CancellationToken cancellationToken = default)
     {
         ImageSequence sequence;
@@ -321,7 +373,7 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
             ThrowIfDisposed();
             if (_sequence is null ||
                 _requestedIndex != _currentIndex ||
-                !_sequence.CanMoveFrom(_currentIndex, direction))
+                !_sequence.EnumerateAfter(_currentIndex, direction, wrap).Any())
             {
                 return Task.FromResult(
                     InspectionAcquisitionResult<T>.Simple(InspectionAcquisitionStatus.Unavailable));
@@ -343,6 +395,7 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
             direction,
             sessionIdentity,
             generation,
+            wrap,
             linkedCancellation.Token);
         _ = CompleteInspectionTrackingAsync(task, tracking, linkedCancellation);
         return task;
@@ -379,6 +432,17 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
         if (_loader is IDisposable disposableLoader)
         {
             disposableLoader.Dispose();
+        }
+    }
+
+    public bool IsNavigationPending
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return _requestedIndex != _currentIndex;
+            }
         }
     }
 
@@ -450,8 +514,9 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
 
     private async Task<SelectionResult<T>> LoadViableAsync(
         ImageSequence sequence,
-        int startIndex,
+        int fromIndex,
         NavigationDirection direction,
+        bool wrap,
         long sessionIdentity,
         long generation,
         CancellationToken cancellationToken)
@@ -459,7 +524,7 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
         var stopwatch = Stopwatch.StartNew();
         try
         {
-            foreach (var index in sequence.EnumerateFrom(startIndex, direction))
+            foreach (var index in sequence.EnumerateAfter(fromIndex, direction, wrap))
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var path = sequence.Paths[index];
@@ -537,13 +602,14 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
         NavigationDirection direction,
         long sessionIdentity,
         long generation,
+        bool wrap,
         CancellationToken cancellationToken)
     {
         var stopwatch = Stopwatch.StartNew();
         var interruptedPreload = false;
         try
         {
-            foreach (var index in sequence.EnumerateFrom(currentIndex + (int)direction, direction))
+            foreach (var index in sequence.EnumerateAfter(currentIndex, direction, wrap))
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var path = sequence.Paths[index];

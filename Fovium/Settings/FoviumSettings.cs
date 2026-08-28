@@ -24,6 +24,8 @@ internal sealed record FoviumSettings
     public PhotoPresentationViewSettings PhotoPresentationView { get; init; } =
         PhotoPresentationViewSettings.Default;
 
+    public SlideshowSettings Slideshow { get; init; } = SlideshowSettings.Default;
+
     public SettingsWindowSizeSettings SettingsWindowSize { get; init; } =
         SettingsWindowSizeSettings.Default;
 
@@ -42,6 +44,7 @@ internal sealed record FoviumSettings
             ? ImageChangeViewPolicy
             : ImageChangeViewPolicy.KeepCurrentScale,
         PhotoPresentationView = (PhotoPresentationView ?? PhotoPresentationViewSettings.Default).Normalize(),
+        Slideshow = (Slideshow ?? SlideshowSettings.Default).Normalize(),
         SettingsWindowSize = (SettingsWindowSize ?? SettingsWindowSizeSettings.Default).Normalize(),
         Stage = (Stage ?? StageSettings.Default).Normalize(),
         Shortcuts = (Shortcuts ?? ShortcutSettings.Default).Normalize(),

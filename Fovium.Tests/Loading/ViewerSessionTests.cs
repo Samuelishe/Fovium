@@ -7,6 +7,57 @@ namespace Fovium.Tests.Loading;
 public sealed class ViewerSessionTests
 {
     [Fact]
+    public async Task WrappedNavigationMovesLastToFirstWithoutRepeatingCurrent()
+    {
+        var loader = FakeImageLoader.Immediate(path => FakeLoadResult.Success(path));
+        await using var session = CreateSession(loader);
+        using var opened = (await session.OpenAsync(
+            new ImageSequence(["A.jpg", "B.jpg", "C.jpg"], 2))).Image;
+        await session.WaitForAdjacentPreloadAsync(CancellationToken.None);
+
+        var wrapped = await session.NavigateAsync(NavigationDirection.Next, wrap: true);
+        using var image = wrapped.Image;
+
+        Assert.Equal(SelectionStatus.Published, wrapped.Status);
+        Assert.Equal("A.jpg", Path.GetFileName(wrapped.Path));
+        Assert.Equal(0, session.CurrentIndex);
+    }
+
+    [Fact]
+    public async Task WrappedNavigationSkipsBrokenTailAndFindsFirstViableImage()
+    {
+        var loader = FakeImageLoader.Immediate(path =>
+            Path.GetFileName(path) == "C.jpg"
+                ? FakeLoadResult.Failure(ImageLoadErrorKind.Corrupt)
+                : FakeLoadResult.Success(path));
+        await using var session = CreateSession(loader);
+        using var opened = (await session.OpenAsync(
+            new ImageSequence(["A.jpg", "B.jpg", "C.jpg"], 1))).Image;
+
+        var wrapped = await session.NavigateAsync(NavigationDirection.Next, wrap: true);
+        using var image = wrapped.Image;
+
+        Assert.Equal(SelectionStatus.Published, wrapped.Status);
+        Assert.Equal("A.jpg", Path.GetFileName(wrapped.Path));
+        Assert.Equal(0, session.CurrentIndex);
+    }
+
+    [Fact]
+    public async Task WrappedSingleImageSequenceDoesNotRepublishItself()
+    {
+        var loader = FakeImageLoader.Immediate(path => FakeLoadResult.Success(path));
+        await using var session = CreateSession(loader);
+        using var opened = (await session.OpenAsync(new ImageSequence(["Only.jpg"], 0))).Image;
+        var calls = loader.Calls.Count;
+
+        var result = await session.NavigateAsync(NavigationDirection.Next, wrap: true);
+
+        Assert.Equal(SelectionStatus.NoMove, result.Status);
+        Assert.Null(result.Image);
+        Assert.Equal(calls, loader.Calls.Count);
+    }
+
+    [Fact]
     public async Task AdjacentProgressPublishesReadyNextBeforeBlockedPreviousCompletes()
     {
         var previousStarted = new TaskCompletionSource(

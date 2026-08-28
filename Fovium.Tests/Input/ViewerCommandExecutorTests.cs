@@ -57,6 +57,17 @@ public sealed class ViewerCommandExecutorTests
         Assert.Equal(0, target.PresentationToggleCount);
     }
 
+    [Fact]
+    public async Task SlideshowCommandUsesDedicatedSessionToggle()
+    {
+        var target = new RecordingTarget();
+
+        await new ViewerCommandExecutor(target).ExecuteAsync(ViewerCommand.ToggleSlideshow);
+
+        Assert.Equal(1, target.SlideshowToggleCount);
+        Assert.Equal(0, target.PhotoPresentationToggleCount);
+    }
+
     [Theory]
     [InlineData((int)ViewerCommand.ToggleHighlight)]
     [InlineData((int)ViewerCommand.ToggleMarkupTools)]
@@ -158,6 +169,8 @@ public sealed class ViewerCommandExecutorTests
 
         public int PhotoPresentationToggleCount { get; private set; }
 
+        public int SlideshowToggleCount { get; private set; }
+
         public List<string> MarkupActions { get; } = [];
 
         public double ThicknessAdjustment { get; private set; }
@@ -177,6 +190,8 @@ public sealed class ViewerCommandExecutorTests
         public void Fit() => FitCount++;
 
         public void SetPhotographic100AtCenter() => ActualSizeCount++;
+
+        public void ToggleSlideshow() => SlideshowToggleCount++;
 
         public void TogglePhotoPresentation() => PhotoPresentationToggleCount++;
 

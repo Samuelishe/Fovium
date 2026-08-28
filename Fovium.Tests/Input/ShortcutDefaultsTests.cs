@@ -11,6 +11,7 @@ public sealed class ShortcutDefaultsTests
     [InlineData((int)ViewerCommand.ZoomOut, "Minus", (int)ShortcutModifiers.None)]
     [InlineData((int)ViewerCommand.Fit, "0", (int)ShortcutModifiers.None)]
     [InlineData((int)ViewerCommand.ActualSize, "1", (int)ShortcutModifiers.None)]
+    [InlineData((int)ViewerCommand.ToggleSlideshow, "F5", (int)ShortcutModifiers.None)]
     [InlineData((int)ViewerCommand.ToggleMatte, "M", (int)ShortcutModifiers.None)]
     [InlineData((int)ViewerCommand.Fullscreen, "F11", (int)ShortcutModifiers.None)]
     [InlineData((int)ViewerCommand.Open, "O", (int)ShortcutModifiers.Control)]
@@ -60,6 +61,7 @@ public sealed class ShortcutDefaultsTests
         Assert.Equal("viewer.zoomOut", ViewerCommands.GetId(ViewerCommand.ZoomOut));
         Assert.Equal("viewer.fit", ViewerCommands.GetId(ViewerCommand.Fit));
         Assert.Equal("viewer.actualSize", ViewerCommands.GetId(ViewerCommand.ActualSize));
+        Assert.Equal("viewer.toggleSlideshow", ViewerCommands.GetId(ViewerCommand.ToggleSlideshow));
         Assert.Equal("viewer.toggleMatte", ViewerCommands.GetId(ViewerCommand.ToggleMatte));
         Assert.Equal("viewer.fullscreen", ViewerCommands.GetId(ViewerCommand.Fullscreen));
         Assert.Equal("viewer.open", ViewerCommands.GetId(ViewerCommand.Open));

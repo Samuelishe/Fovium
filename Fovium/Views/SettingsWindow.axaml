@@ -108,6 +108,31 @@
     <TabItem x:Name="PresentationTab">
       <ScrollViewer>
         <StackPanel Margin="12,18" Spacing="12">
+          <TextBlock x:Name="SlideshowHeading" FontSize="18" FontWeight="SemiBold" />
+          <CheckBox x:Name="SlideshowEnabledOption" />
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+            <TextBlock x:Name="SlideshowDurationLabel" VerticalAlignment="Center" />
+            <Slider x:Name="SlideshowDurationSlider"
+                    Grid.Column="1"
+                    MinWidth="220"
+                    Minimum="1"
+                    Maximum="60"
+                    TickFrequency="1"
+                    IsSnapToTickEnabled="True" />
+            <TextBlock x:Name="SlideshowDurationValue"
+                       Grid.Column="2"
+                       MinWidth="72"
+                       TextAlignment="Right"
+                       VerticalAlignment="Center" />
+          </Grid>
+          <TextBlock x:Name="SlideshowAtEndLabel" FontWeight="SemiBold" />
+          <RadioButton x:Name="SlideshowStopAtEndOption"
+                       Margin="16,0,0,0"
+                       GroupName="SlideshowEndBehavior" />
+          <RadioButton x:Name="SlideshowLoopOption"
+                       Margin="16,0,0,0"
+                       GroupName="SlideshowEndBehavior" />
+          <Separator Margin="0,4" />
           <CheckBox x:Name="EnableMarkupOption" />
           <Separator Margin="0,4" />
           <TextBlock x:Name="HighlightHeading" FontSize="18" FontWeight="SemiBold" />

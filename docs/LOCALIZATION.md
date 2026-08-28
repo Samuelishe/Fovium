@@ -32,6 +32,8 @@ R8-A localizes Color Picker command/panel chrome, empty hint, history label, Tra
 
 R9-A localizes Photo Presentation command/context-menu copy, its Viewing subsection, Edge margin label, and the explanation that the photograph plus Matte stays inside the presentation margin. The stable `viewer.togglePhotoPresentation` identity, serialized property names, percentage value, and active session state are locale-independent; English fallback remains mandatory.
 
+R9-B localizes Slideshow, its Start/Stop live state, Slide duration/seconds, end-of-sequence prompt, Stop on last image, and Start again from first image in both English and natural Russian. The stable `viewer.toggleSlideshow` identity, numeric seconds, serialized enum/property names, timer state, and diagnostic names remain locale-independent. Catalog validation requires exact EN/RU key parity and English fallback.
+
 ## Locale resolution
 
 Before an explicit user choice:

@@ -9,6 +9,7 @@ using Fovium.Input;
 using Fovium.Localization;
 using Fovium.Presentation;
 using Fovium.Settings;
+using Fovium.Slideshow;
 using Fovium.Stage;
 using Fovium.Viewer;
 
@@ -19,11 +20,17 @@ internal sealed partial class SettingsWindow : Window
     private readonly SettingsService _settings;
     private readonly Localizer _localizer;
     private readonly PhotoPresentationViewSession _photoPresentationView;
+    private readonly SlideshowSession _slideshow;
     private readonly RadioButton _keepCurrentScaleOption;
     private readonly RadioButton _fitEachImageOption;
     private readonly CheckBox _photoPresentationEnabledOption;
     private readonly Slider _photoPresentationMarginSlider;
     private readonly TextBlock _photoPresentationMarginValue;
+    private readonly CheckBox _slideshowEnabledOption;
+    private readonly Slider _slideshowDurationSlider;
+    private readonly TextBlock _slideshowDurationValue;
+    private readonly RadioButton _slideshowStopAtEndOption;
+    private readonly RadioButton _slideshowLoopOption;
     private readonly CheckBox _monitorColorManagementOption;
     private readonly RadioButton _blackStageOption;
     private readonly RadioButton _neutralStageOption;
@@ -64,11 +71,13 @@ internal sealed partial class SettingsWindow : Window
         SettingsService settings,
         Localizer localizer,
         PhotoPresentationViewSession photoPresentationView,
+        SlideshowSession slideshow,
         Avalonia.Size initialSize)
     {
         _settings = settings;
         _localizer = localizer;
         _photoPresentationView = photoPresentationView;
+        _slideshow = slideshow;
         InitializeComponent();
         Width = initialSize.Width;
         Height = initialSize.Height;
@@ -90,6 +99,11 @@ internal sealed partial class SettingsWindow : Window
             FindRequired<CheckBox>("PhotoPresentationEnabledOption");
         _photoPresentationMarginSlider = FindRequired<Slider>("PhotoPresentationMarginSlider");
         _photoPresentationMarginValue = FindRequired<TextBlock>("PhotoPresentationMarginValue");
+        _slideshowEnabledOption = FindRequired<CheckBox>("SlideshowEnabledOption");
+        _slideshowDurationSlider = FindRequired<Slider>("SlideshowDurationSlider");
+        _slideshowDurationValue = FindRequired<TextBlock>("SlideshowDurationValue");
+        _slideshowStopAtEndOption = FindRequired<RadioButton>("SlideshowStopAtEndOption");
+        _slideshowLoopOption = FindRequired<RadioButton>("SlideshowLoopOption");
         _monitorColorManagementOption = FindRequired<CheckBox>("MonitorColorManagementOption");
         _blackStageOption = FindRequired<RadioButton>("BlackStageOption");
         _neutralStageOption = FindRequired<RadioButton>("NeutralStageOption");
@@ -137,6 +151,13 @@ internal sealed partial class SettingsWindow : Window
             localizer[UiStrings.SettingsPhotoPresentationEdgeMargin];
         FindRequired<TextBlock>("PhotoPresentationExplanation").Text =
             localizer[UiStrings.SettingsPhotoPresentationExplanation];
+        FindRequired<TextBlock>("SlideshowHeading").Text = localizer[UiStrings.Slideshow];
+        FindRequired<TextBlock>("SlideshowDurationLabel").Text =
+            localizer[UiStrings.SlideshowSlideDuration];
+        FindRequired<TextBlock>("SlideshowAtEndLabel").Text =
+            localizer[UiStrings.SlideshowAtEnd];
+        _slideshowStopAtEndOption.Content = localizer[UiStrings.SlideshowStopOnLast];
+        _slideshowLoopOption.Content = localizer[UiStrings.SlideshowStartAgain];
         FindRequired<TextBlock>("MonitorColorManagementHeading").Text =
             localizer[UiStrings.ColorMonitorManagement];
         _monitorColorManagementOption.Content = localizer[UiStrings.ColorUseActiveMonitorProfile];
@@ -181,9 +202,11 @@ internal sealed partial class SettingsWindow : Window
         CreateShortcutRows();
         ApplySettings(settings.Current);
         ApplyPhotoPresentationViewState();
+        ApplySlideshowState();
         SubscribeEvents();
         _settings.SettingsChanged += OnSettingsChanged;
         _photoPresentationView.Changed += OnPhotoPresentationViewChanged;
+        _slideshow.Changed += OnSlideshowChanged;
         Resized += OnWindowResized;
         Closed += OnClosed;
         KeyDown += OnShortcutCaptureKeyDown;
@@ -205,6 +228,16 @@ internal sealed partial class SettingsWindow : Window
             }
         };
         _photoPresentationMarginSlider.ValueChanged += OnPhotoPresentationMarginChanged;
+        _slideshowEnabledOption.IsCheckedChanged += (_, _) =>
+        {
+            if (!_initializing && (_slideshowEnabledOption.IsChecked == true) != _slideshow.IsRunning)
+            {
+                _slideshow.Toggle();
+            }
+        };
+        _slideshowDurationSlider.ValueChanged += OnSlideshowDurationChanged;
+        _slideshowStopAtEndOption.IsCheckedChanged += OnSlideshowEndBehaviorChanged;
+        _slideshowLoopOption.IsCheckedChanged += OnSlideshowEndBehaviorChanged;
         _monitorColorManagementOption.IsCheckedChanged += async (_, _) =>
         {
             if (!_initializing)
@@ -352,6 +385,35 @@ internal sealed partial class SettingsWindow : Window
         UpdatePhotoPresentationMarginText(margin);
         await _settings.SetPhotoPresentationViewAsync(
             _settings.Current.PhotoPresentationView with { EdgeMarginPercent = margin });
+    }
+
+    private async void OnSlideshowDurationChanged(
+        object? sender,
+        RangeBaseValueChangedEventArgs e)
+    {
+        if (_initializing)
+        {
+            return;
+        }
+
+        var seconds = (int)Math.Round(_slideshowDurationSlider.Value);
+        UpdateSlideshowDurationText(seconds);
+        await _settings.SetSlideshowAsync(
+            _settings.Current.Slideshow with { SlideDurationSeconds = seconds });
+    }
+
+    private async void OnSlideshowEndBehaviorChanged(object? sender, RoutedEventArgs e)
+    {
+        if (_initializing)
+        {
+            return;
+        }
+
+        var behavior = _slideshowLoopOption.IsChecked == true
+            ? SlideshowEndBehavior.Loop
+            : SlideshowEndBehavior.StopAtEnd;
+        await _settings.SetSlideshowAsync(
+            _settings.Current.Slideshow with { EndBehavior = behavior });
     }
 
     private async void SetBackgroundIfChecked(RadioButton option, StageBackgroundMode mode)
@@ -535,6 +597,27 @@ internal sealed partial class SettingsWindow : Window
         _initializing = false;
     }
 
+    private void OnSlideshowChanged(object? sender, EventArgs e)
+    {
+        if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+        {
+            ApplySlideshowState();
+        }
+        else
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(ApplySlideshowState);
+        }
+    }
+
+    private void ApplySlideshowState()
+    {
+        _initializing = true;
+        _slideshowEnabledOption.IsChecked = _slideshow.IsRunning;
+        _slideshowEnabledOption.Content = _localizer[
+            _slideshow.IsRunning ? UiStrings.SlideshowStop : UiStrings.SlideshowStart];
+        _initializing = false;
+    }
+
     private void ApplySettings(FoviumSettings settings)
     {
         _initializing = true;
@@ -544,6 +627,11 @@ internal sealed partial class SettingsWindow : Window
             settings.ImageChangeViewPolicy == ImageChangeViewPolicy.FitEachImage;
         _photoPresentationMarginSlider.Value = settings.PhotoPresentationView.EdgeMarginPercent;
         UpdatePhotoPresentationMarginText(settings.PhotoPresentationView.EdgeMarginPercent);
+        _slideshowDurationSlider.Value = settings.Slideshow.SlideDurationSeconds;
+        UpdateSlideshowDurationText(settings.Slideshow.SlideDurationSeconds);
+        _slideshowStopAtEndOption.IsChecked =
+            settings.Slideshow.EndBehavior == SlideshowEndBehavior.StopAtEnd;
+        _slideshowLoopOption.IsChecked = settings.Slideshow.EndBehavior == SlideshowEndBehavior.Loop;
         _monitorColorManagementOption.IsChecked = settings.MonitorColorManagementEnabled;
         _blackStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.Black;
         _neutralStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.Neutral;
@@ -586,6 +674,9 @@ internal sealed partial class SettingsWindow : Window
     private void UpdatePhotoPresentationMarginText(double margin) =>
         _photoPresentationMarginValue.Text = $"{margin:0.#}%";
 
+    private void UpdateSlideshowDurationText(int seconds) =>
+        _slideshowDurationValue.Text = $"{seconds} {_localizer[UiStrings.SlideshowSeconds]}";
+
     private string LocalizeMatteStyle(MatteStyle style) => _localizer[style switch
     {
         MatteStyle.Solid => UiStrings.StageMatteSolid,
@@ -618,6 +709,7 @@ internal sealed partial class SettingsWindow : Window
         _windowSizePersistenceTimer.Tick -= OnWindowSizePersistenceTimerTick;
         _settings.SettingsChanged -= OnSettingsChanged;
         _photoPresentationView.Changed -= OnPhotoPresentationViewChanged;
+        _slideshow.Changed -= OnSlideshowChanged;
         Resized -= OnWindowResized;
     }
 

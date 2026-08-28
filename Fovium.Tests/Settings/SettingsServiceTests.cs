@@ -8,6 +8,25 @@ namespace Fovium.Tests.Settings;
 public sealed class SettingsServiceTests
 {
     [Fact]
+    public async Task SlideshowConfigurationPersistsWithoutChangingSessionOrOtherSettings()
+    {
+        var store = new RecordingSettingsStore();
+        using var service = new SettingsService(store);
+        var slideshow = new SlideshowSettings
+        {
+            SlideDurationSeconds = 8,
+            EndBehavior = SlideshowEndBehavior.Loop,
+        };
+
+        await service.SetSlideshowAsync(slideshow);
+
+        Assert.Equal(slideshow, service.Current.Slideshow);
+        Assert.Equal(slideshow, store.Saved?.Slideshow);
+        Assert.Equal(StageSettings.Default, service.Current.Stage);
+        Assert.Equal(PhotoPresentationViewSettings.Default, service.Current.PhotoPresentationView);
+    }
+
+    [Fact]
     public async Task MonitorColorManagementPreferencePersistsWithoutChangingOtherSettings()
     {
         var store = new RecordingSettingsStore();

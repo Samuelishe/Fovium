@@ -115,6 +115,33 @@ public sealed class LocalizationTests
     }
 
     [Theory]
+    [InlineData("en-US", "Slideshow", "Start slideshow", "Stop slideshow", "Slide duration", "seconds", "At end of sequence", "Stop on last image", "Start again from first image")]
+    [InlineData("ru-RU", "Слайд-шоу", "Запустить слайд-шоу", "Остановить слайд-шоу", "Длительность показа", "секунд", "В конце последовательности", "Остановиться на последнем изображении", "Начать снова с первого изображения")]
+    public void SlideshowCatalogContainsEveryActivationAndConfigurationString(
+        string cultureName,
+        string title,
+        string start,
+        string stop,
+        string duration,
+        string seconds,
+        string atEnd,
+        string stopOnLast,
+        string startAgain)
+    {
+        var localizer = Localizer.Create(CultureInfo.GetCultureInfo(cultureName));
+
+        Assert.Equal(title, localizer[UiStrings.CommandToggleSlideshow]);
+        Assert.Equal(title, localizer[UiStrings.Slideshow]);
+        Assert.Equal(start, localizer[UiStrings.SlideshowStart]);
+        Assert.Equal(stop, localizer[UiStrings.SlideshowStop]);
+        Assert.Equal(duration, localizer[UiStrings.SlideshowSlideDuration]);
+        Assert.Equal(seconds, localizer[UiStrings.SlideshowSeconds]);
+        Assert.Equal(atEnd, localizer[UiStrings.SlideshowAtEnd]);
+        Assert.Equal(stopOnLast, localizer[UiStrings.SlideshowStopOnLast]);
+        Assert.Equal(startAgain, localizer[UiStrings.SlideshowStartAgain]);
+    }
+
+    [Theory]
     [InlineData("en-US", "Stage", "Black", "Neutral", "Custom", "Ambient", "Matte")]
     [InlineData("ru-RU", "Фон", "Чёрный", "Нейтральный", "Свой цвет", "Ambient", "Паспарту")]
     public void StageCatalogsContainEveryBackgroundAndIndependentMatte(

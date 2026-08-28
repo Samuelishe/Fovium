@@ -96,6 +96,7 @@ internal static class ShortcutDefaults
         [ViewerCommands.GetId(ViewerCommand.ZoomOut)] = new("Minus"),
         [ViewerCommands.GetId(ViewerCommand.Fit)] = new("0"),
         [ViewerCommands.GetId(ViewerCommand.ActualSize)] = new("1"),
+        [ViewerCommands.GetId(ViewerCommand.ToggleSlideshow)] = new("F5"),
         [ViewerCommands.GetId(ViewerCommand.TogglePhotoPresentation)] = new("F6"),
         [ViewerCommands.GetId(ViewerCommand.ToggleMatte)] = new("M"),
         [ViewerCommands.GetId(ViewerCommand.Fullscreen)] = new("F11"),

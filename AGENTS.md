@@ -33,6 +33,7 @@ Do not load every document by default. If documents conflict, follow the owner n
 | Any nontrivial task | [`docs/PROJECT-STATE.md`](docs/PROJECT-STATE.md) |
 | Product, feature, or UX | [`docs/PROJECT-VISION.md`](docs/PROJECT-VISION.md) + [`docs/UX-CONTRACT.md`](docs/UX-CONTRACT.md) |
 | Avalonia or view interaction | [`docs/UX-CONTRACT.md`](docs/UX-CONTRACT.md) + [`docs/RENDERING.md`](docs/RENDERING.md) |
+| Slideshow, timed navigation, or slideshow preparation | [`docs/SLIDESHOW.md`](docs/SLIDESHOW.md) + [`docs/UX-CONTRACT.md`](docs/UX-CONTRACT.md) + [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md) |
 | Zoom, DPI, viewport, or rendering | [`docs/RENDERING.md`](docs/RENDERING.md) |
 | Decode or orientation | [`docs/IMAGING-PIPELINE.md`](docs/IMAGING-PIPELINE.md) |
 | Supported formats or per-format capabilities | [`docs/FORMAT-SUPPORT.md`](docs/FORMAT-SUPPORT.md) + [`docs/IMAGING-PIPELINE.md`](docs/IMAGING-PIPELINE.md) |

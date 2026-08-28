@@ -5,6 +5,24 @@ namespace Fovium.Tests.Navigation;
 public sealed class ImageSequenceTests
 {
     [Fact]
+    public void WrappedForwardEnumerationVisitsEveryOtherIndexExactlyOnce()
+    {
+        var sequence = new ImageSequence(["A.jpg", "B.jpg", "C.jpg"], 1);
+
+        var indices = sequence.EnumerateAfter(1, NavigationDirection.Next, wrap: true).ToArray();
+
+        Assert.Equal([2, 0], indices);
+    }
+
+    [Fact]
+    public void SingleItemWrappedEnumerationHasNoSelfCandidate()
+    {
+        var sequence = new ImageSequence(["Only.jpg"], 0);
+
+        Assert.Empty(sequence.EnumerateAfter(0, NavigationDirection.Next, wrap: true));
+    }
+
+    [Fact]
     public void ExplicitSequencePreservesInputOrder()
     {
         var sequence = new ImageSequence(["A.jpg", "D.jpg", "F.png"], 0);

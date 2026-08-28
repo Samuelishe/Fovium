@@ -340,3 +340,11 @@ Status: Locally ready in R9-A.
 Photo Presentation View starts disabled, is toggled by stable Global Viewing command `viewer.togglePhotoPresentation` (`F6` default), and persists only its edge-margin configuration. One pure geometry owner fits each actually presented oriented photograph plus canonical Matte outer extent inside an equal inset measured as a percentage of the shorter physical viewport dimension; default is `4%`, range `0–15%`. Stage is background, not fit content. Normal image-change policy is untouched and leaving the mode enters ordinary Fit.
 
 The mode disables wheel/command/double-click zoom, drag/Hand pan, Peek, and initially Blink rather than exposing incorrect comparison geometry. Picker, Histogram, Photo Info, Highlight, and non-Hand markup remain. Layout, resize, fullscreen, Matte, and margin changes are synchronous geometry only and never cause CMM work. F4 atomic publication remains authoritative: pending target geometry cannot appear before matching photograph pixels and source-bound authority.
+
+## D-056 — Slideshow is publication-timed navigation with one bounded next
+
+Status: Locally ready in R9-B.
+
+One session-local controller drives the existing natural/failure-skipping sequence and uses Photo Presentation View as its sole layout owner. F5, context menu, and Settings share Running state; only whole-second duration and Stop-at-end/Loop policy persist. A slide countdown begins only when the fully ready photograph is atomically published, never when navigation/decode/CMM is requested. Slow work therefore extends the old complete frame and cannot queue later ticks. Manual navigation remains latest-wins and restarts time at actual publication; explicit F5/Esc stop revokes automatic work.
+
+Stop-at-end leaves the last photograph and presentation layout visible. Loop wraps once through other sequence indices and becomes quiescent when no other viable image exists. Speculation reuses decoded neighbor inspection and the existing managed coordinator for one exact source/destination next only; next is capped at 128 MiB and current plus next at 256 MiB. Stale destination/selection work cannot publish, admission rejection never skips a valid image, and F4 continues to atomically commit photograph, geometry, Matte/Ambient, overlays, and presented identity.

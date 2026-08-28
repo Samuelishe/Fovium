@@ -32,6 +32,7 @@ Temporary overlays are acceptable only in response to a direct action and should
 | `I` | Show/hide the movable Photo Info panel for the currently presented photograph (default binding) |
 | `G` | Show/hide the movable RGB Histogram panel for the currently presented photograph (default binding) |
 | `K` | Show/hide the movable photographic Color Picker panel (default binding) |
+| `F5` | Start/stop session-local Slideshow (default binding) |
 | `F6` | Toggle session-local Photo Presentation View (default binding) |
 | `Ctrl+Z` | Undo the current image's last markup operation; cancel an unfinished draft first (default binding) |
 | `Ctrl+Y` | Redo the current image's next markup operation (default binding) |
@@ -41,7 +42,7 @@ Temporary overlays are acceptable only in response to a direct action and should
 | `V` / `B` / `E` / `L` / `R` / `O` / `A` | Select Hand, Brush, Eraser, Line, Rectangle, Ellipse, or Arrow while the markup dock is visible (default bindings) |
 | Hold `Space` | Temporarily use Hand while markup tools are visible; release restores the selected tool (default binding) |
 | `F11` | Toggle fullscreen (default binding) |
-| `Esc` | Cancel active Peek/Blink; otherwise leave fullscreen; otherwise close the viewer |
+| `Esc` | Cancel active Peek/Blink; otherwise stop Slideshow; otherwise leave fullscreen; otherwise close the viewer |
 
 The effective bindings except `Esc` are user-configurable in Settings → Controls. Peek and Blink are hold commands: the resolved full gesture begins the action once, while release of its primary key ends it even if modifiers changed. The first active hold wins; repeat key-down and a second hold are ignored. Any persistent viewer command, focus loss, sequence replacement, Settings/context-menu transition, shutdown, or `Esc` first restores the temporary presentation. Fullscreen preserves ordinary zoom/pan behavior, and Peek/Blink work identically there after any active hold is canceled before a fullscreen transition.
 
@@ -52,6 +53,12 @@ Photo Presentation View is an explicit session-local viewing mode and starts dis
 Settings uses a stable comfortable first-open client size, remembers only user-selected logical width/height, and applies a current-work-area clamp when opening. It never restores desktop coordinates or window state, so each new instance is centered over the current viewer owner even after its dimensions have been restored.
 
 The mode owns geometry. Wheel, `+`, `-`, `0`, `1`, double-click, drag pan, permanent/temporary Hand, Peek, and Blink are unavailable and do not exit the mode; explicit navigation, fullscreen, Color Picker, Histogram, Photo Info, Cursor Highlight, and drawing tools remain available. Blink is initially disabled because comparison photographs with a different aspect ratio require independent presentation layout. Entering or resizing recomputes only pure geometry; leaving sets the current photograph to ordinary Fit and restores every normal input. The user's persisted normal image-change policy is never modified.
+
+## Slideshow
+
+Slideshow is timed navigation over the current Fovium sequence, not a playlist or directory scanner. Starting with F5, the checked context menu, or the live Presentation Settings control keeps the actually presented image in place, enables Photo Presentation View when necessary, and begins a full configured interval only from that frame's authoritative publication. Manual Left/Right remains available and restarts timing only when the latest requested photograph actually appears. F11 is independent and does not reset time merely because geometry changed. Settings may stay open and duration/end behavior changes apply live.
+
+Stop-at-end leaves the final viable image visible and stops automatic navigation without snapping out of presentation layout. Loop wraps in the same natural order and uses the same bounded unsupported/broken-image skipping semantics. A single viable image never repeatedly republishes itself. Explicit stop does not navigate; it cancels one countdown and one optional prepared next, then restores Photo Presentation only when slideshow originally enabled it. Attempting to turn Photo Presentation off while running stops Slideshow first. The detailed timer, preparation, memory, and natural-end ownership contract is in [`SLIDESHOW.md`](SLIDESHOW.md).
 
 When highlight is active, a translucent configured circle follows the pointer over photograph and Stage and the system cursor is hidden only while it is inside the photo viewport. Highlight-scoped `[`/`]` change its persisted physical radius by four pixels. Markup scope takes precedence when its dock is visible, so the same bindings instead adjust markup thickness; this cross-scope reuse is intentional and conflict-free. The highlight does not alter navigation, viewport state, Peek, Blink, or drawing input.
 
