@@ -1,15 +1,20 @@
 namespace Fovium.Imaging;
 
+using System.Diagnostics;
+using Fovium.PhotoStyling;
+
 internal sealed class ImageDecoder : IImageLoader<DecodedImage>, IDisposable
 {
     public const int DefaultMaximumConcurrentDecodes = 2;
 
     private readonly IReadOnlyList<IImageDecodeBackend> _backends;
     private readonly SemaphoreSlim _decodeSlots;
+    private readonly IPhotoStyleAnalyzer _photoStyleAnalyzer;
 
     internal ImageDecoder(
         IEnumerable<IImageDecodeBackend> backends,
-        int maximumConcurrentDecodes = DefaultMaximumConcurrentDecodes)
+        int maximumConcurrentDecodes = DefaultMaximumConcurrentDecodes,
+        IPhotoStyleAnalyzer? photoStyleAnalyzer = null)
     {
         ArgumentNullException.ThrowIfNull(backends);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maximumConcurrentDecodes);
@@ -20,6 +25,7 @@ internal sealed class ImageDecoder : IImageLoader<DecodedImage>, IDisposable
         }
 
         _decodeSlots = new SemaphoreSlim(maximumConcurrentDecodes, maximumConcurrentDecodes);
+        _photoStyleAnalyzer = photoStyleAnalyzer ?? new PhotoStyleAnalyzer();
     }
 
     public static ImageDecoder CreateDefault() =>
@@ -77,8 +83,25 @@ internal sealed class ImageDecoder : IImageLoader<DecodedImage>, IDisposable
 
                 if (result.Kind == ImageDecodeBackendResultKind.Success)
                 {
+                    var image = result.Image
+                        ?? throw new InvalidOperationException("A successful backend returned no image.");
+                    try
+                    {
+                        var analysis = _photoStyleAnalyzer.Analyze(image, cancellationToken);
+                        _ = image.TryAttachPhotoStyleAnalysis(analysis);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        image.Dispose();
+                        throw;
+                    }
+                    catch (Exception exception)
+                    {
+                        Debug.WriteLine($"Fovium photo styling analysis failed: {exception}");
+                    }
+
                     return ImageLoadResult<DecodedImage>.Success(
-                        result.Image ?? throw new InvalidOperationException("A successful backend returned no image."));
+                        image);
                 }
 
                 return Failure(MapError(result.Kind), result.TechnicalDetail ?? "Image decode failed.", result.Exception);

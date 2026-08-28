@@ -10,9 +10,13 @@ internal sealed record StageSettings
 
     public StageColor MatteColor { get; init; } = StageDefaults.MatteColor;
 
+    public MatteColorSource MatteColorSource { get; init; } = MatteColorSource.Custom;
+
     public MatteStyle MatteStyle { get; init; } = StageDefaults.MatteStyle;
 
     public double MatteWidthPhysicalPixels { get; init; } = StageDefaults.MatteWidthPhysicalPixels;
+
+    public PhotoSeparationMode PhotoSeparation { get; init; } = PhotoSeparationMode.None;
 
     public double AmbientBrightness { get; init; } = StageDefaults.AmbientBrightness;
 
@@ -30,6 +34,12 @@ internal sealed record StageSettings
         MatteStyle = Enum.IsDefined(MatteStyle)
             ? MatteStyle
             : StageDefaults.MatteStyle,
+        MatteColorSource = Enum.IsDefined(MatteColorSource)
+            ? MatteColorSource
+            : global::Fovium.Stage.MatteColorSource.Custom,
+        PhotoSeparation = Enum.IsDefined(PhotoSeparation)
+            ? PhotoSeparation
+            : PhotoSeparationMode.None,
         MatteWidthPhysicalPixels = NormalizeFinite(
             MatteWidthPhysicalPixels,
             StageDefaults.MatteWidthPhysicalPixels,
@@ -54,4 +64,9 @@ internal sealed record StageSettings
 
     private static double NormalizeFinite(double value, double fallback, double minimum, double maximum) =>
         double.IsFinite(value) ? Math.Clamp(value, minimum, maximum) : fallback;
+
+    public bool RequiresPhotoStyleAnalysis() =>
+        BackgroundMode.RequiresPhotoStyleAnalysis() ||
+        MatteColorSource != MatteColorSource.Custom ||
+        PhotoSeparation == PhotoSeparationMode.HairlineAuto;
 }

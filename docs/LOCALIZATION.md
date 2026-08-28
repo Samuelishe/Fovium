@@ -34,6 +34,8 @@ R9-A localizes Photo Presentation command/context-menu copy, its Viewing subsect
 
 R9-B localizes Slideshow, its Start/Stop live state, Slide duration/seconds, end-of-sequence prompt, Stop on last image, and Start again from first image in both English and natural Russian. The stable `viewer.toggleSlideshow` identity, numeric seconds, serialized enum/property names, timer state, and diagnostic names remain locale-independent. Catalog validation requires exact EN/RU key parity and English fallback.
 
+R10-A localizes Average, Dominant, Color Wash, Matte color source, Photo separation, None, and Hairline Auto in EN/RU. Persisted background/color-source/separation enum identities, reference-sRGB values, palette data, and analysis diagnostics remain English code identities and are never localized. Catalog validation retains exact EN/RU key parity and English fallback.
+
 ## Locale resolution
 
 Before an explicit user choice:

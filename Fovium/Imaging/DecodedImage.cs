@@ -1,4 +1,5 @@
 using Fovium.Loading;
+using Fovium.PhotoStyling;
 using Fovium.Rendering;
 using Fovium.Stage;
 using SkiaSharp;
@@ -58,6 +59,8 @@ internal sealed class DecodedImage : IRetainedResource
     private readonly SharedResource<NativePayload> _native;
     private readonly object _ownershipSync = new();
     private SharedResource<PreparedAmbient>? _ambient;
+    private SharedResource<PreparedColorWash>? _colorWash;
+    private PhotoStyleAnalysis? _photoStyleAnalysis;
     private bool _disposed;
 
     public DecodedImage(
@@ -87,7 +90,11 @@ internal sealed class DecodedImage : IRetainedResource
                 var ambientBytes = _ambient is not null && _ambient.TryGetValue(out var ambient)
                     ? ambient!.RetainedBytes
                     : 0;
-                return checked(Descriptor.EstimatedRetainedBytes + ambientBytes);
+                return checked(
+                    Descriptor.EstimatedRetainedBytes +
+                    ambientBytes +
+                    GetColorWashRetainedBytes() +
+                    (_photoStyleAnalysis?.RetainedBytes ?? 0));
             }
         }
     }
@@ -102,6 +109,59 @@ internal sealed class DecodedImage : IRetainedResource
             }
         }
     }
+
+    public bool HasPhotoStyleAnalysis
+    {
+        get
+        {
+            lock (_ownershipSync)
+            {
+                return _photoStyleAnalysis is not null;
+            }
+        }
+    }
+
+    public bool TryAttachPhotoStyleAnalysis(PhotoStyleAnalysis analysis)
+    {
+        ArgumentNullException.ThrowIfNull(analysis);
+        var colorWash = new SharedResource<PreparedColorWash>(
+            new PreparedColorWash(PhotoDerivedStylePolicy.CreateColorWashImage(analysis)));
+        lock (_ownershipSync)
+        {
+            if (_disposed || _photoStyleAnalysis is not null)
+            {
+                colorWash.ReleaseOwner();
+                return false;
+            }
+
+            _photoStyleAnalysis = analysis;
+            _colorWash = colorWash;
+            return true;
+        }
+    }
+
+    public PhotoStyleAnalysis? GetPhotoStyleAnalysis()
+    {
+        lock (_ownershipSync)
+        {
+            return _disposed ? null : _photoStyleAnalysis;
+        }
+    }
+
+    public ColorWashLease? TryAcquireColorWash()
+    {
+        lock (_ownershipSync)
+        {
+            return _disposed || _colorWash is null
+                ? null
+                : new ColorWashLease(_colorWash.Acquire());
+        }
+    }
+
+    private long GetColorWashRetainedBytes() =>
+        _colorWash is not null && _colorWash.TryGetValue(out var colorWash)
+            ? colorWash!.RetainedBytes
+            : 0;
 
     public bool HasAmbientForBlur(double blur)
     {
@@ -197,6 +257,7 @@ internal sealed class DecodedImage : IRetainedResource
     public void Dispose()
     {
         SharedResource<PreparedAmbient>? ambient;
+        SharedResource<PreparedColorWash>? colorWash;
         lock (_ownershipSync)
         {
             if (_disposed)
@@ -207,9 +268,13 @@ internal sealed class DecodedImage : IRetainedResource
             _disposed = true;
             ambient = _ambient;
             _ambient = null;
+            colorWash = _colorWash;
+            _colorWash = null;
+            _photoStyleAnalysis = null;
         }
 
         ambient?.ReleaseOwner();
+        colorWash?.ReleaseOwner();
         _native.ReleaseOwner();
     }
 
@@ -316,5 +381,26 @@ internal sealed class DecodedImage : IRetainedResource
 
         private SharedResourceLease<PreparedAmbient> GetLease() =>
             Volatile.Read(ref _lease) ?? throw new ObjectDisposedException(nameof(AmbientLease));
+    }
+
+    internal sealed class ColorWashLease : IDisposable
+    {
+        private SharedResourceLease<PreparedColorWash>? _lease;
+
+        internal ColorWashLease(SharedResourceLease<PreparedColorWash> lease)
+        {
+            _lease = lease;
+        }
+
+        public SKImage Image => GetLease().Value.Image;
+
+        public long RetainedBytes => GetLease().Value.RetainedBytes;
+
+        public ColorWashLease Acquire() => new(GetLease().Acquire());
+
+        public void Dispose() => Interlocked.Exchange(ref _lease, null)?.Dispose();
+
+        private SharedResourceLease<PreparedColorWash> GetLease() =>
+            Volatile.Read(ref _lease) ?? throw new ObjectDisposedException(nameof(ColorWashLease));
     }
 }

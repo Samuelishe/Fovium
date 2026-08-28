@@ -7,6 +7,7 @@ using Fovium.Diagnostics;
 using Fovium.ColorManagement;
 using Fovium.Imaging;
 using Fovium.Loading;
+using Fovium.PhotoStyling;
 using Fovium.Stage;
 using SkiaSharp;
 
@@ -27,6 +28,9 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
     private readonly double _renderScaling;
     private readonly long _imageIdentity;
     private readonly long? _ambientIdentity;
+    private readonly PhotoStyleAnalysis? _photoStyleAnalysis;
+    private readonly long? _photoStyleIdentity;
+    private DecodedImage.ColorWashLease? _colorWashLease;
     private readonly AmbientRenderFrameDiagnostics _frameDiagnostics;
     private readonly InteractionRenderDiagnostics _interactionDiagnostics;
     private readonly bool _suppressLegacyPhoto;
@@ -46,6 +50,9 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
         long? ambientIdentity,
         AmbientRenderFrameDiagnostics frameDiagnostics,
         InteractionRenderDiagnostics interactionDiagnostics,
+        PhotoStyleAnalysis? photoStyleAnalysis = null,
+        long? photoStyleIdentity = null,
+        DecodedImage.ColorWashLease? colorWashLease = null,
         ManagedPhotoSourceLease? managedSource = null,
         bool suppressLegacyPhoto = false,
         ManagedPhotoPresentationCoordinator? managedCoordinator = null)
@@ -63,6 +70,9 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
         _ambientIdentity = ambientIdentity;
         _frameDiagnostics = frameDiagnostics;
         _interactionDiagnostics = interactionDiagnostics;
+        _photoStyleAnalysis = photoStyleAnalysis;
+        _photoStyleIdentity = photoStyleIdentity;
+        _colorWashLease = colorWashLease;
         _managedSource = managedSource;
         _suppressLegacyPhoto = suppressLegacyPhoto;
         _managedCoordinator = managedCoordinator;
@@ -105,7 +115,10 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
             ambientLease?.Size,
             _imageIdentity,
             _ambientIdentity,
-            _frameDiagnostics);
+            _frameDiagnostics,
+            _photoStyleAnalysis,
+            _photoStyleIdentity,
+            _colorWashLease?.Image);
         var managedSource = _managedSource;
         if (_suppressLegacyPhoto && managedSource is null)
         {
@@ -176,6 +189,7 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
     {
         Interlocked.Exchange(ref _imageLease, null)?.Dispose();
         Interlocked.Exchange(ref _ambientLease, null)?.Dispose();
+        Interlocked.Exchange(ref _colorWashLease, null)?.Dispose();
         Interlocked.Exchange(ref _managedSource, null)?.Dispose();
     }
 

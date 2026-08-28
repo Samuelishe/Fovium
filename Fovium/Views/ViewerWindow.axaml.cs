@@ -103,7 +103,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         _settings = settings;
         _startupPaths = startupPaths;
         _stageCoordinator = new AmbientStageCoordinator(
-            new AmbientImageRepository(session),
+            new StageImageRepository(session),
             new AmbientStagePreparer(),
             settings.Current.Stage);
         _ambientSoakTrace = AmbientSoakTrace.CreateFromEnvironment();
@@ -629,6 +629,9 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         {
             [StageBackgroundMode.Black] = UiStrings.StageBlack,
             [StageBackgroundMode.Neutral] = UiStrings.StageNeutral,
+            [StageBackgroundMode.Average] = UiStrings.StageAverage,
+            [StageBackgroundMode.Dominant] = UiStrings.StageDominant,
+            [StageBackgroundMode.ColorWash] = UiStrings.StageColorWash,
             [StageBackgroundMode.Custom] = UiStrings.StageCustom,
             [StageBackgroundMode.Ambient] = UiStrings.StageAmbient,
         };

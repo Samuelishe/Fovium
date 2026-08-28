@@ -142,8 +142,8 @@ public sealed class LocalizationTests
     }
 
     [Theory]
-    [InlineData("en-US", "Stage", "Black", "Neutral", "Custom", "Ambient", "Matte")]
-    [InlineData("ru-RU", "Фон", "Чёрный", "Нейтральный", "Свой цвет", "Ambient", "Паспарту")]
+    [InlineData("en-US", "Stage", "Black", "Neutral", "Custom", "Ambient", "Average", "Dominant", "Color Wash", "Matte")]
+    [InlineData("ru-RU", "Фон", "Чёрный", "Нейтральный", "Свой цвет", "Ambient", "Средний цвет", "Доминирующий цвет", "Цветовой wash", "Паспарту")]
     public void StageCatalogsContainEveryBackgroundAndIndependentMatte(
         string cultureName,
         string section,
@@ -151,6 +151,9 @@ public sealed class LocalizationTests
         string neutral,
         string custom,
         string ambient,
+        string average,
+        string dominant,
+        string colorWash,
         string matte)
     {
         var localizer = Localizer.Create(CultureInfo.GetCultureInfo(cultureName));
@@ -160,7 +163,28 @@ public sealed class LocalizationTests
         Assert.Equal(neutral, localizer[UiStrings.StageNeutral]);
         Assert.Equal(custom, localizer[UiStrings.StageCustom]);
         Assert.Equal(ambient, localizer[UiStrings.StageAmbient]);
+        Assert.Equal(average, localizer[UiStrings.StageAverage]);
+        Assert.Equal(dominant, localizer[UiStrings.StageDominant]);
+        Assert.Equal(colorWash, localizer[UiStrings.StageColorWash]);
         Assert.Equal(matte, localizer[UiStrings.StageMatte]);
+    }
+
+    [Theory]
+    [InlineData("en-US", "Color source", "Photo separation", "None", "Hairline Auto")]
+    [InlineData("ru-RU", "Источник цвета", "Отделение фотографии", "Нет", "Автоматическая тонкая линия")]
+    public void DerivedMatteCatalogContainsColorSourcesAndSeparation(
+        string cultureName,
+        string colorSource,
+        string separation,
+        string none,
+        string hairline)
+    {
+        var localizer = Localizer.Create(CultureInfo.GetCultureInfo(cultureName));
+
+        Assert.Equal(colorSource, localizer[UiStrings.StageMatteColorSource]);
+        Assert.Equal(separation, localizer[UiStrings.StagePhotoSeparation]);
+        Assert.Equal(none, localizer[UiStrings.StageSeparationNone]);
+        Assert.Equal(hairline, localizer[UiStrings.StageHairlineAuto]);
     }
 
     [Theory]

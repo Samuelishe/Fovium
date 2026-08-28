@@ -13,6 +13,8 @@ public sealed class StageSettingsTests
         Assert.False(defaults.MatteEnabled);
         Assert.Equal("#202020", defaults.CustomBackgroundColor.ToHex());
         Assert.Equal("#202020", defaults.MatteColor.ToHex());
+        Assert.Equal(MatteColorSource.Custom, defaults.MatteColorSource);
+        Assert.Equal(PhotoSeparationMode.None, defaults.PhotoSeparation);
         Assert.Equal(MatteStyle.Solid, defaults.MatteStyle);
         Assert.Equal(24, defaults.MatteWidthPhysicalPixels);
         Assert.Equal(0.65, defaults.AmbientBrightness);
@@ -83,6 +85,20 @@ public sealed class StageSettingsTests
 
         Assert.Equal(MatteStyle.Solid, normalized.MatteStyle);
         Assert.Equal(24, normalized.MatteWidthPhysicalPixels);
+    }
+
+    [Fact]
+    public void InvalidDerivedStylingEnumsUseSafeManualDefaults()
+    {
+        var normalized = (StageSettings.Default with
+        {
+            MatteColorSource = (MatteColorSource)999,
+            PhotoSeparation = (PhotoSeparationMode)999,
+        }).Normalize();
+
+        Assert.Equal(MatteColorSource.Custom, normalized.MatteColorSource);
+        Assert.Equal(PhotoSeparationMode.None, normalized.PhotoSeparation);
+        Assert.False(normalized.RequiresPhotoStyleAnalysis());
     }
 
     [Theory]

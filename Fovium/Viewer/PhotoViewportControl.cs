@@ -23,6 +23,12 @@ internal readonly record struct ViewportAmbientPresentationState(
     StageBackgroundMode BackgroundMode,
     bool HasMatchingAmbient);
 
+internal readonly record struct ViewportPhotoStylePresentationState(
+    long? ImageIdentity,
+    long? PhotoStyleIdentity,
+    StageBackgroundMode BackgroundMode,
+    bool HasMatchingPhotoStyle);
+
 internal readonly record struct AtomicPhotoPresentationState(
     long? PresentedNumericIdentity,
     string? PresentedIdentity,
@@ -473,6 +479,19 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
             _ambientImageIdentity,
             _stage.BackgroundMode,
             imageIdentity is not null && imageIdentity == _ambientImageIdentity && _ambient is not null);
+    }
+
+    internal ViewportPhotoStylePresentationState CapturePhotoStylePresentationState()
+    {
+        var presented = _inspectionImage ?? _image;
+        var stage = _inspectionImage is not null ? _inspectionStage! : _stage;
+        var imageIdentity = presented?.Value.Identity;
+        var hasAnalysis = presented?.Value.GetPhotoStyleAnalysis() is not null;
+        return new ViewportPhotoStylePresentationState(
+            imageIdentity,
+            hasAnalysis ? imageIdentity : null,
+            stage.BackgroundMode,
+            hasAnalysis && imageIdentity is not null);
     }
 
     public void ConfigurePresentation(
@@ -1107,6 +1126,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 
         DecodedImage.RenderLease? renderLease = null;
         DecodedImage.AmbientLease? ambientLease = null;
+        DecodedImage.ColorWashLease? colorWashLease = null;
         ManagedPhotoSourceLease? managedSource = null;
         try
         {
@@ -1122,7 +1142,13 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
             }
 
             var descriptor = cachedLease.Value.Descriptor;
+            var photoStyleAnalysis = cachedLease.Value.GetPhotoStyleAnalysis();
             var presentationStage = _inspectionImage is not null ? _inspectionStage! : _stage;
+            if (photoStyleAnalysis is not null &&
+                presentationStage.BackgroundMode == StageBackgroundMode.ColorWash)
+            {
+                colorWashLease = cachedLease.Value.TryAcquireColorWash();
+            }
             var destination = GetDestination();
             var suppressLegacyPhoto = false;
             var photoPresentationVisible = true;
@@ -1175,18 +1201,23 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
                 ambientLease is null ? null : ambientIdentity,
                 _ambientFrameDiagnostics,
                 _interactionDiagnostics,
+                photoStyleAnalysis,
+                photoStyleAnalysis is null ? null : presentedNumericIdentity,
+                colorWashLease,
                 managedSource,
                 suppressLegacyPhoto,
                 _managedPhotoCoordinator));
             SetPhotoPresentationVisible(photoPresentationVisible);
             renderLease = null;
             ambientLease = null;
+            colorWashLease = null;
             managedSource = null;
         }
         finally
         {
             renderLease?.Dispose();
             ambientLease?.Dispose();
+            colorWashLease?.Dispose();
             managedSource?.Dispose();
         }
     }

@@ -36,8 +36,14 @@ internal sealed partial class SettingsWindow : Window
     private readonly RadioButton _neutralStageOption;
     private readonly RadioButton _customStageOption;
     private readonly RadioButton _ambientStageOption;
+    private readonly RadioButton _averageStageOption;
+    private readonly RadioButton _dominantStageOption;
+    private readonly RadioButton _colorWashStageOption;
     private readonly CheckBox _matteEnabledOption;
     private readonly ComboBox _matteStyleOption;
+    private readonly ComboBox _matteColorSourceOption;
+    private readonly ComboBox _photoSeparationOption;
+    private readonly Grid _matteCustomColorPanel;
     private readonly Slider _matteWidthSlider;
     private readonly TextBlock _matteWidthValue;
     private readonly Border _customColorSwatch;
@@ -109,8 +115,14 @@ internal sealed partial class SettingsWindow : Window
         _neutralStageOption = FindRequired<RadioButton>("NeutralStageOption");
         _customStageOption = FindRequired<RadioButton>("CustomStageOption");
         _ambientStageOption = FindRequired<RadioButton>("AmbientStageOption");
+        _averageStageOption = FindRequired<RadioButton>("AverageStageOption");
+        _dominantStageOption = FindRequired<RadioButton>("DominantStageOption");
+        _colorWashStageOption = FindRequired<RadioButton>("ColorWashStageOption");
         _matteEnabledOption = FindRequired<CheckBox>("MatteEnabledOption");
         _matteStyleOption = FindRequired<ComboBox>("MatteStyleOption");
+        _matteColorSourceOption = FindRequired<ComboBox>("MatteColorSourceOption");
+        _photoSeparationOption = FindRequired<ComboBox>("PhotoSeparationOption");
+        _matteCustomColorPanel = FindRequired<Grid>("MatteCustomColorPanel");
         _matteWidthSlider = FindRequired<Slider>("MatteWidthSlider");
         _matteWidthValue = FindRequired<TextBlock>("MatteWidthValue");
         _customColorSwatch = FindRequired<Border>("CustomColorSwatch");
@@ -182,16 +194,37 @@ internal sealed partial class SettingsWindow : Window
         FindRequired<TextBlock>("MatteStyleLabel").Text = localizer[UiStrings.StageMatteStyle];
         FindRequired<TextBlock>("MatteSizeLabel").Text = localizer[UiStrings.StageMatteSize];
         FindRequired<TextBlock>("MatteColorLabel").Text = localizer[UiStrings.StageMatteColor];
+        FindRequired<TextBlock>("MatteColorSourceLabel").Text =
+            localizer[UiStrings.StageMatteColorSource];
+        FindRequired<TextBlock>("PhotoSeparationLabel").Text =
+            localizer[UiStrings.StagePhotoSeparation];
         _keepCurrentScaleOption.Content = localizer[UiStrings.SettingsKeepCurrentScale];
         _fitEachImageOption.Content = localizer[UiStrings.SettingsFitEachImage];
         _blackStageOption.Content = localizer[UiStrings.StageBlack];
         _neutralStageOption.Content = localizer[UiStrings.StageNeutral];
         _customStageOption.Content = localizer[UiStrings.StageCustom];
         _ambientStageOption.Content = localizer[UiStrings.StageAmbient];
+        _averageStageOption.Content = localizer[UiStrings.StageAverage];
+        _dominantStageOption.Content = localizer[UiStrings.StageDominant];
+        _colorWashStageOption.Content = localizer[UiStrings.StageColorWash];
         _matteEnabledOption.Content = localizer[UiStrings.StageMatteEnabled];
         _ambientOptions.Header = localizer[UiStrings.StageAmbientOptions];
         _matteStyleOption.ItemsSource = Enum.GetValues<MatteStyle>()
             .Select(style => new ComboBoxItem { Content = LocalizeMatteStyle(style), Tag = style })
+            .ToArray();
+        _matteColorSourceOption.ItemsSource = Enum.GetValues<MatteColorSource>()
+            .Select(source => new ComboBoxItem
+            {
+                Content = LocalizeMatteColorSource(source),
+                Tag = source,
+            })
+            .ToArray();
+        _photoSeparationOption.ItemsSource = Enum.GetValues<PhotoSeparationMode>()
+            .Select(mode => new ComboBoxItem
+            {
+                Content = LocalizePhotoSeparation(mode),
+                Tag = mode,
+            })
             .ToArray();
         FindRequired<Button>("ResetShortcutsButton").Content = localizer[UiStrings.ShortcutReset];
         FindRequired<TextBlock>("VersionText").Text = string.Format(
@@ -258,8 +291,19 @@ internal sealed partial class SettingsWindow : Window
         _ambientStageOption.IsCheckedChanged += (_, _) => SetBackgroundIfChecked(
             _ambientStageOption,
             StageBackgroundMode.Ambient);
+        _averageStageOption.IsCheckedChanged += (_, _) => SetBackgroundIfChecked(
+            _averageStageOption,
+            StageBackgroundMode.Average);
+        _dominantStageOption.IsCheckedChanged += (_, _) => SetBackgroundIfChecked(
+            _dominantStageOption,
+            StageBackgroundMode.Dominant);
+        _colorWashStageOption.IsCheckedChanged += (_, _) => SetBackgroundIfChecked(
+            _colorWashStageOption,
+            StageBackgroundMode.ColorWash);
         _matteEnabledOption.IsCheckedChanged += OnMatteEnabledChanged;
         _matteStyleOption.SelectionChanged += OnMatteStyleChanged;
+        _matteColorSourceOption.SelectionChanged += OnMatteColorSourceChanged;
+        _photoSeparationOption.SelectionChanged += OnPhotoSeparationChanged;
         _matteWidthSlider.ValueChanged += OnMatteWidthChanged;
         _brightnessSlider.ValueChanged += OnAmbientSliderChanged;
         _saturationSlider.ValueChanged += OnAmbientSliderChanged;
@@ -578,6 +622,24 @@ internal sealed partial class SettingsWindow : Window
         }
     }
 
+    private async void OnMatteColorSourceChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (!_initializing &&
+            _matteColorSourceOption.SelectedItem is ComboBoxItem { Tag: MatteColorSource source })
+        {
+            await _settings.SetStageAsync(_settings.Current.Stage with { MatteColorSource = source });
+        }
+    }
+
+    private async void OnPhotoSeparationChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (!_initializing &&
+            _photoSeparationOption.SelectedItem is ComboBoxItem { Tag: PhotoSeparationMode mode })
+        {
+            await _settings.SetStageAsync(_settings.Current.Stage with { PhotoSeparation = mode });
+        }
+    }
+
     private void OnPhotoPresentationViewChanged(object? sender, EventArgs e)
     {
         if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
@@ -637,10 +699,23 @@ internal sealed partial class SettingsWindow : Window
         _neutralStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.Neutral;
         _customStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.Custom;
         _ambientStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.Ambient;
+        _averageStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.Average;
+        _dominantStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.Dominant;
+        _colorWashStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.ColorWash;
         _matteEnabledOption.IsChecked = settings.Stage.MatteEnabled;
         _matteStyleOption.SelectedItem = _matteStyleOption.ItemsSource?
             .OfType<ComboBoxItem>()
             .Single(item => item.Tag is MatteStyle style && style == settings.Stage.MatteStyle);
+        _matteColorSourceOption.SelectedItem = _matteColorSourceOption.ItemsSource?
+            .OfType<ComboBoxItem>()
+            .Single(item => item.Tag is MatteColorSource source &&
+                source == settings.Stage.MatteColorSource);
+        _photoSeparationOption.SelectedItem = _photoSeparationOption.ItemsSource?
+            .OfType<ComboBoxItem>()
+            .Single(item => item.Tag is PhotoSeparationMode mode &&
+                mode == settings.Stage.PhotoSeparation);
+        _matteCustomColorPanel.IsEnabled =
+            settings.Stage.MatteColorSource == MatteColorSource.Custom;
         _matteWidthSlider.Value = settings.Stage.MatteWidthPhysicalPixels;
         _brightnessSlider.Value = settings.Stage.AmbientBrightness * 100;
         _saturationSlider.Value = settings.Stage.AmbientSaturation * 100;
@@ -684,6 +759,21 @@ internal sealed partial class SettingsWindow : Window
         MatteStyle.Soft => UiStrings.StageMatteSoft,
         MatteStyle.Angular => UiStrings.StageMatteAngular,
         _ => throw new ArgumentOutOfRangeException(nameof(style)),
+    }];
+
+    private string LocalizeMatteColorSource(MatteColorSource source) => _localizer[source switch
+    {
+        MatteColorSource.Custom => UiStrings.StageCustom,
+        MatteColorSource.Average => UiStrings.StageAverage,
+        MatteColorSource.Dominant => UiStrings.StageDominant,
+        _ => throw new ArgumentOutOfRangeException(nameof(source)),
+    }];
+
+    private string LocalizePhotoSeparation(PhotoSeparationMode mode) => _localizer[mode switch
+    {
+        PhotoSeparationMode.None => UiStrings.StageSeparationNone,
+        PhotoSeparationMode.HairlineAuto => UiStrings.StageHairlineAuto,
+        _ => throw new ArgumentOutOfRangeException(nameof(mode)),
     }];
 
     private void UpdateShortcutButtons(ShortcutSettings shortcuts)

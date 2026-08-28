@@ -629,7 +629,7 @@ public sealed class AmbientStageCoordinatorTests
         public void CompleteFirst() => _firstCompletion.Set();
     }
 
-    private sealed class TestRepository : IAmbientImageRepository, IDisposable
+    private sealed class TestRepository : IStageImageRepository, IDisposable
     {
         private readonly ByteBudgetCache<string, DecodedImage> _cache = new(1_000_000, StringComparer.Ordinal);
 

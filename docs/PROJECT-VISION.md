@@ -33,8 +33,11 @@ The presentation space around the photograph is the **Stage**, not leftover wind
 - **Neutral**: a controlled neutral alternative.
 - **Custom**: an explicit user-selected opaque solid color.
 - **Ambient**: derived from the photograph, cover-filled, strongly blurred, darkened, and moderately desaturated so it never competes with the original.
+- **Average**: the photograph's linear-light mean reference-sRGB color.
+- **Dominant**: the photograph's largest deterministic color cluster.
+- **Color Wash**: a soft abstract field from bounded spatial color distribution, never a recognizable duplicate of the photograph.
 
-An optional persisted **Matte** is an independent modifier over any background. It may use a Solid, Rounded, Soft, or Angular outer presentation with a configurable physical width and color, while the photograph itself always remains a complete rectangle. Stage processing does not alter the photograph or viewport state. Ambient is a bounded, strongly simplified derivative of the full oriented photograph and remains stable during zoom/pan; Matte adds separation behind the resolved photograph bounds without shrinking them. The shared state is available through the context menu and Settings.
+R10-A derives its three new choices offline from one bounded analysis of the canonical photograph. An optional persisted **Matte** remains an independent modifier over any background. It may use a Solid, Rounded, Soft, or Angular outer presentation with configurable physical width and Custom/Average/Dominant color, while the photograph itself always remains a complete rectangle; Hairline Auto can add restrained boundary separation. Stage processing does not alter the photograph or viewport state. Ambient and photo-derived styling remain stable during zoom/pan, and Matte adds separation behind the resolved photograph bounds without shrinking them. The shared state is available through the context menu and Settings; detailed analysis policy belongs to [`PHOTO-DERIVED-STYLING.md`](PHOTO-DERIVED-STYLING.md).
 
 ## Photographer-specific direction
 

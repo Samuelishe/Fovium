@@ -42,4 +42,16 @@ internal static class StageDefaults
     public const double MatteOuterShapeRatio = 1.5;
 
     public const double MatteSoftSigmaRatio = 1d / 3d;
+
+    public const int PhotoStyleLongEdgePixels = 96;
+
+    public const int PhotoStylePaletteSize = 5;
+
+    public const int PhotoStyleFieldColumns = 4;
+
+    public const int PhotoStyleFieldRows = 4;
+
+    public const int PhotoStyleWashRasterPixels = 64;
+
+    public const byte HairlineOpacity = 176;
 }

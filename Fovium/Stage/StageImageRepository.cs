@@ -3,7 +3,7 @@ using Fovium.Loading;
 
 namespace Fovium.Stage;
 
-internal interface IAmbientImageRepository
+internal interface IStageImageRepository
 {
     event EventHandler? AdjacentImageAvailable;
 
@@ -14,8 +14,8 @@ internal interface IAmbientImageRepository
     IReadOnlyList<CachedResourceLease<DecodedImage>> AcquireAdjacent();
 }
 
-internal sealed class AmbientImageRepository(ViewerSession<DecodedImage> session)
-    : IAmbientImageRepository
+internal sealed class StageImageRepository(ViewerSession<DecodedImage> session)
+    : IStageImageRepository
 {
     public event EventHandler? AdjacentImageAvailable
     {

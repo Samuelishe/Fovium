@@ -22,6 +22,8 @@ public sealed class JsonSettingsStoreTests : IDisposable
         Assert.False(FoviumSettings.Default.Stage.MatteEnabled);
         Assert.Equal(StageDefaults.CustomBackgroundColor, FoviumSettings.Default.Stage.CustomBackgroundColor);
         Assert.Equal(StageDefaults.MatteColor, FoviumSettings.Default.Stage.MatteColor);
+        Assert.Equal(MatteColorSource.Custom, FoviumSettings.Default.Stage.MatteColorSource);
+        Assert.Equal(PhotoSeparationMode.None, FoviumSettings.Default.Stage.PhotoSeparation);
         Assert.Equal(MatteStyle.Solid, FoviumSettings.Default.Stage.MatteStyle);
         Assert.Equal(24, FoviumSettings.Default.Stage.MatteWidthPhysicalPixels);
         Assert.Equal(StageDefaults.AmbientBrightness, FoviumSettings.Default.Stage.AmbientBrightness);
@@ -106,10 +108,12 @@ public sealed class JsonSettingsStoreTests : IDisposable
             ImageChangeViewPolicy = ImageChangeViewPolicy.FitEachImage,
             Stage = StageSettings.Default with
             {
-                BackgroundMode = StageBackgroundMode.Custom,
+                BackgroundMode = StageBackgroundMode.ColorWash,
                 MatteEnabled = true,
                 CustomBackgroundColor = new StageColor(0x12, 0x34, 0x56),
                 MatteColor = new StageColor(0x65, 0x43, 0x21),
+                MatteColorSource = MatteColorSource.Dominant,
+                PhotoSeparation = PhotoSeparationMode.HairlineAuto,
                 MatteStyle = MatteStyle.Angular,
                 MatteWidthPhysicalPixels = 96,
                 AmbientBrightness = 0.72,

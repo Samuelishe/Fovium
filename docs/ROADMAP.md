@@ -125,7 +125,11 @@ Accepted at `0.1.1.0001`: Slideshow is only timed navigation and no longer owns 
 
 ### R9-A-F2 — Photo Presentation Matte-independent scale correction
 
-Locally complete at `0.1.1.0002`: Photo Presentation Edge Margin constrains only the oriented photograph. Existing Stage geometry draws Matte around the resolved photo without changing its destination, physical scale, source mapping, or markup alignment; extreme Matte may clip at the viewport. Normal Viewer, Slideshow scheduling, and geometry-independent Color Management remain unchanged. Owner review/commit and hosted CI remain before selecting another roadmap stage.
+Accepted at `0.1.1.0002`: Photo Presentation Edge Margin constrains only the oriented photograph. Existing Stage geometry draws Matte around the resolved photo without changing its destination, physical scale, source mapping, or markup alignment; extreme Matte may clip at the viewport. Normal Viewer, Slideshow scheduling, and geometry-independent Color Management remain unchanged.
+
+## R10-A — Photo-derived styling foundation
+
+Locally complete at `0.1.2.0000`: add one bounded offline reference-sRGB analysis per decoded photograph and reuse its average, dominant, palette, spatial, and boundary summaries for Average/Dominant/Color Wash Stage backgrounds, presentation-safe automatic Matte color, and Hairline Auto separation. Exact identity and safe fallback prevent stale styling; normal navigation, Slideshow, Photo Presentation, Picker, Histogram, and Color Management retain their existing ownership. Owner review/commit and hosted CI remain before selecting another roadmap stage.
 
 ## Later / separate platform milestones
 

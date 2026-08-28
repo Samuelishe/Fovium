@@ -1,6 +1,10 @@
+using Fovium.Loading;
 using Fovium.Rendering;
 using Fovium.Settings;
 using Fovium.Slideshow;
+using Fovium.Stage;
+using Fovium.Tests.PhotoStyling;
+using Fovium.Tests.Stage;
 using Fovium.Viewer;
 
 namespace Fovium.Tests.Slideshow;
@@ -57,6 +61,67 @@ public sealed class SlideshowSessionTests
         Assert.Equal(2, scheduler.Delays.Count);
         Assert.Equal(TimeSpan.FromSeconds(5), scheduler.Delays[1].Duration);
         Assert.True(scheduler.Delays[0].Completed);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AutomaticPublicationUsesNewPresentedImagesOwnDerivedStyle(
+        bool photoPresentationEnabled)
+    {
+        var viewport = new PhotoViewportControl();
+        viewport.SetPhotoPresentationViewEnabled(photoPresentationEnabled);
+        var first = StageTestImages.CreateDecoded("A.png", new PixelSize(12, 8));
+        var second = StageTestImages.CreateDecoded("B.png", new PixelSize(8, 12));
+        var firstResource = new SharedResource<Fovium.Imaging.DecodedImage>(first);
+        var secondResource = new SharedResource<Fovium.Imaging.DecodedImage>(second);
+        Assert.True(first.TryAttachPhotoStyleAnalysis(PhotoDerivedStylePolicyTests.CreateAnalysis(
+            new StageColor(210, 30, 30),
+            new StageColor(210, 30, 30),
+            new StageColor(210, 30, 30))));
+        Assert.True(second.TryAttachPhotoStyleAnalysis(PhotoDerivedStylePolicyTests.CreateAnalysis(
+            new StageColor(30, 30, 210),
+            new StageColor(30, 30, 210),
+            new StageColor(30, 30, 210))));
+        var stage = StageSettings.Default with { BackgroundMode = StageBackgroundMode.ColorWash };
+        var scheduler = new ControlledScheduler();
+        var navigator = new ControlledNavigator(Slide(0, first.Identity, "A.png"));
+        using var session = CreateSession(navigator, scheduler);
+        try
+        {
+            using var firstPresentation = new StagePresentation(stage, first.Identity, null);
+            viewport.SetPresentation(
+                firstResource.Acquire(),
+                ViewTransfer.Fit,
+                "A.png",
+                firstPresentation);
+            session.Start();
+            scheduler.Complete(0);
+            await navigator.AdvanceStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+
+            using var secondPresentation = new StagePresentation(stage, second.Identity, null);
+            viewport.SetPresentation(
+                secondResource.Acquire(),
+                ViewTransfer.Fit,
+                "B.png",
+                secondPresentation);
+            navigator.Presented = Slide(1, second.Identity, "B.png");
+            session.NotifyPresented(navigator.Presented.Value);
+            var state = viewport.CapturePhotoStylePresentationState();
+
+            Assert.True(session.IsRunning);
+            Assert.Equal(photoPresentationEnabled, viewport.PhotoPresentationViewEnabled);
+            Assert.Equal(second.Identity, state.ImageIdentity);
+            Assert.Equal(second.Identity, state.PhotoStyleIdentity);
+            Assert.Equal(StageBackgroundMode.ColorWash, state.BackgroundMode);
+            Assert.Equal(2, scheduler.Delays.Count);
+        }
+        finally
+        {
+            viewport.ClearImage();
+            firstResource.ReleaseOwner();
+            secondResource.ReleaseOwner();
+        }
     }
 
     [Fact]

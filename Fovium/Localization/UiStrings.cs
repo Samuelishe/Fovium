@@ -28,6 +28,9 @@ internal static class UiStrings
     public const string StageNeutral = "stage.neutral";
     public const string StageCustom = "stage.custom";
     public const string StageAmbient = "stage.ambient";
+    public const string StageAverage = "stage.average";
+    public const string StageDominant = "stage.dominant";
+    public const string StageColorWash = "stage.colorWash";
     public const string StageBackground = "stage.background";
     public const string StageMatte = "stage.matte";
     public const string StageMatteEnabled = "stage.matteEnabled";
@@ -37,6 +40,10 @@ internal static class UiStrings
     public const string StageAmbientBlur = "stage.ambientBlur";
     public const string StageCustomColor = "stage.customColor";
     public const string StageMatteColor = "stage.matteColor";
+    public const string StageMatteColorSource = "stage.matteColorSource";
+    public const string StagePhotoSeparation = "stage.photoSeparation";
+    public const string StageSeparationNone = "stage.separationNone";
+    public const string StageHairlineAuto = "stage.hairlineAuto";
     public const string StageMatteStyle = "stage.matteStyle";
     public const string StageMatteSize = "stage.matteSize";
     public const string StageMatteSolid = "stage.matteSolid";

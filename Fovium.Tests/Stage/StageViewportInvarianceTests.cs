@@ -71,6 +71,18 @@ public sealed class StageViewportInvarianceTests
         { (int)StageBackgroundMode.Ambient, (int)MatteStyle.Rounded },
         { (int)StageBackgroundMode.Ambient, (int)MatteStyle.Soft },
         { (int)StageBackgroundMode.Ambient, (int)MatteStyle.Angular },
+        { (int)StageBackgroundMode.Average, (int)MatteStyle.Solid },
+        { (int)StageBackgroundMode.Average, (int)MatteStyle.Rounded },
+        { (int)StageBackgroundMode.Average, (int)MatteStyle.Soft },
+        { (int)StageBackgroundMode.Average, (int)MatteStyle.Angular },
+        { (int)StageBackgroundMode.Dominant, (int)MatteStyle.Solid },
+        { (int)StageBackgroundMode.Dominant, (int)MatteStyle.Rounded },
+        { (int)StageBackgroundMode.Dominant, (int)MatteStyle.Soft },
+        { (int)StageBackgroundMode.Dominant, (int)MatteStyle.Angular },
+        { (int)StageBackgroundMode.ColorWash, (int)MatteStyle.Solid },
+        { (int)StageBackgroundMode.ColorWash, (int)MatteStyle.Rounded },
+        { (int)StageBackgroundMode.ColorWash, (int)MatteStyle.Soft },
+        { (int)StageBackgroundMode.ColorWash, (int)MatteStyle.Angular },
     };
 
     [Theory]

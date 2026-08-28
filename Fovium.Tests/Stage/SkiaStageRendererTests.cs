@@ -1,4 +1,6 @@
 using Fovium.Rendering;
+using Fovium.PhotoStyling;
+using Fovium.Tests.PhotoStyling;
 using Fovium.Stage;
 using SkiaSharp;
 
@@ -130,6 +132,137 @@ public sealed class SkiaStageRendererTests
         using var pixels = SKBitmap.FromImage(result);
 
         Assert.Equal(new SKColor(expectedRed, expectedGreen, expectedBlue), pixels.GetPixel(0, 0));
+    }
+
+    [Theory]
+    [InlineData((int)StageBackgroundMode.Average, 0x12, 0x34, 0x56)]
+    [InlineData((int)StageBackgroundMode.Dominant, 0xA1, 0xB2, 0xC3)]
+    public void DerivedSolidStageUsesExactMatchingPhotoAnalysis(
+        int modeValue,
+        byte expectedRed,
+        byte expectedGreen,
+        byte expectedBlue)
+    {
+        using var surface = SKSurface.Create(new SKImageInfo(20, 20));
+        var analysis = PhotoDerivedStylePolicyTests.CreateAnalysis(
+            new StageColor(0x12, 0x34, 0x56),
+            new StageColor(0xA1, 0xB2, 0xC3),
+            new StageColor(0x20, 0x20, 0x20));
+
+        SkiaStageRenderer.Draw(
+            surface.Canvas,
+            new RectD(0, 0, 20, 20),
+            new RectD(5, 5, 10, 10),
+            1,
+            StageSettings.Default with { BackgroundMode = (StageBackgroundMode)modeValue },
+            null,
+            null,
+            imageIdentity: 42,
+            photoStyleAnalysis: analysis,
+            photoStyleIdentity: 42);
+        using var result = surface.Snapshot();
+        using var pixels = SKBitmap.FromImage(result);
+
+        Assert.Equal(
+            new SKColor(expectedRed, expectedGreen, expectedBlue),
+            pixels.GetPixel(0, 0));
+    }
+
+    [Fact]
+    public void MismatchedDerivedIdentityUsesBlackFallbackInsteadOfStaleStyling()
+    {
+        using var surface = SKSurface.Create(new SKImageInfo(20, 20));
+        var analysis = PhotoDerivedStylePolicyTests.CreateAnalysis(
+            new StageColor(240, 10, 200),
+            new StageColor(10, 240, 20),
+            new StageColor(200, 200, 200));
+
+        SkiaStageRenderer.Draw(
+            surface.Canvas,
+            new RectD(0, 0, 20, 20),
+            new RectD(5, 5, 10, 10),
+            1,
+            StageSettings.Default with { BackgroundMode = StageBackgroundMode.Average },
+            null,
+            null,
+            imageIdentity: 52,
+            photoStyleAnalysis: analysis,
+            photoStyleIdentity: 51);
+        using var result = surface.Snapshot();
+        using var pixels = SKBitmap.FromImage(result);
+
+        Assert.Equal(SKColors.Black, pixels.GetPixel(0, 0));
+    }
+
+    [Fact]
+    public void ColorWashUsesBoundedSpatialArtifactInsteadOfPhotoRaster()
+    {
+        using var surface = SKSurface.Create(new SKImageInfo(160, 100));
+        var analysis = PhotoDerivedStylePolicyTests.CreateAnalysis(
+            new StageColor(160, 80, 40),
+            new StageColor(200, 40, 20),
+            new StageColor(30, 80, 180));
+        using var wash = PhotoDerivedStylePolicy.CreateColorWashImage(analysis);
+
+        SkiaStageRenderer.Draw(
+            surface.Canvas,
+            new RectD(0, 0, 160, 100),
+            new RectD(30, 20, 100, 60),
+            1,
+            StageSettings.Default with { BackgroundMode = StageBackgroundMode.ColorWash },
+            null,
+            null,
+            imageIdentity: 7,
+            photoStyleAnalysis: analysis,
+            photoStyleIdentity: 7,
+            colorWashImage: wash);
+        using var result = surface.Snapshot();
+        using var pixels = SKBitmap.FromImage(result);
+
+        Assert.NotEqual(SKColors.Black, pixels.GetPixel(0, 0));
+        Assert.Equal(StageDefaults.PhotoStyleWashRasterPixels, wash.Width);
+        Assert.Equal(StageDefaults.PhotoStyleWashRasterPixels, wash.Height);
+    }
+
+    [Fact]
+    public void AutoMatteAndHairlineRenderWithoutChangingPhotoDestination()
+    {
+        using var surface = SKSurface.Create(new SKImageInfo(100, 100));
+        var analysis = PhotoDerivedStylePolicyTests.CreateAnalysis(
+            new StageColor(245, 245, 245),
+            new StageColor(240, 240, 240),
+            new StageColor(250, 250, 250));
+        var destination = new RectD(30, 30, 40, 40);
+        var stage = StageSettings.Default with
+        {
+            MatteEnabled = true,
+            MatteWidthPhysicalPixels = 12,
+            MatteColorSource = MatteColorSource.Average,
+            PhotoSeparation = PhotoSeparationMode.HairlineAuto,
+        };
+
+        SkiaStageRenderer.Draw(
+            surface.Canvas,
+            new RectD(0, 0, 100, 100),
+            destination,
+            1,
+            stage,
+            null,
+            null,
+            imageIdentity: 9,
+            photoStyleAnalysis: analysis,
+            photoStyleIdentity: 9);
+        using var result = surface.Snapshot();
+        using var pixels = SKBitmap.FromImage(result);
+
+        Assert.NotEqual(SKColors.Black, pixels.GetPixel(50, 20));
+        Assert.True(pixels.GetPixel(29, 50).Red < pixels.GetPixel(20, 50).Red);
+        Assert.Equal(destination, StageGeometry.CalculateRenderGeometry(
+            stage,
+            destination,
+            null,
+            new LogicalSize(100, 100),
+            1).PhotoDestination);
     }
 
     [Theory]

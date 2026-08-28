@@ -51,7 +51,7 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
     internal static readonly TimeSpan BlurDebounce = TimeSpan.FromMilliseconds(150);
 
     private readonly object _sync = new();
-    private readonly IAmbientImageRepository _repository;
+    private readonly IStageImageRepository _repository;
     private readonly IAmbientStagePreparer _preparer;
     private readonly CancellationTokenSource _lifetimeCancellation = new();
     private readonly SemaphoreSlim _adjacentPreparationGate = new(1, 1);
@@ -84,7 +84,7 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
     private bool _disposed;
 
     public AmbientStageCoordinator(
-        IAmbientImageRepository repository,
+        IStageImageRepository repository,
         IAmbientStagePreparer preparer,
         StageSettings initialStage)
     {

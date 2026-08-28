@@ -159,3 +159,19 @@ dotnet test Fovium.Tests/Fovium.Tests.csproj -c Release --filter "FullyQualified
 `FOVIUM_SLIDESHOW_DIAGNOSTICS=1` prints bounded starts/stops/natural stops/loops, expirations, manual resets, presented count, prepared hits/misses/rejections/stale results, last visible duration/transition wait, and current/prepared managed bytes at viewer shutdown. These counters and local screenshots/logs are diagnostic evidence, not committed resources. Desktop acceptance remains a real Windows mixed-orientation run covering F5, checked menu, live Settings, Stop-at-end, Loop, Right Arrow, F11, Esc, Matte continuity, and zero geometry-only CMM work.
 
 R9-B-F1 additionally proves that Slideshow has no `PhotoPresentationViewSession` dependency, all four Slideshow/Photo Presentation state combinations remain independent, external F6/Settings/context-menu view changes do not stop or rearm the countdown, and Normal Viewer continues to own Keep-current-scale/Fit-each-image transfer. The main viewport control test requires both logical focusability and a locally assigned null `FocusAdorner`; Windows Release stress repeats F5 plus Left/Right with F6, F11, context-menu, Settings, and focus loss/reacquisition to check that no inner viewport focus rectangle appears.
+
+## R10-A photo-derived styling
+
+Run the focused analysis, policy, identity, Stage, settings, and viewer regressions with:
+
+```powershell
+dotnet test Fovium.Tests/Fovium.Tests.csproj -c Release --filter "FullyQualifiedName~PhotoStyling|FullyQualifiedName~PhotoDerived|FullyQualifiedName~StageViewportInvarianceTests|FullyQualifiedName~StageSettingsTests|FullyQualifiedName~JsonSettingsStoreTests|FullyQualifiedName~LocalizationTests"
+```
+
+The suite proves bounded 96-pixel oriented analysis, linear-light alpha-aware average, deterministic dominant/palette/spatial summaries, decoded-cache byte accounting, cancellation/stale suppression, presentation-safe Matte/Color Wash normalization, 64×64 smooth wash artifact ownership, one-physical-pixel Hairline policy, exact source identity and fallback, A→B→C/Blink/Peek authority, geometry-only reuse, persistence, localization, and unchanged Picker/Histogram domains. Real-image timing and ignored PNG visual artifacts are opt-in:
+
+```powershell
+$env:FOVIUM_PHOTO_STYLE_PERF_IMAGES = 'C:\path\landscape.jpg;C:\path\portrait.jpg;C:\path\24mp.png'
+$env:FOVIUM_PHOTO_STYLE_SMOKE_OUTPUT = 'C:\path\ignored-output'
+dotnet test Fovium.Tests/Fovium.Tests.csproj -c Release --filter "FullyQualifiedName~PhotoDerivedStylingPerformanceSmokeTests" --logger "console;verbosity=detailed"
+```

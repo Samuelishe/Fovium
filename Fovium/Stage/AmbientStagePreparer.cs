@@ -41,12 +41,13 @@ internal sealed class AmbientStagePreparer : IAmbientStagePreparer
             colorSpace);
         using var orientedSurface = SKSurface.Create(imageInfo)
             ?? throw new InvalidOperationException("Skia could not allocate the oriented Ambient surface.");
-        DrawOrientedSource(
+        OrientedImageRenderer.Draw(
             orientedSurface.Canvas,
             sourceLease.Image,
             image.Descriptor.EncodedSize,
             image.Descriptor.Orientation,
-            targetSize);
+            targetSize,
+            SKColors.Black);
         cancellationToken.ThrowIfCancellationRequested();
 
         using var orientedImage = orientedSurface.Snapshot();
@@ -74,50 +75,6 @@ internal sealed class AmbientStagePreparer : IAmbientStagePreparer
     }
 
     public static PixelSize CalculateTargetSize(PixelSize orientedSize, int longEdgePixels)
-    {
-        if (!orientedSize.IsValid)
-        {
-            throw new ArgumentOutOfRangeException(nameof(orientedSize));
-        }
-
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(longEdgePixels);
-        var scale = Math.Min(1d, (double)longEdgePixels / Math.Max(orientedSize.Width, orientedSize.Height));
-        return new PixelSize(
-            Math.Max(1, (int)Math.Round(orientedSize.Width * scale)),
-            Math.Max(1, (int)Math.Round(orientedSize.Height * scale)));
-    }
-
-    private static void DrawOrientedSource(
-        SKCanvas canvas,
-        SKImage source,
-        PixelSize encodedSize,
-        ExifOrientation orientation,
-        PixelSize targetSize)
-    {
-        canvas.Clear(SKColors.Black);
-        var affine = OrientationAffine.Create(encodedSize, orientation);
-        var orientedSize = OrientationTransform.GetOrientedSize(encodedSize, orientation);
-        var scaleX = (double)targetSize.Width / orientedSize.Width;
-        var scaleY = (double)targetSize.Height / orientedSize.Height;
-        var matrix = new SKMatrix(
-            (float)(affine.A * scaleX),
-            (float)(affine.B * scaleX),
-            (float)(affine.C * scaleX),
-            (float)(affine.D * scaleY),
-            (float)(affine.E * scaleY),
-            (float)(affine.F * scaleY),
-            0,
-            0,
-            1);
-        canvas.Concat(in matrix);
-        using var paint = new SKPaint { IsAntialias = false };
-        canvas.DrawImage(
-            source,
-            0,
-            0,
-            new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear),
-            paint);
-        canvas.Flush();
-    }
+        => BoundedImageSize.Calculate(orientedSize, longEdgePixels);
 
 }

@@ -1,4 +1,5 @@
 using Fovium.Rendering;
+using Fovium.PhotoStyling;
 using SkiaSharp;
 
 namespace Fovium.Stage;
@@ -15,12 +16,17 @@ internal static class SkiaStageRenderer
         PixelSize? ambientSize,
         long imageIdentity = 0,
         long? ambientIdentity = null,
-        AmbientRenderFrameDiagnostics? frameDiagnostics = null)
+        AmbientRenderFrameDiagnostics? frameDiagnostics = null,
+        PhotoStyleAnalysis? photoStyleAnalysis = null,
+        long? photoStyleIdentity = null,
+        SKImage? colorWashImage = null)
     {
         ArgumentNullException.ThrowIfNull(canvas);
         ArgumentNullException.ThrowIfNull(stage);
         var ambientPresent = ambientImage is not null && ambientSize is { IsValid: true };
         var matchingAmbient = ambientPresent && (imageIdentity == 0 || ambientIdentity == imageIdentity);
+        var matchingPhotoStyle = photoStyleAnalysis is not null &&
+            (imageIdentity == 0 || photoStyleIdentity == imageIdentity);
         frameDiagnostics?.Record(
             imageIdentity,
             stage.BackgroundMode,
@@ -36,9 +42,23 @@ internal static class SkiaStageRenderer
         using var backgroundPaint = new SKPaint
         {
             IsAntialias = false,
-            Color = ToSkColor(ResolveBackgroundColor(stage)),
+            Color = ToSkColor(ResolveBackgroundColor(
+                stage,
+                matchingPhotoStyle ? photoStyleAnalysis : null)),
         };
         canvas.DrawRect(ToSkRect(viewport), backgroundPaint);
+
+        if (stage.BackgroundMode == StageBackgroundMode.ColorWash &&
+            matchingPhotoStyle &&
+            colorWashImage is { } colorWash)
+        {
+            canvas.DrawImage(
+                colorWash,
+                new SKRect(0, 0, colorWash.Width, colorWash.Height),
+                ToSkRect(viewport),
+                new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.None),
+                backgroundPaint);
+        }
 
         if (matchingAmbient &&
             ambientImage is not null &&
@@ -65,7 +85,9 @@ internal static class SkiaStageRenderer
             using var mattePaint = new SKPaint
             {
                 IsAntialias = matte.Style != MatteStyle.Solid,
-                Color = ToSkColor(stage.MatteColor),
+                Color = ToSkColor(PhotoDerivedStylePolicy.ResolveMatteColor(
+                    stage,
+                    matchingPhotoStyle ? photoStyleAnalysis : null)),
             };
             canvas.Save();
             try
@@ -75,6 +97,41 @@ internal static class SkiaStageRenderer
                 mattePaint.IsAntialias = false;
                 mattePaint.MaskFilter = null;
                 canvas.DrawRect(ToSkRect(matte.BackingDestination), mattePaint);
+            }
+            finally
+            {
+                canvas.Restore();
+            }
+        }
+
+        var hairline = PhotoDerivedStylePolicy.ResolveHairline(
+            stage,
+            matchingPhotoStyle ? photoStyleAnalysis : null,
+            renderScaling);
+        if (hairline is { } separation)
+        {
+            using var hairlinePaint = new SKPaint
+            {
+                IsAntialias = true,
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = (float)separation.WidthDip,
+                Color = new SKColor(
+                    separation.Color.Red,
+                    separation.Color.Green,
+                    separation.Color.Blue,
+                    separation.Alpha),
+            };
+            var offset = separation.WidthDip / 2;
+            var outline = new RectD(
+                photoDestination.X - offset,
+                photoDestination.Y - offset,
+                photoDestination.Width + separation.WidthDip,
+                photoDestination.Height + separation.WidthDip);
+            canvas.Save();
+            try
+            {
+                canvas.ClipRect(ToSkRect(viewport));
+                canvas.DrawRect(ToSkRect(outline), hairlinePaint);
             }
             finally
             {
@@ -173,11 +230,15 @@ internal static class SkiaStageRenderer
         ];
     }
 
-    private static StageColor ResolveBackgroundColor(StageSettings stage) =>
+    private static StageColor ResolveBackgroundColor(
+        StageSettings stage,
+        PhotoStyleAnalysis? analysis) =>
         stage.BackgroundMode switch
         {
             StageBackgroundMode.Neutral => StageDefaults.NeutralColor,
             StageBackgroundMode.Custom => stage.CustomBackgroundColor,
+            StageBackgroundMode.Average => analysis?.AverageColor ?? StageDefaults.BlackColor,
+            StageBackgroundMode.Dominant => analysis?.DominantColor ?? StageDefaults.BlackColor,
             _ => StageDefaults.BlackColor,
         };
 

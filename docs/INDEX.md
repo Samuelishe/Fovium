@@ -11,6 +11,7 @@ Not authoritative for: The subjects summarized by linked documents.
 | [`PROJECT-VISION.md`](PROJECT-VISION.md) | Product identity, audience, philosophy, Stage, photographer features, and non-goals | Evaluating product direction or feature fit |
 | [`UX-CONTRACT.md`](UX-CONTRACT.md) | Observable interaction and zero-UI behavior | Changing input, menus, window behavior, or settings UX |
 | [`SLIDESHOW.md`](SLIDESHOW.md) | Slideshow timing, sequence/end behavior, prepared-next ownership, memory bounds, and Photo Presentation integration | Changing timed navigation or slideshow configuration |
+| [`PHOTO-DERIVED-STYLING.md`](PHOTO-DERIVED-STYLING.md) | Bounded reference-sRGB analysis, derived Stage/Matte styling, identity fallback, and Hairline policy | Changing photograph-derived presentation styling |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Responsibility boundaries, dependency direction, and minimal architecture rules | Designing components or dependencies |
 | [`IMAGING-PIPELINE.md`](IMAGING-PIPELINE.md) | Probe, orientation, decoding, metadata boundary, formats, and large-image safety | Working on image ingestion or codecs |
 | [`FORMAT-SUPPORT.md`](FORMAT-SUPPORT.md) | Current supported formats and per-format decode/alpha/animation/metadata status | Checking or changing format-level capability |
