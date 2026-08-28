@@ -7,7 +7,9 @@ Not authoritative for: Decode-format support, viewport geometry, Color Managemen
 
 ## Analysis foundation
 
-Every successful canonical decode produces one deterministic analysis from the oriented reference-sRGB photograph inside the existing off-UI decode work. The analyzer resamples once to at most `96 px` on the long edge and reads no more than `9,216` visible samples. It records a linear-light alpha-weighted average, a deterministic 4-bit/channel dominant cluster, up to five weighted palette entries, a `4×4` spatial color field, and an outer-boundary tone. Fully transparent samples do not contribute.
+Every successful canonical decode produces one deterministic analysis from the oriented reference-sRGB photograph inside the existing off-UI decode work. The analyzer resamples once to at most `96 px` on the long edge and reads no more than `9,216` visible samples. It records a linear-light alpha-weighted average, raw deterministic 4-bit/channel population clusters, up to five unchanged population-ranked palette entries, a representative Dominant derived from those raw clusters, a `6×6` spatial color field, and an outer-boundary tone. Fully transparent samples do not contribute.
+
+Representative Dominant aggregates the raw clusters into a fixed bounded set of 12 OKLab hue families and eight neutral-lightness families. Smooth membership begins above chroma `0.015` and reaches full chromatic membership at `0.065`; hue affinity uses the fourth power of positive cosine, while neutral families use a smooth `0.25` lightness radius. A candidate must have at least `8%` support and at least `25%` of the largest family support. Admitted candidates are ranked by `support × chromaWeight × lightnessWeight`, where chroma weight is `0.65 + 2.65 × smoothstep(clamp((C − 0.010) / 0.100))` and lightness weight is `0.55 + 0.45 × sin(πL)`. Rounded score, support, then fixed family index provide stable tie order. Thus population remains primary, substantial color may beat gray/black/white softly, tiny saturated accents cannot win by saturation alone, and genuinely neutral, dark, or high-key photographs may remain neutral, dark, or light. The raw palette is never reordered or discarded by this presentation selection.
 
 The immutable managed result is attached to its exact `DecodedImage` and charged to the same session-local byte-bounded decoded cache entry. There is no second file decode, independent styling cache, full-resolution analysis loop, or viewport-sized derived surface. Adjacent decoded preload naturally includes the same small analysis. Cancellation during analysis disposes the unpublished decoded candidate; normal sequence generation/latest-wins rules reject late candidates.
 
@@ -15,7 +17,7 @@ Zoom, pan, Fit, physical 100%, resize, fullscreen, Photo Presentation layout, Ma
 
 ## Backgrounds and publication
 
-Average and Dominant are opaque solid Stage fills using the exact corresponding analyzed reference-sRGB colors. Color Wash expands the analysis's `4×4` spatial field with deterministic smoothstep interpolation in OKLab into a `64×64` soft abstract raster; its cells are constrained in OKLCH to lightness `0.18–0.72` and chroma at most `0.12`, so recognizable photographic detail is absent. The 16,384-byte native wash image is prepared once with the analysis, byte-accounted under the same `DecodedImage`, and shared with draw operations through retained leases. Geometry only stretches that artifact and never rebuilds it.
+Average is an opaque Stage fill using the exact mathematical analyzed reference-sRGB average. Dominant uses the exact representative color selected above. Color Wash expands the analysis's `6×6` spatial field with deterministic smoothstep interpolation in OKLab into a `64×64` soft abstract raster. Each cell receives a modest `1.18×` chroma gain capped at `0.16`, with lightness constrained to `0.20–0.76`; this retains more source color character without neon saturation or monitor-dependent sampling. Visual comparison found `4×4` materially more muted and `8×8` more likely to reveal broad source shapes, so `6×6` is the lowest selected complexity. The native wash remains 16,384 bytes, contains no photographic-resolution detail, and is prepared once with the analysis, byte-accounted under the same `DecodedImage`, and shared with draw operations through retained leases. Geometry only stretches that artifact and never rebuilds it.
 
 Derived styling is accepted only when its source identity equals the actually rendered photograph identity. If analysis is unavailable or mismatched, derived backgrounds render Black, automatic Matte renders the fixed neutral fallback, and Hairline Auto is omitted. A previous photograph's style is never displayed as the new photograph's style.
 
@@ -27,7 +29,7 @@ Matte color source is persisted independently from Matte enabled/style/width:
 
 - Custom preserves the existing exact user color;
 - Average uses the analyzed average;
-- Dominant uses the analyzed dominant cluster.
+- Dominant uses the same analyzed representative Dominant as the Stage background.
 
 Automatic Matte tones are deterministically normalized in OKLCH to lightness `0.30–0.88` and chroma at most `0.10`. This presentation-safe mapping limits extreme darkness, brightness, and saturation without machine learning or network access. It changes only Matte presentation color and never photograph pixels, destination, scale, or source mapping.
 

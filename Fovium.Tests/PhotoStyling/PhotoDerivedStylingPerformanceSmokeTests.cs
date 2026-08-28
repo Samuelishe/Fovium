@@ -31,7 +31,10 @@ public sealed class PhotoDerivedStylingPerformanceSmokeTests(ITestOutputHelper o
             Directory.CreateDirectory(outputDirectory);
         }
 
-        using var decoder = ImageDecoder.CreateDefault();
+        var diagnosticAnalyzer = new DiagnosticPhotoStyleAnalyzer();
+        using var decoder = new ImageDecoder(
+            [new HeifImageDecodeBackend(), new TiffImageDecodeBackend(), new SkiaImageDecodeBackend()],
+            photoStyleAnalyzer: diagnosticAnalyzer);
         foreach (var path in paths)
         {
             var decodeClock = Stopwatch.StartNew();
@@ -43,6 +46,7 @@ public sealed class PhotoDerivedStylingPerformanceSmokeTests(ITestOutputHelper o
             using var image = loaded.Image;
             Assert.True(loaded.IsSuccess, loaded.Error?.TechnicalDetail);
             var analysis = Assert.IsType<PhotoStyleAnalysis>(image!.GetPhotoStyleAnalysis());
+            var diagnostics = diagnosticAnalyzer.LastDiagnostics;
 
             Assert.InRange(
                 Math.Max(analysis.AnalyzedSize.Width, analysis.AnalyzedSize.Height),
@@ -52,7 +56,7 @@ public sealed class PhotoDerivedStylingPerformanceSmokeTests(ITestOutputHelper o
                 analysis.VisibleSampleCount,
                 1,
                 StageDefaults.PhotoStyleLongEdgePixels * StageDefaults.PhotoStyleLongEdgePixels);
-            Assert.Equal(StageDefaults.PhotoStylePaletteSize, analysis.Palette.Length);
+            Assert.InRange(analysis.Palette.Length, 1, StageDefaults.PhotoStylePaletteSize);
             Assert.Equal(
                 StageDefaults.PhotoStyleFieldColumns * StageDefaults.PhotoStyleFieldRows,
                 analysis.SpatialField.Colors.Length);
@@ -61,7 +65,10 @@ public sealed class PhotoDerivedStylingPerformanceSmokeTests(ITestOutputHelper o
                 "{0}: source={1}x{2} ({3:F2} MP), decodePlusAnalysis={4:F2} ms, " +
                 "analysis={5:F2} ms, analyzed={6}x{7}, samples={8:N0}, analysisRetained={9:N0} B, " +
                 "washRetained={10:N0} B, stylingTotal={11:N0} B, " +
-                "average=#{12:X2}{13:X2}{14:X2}, dominant=#{15:X2}{16:X2}{17:X2}.",
+                "rawLargestPopulation={12:P2}, rawLargest=#{13:X2}{14:X2}{15:X2}, " +
+                "representativePopulation={16:P2}, representativeL={17:F4}, representativeC={18:F4}, " +
+                "rawLargestDiffers={19}, representative=#{20:X2}{21:X2}{22:X2}, " +
+                "average=#{23:X2}{24:X2}{25:X2}.",
                 Path.GetFileName(path),
                 image.Descriptor.EncodedSize.Width,
                 image.Descriptor.EncodedSize.Height,
@@ -74,12 +81,20 @@ public sealed class PhotoDerivedStylingPerformanceSmokeTests(ITestOutputHelper o
                 analysis.RetainedBytes,
                 GetWashRetainedBytes(image),
                 analysis.RetainedBytes + GetWashRetainedBytes(image),
+                diagnostics.RawLargestPopulation,
+                diagnostics.RawLargestColor.Red,
+                diagnostics.RawLargestColor.Green,
+                diagnostics.RawLargestColor.Blue,
+                diagnostics.RepresentativePopulation,
+                diagnostics.RepresentativeLightness,
+                diagnostics.RepresentativeChroma,
+                diagnostics.RawLargestDiffers,
+                diagnostics.RepresentativeColor.Red,
+                diagnostics.RepresentativeColor.Green,
+                diagnostics.RepresentativeColor.Blue,
                 analysis.AverageColor.Red,
                 analysis.AverageColor.Green,
-                analysis.AverageColor.Blue,
-                analysis.DominantColor.Red,
-                analysis.DominantColor.Green,
-                analysis.DominantColor.Blue);
+                analysis.AverageColor.Blue);
 
             if (!string.IsNullOrWhiteSpace(outputDirectory))
             {
@@ -171,5 +186,21 @@ public sealed class PhotoDerivedStylingPerformanceSmokeTests(ITestOutputHelper o
             viewport.Y + ((viewport.Height - height) / 2),
             width,
             height);
+    }
+
+    private sealed class DiagnosticPhotoStyleAnalyzer : IPhotoStyleAnalyzer
+    {
+        private readonly PhotoStyleAnalyzer _inner = new();
+
+        public PhotoStyleAnalysisDiagnostics LastDiagnostics { get; private set; }
+
+        public PhotoStyleAnalysis Analyze(
+            DecodedImage image,
+            CancellationToken cancellationToken)
+        {
+            var result = _inner.AnalyzeWithDiagnostics(image, cancellationToken);
+            LastDiagnostics = result.Diagnostics;
+            return result.Analysis;
+        }
     }
 }

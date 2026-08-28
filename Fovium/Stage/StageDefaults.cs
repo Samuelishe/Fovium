@@ -47,9 +47,9 @@ internal static class StageDefaults
 
     public const int PhotoStylePaletteSize = 5;
 
-    public const int PhotoStyleFieldColumns = 4;
+    public const int PhotoStyleFieldColumns = 6;
 
-    public const int PhotoStyleFieldRows = 4;
+    public const int PhotoStyleFieldRows = 6;
 
     public const int PhotoStyleWashRasterPixels = 64;
 

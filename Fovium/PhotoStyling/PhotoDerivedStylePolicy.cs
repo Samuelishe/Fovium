@@ -14,9 +14,10 @@ internal static class PhotoDerivedStylePolicy
     internal const double MatteMinimumLightness = 0.30;
     internal const double MatteMaximumLightness = 0.88;
     internal const double MatteMaximumChroma = 0.10;
-    internal const double WashMinimumLightness = 0.18;
-    internal const double WashMaximumLightness = 0.72;
-    internal const double WashMaximumChroma = 0.12;
+    internal const double WashMinimumLightness = 0.20;
+    internal const double WashMaximumLightness = 0.76;
+    internal const double WashChromaGain = 1.18;
+    internal const double WashMaximumChroma = 0.16;
 
     public static StageColor ResolveMatteColor(
         StageSettings stage,
@@ -45,11 +46,7 @@ internal static class PhotoDerivedStylePolicy
         return analysis.SpatialField with
         {
             Colors = analysis.SpatialField.Colors
-                .Select(color => NormalizeTone(
-                    color,
-                    WashMinimumLightness,
-                    WashMaximumLightness,
-                    WashMaximumChroma))
+                .Select(NormalizeWashTone)
                 .ToImmutableArray(),
         };
     }
@@ -92,15 +89,15 @@ internal static class PhotoDerivedStylePolicy
         var bottom = Math.Min(field.Rows - 1, top + 1);
         var horizontal = SmoothStep(fieldX - left);
         var vertical = SmoothStep(fieldY - top);
-        var topTone = Oklab.Lerp(
-            Oklab.FromSrgb(field[left, top]),
-            Oklab.FromSrgb(field[right, top]),
+        var topTone = PhotoStylingOklab.Lerp(
+            PhotoStylingOklab.FromSrgb(field[left, top]),
+            PhotoStylingOklab.FromSrgb(field[right, top]),
             horizontal);
-        var bottomTone = Oklab.Lerp(
-            Oklab.FromSrgb(field[left, bottom]),
-            Oklab.FromSrgb(field[right, bottom]),
+        var bottomTone = PhotoStylingOklab.Lerp(
+            PhotoStylingOklab.FromSrgb(field[left, bottom]),
+            PhotoStylingOklab.FromSrgb(field[right, bottom]),
             horizontal);
-        return Oklab.Lerp(topTone, bottomTone, vertical).ToSrgb();
+        return PhotoStylingOklab.Lerp(topTone, bottomTone, vertical).ToSrgb();
     }
 
     private static double SmoothStep(double value) => value * value * (3 - (2 * value));
@@ -154,11 +151,23 @@ internal static class PhotoDerivedStylePolicy
         double maximumLightness,
         double maximumChroma)
     {
-        var lab = Oklab.FromSrgb(source);
-        var chroma = Math.Sqrt((lab.A * lab.A) + (lab.B * lab.B));
+        var lab = PhotoStylingOklab.FromSrgb(source);
+        var chroma = lab.Chroma;
         var scale = chroma > maximumChroma ? maximumChroma / chroma : 1;
-        return new Oklab(
+        return new PhotoStylingOklab(
             Math.Clamp(lab.L, minimumLightness, maximumLightness),
+            lab.A * scale,
+            lab.B * scale).ToSrgb();
+    }
+
+    internal static StageColor NormalizeWashTone(StageColor source)
+    {
+        var lab = PhotoStylingOklab.FromSrgb(source);
+        var chroma = lab.Chroma;
+        var targetChroma = Math.Min(chroma * WashChromaGain, WashMaximumChroma);
+        var scale = chroma > 0 ? targetChroma / chroma : 1;
+        return new PhotoStylingOklab(
+            Math.Clamp(lab.L, WashMinimumLightness, WashMaximumLightness),
             lab.A * scale,
             lab.B * scale).ToSrgb();
     }
@@ -182,54 +191,4 @@ internal static class PhotoDerivedStylePolicy
             ? channel / 12.92
             : Math.Pow((channel + 0.055) / 1.055, 2.4);
 
-    private static double ToSrgb(double channel) =>
-        channel <= 0.0031308
-            ? 12.92 * channel
-            : (1.055 * Math.Pow(channel, 1d / 2.4)) - 0.055;
-
-    private readonly record struct Oklab(double L, double A, double B)
-    {
-        public static Oklab Lerp(Oklab first, Oklab second, double amount) => new(
-            first.L + ((second.L - first.L) * amount),
-            first.A + ((second.A - first.A) * amount),
-            first.B + ((second.B - first.B) * amount));
-
-        public static Oklab FromSrgb(StageColor color)
-        {
-            var red = ToLinear(color.Red / 255d);
-            var green = ToLinear(color.Green / 255d);
-            var blue = ToLinear(color.Blue / 255d);
-            var l = (0.4122214708 * red) + (0.5363325363 * green) + (0.0514459929 * blue);
-            var m = (0.2119034982 * red) + (0.6806995451 * green) + (0.1073969566 * blue);
-            var s = (0.0883024619 * red) + (0.2817188376 * green) + (0.6299787005 * blue);
-            var lRoot = Math.Cbrt(l);
-            var mRoot = Math.Cbrt(m);
-            var sRoot = Math.Cbrt(s);
-            return new Oklab(
-                (0.2104542553 * lRoot) + (0.7936177850 * mRoot) - (0.0040720468 * sRoot),
-                (1.9779984951 * lRoot) - (2.4285922050 * mRoot) + (0.4505937099 * sRoot),
-                (0.0259040371 * lRoot) + (0.7827717662 * mRoot) - (0.8086757660 * sRoot));
-        }
-
-        public StageColor ToSrgb()
-        {
-            var lRoot = L + (0.3963377774 * A) + (0.2158037573 * B);
-            var mRoot = L - (0.1055613458 * A) - (0.0638541728 * B);
-            var sRoot = L - (0.0894841775 * A) - (1.2914855480 * B);
-            var l = lRoot * lRoot * lRoot;
-            var m = mRoot * mRoot * mRoot;
-            var s = sRoot * sRoot * sRoot;
-            var red = (+4.0767416621 * l) - (3.3077115913 * m) + (0.2309699292 * s);
-            var green = (-1.2684380046 * l) + (2.6097574011 * m) - (0.3413193965 * s);
-            var blue = (-0.0041960863 * l) - (0.7034186147 * m) + (1.7076147010 * s);
-            return new StageColor(ToByte(red), ToByte(green), ToByte(blue));
-        }
-
-        private static byte ToByte(double linear) =>
-            (byte)Math.Clamp(
-                (int)Math.Round(
-                    PhotoDerivedStylePolicy.ToSrgb(Math.Clamp(linear, 0, 1)) * 255),
-                0,
-                255);
-    }
 }

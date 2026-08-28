@@ -351,8 +351,16 @@ Stop-at-end leaves the last photograph and presentation layout visible. Loop wra
 
 ## D-057 — Photo-derived styling is one bounded canonical-source artifact
 
-Status: Accepted in R10-A.
+Status: Accepted through R10-A-F1.
 
-Every successful canonical decode performs one deterministic off-UI analysis of an oriented reference-sRGB raster bounded to a 96-pixel long edge. The immutable, byte-accounted result belongs to the exact `DecodedImage` and records linear-light average, deterministic quantized dominant/palette, a 4×4 spatial field, and a boundary tone. It reuses the existing decoded cache, preload, cancellation, and latest-wins identity rather than introducing a file re-decode, full-resolution loop, or second general cache. Geometry, monitor destination, Peek, and presentation layout never enter its identity or trigger recomputation; Blink consumes the comparison image's own result.
+Every successful canonical decode performs one deterministic off-UI analysis of an oriented reference-sRGB raster bounded to a 96-pixel long edge. The immutable, byte-accounted result belongs to the exact `DecodedImage` and records linear-light average, deterministic quantized raw palette, representative Dominant, a `6×6` spatial field, and a boundary tone. It reuses the existing decoded cache, preload, cancellation, and latest-wins identity rather than introducing a file re-decode, full-resolution loop, or second general cache. Geometry, monitor destination, Peek, and presentation layout never enter its identity or trigger recomputation; Blink consumes the comparison image's own result.
 
 Average and Dominant backgrounds use exact analyzed colors. Color Wash deterministically expands the normalized spatial field into one 64×64 OKLab-smoothed raster, which remains abstract, is byte-accounted with the decoded image, and is leased by render owners without geometry-triggered regeneration. Automatic Matte tones clamp OKLCH lightness/chroma for presentation safety; Hairline Auto selects a one-physical-pixel translucent black/gray/white boundary by maximum minimum contrast against Matte and photo edge. Exact source identity is mandatory: unavailable or mismatched analysis yields Black background, neutral auto Matte, and no hairline. Picker remains canonical-source reference sRGB, Histogram remains source-domain, and none of these styles changes photograph pixels, viewport geometry, Color Management, or runtime network behavior.
+
+## D-058 — Dominant is representative while Color Wash remains bounded and abstract
+
+Status: Accepted in R10-A-F1.
+
+The raw 4-bit/channel palette remains population-ranked evidence, while the user-facing Dominant is selected separately from 12 fixed OKLab hue families and eight neutral-lightness families. Candidate admission requires both 8% absolute support and 25% of the largest family; deterministic population support is then modulated by smooth bounded chroma and lightness weights. This lets a substantial chromatic region beat gray, black, or white without allowing a tiny saturated accent to dominate, and preserves neutral/dark/high-key answers when they represent the photograph. Background and automatic Matte consume the same representative result; Average is unchanged.
+
+Color Wash uses a `6×6` linear-light field because corpus comparison found `4×4` unnecessarily muted and `8×8` more likely to expose broad recognizable shapes. Its native artifact remains `64×64`; cell chroma gains `1.18×` with a `0.16` cap and lightness stays within `0.20–0.76`. This is reference-sRGB presentation tuning, not Ambient, monitor-managed sampling, geometry work, or another cache.

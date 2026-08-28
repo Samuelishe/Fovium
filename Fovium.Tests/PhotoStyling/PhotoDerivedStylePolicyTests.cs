@@ -136,6 +136,60 @@ public sealed class PhotoDerivedStylePolicyTests
     }
 
     [Fact]
+    public void ColorWashAppliesModestBoundedChromaGainWithoutChangingNeutralTone()
+    {
+        var chromatic = new StageColor(110, 80, 70);
+        var neutral = new StageColor(96, 96, 96);
+
+        var tunedChromatic = PhotoDerivedStylePolicy.NormalizeWashTone(chromatic);
+        var tunedNeutral = PhotoDerivedStylePolicy.NormalizeWashTone(neutral);
+        var sourceLab = PhotoStylingOklab.FromSrgb(chromatic);
+        var tunedLab = PhotoStylingOklab.FromSrgb(tunedChromatic);
+        var tunedSaturated = PhotoStylingOklab.FromSrgb(
+            PhotoDerivedStylePolicy.NormalizeWashTone(new StageColor(255, 0, 255)));
+        var tunedDark = PhotoStylingOklab.FromSrgb(
+            PhotoDerivedStylePolicy.NormalizeWashTone(new StageColor(1, 1, 1)));
+        var tunedBright = PhotoStylingOklab.FromSrgb(
+            PhotoDerivedStylePolicy.NormalizeWashTone(new StageColor(254, 254, 254)));
+
+        Assert.True(tunedLab.Chroma > sourceLab.Chroma);
+        Assert.InRange(
+            tunedSaturated.Chroma,
+            0,
+            0.162);
+        Assert.InRange(tunedDark.L, 0.198, 0.22);
+        Assert.InRange(tunedBright.L, 0.74, 0.762);
+        Assert.Equal(1.18, PhotoDerivedStylePolicy.WashChromaGain);
+        Assert.Equal(0.16, PhotoDerivedStylePolicy.WashMaximumChroma);
+        Assert.Equal(0.20, PhotoDerivedStylePolicy.WashMinimumLightness);
+        Assert.Equal(0.76, PhotoDerivedStylePolicy.WashMaximumLightness);
+        Assert.Equal(neutral, tunedNeutral);
+    }
+
+    [Fact]
+    public void DominantMatteNormalizesTheSameRepresentativeColorPublishedByAnalysis()
+    {
+        var representative = new StageColor(164, 82, 103);
+        var analysis = CreateAnalysis(
+            average: new StageColor(80, 80, 80),
+            dominant: representative,
+            boundary: new StageColor(50, 50, 50));
+        var stage = StageSettings.Default with
+        {
+            MatteEnabled = true,
+            MatteColorSource = MatteColorSource.Dominant,
+        };
+
+        var expected = PhotoDerivedStylePolicy.NormalizeTone(
+            representative,
+            PhotoDerivedStylePolicy.MatteMinimumLightness,
+            PhotoDerivedStylePolicy.MatteMaximumLightness,
+            PhotoDerivedStylePolicy.MatteMaximumChroma);
+
+        Assert.Equal(expected, PhotoDerivedStylePolicy.ResolveMatteColor(stage, analysis));
+    }
+
+    [Fact]
     public void ColorWashArtifactIsBoundedAndSmoothlyInterpolatesSpatialField()
     {
         var colors = Enumerable.Repeat(new StageColor(24, 48, 72), 16).ToArray();
@@ -191,13 +245,19 @@ public sealed class PhotoDerivedStylePolicyTests
         StageColor dominant,
         StageColor boundary)
     {
-        var colors = Enumerable.Repeat(average, 16).ToImmutableArray();
+        var colors = Enumerable.Repeat(
+            average,
+            StageDefaults.PhotoStyleFieldColumns * StageDefaults.PhotoStyleFieldRows)
+            .ToImmutableArray();
         return new PhotoStyleAnalysis(
             average,
             dominant,
             boundary,
             [new PhotoPaletteEntry(dominant, 1)],
-            new PhotoColorField(4, 4, colors),
+            new PhotoColorField(
+                StageDefaults.PhotoStyleFieldColumns,
+                StageDefaults.PhotoStyleFieldRows,
+                colors),
             new PixelSize(4, 4),
             16,
             TimeSpan.FromMilliseconds(1));

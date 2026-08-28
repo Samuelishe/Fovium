@@ -131,6 +131,10 @@ Accepted at `0.1.1.0002`: Photo Presentation Edge Margin constrains only the ori
 
 Locally complete at `0.1.2.0000`: add one bounded offline reference-sRGB analysis per decoded photograph and reuse its average, dominant, palette, spatial, and boundary summaries for Average/Dominant/Color Wash Stage backgrounds, presentation-safe automatic Matte color, and Hairline Auto separation. Exact identity and safe fallback prevent stale styling; normal navigation, Slideshow, Photo Presentation, Picker, Histogram, and Color Management retain their existing ownership. Owner review/commit and hosted CI remain before selecting another roadmap stage.
 
+### R10-A-F1 — Representative color and Color Wash tuning
+
+Locally complete at `0.1.2.0001`: preserve the R10-A ownership and bounds while selecting user-facing Dominant from substantial perceptual palette families rather than the raw largest bin. Tiny accents remain ineligible to capture a neutral image, raw palette/average data remain unchanged, automatic Matte shares the selector, and a `6×6` field plus modest bounded OKLab chroma/lightness mapping makes Color Wash richer without turning it into Ambient.
+
 ## Later / separate platform milestones
 
 - file association and Open With integration;

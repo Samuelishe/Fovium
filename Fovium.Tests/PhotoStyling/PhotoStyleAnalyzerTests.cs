@@ -13,7 +13,10 @@ public sealed class PhotoStyleAnalyzerTests
     {
         var color = new SKColor(32, 96, 224);
         using var decoded = CreateDecoded(40, 20, (_, _) => color);
-        var analysis = new PhotoStyleAnalyzer().Analyze(decoded, CancellationToken.None);
+        var result = new PhotoStyleAnalyzer().AnalyzeWithDiagnostics(
+            decoded,
+            CancellationToken.None);
+        var analysis = result.Analysis;
 
         var expected = new StageColor(color.Red, color.Green, color.Blue);
         Assert.Equal(expected, analysis.AverageColor);
@@ -26,7 +29,7 @@ public sealed class PhotoStyleAnalyzerTests
     }
 
     [Fact]
-    public void DominantColorUsesMostPopulatedDeterministicQuantizedCluster()
+    public void RepresentativeDominantIsDeterministicForChromaticMajority()
     {
         using var decoded = CreateDecoded(
             4,
@@ -54,15 +57,18 @@ public sealed class PhotoStyleAnalyzerTests
         int expectedHeight)
     {
         using var decoded = CreateSolidDecoded(width, height, SKColors.SteelBlue);
-        var analysis = new PhotoStyleAnalyzer().Analyze(decoded, CancellationToken.None);
+        var result = new PhotoStyleAnalyzer().AnalyzeWithDiagnostics(
+            decoded,
+            CancellationToken.None);
+        var analysis = result.Analysis;
 
         Assert.Equal(new PixelSize(expectedWidth, expectedHeight), analysis.AnalyzedSize);
         Assert.InRange(
             analysis.VisibleSampleCount,
             1,
             StageDefaults.PhotoStyleLongEdgePixels * StageDefaults.PhotoStyleLongEdgePixels);
-        Assert.Equal(4, analysis.SpatialField.Columns);
-        Assert.Equal(4, analysis.SpatialField.Rows);
+        Assert.Equal(6, analysis.SpatialField.Columns);
+        Assert.Equal(6, analysis.SpatialField.Rows);
         Assert.Equal(5, StageDefaults.PhotoStylePaletteSize);
     }
 
@@ -77,8 +83,8 @@ public sealed class PhotoStyleAnalyzerTests
                 : (y < 32 ? SKColors.DeepSkyBlue : SKColors.ForestGreen));
         var analysis = new PhotoStyleAnalyzer().Analyze(decoded, CancellationToken.None);
 
-        Assert.NotEqual(analysis.SpatialField[0, 0], analysis.SpatialField[3, 0]);
-        Assert.NotEqual(analysis.SpatialField[0, 0], analysis.SpatialField[0, 3]);
+        Assert.NotEqual(analysis.SpatialField[0, 0], analysis.SpatialField[5, 0]);
+        Assert.NotEqual(analysis.SpatialField[0, 0], analysis.SpatialField[0, 5]);
         using var wash = PhotoDerivedStylePolicy.CreateColorWashImage(analysis);
         Assert.Equal(StageDefaults.PhotoStyleWashRasterPixels, wash.Width);
         Assert.Equal(StageDefaults.PhotoStyleWashRasterPixels, wash.Height);
@@ -106,7 +112,7 @@ public sealed class PhotoStyleAnalyzerTests
     }
 
     [Fact]
-    public void EqualDominantClustersUseStableLowestBinTieBreak()
+    public void EqualPopulationChromaticClustersProduceStableRepresentativeWinner()
     {
         using var decoded = CreateDecoded(
             2,
@@ -114,9 +120,132 @@ public sealed class PhotoStyleAnalyzerTests
             (x, _) => x == 0 ? new SKColor(240, 16, 16) : new SKColor(16, 16, 240));
         var analysis = new PhotoStyleAnalyzer().Analyze(decoded, CancellationToken.None);
 
-        Assert.Equal(new StageColor(16, 16, 240), analysis.DominantColor);
+        var repeated = new PhotoStyleAnalyzer().Analyze(decoded, CancellationToken.None);
+
+        Assert.Equal(analysis.DominantColor, repeated.DominantColor);
         Assert.Equal(0.5, analysis.Palette[0].Weight, 10);
         Assert.Equal(0.5, analysis.Palette[1].Weight, 10);
+    }
+
+    [Fact]
+    public void SubstantialRedRegionDefeatsLargerDarkNeutralClusterWithoutChangingRawPalette()
+    {
+        using var decoded = CreateDecoded(
+            96,
+            1,
+            (x, _) => x switch
+            {
+                < 44 => new SKColor(35, 35, 38),
+                < 78 => new SKColor(205, 35, 45),
+                _ => new SKColor(100, 105, 110),
+            });
+        var result = new PhotoStyleAnalyzer().AnalyzeWithDiagnostics(
+            decoded,
+            CancellationToken.None);
+        var analysis = result.Analysis;
+
+        Assert.Equal(new StageColor(35, 35, 38), analysis.Palette[0].Color);
+        Assert.Equal(44d / 96, analysis.Palette[0].Weight, 10);
+        Assert.NotEqual(analysis.Palette[0].Color, analysis.DominantColor);
+        Assert.True(analysis.DominantColor.Red > 175);
+        Assert.True(analysis.DominantColor.Red > analysis.DominantColor.Green * 3);
+        Assert.True(analysis.DominantColor.Red > analysis.DominantColor.Blue * 3);
+        Assert.Equal(new StageColor(35, 35, 38), result.Diagnostics.RawLargestColor);
+        Assert.Equal(44d / 96, result.Diagnostics.RawLargestPopulation, 10);
+        Assert.InRange(result.Diagnostics.RepresentativePopulation, 0.30, 0.40);
+        Assert.InRange(result.Diagnostics.RepresentativeLightness, 0.40, 0.55);
+        Assert.True(result.Diagnostics.RepresentativeChroma > 0.15);
+        Assert.True(result.Diagnostics.RawLargestDiffers);
+    }
+
+    [Fact]
+    public void TinySaturatedAccentCannotHijackNeutralRepresentative()
+    {
+        using var decoded = CreateDecoded(
+            96,
+            1,
+            (x, _) => x switch
+            {
+                < 82 => new SKColor(115, 118, 120),
+                < 87 => new SKColor(230, 25, 35),
+                _ => new SKColor(80, 82, 85),
+            });
+        var result = new PhotoStyleAnalyzer().AnalyzeWithDiagnostics(
+            decoded,
+            CancellationToken.None);
+        var analysis = result.Analysis;
+
+        Assert.Equal(new StageColor(115, 118, 120), analysis.Palette[0].Color);
+        Assert.InRange(
+            Math.Max(analysis.DominantColor.Red, Math.Max(
+                analysis.DominantColor.Green,
+                analysis.DominantColor.Blue)) -
+            Math.Min(analysis.DominantColor.Red, Math.Min(
+                analysis.DominantColor.Green,
+                analysis.DominantColor.Blue)),
+            0,
+            8);
+        Assert.True(analysis.DominantColor.Red < 150);
+        Assert.Equal(new StageColor(115, 118, 120), result.Diagnostics.RawLargestColor);
+        Assert.Equal(82d / 96, result.Diagnostics.RawLargestPopulation, 10);
+        Assert.True(result.Diagnostics.RepresentativePopulation > 0.80);
+        Assert.InRange(result.Diagnostics.RepresentativeChroma, 0, 0.02);
+        Assert.True(result.Diagnostics.RawLargestDiffers);
+    }
+
+    [Fact]
+    public void GrayscaleGradientKeepsNeutralRepresentative()
+    {
+        using var decoded = CreateDecoded(
+            96,
+            8,
+            (x, _) =>
+            {
+                var value = (byte)(24 + (208d * x / 95));
+                return new SKColor(value, value, value);
+            });
+        var analysis = new PhotoStyleAnalyzer().Analyze(decoded, CancellationToken.None);
+
+        Assert.Equal(analysis.DominantColor.Red, analysis.DominantColor.Green);
+        Assert.Equal(analysis.DominantColor.Green, analysis.DominantColor.Blue);
+    }
+
+    [Fact]
+    public void MostlyBlackNightImageKeepsDarkRepresentativeDespiteTinyColoredLights()
+    {
+        using var decoded = CreateDecoded(
+            96,
+            1,
+            (x, _) => x switch
+            {
+                < 86 => new SKColor(5, 7, 10),
+                < 91 => new SKColor(20, 35, 65),
+                _ => new SKColor(230, 170, 35),
+            });
+        var analysis = new PhotoStyleAnalyzer().Analyze(decoded, CancellationToken.None);
+
+        Assert.InRange(analysis.DominantColor.Red, (byte)0, (byte)20);
+        Assert.InRange(analysis.DominantColor.Green, (byte)0, (byte)20);
+        Assert.InRange(analysis.DominantColor.Blue, (byte)0, (byte)25);
+    }
+
+    [Fact]
+    public void HighKeyImageMayKeepVeryLightNeutralRepresentative()
+    {
+        using var decoded = CreateDecoded(
+            96,
+            1,
+            (x, _) => x switch
+            {
+                < 85 => new SKColor(244, 243, 240),
+                < 93 => new SKColor(220, 224, 230),
+                _ => new SKColor(235, 185, 170),
+            });
+        var analysis = new PhotoStyleAnalyzer().Analyze(decoded, CancellationToken.None);
+
+        Assert.InRange(analysis.DominantColor.Red, (byte)225, byte.MaxValue);
+        Assert.InRange(analysis.DominantColor.Green, (byte)225, byte.MaxValue);
+        Assert.InRange(analysis.DominantColor.Blue, (byte)225, byte.MaxValue);
     }
 
     private static DecodedImage CreateDecoded(

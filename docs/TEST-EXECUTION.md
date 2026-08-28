@@ -168,7 +168,7 @@ Run the focused analysis, policy, identity, Stage, settings, and viewer regressi
 dotnet test Fovium.Tests/Fovium.Tests.csproj -c Release --filter "FullyQualifiedName~PhotoStyling|FullyQualifiedName~PhotoDerived|FullyQualifiedName~StageViewportInvarianceTests|FullyQualifiedName~StageSettingsTests|FullyQualifiedName~JsonSettingsStoreTests|FullyQualifiedName~LocalizationTests"
 ```
 
-The suite proves bounded 96-pixel oriented analysis, linear-light alpha-aware average, deterministic dominant/palette/spatial summaries, decoded-cache byte accounting, cancellation/stale suppression, presentation-safe Matte/Color Wash normalization, 64×64 smooth wash artifact ownership, one-physical-pixel Hairline policy, exact source identity and fallback, A→B→C/Blink/Peek authority, geometry-only reuse, persistence, localization, and unchanged Picker/Histogram domains. Real-image timing and ignored PNG visual artifacts are opt-in:
+The suite proves bounded 96-pixel oriented analysis, linear-light alpha-aware Average, unchanged raw palette population, substantial representative Dominant selection, tiny-accent admission, neutral/dark/high-key outcomes, stable family ordering, a deterministic `6×6` spatial summary, decoded-cache byte accounting, cancellation/stale suppression, shared Dominant Matte authority, bounded Color Wash normalization, 64×64 smooth wash ownership, one-physical-pixel Hairline policy, exact source identity and fallback, A→B→C/Blink/Peek authority, geometry-only reuse, persistence, localization, and unchanged Picker/Histogram domains. Real-image timing and ignored PNG visual artifacts are opt-in:
 
 ```powershell
 $env:FOVIUM_PHOTO_STYLE_PERF_IMAGES = 'C:\path\landscape.jpg;C:\path\portrait.jpg;C:\path\24mp.png'

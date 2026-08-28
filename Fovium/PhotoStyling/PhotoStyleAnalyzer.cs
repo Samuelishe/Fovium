@@ -12,13 +12,35 @@ internal interface IPhotoStyleAnalyzer
     PhotoStyleAnalysis Analyze(DecodedImage image, CancellationToken cancellationToken);
 }
 
+internal readonly record struct PhotoStyleAnalysisDiagnostics(
+    StageColor RawLargestColor,
+    double RawLargestPopulation,
+    StageColor RepresentativeColor,
+    double RepresentativePopulation,
+    double RepresentativeLightness,
+    double RepresentativeChroma,
+    double RepresentativeScore,
+    int RepresentativeFamilyIndex)
+{
+    public bool RawLargestDiffers => RawLargestColor != RepresentativeColor;
+}
+
+internal readonly record struct PhotoStyleAnalysisResult(
+    PhotoStyleAnalysis Analysis,
+    PhotoStyleAnalysisDiagnostics Diagnostics);
+
 internal sealed class PhotoStyleAnalyzer : IPhotoStyleAnalyzer
 {
     private const int QuantizationLevels = 16;
     private const int QuantizationBinCount = QuantizationLevels * QuantizationLevels * QuantizationLevels;
     private const double BoundaryFraction = 0.15;
 
-    public PhotoStyleAnalysis Analyze(DecodedImage image, CancellationToken cancellationToken)
+    public PhotoStyleAnalysis Analyze(DecodedImage image, CancellationToken cancellationToken) =>
+        AnalyzeWithDiagnostics(image, cancellationToken).Analysis;
+
+    internal PhotoStyleAnalysisResult AnalyzeWithDiagnostics(
+        DecodedImage image,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(image);
         cancellationToken.ThrowIfCancellationRequested();
@@ -120,24 +142,26 @@ internal sealed class PhotoStyleAnalyzer : IPhotoStyleAnalyzer
             _visibleSamples++;
         }
 
-        public PhotoStyleAnalysis Create(TimeSpan duration)
+        public PhotoStyleAnalysisResult Create(TimeSpan duration)
         {
             var average = _average.ToColor(StageDefaults.NeutralColor);
             var boundary = _boundary.ToColor(average);
-            var rankedBins = Enumerable.Range(0, QuantizationBinCount)
-                .Where(index => _binWeights[index] > 0)
-                .OrderByDescending(index => _binWeights[index])
-                .ThenBy(index => index)
-                .Take(StageDefaults.PhotoStylePaletteSize)
-                .ToArray();
             var totalWeight = _binWeights.Sum();
-            var palette = rankedBins
-                .Select(index => new PhotoPaletteEntry(
+            var rankedClusters = Enumerable.Range(0, QuantizationBinCount)
+                .Where(index => _binWeights[index] > 0)
+                .Select(index => new PhotoColorCluster(
+                    index,
                     new StageColor(
                         ToByte(_binRed[index] / _binWeights[index]),
                         ToByte(_binGreen[index] / _binWeights[index]),
                         ToByte(_binBlue[index] / _binWeights[index])),
                     _binWeights[index] / totalWeight))
+                .OrderByDescending(cluster => cluster.Weight)
+                .ThenBy(cluster => cluster.StableKey)
+                .ToArray();
+            var palette = rankedClusters
+                .Take(StageDefaults.PhotoStylePaletteSize)
+                .Select(cluster => new PhotoPaletteEntry(cluster.Color, cluster.Weight))
                 .ToImmutableArray();
             if (palette.IsEmpty)
             {
@@ -147,9 +171,10 @@ internal sealed class PhotoStyleAnalyzer : IPhotoStyleAnalyzer
             var field = _field
                 .Select(cell => cell.ToColor(average))
                 .ToImmutableArray();
-            return new PhotoStyleAnalysis(
+            var representative = RepresentativeColorSelector.Select(rankedClusters, average);
+            var analysis = new PhotoStyleAnalysis(
                 average,
-                palette[0].Color,
+                representative.Color,
                 boundary,
                 palette,
                 new PhotoColorField(
@@ -159,6 +184,27 @@ internal sealed class PhotoStyleAnalyzer : IPhotoStyleAnalyzer
                 _size,
                 _visibleSamples,
                 duration);
+            var rawLargest = rankedClusters.FirstOrDefault();
+            var diagnostics = rankedClusters.Length > 0
+                ? new PhotoStyleAnalysisDiagnostics(
+                    rawLargest.Color,
+                    rawLargest.Weight,
+                    representative.Color,
+                    representative.SupportFraction,
+                    representative.Lightness,
+                    representative.Chroma,
+                    representative.Score,
+                    representative.FamilyIndex)
+                : new PhotoStyleAnalysisDiagnostics(
+                    average,
+                    1,
+                    representative.Color,
+                    representative.SupportFraction,
+                    representative.Lightness,
+                    representative.Chroma,
+                    representative.Score,
+                    representative.FamilyIndex);
+            return new PhotoStyleAnalysisResult(analysis, diagnostics);
         }
 
         private bool IsBoundary(int x, int y)
