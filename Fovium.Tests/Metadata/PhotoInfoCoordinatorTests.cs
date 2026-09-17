@@ -44,7 +44,7 @@ public sealed class PhotoInfoCoordinatorTests
         Assert.Equal(1, reader.CallCount);
 
         var published = NextStateChange(coordinator);
-        reader.Complete(7, PhotoMetadataSummary.Empty with { CameraModel = "CAMERA-7" });
+        reader.CompleteSynchronously(7, PhotoMetadataSummary.Empty with { CameraModel = "CAMERA-7" });
         await published;
         Assert.Equal("CAMERA-7", coordinator.CurrentState!.Metadata.CameraModel);
         Assert.False(coordinator.CurrentState.IsMetadataLoading);
@@ -73,11 +73,16 @@ public sealed class PhotoInfoCoordinatorTests
         Assert.False(coordinator.CurrentState.Metadata.HasUsefulMetadata);
 
         var currentPublished = NextStateChange(coordinator);
-        reader.Complete(3, PhotoMetadataSummary.Empty with { CameraModel = "CAMERA-C" });
+        reader.CompleteSynchronously(3, PhotoMetadataSummary.Empty with { CameraModel = "CAMERA-C" });
         await currentPublished;
-        reader.Complete(1, PhotoMetadataSummary.Empty with { CameraModel = "STALE-A" });
-        reader.Complete(2, PhotoMetadataSummary.Empty with { CameraModel = "STALE-B" });
-        await YieldUntilAsync(() => coordinator.Metrics.StaleResults == 2);
+
+        Assert.Equal("C.jpg", coordinator.CurrentState!.Base.SourcePath);
+        Assert.Equal("CAMERA-C", coordinator.CurrentState.Metadata.CameraModel);
+
+        reader.CompleteSynchronously(1, PhotoMetadataSummary.Empty with { CameraModel = "STALE-A" });
+        Assert.Equal(1, coordinator.Metrics.StaleResults);
+        reader.CompleteSynchronously(2, PhotoMetadataSummary.Empty with { CameraModel = "STALE-B" });
+        Assert.Equal(2, coordinator.Metrics.StaleResults);
 
         Assert.Equal("C.jpg", coordinator.CurrentState!.Base.SourcePath);
         Assert.Equal("CAMERA-C", coordinator.CurrentState.Metadata.CameraModel);
@@ -94,7 +99,7 @@ public sealed class PhotoInfoCoordinatorTests
         using var coordinator = new PhotoInfoCoordinator(source, reader);
         coordinator.SetVisible(true);
         var published = NextStateChange(coordinator);
-        reader.Complete(1, PhotoMetadataSummary.Empty);
+        reader.CompleteSynchronously(1, PhotoMetadataSummary.Empty);
         await published;
         coordinator.SetVisible(false);
         coordinator.SetVisible(true);
@@ -180,16 +185,6 @@ public sealed class PhotoInfoCoordinatorTests
         return completion.Task;
     }
 
-    private static async Task YieldUntilAsync(Func<bool> condition)
-    {
-        for (var attempt = 0; attempt < 1000 && !condition(); attempt++)
-        {
-            await Task.Yield();
-        }
-
-        Assert.True(condition());
-    }
-
     private sealed class ControllableReader : IPhotoMetadataReader
     {
         private readonly Dictionary<byte, TaskCompletionSource<PhotoMetadataReadResult>> _pending = [];
@@ -202,16 +197,18 @@ public sealed class PhotoInfoCoordinatorTests
         {
             CallCount++;
             var marker = encodedSource.Span[0];
-            var completion = new TaskCompletionSource<PhotoMetadataReadResult>(
-                TaskCreationOptions.RunContinuationsAsynchronously);
+            var completion = new TaskCompletionSource<PhotoMetadataReadResult>();
             _pending.Add(marker, completion);
             return completion.Task;
         }
 
-        public void Complete(byte marker, PhotoMetadataSummary summary)
+        public void CompleteSynchronously(byte marker, PhotoMetadataSummary summary)
         {
             var completion = _pending[marker];
             _pending.Remove(marker);
+
+            // Test-owned inline completion makes this return only after the
+            // coordinator has processed the controlled reader result.
             completion.SetResult(PhotoMetadataReadResult.FromSummary(summary));
         }
     }

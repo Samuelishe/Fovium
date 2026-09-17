@@ -38,6 +38,7 @@ _ReSharper.Caches/
 /resources/test-images/
 
 # Local settings
+/.codex/config.toml
 *.local.json
 *.local.yaml
 *.local.yml
