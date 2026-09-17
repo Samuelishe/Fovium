@@ -196,16 +196,80 @@ internal static class UiStrings
     public const string ColorPickerApproximate = "colorPicker.approximate";
     public const string ColorPickerRgb = "colorPicker.rgb";
     public const string ColorPickerRgba = "colorPicker.rgba";
+    public const string ColorPickerClear = "colorPicker.clear";
+    public const string ColorPickerDetailHex = "colorPicker.detail.hex";
+    public const string ColorPickerDetailRgb = "colorPicker.detail.rgb";
+    public const string ColorPickerDetailRgba = "colorPicker.detail.rgba";
+    public const string ColorPickerDetailOklch = "colorPicker.detail.oklch";
+    public const string ColorPickerDetailHue = "colorPicker.detail.hue";
+    public const string ColorPickerDetailLightness = "colorPicker.detail.lightness";
+    public const string ColorPickerDetailChroma = "colorPicker.detail.chroma";
+    public const string ColorPickerDetailCreativeName = "colorPicker.detail.creativeName";
+    public const string ColorPickerNameBlack = "colorPicker.name.black";
+    public const string ColorPickerNameDarkGray = "colorPicker.name.darkGray";
+    public const string ColorPickerNameGray = "colorPicker.name.gray";
+    public const string ColorPickerNameLightGray = "colorPicker.name.lightGray";
+    public const string ColorPickerNameWhite = "colorPicker.name.white";
+    public const string ColorPickerHueNeutral = "colorPicker.hue.neutral";
+    public const string ColorPickerHueWarmGray = "colorPicker.hue.warmGray";
+    public const string ColorPickerHueCoolGray = "colorPicker.hue.coolGray";
+    public const string ColorPickerHueRed = "colorPicker.hue.red";
+    public const string ColorPickerHueCoral = "colorPicker.hue.coral";
+    public const string ColorPickerHueOrange = "colorPicker.hue.orange";
+    public const string ColorPickerHueAmber = "colorPicker.hue.amber";
+    public const string ColorPickerHueYellow = "colorPicker.hue.yellow";
+    public const string ColorPickerHueYellowGreen = "colorPicker.hue.yellowGreen";
+    public const string ColorPickerHueGreen = "colorPicker.hue.green";
+    public const string ColorPickerHueTurquoise = "colorPicker.hue.turquoise";
+    public const string ColorPickerHueCyan = "colorPicker.hue.cyan";
+    public const string ColorPickerHueBlue = "colorPicker.hue.blue";
+    public const string ColorPickerHueBlueViolet = "colorPicker.hue.blueViolet";
+    public const string ColorPickerHueViolet = "colorPicker.hue.violet";
+    public const string ColorPickerHueMagenta = "colorPicker.hue.magenta";
+    public const string ColorPickerHuePink = "colorPicker.hue.pink";
+    public const string ColorPickerHueBurgundy = "colorPicker.hue.burgundy";
+    public const string ColorPickerHueBrown = "colorPicker.hue.brown";
+    public const string ColorPickerHueOlive = "colorPicker.hue.olive";
+    public const string ColorPickerLightnessVeryDark = "colorPicker.lightness.veryDark";
+    public const string ColorPickerLightnessDark = "colorPicker.lightness.dark";
+    public const string ColorPickerLightnessMedium = "colorPicker.lightness.medium";
+    public const string ColorPickerLightnessLight = "colorPicker.lightness.light";
+    public const string ColorPickerLightnessVeryLight = "colorPicker.lightness.veryLight";
+    public const string ColorPickerChromaNeutral = "colorPicker.chroma.neutral";
+    public const string ColorPickerChromaMuted = "colorPicker.chroma.muted";
+    public const string ColorPickerChromaModerate = "colorPicker.chroma.moderate";
+    public const string ColorPickerChromaSaturated = "colorPicker.chroma.saturated";
+    public const string ColorPickerChromaVivid = "colorPicker.chroma.vivid";
+    public const string ColorPickerModifierVeryDark = "colorPicker.modifier.veryDark";
+    public const string ColorPickerModifierDark = "colorPicker.modifier.dark";
+    public const string ColorPickerModifierMedium = "colorPicker.modifier.medium";
+    public const string ColorPickerModifierLight = "colorPicker.modifier.light";
+    public const string ColorPickerModifierVeryLight = "colorPicker.modifier.veryLight";
+    public const string ColorPickerModifierNeutral = "colorPicker.modifier.neutral";
+    public const string ColorPickerModifierMuted = "colorPicker.modifier.muted";
+    public const string ColorPickerModifierModerate = "colorPicker.modifier.moderate";
+    public const string ColorPickerModifierSaturated = "colorPicker.modifier.saturated";
+    public const string ColorPickerModifierVivid = "colorPicker.modifier.vivid";
+
+    public const string ColorPickerNameLightnessChromaHue =
+        "colorPicker.name.lightnessChromaHue";
+
+    public const string ColorPickerNameLightnessHue = "colorPicker.name.lightnessHue";
+    public const string ColorPickerNameChromaHue = "colorPicker.name.chromaHue";
     public const string SettingsScaleOnImageChange = "settings.scaleOnImageChange";
     public const string SettingsKeepCurrentScale = "settings.keepCurrentScale";
     public const string SettingsFitEachImage = "settings.fitEachImage";
     public const string SettingsPhotoPresentationView = "settings.photoPresentationView";
+
     public const string SettingsEnablePhotoPresentation =
         "settings.enablePhotoPresentation";
+
     public const string SettingsPhotoPresentationEdgeMargin =
         "settings.photoPresentationEdgeMargin";
+
     public const string SettingsPhotoPresentationExplanation =
         "settings.photoPresentationExplanation";
+
     public const string Slideshow = "slideshow.title";
     public const string SlideshowStart = "slideshow.start";
     public const string SlideshowStop = "slideshow.stop";

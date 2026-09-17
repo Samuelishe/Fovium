@@ -73,7 +73,7 @@ public sealed class ColorNameDisplayCatalogTests
                 new Dictionary<string, string> { [sample.ColorNameStableId] = "Небопад" }));
 
         Assert.Equal("Небопад", resolver.Resolve(Assert.IsType<ColorSample>(session.CurrentSample)));
-        Assert.Equal("Небопад", resolver.Resolve(Assert.Single(session.History)));
+        Assert.Equal("Небопад", resolver.Resolve(Assert.Single(session.History).Sample));
     }
 
     [Fact]

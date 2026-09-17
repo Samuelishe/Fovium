@@ -38,6 +38,34 @@ public sealed class FloatingOverlayDragOriginTests
     }
 
     [Fact]
+    public void ColorHistoryRowsAndClearOrCloseControlsCannotInitiatePanelDrag()
+    {
+        var historyText = new TextBlock();
+        var historyButton = new Button { Content = historyText };
+        var historyRows = new StackPanel { Children = { historyButton } };
+        var historyScroller = new ScrollViewer { Content = historyRows };
+        var clearButton = new Button();
+        var closeButton = new Button();
+        var title = new TextBlock();
+        var panelContent = new StackPanel
+        {
+            Children = { title, clearButton, closeButton, historyScroller },
+        };
+        var panel = new Border { Child = panelContent };
+        var interactiveChildren = new HashSet<Visual>
+        {
+            clearButton,
+            closeButton,
+            historyScroller,
+        };
+
+        Assert.True(FloatingOverlayDragOrigin.MayInitiate(title, panel, interactiveChildren));
+        Assert.False(FloatingOverlayDragOrigin.MayInitiate(clearButton, panel, interactiveChildren));
+        Assert.False(FloatingOverlayDragOrigin.MayInitiate(closeButton, panel, interactiveChildren));
+        Assert.False(FloatingOverlayDragOrigin.MayInitiate(historyText, panel, interactiveChildren));
+    }
+
+    [Fact]
     public void VisualOutsidePanelCannotInitiateDrag()
     {
         var panel = new Border();

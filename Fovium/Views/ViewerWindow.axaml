@@ -8,241 +8,290 @@
         WindowState="Maximized"
         MinWidth="480"
         MinHeight="320">
-  <Grid x:Name="ViewerRoot" Background="Black">
-    <viewer:PhotoViewportControl x:Name="PhotoViewport" />
-    <viewer:MarkupOverlayControl x:Name="MarkupOverlay" />
-    <viewer:PointerFeedbackOverlayControl x:Name="PointerFeedbackOverlay" />
-    <Border x:Name="MarkupToolsPanel"
-              IsVisible="False"
-              HorizontalAlignment="Left"
-              VerticalAlignment="Top"
-              Padding="8"
-              CornerRadius="7"
-              Background="#E6202020"
-              BorderBrush="#604A4A4A"
-              BorderThickness="1">
-        <StackPanel Spacing="6">
-          <StackPanel Orientation="Horizontal" Spacing="5">
-            <Border x:Name="MarkupDragHandle"
-                    Width="18"
-                    Height="30"
-                    Cursor="SizeAll"
-                    Background="Transparent"
-                    CornerRadius="3">
-              <TextBlock Text="⠿"
-                         HorizontalAlignment="Center"
-                         VerticalAlignment="Center"
-                         Opacity="0.65" />
-            </Border>
-            <Button x:Name="MarkupHandButton" Width="32" Height="30" Padding="6" Focusable="False" />
-            <Button x:Name="MarkupBrushButton" Width="32" Height="30" Padding="6" Focusable="False" />
-            <Button x:Name="MarkupEraserButton" Width="32" Height="30" Padding="6" Focusable="False" />
-            <Button x:Name="MarkupLineButton" Width="32" Height="30" Padding="6" Focusable="False" />
-            <Button x:Name="MarkupRectangleButton" Width="32" Height="30" Padding="6" Focusable="False" />
-            <Button x:Name="MarkupEllipseButton" Width="32" Height="30" Padding="6" Focusable="False" />
-            <Button x:Name="MarkupArrowButton" Width="32" Height="30" Padding="6" Focusable="False" />
-            <Separator Width="1" Margin="3,2" />
-            <Button x:Name="MarkupUndoButton" Width="32" Height="30" Padding="6" Focusable="False" />
-            <Button x:Name="MarkupRedoButton" Width="32" Height="30" Padding="6" Focusable="False" />
-            <Button x:Name="MarkupClearButton" Width="32" Height="30" Padding="6" Focusable="False" />
-            <Separator Width="1" Margin="3,2" />
-            <Button x:Name="MarkupCloseButton" Width="26" Height="30" Padding="5" Focusable="False" />
-          </StackPanel>
-          <Separator Height="1" />
-          <StackPanel Orientation="Horizontal" Spacing="6">
-            <Button x:Name="MarkupColorButton" Width="36" Height="28" Padding="6" Focusable="False">
-              <Border x:Name="MarkupColorSwatch"
-                      Width="18" Height="18" CornerRadius="3" />
-            </Button>
-            <TextBlock x:Name="MarkupStrokeText"
-                       VerticalAlignment="Center"
-                       Margin="3,0,0,0" />
-            <Slider x:Name="MarkupStrokeSlider"
-                    Focusable="False"
-                    Width="104"
-                    Minimum="1"
-                    Maximum="128"
-                    TickFrequency="1" />
-            <TextBlock x:Name="MarkupStrokeValue"
-                       Width="30"
-                       VerticalAlignment="Center" />
-            <TextBlock x:Name="MarkupOpacityText"
-                       VerticalAlignment="Center"
-                       Margin="3,0,0,0" />
-            <Slider x:Name="MarkupOpacitySlider"
-                    Focusable="False"
-                    Width="92"
-                    Minimum="5"
-                    Maximum="100"
-                    TickFrequency="5" />
-            <TextBlock x:Name="MarkupOpacityValue"
-                       Width="38"
-                       VerticalAlignment="Center" />
-          </StackPanel>
-        </StackPanel>
-    </Border>
-    <Border x:Name="PhotoInfoPanel"
-            IsVisible="False"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
-            Width="440"
-            MaxWidth="500"
-            Padding="10,8,10,10"
-            CornerRadius="8"
-            Background="#E6202020"
-            BorderBrush="#604A4A4A"
-            BorderThickness="1">
-      <StackPanel Spacing="5">
-        <Grid ColumnDefinitions="Auto,*,Auto" Height="26">
-          <Border x:Name="PhotoInfoDragHandle"
-                  Grid.Column="0"
-                  Width="22"
-                  Cursor="SizeAll"
-                  Background="Transparent"
-                  CornerRadius="3">
-            <TextBlock Text="⠿"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Opacity="0.65" />
-          </Border>
-          <TextBlock x:Name="PhotoInfoTitleText"
-                     Grid.Column="1"
-                     VerticalAlignment="Center"
-                     FontWeight="SemiBold"
-                     Opacity="0.88" />
-          <Button x:Name="PhotoInfoCloseButton"
-                  Grid.Column="2"
-                  Width="26"
-                  Height="26"
-                  Padding="5"
-                  Focusable="False" />
-        </Grid>
-        <StackPanel x:Name="PhotoInfoRows" Spacing="3" />
-      </StackPanel>
-    </Border>
-    <Border x:Name="HistogramPanel"
-            IsVisible="False"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
-            Width="320"
-            Height="212"
-            Padding="10,8,10,10"
-            CornerRadius="8"
-            Background="#E6202020"
-            BorderBrush="#604A4A4A"
-            BorderThickness="1">
-      <StackPanel Spacing="6">
-        <Grid ColumnDefinitions="Auto,*,Auto" Height="26">
-          <Border x:Name="HistogramDragHandle"
-                  Grid.Column="0"
-                  Width="22"
-                  Cursor="SizeAll"
-                  Background="Transparent"
-                  CornerRadius="3">
-            <TextBlock Text="⠿"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Opacity="0.65" />
-          </Border>
-          <TextBlock x:Name="HistogramTitleText"
-                     Grid.Column="1"
-                     VerticalAlignment="Center"
-                     FontWeight="SemiBold"
-                     Opacity="0.88" />
-          <Button x:Name="HistogramCloseButton"
-                  Grid.Column="2"
-                  Width="26"
-                  Height="26"
-                  Padding="5"
-                  Focusable="False" />
-        </Grid>
-        <views:HistogramPlotControl x:Name="HistogramPlot"
-                                    Height="160"
-                                    ClipToBounds="True" />
-      </StackPanel>
-    </Border>
-    <Border x:Name="ColorPickerPanel"
-            IsVisible="False"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
-            Width="300"
-            MaxHeight="540"
-            Padding="10,8,10,10"
-            CornerRadius="8"
-            Background="#E6202020"
-            BorderBrush="#604A4A4A"
-            BorderThickness="1">
-      <StackPanel Spacing="7">
-        <Grid ColumnDefinitions="Auto,*,Auto" Height="26">
-          <Border x:Name="ColorPickerDragHandle"
-                  Grid.Column="0"
-                  Width="22"
-                  Cursor="SizeAll"
-                  Background="Transparent"
-                  CornerRadius="3">
-            <TextBlock Text="⠿"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Opacity="0.65" />
-          </Border>
-          <TextBlock x:Name="ColorPickerTitleText"
-                     Grid.Column="1"
-                     VerticalAlignment="Center"
-                     FontWeight="SemiBold"
-                     Opacity="0.88" />
-          <Button x:Name="ColorPickerCloseButton"
-                  Grid.Column="2"
-                  Width="26"
-                  Height="26"
-                  Padding="5"
-                  Focusable="False" />
-        </Grid>
-        <TextBlock x:Name="ColorPickerEmptyText"
-                   Margin="4,6"
-                   TextWrapping="Wrap"
-                   Opacity="0.78" />
-        <StackPanel x:Name="ColorPickerSampleContent"
-                    IsVisible="False"
-                    Spacing="7">
-          <Grid ColumnDefinitions="64,*" ColumnSpacing="9">
-            <Border Grid.Column="0"
-                    Width="58"
-                    Height="58"
-                    CornerRadius="6"
-                    Background="#FF505050"
-                    BorderBrush="#60FFFFFF"
-                    BorderThickness="1">
-              <Border x:Name="ColorPickerMainSwatch" Margin="3" CornerRadius="4" />
-            </Border>
-            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-              <TextBlock x:Name="ColorPickerMainName"
-                         FontWeight="SemiBold"
-                         TextWrapping="Wrap" />
-              <TextBlock x:Name="ColorPickerMainHex" Opacity="0.92" />
-              <TextBlock x:Name="ColorPickerMainComponents" Opacity="0.78" />
+    <Grid x:Name="ViewerRoot" Background="Black">
+        <viewer:PhotoViewportControl x:Name="PhotoViewport" />
+        <viewer:MarkupOverlayControl x:Name="MarkupOverlay" />
+        <viewer:PointerFeedbackOverlayControl x:Name="PointerFeedbackOverlay" />
+        <Border x:Name="MarkupToolsPanel"
+                IsVisible="False"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                Padding="8"
+                CornerRadius="7"
+                Background="#E6202020"
+                BorderBrush="#604A4A4A"
+                BorderThickness="1">
+            <StackPanel Spacing="6">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                    <Border x:Name="MarkupDragHandle"
+                            Width="18"
+                            Height="30"
+                            Cursor="SizeAll"
+                            Background="Transparent"
+                            CornerRadius="3">
+                        <TextBlock Text="⠿"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   Opacity="0.65" />
+                    </Border>
+                    <Button x:Name="MarkupHandButton" Width="32" Height="30" Padding="6" Focusable="False" />
+                    <Button x:Name="MarkupBrushButton" Width="32" Height="30" Padding="6" Focusable="False" />
+                    <Button x:Name="MarkupEraserButton" Width="32" Height="30" Padding="6" Focusable="False" />
+                    <Button x:Name="MarkupLineButton" Width="32" Height="30" Padding="6" Focusable="False" />
+                    <Button x:Name="MarkupRectangleButton" Width="32" Height="30" Padding="6" Focusable="False" />
+                    <Button x:Name="MarkupEllipseButton" Width="32" Height="30" Padding="6" Focusable="False" />
+                    <Button x:Name="MarkupArrowButton" Width="32" Height="30" Padding="6" Focusable="False" />
+                    <Separator Width="1" Margin="3,2" />
+                    <Button x:Name="MarkupUndoButton" Width="32" Height="30" Padding="6" Focusable="False" />
+                    <Button x:Name="MarkupRedoButton" Width="32" Height="30" Padding="6" Focusable="False" />
+                    <Button x:Name="MarkupClearButton" Width="32" Height="30" Padding="6" Focusable="False" />
+                    <Separator Width="1" Margin="3,2" />
+                    <Button x:Name="MarkupCloseButton" Width="26" Height="30" Padding="5" Focusable="False" />
+                </StackPanel>
+                <Separator Height="1" />
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Button x:Name="MarkupColorButton" Width="36" Height="28" Padding="6" Focusable="False">
+                        <Border x:Name="MarkupColorSwatch"
+                                Width="18" Height="18" CornerRadius="3" />
+                    </Button>
+                    <TextBlock x:Name="MarkupStrokeText"
+                               VerticalAlignment="Center"
+                               Margin="3,0,0,0" />
+                    <Slider x:Name="MarkupStrokeSlider"
+                            Focusable="False"
+                            Width="104"
+                            Minimum="1"
+                            Maximum="128"
+                            TickFrequency="1" />
+                    <TextBlock x:Name="MarkupStrokeValue"
+                               Width="30"
+                               VerticalAlignment="Center" />
+                    <TextBlock x:Name="MarkupOpacityText"
+                               VerticalAlignment="Center"
+                               Margin="3,0,0,0" />
+                    <Slider x:Name="MarkupOpacitySlider"
+                            Focusable="False"
+                            Width="92"
+                            Minimum="5"
+                            Maximum="100"
+                            TickFrequency="5" />
+                    <TextBlock x:Name="MarkupOpacityValue"
+                               Width="38"
+                               VerticalAlignment="Center" />
+                </StackPanel>
             </StackPanel>
-          </Grid>
-          <Separator Height="1" />
-          <TextBlock x:Name="ColorPickerRecentText"
-                     FontWeight="SemiBold"
-                     Opacity="0.78" />
-          <StackPanel x:Name="ColorPickerHistoryRows" Spacing="3" />
-        </StackPanel>
-      </StackPanel>
-    </Border>
-    <Border x:Name="ErrorSurface"
-            IsVisible="False"
-            IsHitTestVisible="False"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Center"
-            MaxWidth="520"
-            Padding="18,12"
-            CornerRadius="6"
-            Background="#DD181818">
-      <TextBlock x:Name="ErrorText"
-                 Foreground="#FFF2F2F2"
-                 TextAlignment="Center"
-                 TextWrapping="Wrap" />
-    </Border>
-  </Grid>
+        </Border>
+        <Border x:Name="PhotoInfoPanel"
+                IsVisible="False"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                Width="440"
+                MaxWidth="500"
+                Padding="10,8,10,10"
+                CornerRadius="8"
+                Background="#E6202020"
+                BorderBrush="#604A4A4A"
+                BorderThickness="1">
+            <StackPanel Spacing="5">
+                <Grid ColumnDefinitions="Auto,*,Auto" Height="26">
+                    <Border x:Name="PhotoInfoDragHandle"
+                            Grid.Column="0"
+                            Width="22"
+                            Cursor="SizeAll"
+                            Background="Transparent"
+                            CornerRadius="3">
+                        <TextBlock Text="⠿"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   Opacity="0.65" />
+                    </Border>
+                    <TextBlock x:Name="PhotoInfoTitleText"
+                               Grid.Column="1"
+                               VerticalAlignment="Center"
+                               FontWeight="SemiBold"
+                               Opacity="0.88" />
+                    <Button x:Name="PhotoInfoCloseButton"
+                            Grid.Column="2"
+                            Width="26"
+                            Height="26"
+                            Padding="5"
+                            Focusable="False" />
+                </Grid>
+                <StackPanel x:Name="PhotoInfoRows" Spacing="3" />
+            </StackPanel>
+        </Border>
+        <Border x:Name="HistogramPanel"
+                IsVisible="False"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                Width="320"
+                Height="212"
+                Padding="10,8,10,10"
+                CornerRadius="8"
+                Background="#E6202020"
+                BorderBrush="#604A4A4A"
+                BorderThickness="1">
+            <StackPanel Spacing="6">
+                <Grid ColumnDefinitions="Auto,*,Auto" Height="26">
+                    <Border x:Name="HistogramDragHandle"
+                            Grid.Column="0"
+                            Width="22"
+                            Cursor="SizeAll"
+                            Background="Transparent"
+                            CornerRadius="3">
+                        <TextBlock Text="⠿"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   Opacity="0.65" />
+                    </Border>
+                    <TextBlock x:Name="HistogramTitleText"
+                               Grid.Column="1"
+                               VerticalAlignment="Center"
+                               FontWeight="SemiBold"
+                               Opacity="0.88" />
+                    <Button x:Name="HistogramCloseButton"
+                            Grid.Column="2"
+                            Width="26"
+                            Height="26"
+                            Padding="5"
+                            Focusable="False" />
+                </Grid>
+                <views:HistogramPlotControl x:Name="HistogramPlot"
+                                            Height="160"
+                                            ClipToBounds="True" />
+            </StackPanel>
+        </Border>
+        <Border x:Name="ColorPickerPanel"
+                IsVisible="False"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                Width="620"
+                MaxHeight="430"
+                Padding="10,8,10,10"
+                CornerRadius="8"
+                Background="#E6202020"
+                BorderBrush="#604A4A4A"
+                BorderThickness="1">
+            <StackPanel Spacing="7">
+                <Grid ColumnDefinitions="Auto,*,Auto" Height="26">
+                    <Border x:Name="ColorPickerDragHandle"
+                            Grid.Column="0"
+                            Width="22"
+                            Cursor="SizeAll"
+                            Background="Transparent"
+                            CornerRadius="3">
+                        <TextBlock Text="⠿"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   Opacity="0.65" />
+                    </Border>
+                    <TextBlock x:Name="ColorPickerTitleText"
+                               Grid.Column="1"
+                               VerticalAlignment="Center"
+                               FontWeight="SemiBold"
+                               Opacity="0.88" />
+                    <Button x:Name="ColorPickerCloseButton"
+                            Grid.Column="2"
+                            Width="26"
+                            Height="26"
+                            Padding="5"
+                            Focusable="False" />
+                </Grid>
+                <Separator Height="1" />
+                <Grid ColumnDefinitions="205,1,*" ColumnSpacing="12" MinHeight="300">
+                    <StackPanel Grid.Column="0" Spacing="7">
+                        <Grid ColumnDefinitions="*,Auto" Height="27">
+                            <TextBlock x:Name="ColorPickerRecentText"
+                                       VerticalAlignment="Center"
+                                       FontWeight="SemiBold"
+                                       Opacity="0.78" />
+                            <Button x:Name="ColorPickerClearButton"
+                                    Grid.Column="1"
+                                    Width="26"
+                                    Height="26"
+                                    Padding="5"
+                                    Focusable="False" />
+                        </Grid>
+                        <ScrollViewer x:Name="ColorPickerHistoryScroller"
+                                      MaxHeight="266"
+                                      HorizontalScrollBarVisibility="Disabled"
+                                      VerticalScrollBarVisibility="Auto">
+                            <StackPanel x:Name="ColorPickerHistoryRows" Spacing="3" />
+                        </ScrollViewer>
+                    </StackPanel>
+                    <Separator Grid.Column="1" Width="1" />
+                    <Grid Grid.Column="2">
+                        <TextBlock x:Name="ColorPickerEmptyText"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   TextAlignment="Center"
+                                   TextWrapping="Wrap"
+                                   Opacity="0.78" />
+                        <StackPanel x:Name="ColorPickerSampleContent"
+                                    IsVisible="False"
+                                    Spacing="10">
+                            <Grid ColumnDefinitions="92,*" ColumnSpacing="12">
+                                <Border Grid.Column="0"
+                                        Width="86"
+                                        Height="86"
+                                        CornerRadius="7"
+                                        Background="#FF505050"
+                                        BorderBrush="#60FFFFFF"
+                                        BorderThickness="1">
+                                    <Border x:Name="ColorPickerMainSwatch" Margin="3" CornerRadius="5" />
+                                </Border>
+                                <TextBlock x:Name="ColorPickerDetailedName"
+                                           Grid.Column="1"
+                                           VerticalAlignment="Center"
+                                           FontSize="17"
+                                           FontWeight="SemiBold"
+                                           TextWrapping="Wrap" />
+                            </Grid>
+                            <Grid ColumnDefinitions="100,*"
+                                  RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                                  ColumnSpacing="9"
+                                  RowSpacing="5">
+                                <TextBlock x:Name="ColorPickerHexLabel" Grid.Row="0" Grid.Column="0" Opacity="0.62" />
+                                <TextBlock x:Name="ColorPickerHexValue" Grid.Row="0" Grid.Column="1" />
+                                <TextBlock x:Name="ColorPickerRgbLabel" Grid.Row="1" Grid.Column="0" Opacity="0.62" />
+                                <TextBlock x:Name="ColorPickerRgbValue" Grid.Row="1" Grid.Column="1" />
+                                <TextBlock x:Name="ColorPickerOklchLabel" Grid.Row="2" Grid.Column="0" Opacity="0.62" />
+                                <TextBlock x:Name="ColorPickerOklchValue" Grid.Row="2" Grid.Column="1" />
+                                <TextBlock x:Name="ColorPickerHueLabel" Grid.Row="3" Grid.Column="0" Margin="0,7,0,0"
+                                           Opacity="0.62" />
+                                <TextBlock x:Name="ColorPickerHueValue" Grid.Row="3" Grid.Column="1" Margin="0,7,0,0" />
+                                <TextBlock x:Name="ColorPickerLightnessLabel" Grid.Row="4" Grid.Column="0"
+                                           Opacity="0.62" />
+                                <TextBlock x:Name="ColorPickerLightnessValue" Grid.Row="4" Grid.Column="1" />
+                                <TextBlock x:Name="ColorPickerChromaLabel" Grid.Row="5" Grid.Column="0" Opacity="0.62" />
+                                <TextBlock x:Name="ColorPickerChromaValue" Grid.Row="5" Grid.Column="1" />
+                                <TextBlock x:Name="ColorPickerCreativeNameLabel" Grid.Row="6" Grid.Column="0"
+                                           Margin="0,7,0,0"
+                                           Opacity="0.62" />
+                                <TextBlock x:Name="ColorPickerCreativeNameValue"
+                                           Grid.Row="6"
+                                           Grid.Column="1"
+                                           Margin="0,7,0,0"
+                                           TextTrimming="CharacterEllipsis" />
+                            </Grid>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </StackPanel>
+        </Border>
+        <Border x:Name="ErrorSurface"
+                IsVisible="False"
+                IsHitTestVisible="False"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                MaxWidth="520"
+                Padding="18,12"
+                CornerRadius="6"
+                Background="#DD181818">
+            <TextBlock x:Name="ErrorText"
+                       Foreground="#FFF2F2F2"
+                       TextAlignment="Center"
+                       TextWrapping="Wrap" />
+        </Border>
+    </Grid>
 </Window>

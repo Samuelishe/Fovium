@@ -60,6 +60,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
     private readonly SlideshowSession _slideshow;
     private readonly PhotoColorSampler _photoColorSampler;
     private readonly ColorSampleNameResolver _colorSampleNameResolver;
+    private readonly PerceptualColorNameResolver _perceptualColorNameResolver;
     private readonly FloatingOverlayInteraction _markupFloatingOverlay;
     private readonly FloatingOverlayInteraction _photoInfoFloatingOverlay;
     private readonly FloatingOverlayInteraction _histogramFloatingOverlay;
@@ -150,6 +151,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         _colorSampleNameResolver = new ColorSampleNameResolver(
             _localizer,
             ColorNameDisplayCatalog.ForLocale(_localizer.Locale));
+        _perceptualColorNameResolver = new PerceptualColorNameResolver(_localizer);
         _colorPicker.Changed += OnColorPickerChanged;
         PhotoViewport.ColorSampleRequested += OnColorSampleRequested;
         _markupFloatingOverlay = new FloatingOverlayInteraction(
@@ -190,7 +192,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
             ColorPickerPanel,
             settings.Current.Presentation.ColorPickerPlacement,
             _interactionDiagnostics,
-            [ColorPickerCloseButton]);
+            [ColorPickerCloseButton, ColorPickerClearButton, ColorPickerHistoryScroller]);
         _markupFloatingOverlay.PlacementCommitted += OnMarkupPlacementCommitted;
         _photoInfoFloatingOverlay.PlacementCommitted += OnPhotoInfoPlacementCommitted;
         _histogramFloatingOverlay.PlacementCommitted += OnHistogramPlacementCommitted;
@@ -370,9 +372,9 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         }
 
         if (string.Equals(
-            Environment.GetEnvironmentVariable("FOVIUM_HISTOGRAM_DIAGNOSTICS"),
-            "1",
-            StringComparison.Ordinal))
+                Environment.GetEnvironmentVariable("FOVIUM_HISTOGRAM_DIAGNOSTICS"),
+                "1",
+                StringComparison.Ordinal))
         {
             var metrics = _histogram.Metrics;
             Console.WriteLine(
@@ -384,9 +386,9 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         }
 
         if (string.Equals(
-            Environment.GetEnvironmentVariable("FOVIUM_COLOR_DIAGNOSTICS"),
-            "1",
-            StringComparison.Ordinal))
+                Environment.GetEnvironmentVariable("FOVIUM_COLOR_DIAGNOSTICS"),
+                "1",
+                StringComparison.Ordinal))
         {
             var metrics = PhotoViewport.MonitorColorMetrics;
             Console.WriteLine(
@@ -414,9 +416,9 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         }
 
         if (string.Equals(
-            Environment.GetEnvironmentVariable("FOVIUM_SLIDESHOW_DIAGNOSTICS"),
-            "1",
-            StringComparison.Ordinal))
+                Environment.GetEnvironmentVariable("FOVIUM_SLIDESHOW_DIAGNOSTICS"),
+                "1",
+                StringComparison.Ordinal))
         {
             var metrics = _slideshow.Metrics;
             var preparedBytes = PhotoViewport.MonitorColorMetrics?.CurrentRasterBytes ?? 0;
@@ -489,13 +491,13 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
                 }
             }
             else if (AvaloniaShortcutGestureAdapter.TryCreate(e, out var gesture) &&
-                ShortcutResolver.Resolve(
-                    _settings.Current.Shortcuts,
-                    gesture,
-                    new ViewerShortcutContext(
-                        _presentation.MarkupToolsVisible,
-                        _presentation.HighlightEnabled,
-                        _colorPicker.IsVisible)) is { } command)
+                     ShortcutResolver.Resolve(
+                         _settings.Current.Shortcuts,
+                         gesture,
+                         new ViewerShortcutContext(
+                             _presentation.MarkupToolsVisible,
+                             _presentation.HighlightEnabled,
+                             _colorPicker.IsVisible)) is { } command)
             {
                 e.Handled = true;
                 if (!PhotoPresentationInputPolicy.Allows(
@@ -853,7 +855,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
             _holdController.Cancel();
             ErrorSurface.IsVisible = false;
             var path = result.Path
-                ?? throw new InvalidOperationException("Published selection has no source path.");
+                       ?? throw new InvalidOperationException("Published selection has no source path.");
             var identity = result.Image.Value.Identity;
             var initialFrames = PhotoViewport.GetAmbientRenderFrameMetrics();
             using var presentation = _stageCoordinator.BeginImageSelection(path, identity);
@@ -1081,9 +1083,9 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
 
         _currentColorMonitorHandle = resolution.Profile?.MonitorHandle ?? _currentColorMonitorHandle;
         if (string.Equals(
-            Environment.GetEnvironmentVariable("FOVIUM_COLOR_DIAGNOSTICS"),
-            "1",
-            StringComparison.Ordinal))
+                Environment.GetEnvironmentVariable("FOVIUM_COLOR_DIAGNOSTICS"),
+                "1",
+                StringComparison.Ordinal))
         {
             var profile = resolution.Profile;
             Console.WriteLine(
@@ -1531,6 +1533,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
             MarkupColorSwatch.Background = new SolidColorBrush(
                 Color.FromRgb(color.Red, color.Green, color.Blue));
         }
+
         if (Math.Abs(MarkupStrokeSlider.Value - _presentation.ActiveStrokePhysicalPixels) > 0.001)
         {
             MarkupStrokeSlider.Value = _presentation.ActiveStrokePhysicalPixels;
@@ -1737,12 +1740,26 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         ColorPickerTitleText.Text = _localizer[UiStrings.ColorPickerTitle];
         ColorPickerEmptyText.Text = _localizer[UiStrings.ColorPickerEmpty];
         ColorPickerRecentText.Text = _localizer[UiStrings.ColorPickerRecent];
+        ColorPickerHexLabel.Text = _localizer[UiStrings.ColorPickerDetailHex];
+        ColorPickerRgbLabel.Text = _localizer[UiStrings.ColorPickerDetailRgb];
+        ColorPickerOklchLabel.Text = _localizer[UiStrings.ColorPickerDetailOklch];
+        ColorPickerHueLabel.Text = _localizer[UiStrings.ColorPickerDetailHue];
+        ColorPickerLightnessLabel.Text = _localizer[UiStrings.ColorPickerDetailLightness];
+        ColorPickerChromaLabel.Text = _localizer[UiStrings.ColorPickerDetailChroma];
+        ColorPickerCreativeNameLabel.Text = _localizer[UiStrings.ColorPickerDetailCreativeName];
         ColorPickerCloseButton.Content = FoviumIconCatalog.Create(FoviumIcon.Close, 14);
+        ColorPickerClearButton.Content = FoviumIconCatalog.Create(FoviumIcon.Clear, 14);
         ToolTip.SetTip(ColorPickerDragHandle, _localizer[UiStrings.PresentationMovePanel]);
         ToolTip.SetTip(ColorPickerCloseButton, _localizer[UiStrings.ColorPickerClose]);
+        ToolTip.SetTip(ColorPickerClearButton, _localizer[UiStrings.ColorPickerClear]);
         ColorPickerCloseButton.Click += (_, _) =>
         {
             _colorPicker.SetVisible(false);
+            PhotoViewport.Focus();
+        };
+        ColorPickerClearButton.Click += (_, _) =>
+        {
+            _colorPicker.ClearHistory();
             PhotoViewport.Focus();
         };
         ColorPickerPanel.AddHandler(
@@ -1793,23 +1810,21 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
 
         PhotoViewport.SetColorPickerEnabled(_colorPicker.IsVisible);
         ColorPickerPanel.IsVisible = _colorPicker.IsVisible;
-        var sample = _colorPicker.CurrentSample;
-        ColorPickerEmptyText.IsVisible = sample is null;
-        ColorPickerSampleContent.IsVisible = sample is not null;
+        var selectedEntry = _colorPicker.SelectedEntry;
+        ColorPickerEmptyText.IsVisible = selectedEntry is null;
+        ColorPickerSampleContent.IsVisible = selectedEntry is not null;
+        ColorPickerClearButton.IsEnabled = _colorPicker.History.Count > 0;
         ColorPickerHistoryRows.Children.Clear();
-        if (sample is null)
+        foreach (var historyEntry in _colorPicker.History)
         {
-            return;
+            ColorPickerHistoryRows.Children.Add(CreateColorHistoryRow(
+                historyEntry,
+                ReferenceEquals(historyEntry, selectedEntry)));
         }
 
-        ColorPickerMainSwatch.Background = CreateSampleBrush(sample);
-        ColorPickerMainName.Text = GetSampleName(sample);
-        ColorPickerMainHex.Text = FormatSampleCode(sample);
-        ColorPickerMainComponents.Text = FormatSampleComponents(sample);
-        SetAccuracyToolTip(ColorPickerMainHex, sample);
-        foreach (var historySample in _colorPicker.History)
+        if (selectedEntry is not null)
         {
-            ColorPickerHistoryRows.Children.Add(CreateColorHistoryRow(historySample));
+            ApplySelectedColorEntry(selectedEntry);
         }
 
         _colorPickerFloatingOverlay.ApplyPlacement();
@@ -1818,8 +1833,52 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
             DispatcherPriority.Loaded);
     }
 
-    private Control CreateColorHistoryRow(ColorSample sample)
+    private void ApplySelectedColorEntry(ColorHistoryEntry entry)
     {
+        var sample = entry.Sample;
+        var description = entry.Description;
+        ColorPickerMainSwatch.Background = CreateSampleBrush(sample);
+        ColorPickerDetailedName.Text = _perceptualColorNameResolver.ResolveDetailed(description);
+        ColorPickerHexValue.Text = FormatSampleCode(sample);
+        ColorPickerRgbLabel.Text = _localizer[sample.Alpha == byte.MaxValue
+            ? UiStrings.ColorPickerDetailRgb
+            : UiStrings.ColorPickerDetailRgba];
+        ColorPickerRgbValue.Text = FormatSampleComponentValues(sample);
+        ColorPickerCreativeNameValue.Text = GetSampleName(sample);
+        SetAccuracyToolTip(ColorPickerHexValue, sample);
+
+        var hasPerceptualDetail = !description.IsTransparent;
+        SetPerceptualDetailVisibility(hasPerceptualDetail);
+        if (!hasPerceptualDetail)
+        {
+            return;
+        }
+
+        ColorPickerOklchValue.Text = PerceptualColorNameResolver.FormatOklch(description.Oklch!.Value);
+        ColorPickerHueValue.Text = _perceptualColorNameResolver.ResolveHue(description.HueFamily!.Value);
+        ColorPickerLightnessValue.Text =
+            _perceptualColorNameResolver.ResolveLightness(description.LightnessClass!.Value);
+        ColorPickerChromaValue.Text =
+            _perceptualColorNameResolver.ResolveChroma(description.ChromaClass!.Value);
+    }
+
+    private void SetPerceptualDetailVisibility(bool visible)
+    {
+        ColorPickerOklchLabel.IsVisible = visible;
+        ColorPickerOklchValue.IsVisible = visible;
+        ColorPickerHueLabel.IsVisible = visible;
+        ColorPickerHueValue.IsVisible = visible;
+        ColorPickerLightnessLabel.IsVisible = visible;
+        ColorPickerLightnessValue.IsVisible = visible;
+        ColorPickerChromaLabel.IsVisible = visible;
+        ColorPickerChromaValue.IsVisible = visible;
+        ColorPickerCreativeNameLabel.IsVisible = visible;
+        ColorPickerCreativeNameValue.IsVisible = visible;
+    }
+
+    private Control CreateColorHistoryRow(ColorHistoryEntry entry, bool isSelected)
+    {
+        var sample = entry.Sample;
         var row = new StackPanel
         {
             Orientation = Avalonia.Layout.Orientation.Horizontal,
@@ -1834,21 +1893,34 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
             BorderThickness = new Thickness(1),
             Background = CreateSampleBrush(sample),
         });
-        var code = new TextBlock
-        {
-            Width = 92,
-            Text = FormatSampleCode(sample),
-            Opacity = 0.88,
-        };
-        SetAccuracyToolTip(code, sample);
-        row.Children.Add(code);
         row.Children.Add(new TextBlock
         {
-            Text = GetSampleName(sample),
+            Text = _perceptualColorNameResolver.ResolveShort(entry.Description),
             TextTrimming = TextTrimming.CharacterEllipsis,
-            MaxWidth = 155,
+            MaxWidth = 156,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
         });
-        return row;
+
+        var button = new Button
+        {
+            Content = row,
+            Focusable = false,
+            HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
+            Padding = new Thickness(6, 5),
+            BorderThickness = new Thickness(1),
+            BorderBrush = isSelected
+                ? new SolidColorBrush(Color.FromArgb(0x58, 0x78, 0xA8, 0xD8))
+                : Brushes.Transparent,
+            Background = isSelected
+                ? new SolidColorBrush(Color.FromArgb(0x28, 0x78, 0xA8, 0xD8))
+                : Brushes.Transparent,
+        };
+        button.Click += (_, _) =>
+        {
+            _colorPicker.Select(entry.EntryId);
+            PhotoViewport.Focus();
+        };
+        return button;
     }
 
     private static IBrush CreateSampleBrush(ColorSample sample) => new SolidColorBrush(
@@ -1859,11 +1931,9 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
     private static string FormatSampleCode(ColorSample sample) =>
         sample.Accuracy == ColorSampleAccuracy.Approximate ? $"≈ {sample.Hex}" : sample.Hex;
 
-    private string FormatSampleComponents(ColorSample sample) => string.Format(
+    private static string FormatSampleComponentValues(ColorSample sample) => string.Format(
         System.Globalization.CultureInfo.InvariantCulture,
-        _localizer[sample.Alpha == byte.MaxValue
-            ? UiStrings.ColorPickerRgb
-            : UiStrings.ColorPickerRgba],
+        sample.Alpha == byte.MaxValue ? "{0}, {1}, {2}" : "{0}, {1}, {2}, {3}",
         sample.Red,
         sample.Green,
         sample.Blue,
@@ -1913,5 +1983,4 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
 
         PhotoViewport.Focus();
     }
-
 }

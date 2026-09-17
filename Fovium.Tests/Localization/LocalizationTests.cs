@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 using Fovium.Localization;
 
 namespace Fovium.Tests.Localization;
@@ -115,8 +116,10 @@ public sealed class LocalizationTests
     }
 
     [Theory]
-    [InlineData("en-US", "Slideshow", "Start slideshow", "Stop slideshow", "Slide duration", "seconds", "At end of sequence", "Stop on last image", "Start again from first image")]
-    [InlineData("ru-RU", "Слайд-шоу", "Запустить слайд-шоу", "Остановить слайд-шоу", "Длительность показа", "секунд", "В конце последовательности", "Остановиться на последнем изображении", "Начать снова с первого изображения")]
+    [InlineData("en-US", "Slideshow", "Start slideshow", "Stop slideshow", "Slide duration", "seconds",
+        "At end of sequence", "Stop on last image", "Start again from first image")]
+    [InlineData("ru-RU", "Слайд-шоу", "Запустить слайд-шоу", "Остановить слайд-шоу", "Длительность показа", "секунд",
+        "В конце последовательности", "Остановиться на последнем изображении", "Начать снова с первого изображения")]
     public void SlideshowCatalogContainsEveryActivationAndConfigurationString(
         string cultureName,
         string title,
@@ -142,8 +145,10 @@ public sealed class LocalizationTests
     }
 
     [Theory]
-    [InlineData("en-US", "Stage", "Black", "Neutral", "Custom", "Ambient", "Average", "Dominant", "Color Wash", "Matte")]
-    [InlineData("ru-RU", "Фон", "Чёрный", "Нейтральный", "Свой цвет", "Ambient", "Средний цвет", "Доминирующий цвет", "Цветовой wash", "Паспарту")]
+    [InlineData("en-US", "Stage", "Black", "Neutral", "Custom", "Ambient", "Average", "Dominant", "Color Wash",
+        "Matte")]
+    [InlineData("ru-RU", "Фон", "Чёрный", "Нейтральный", "Свой цвет", "Ambient", "Средний цвет", "Доминирующий цвет",
+        "Цветовой wash", "Паспарту")]
     public void StageCatalogsContainEveryBackgroundAndIndependentMatte(
         string cultureName,
         string section,
@@ -244,7 +249,8 @@ public sealed class LocalizationTests
 
     [Theory]
     [InlineData("en-US", "Presentation", "Cursor Highlight", "Markup Tools", "Brush", "Clear", "Close Markup Tools")]
-    [InlineData("ru-RU", "Презентация", "Подсветка курсора", "Инструменты пометок", "Кисть", "Очистить", "Закрыть инструменты пометок")]
+    [InlineData("ru-RU", "Презентация", "Подсветка курсора", "Инструменты пометок", "Кисть", "Очистить",
+        "Закрыть инструменты пометок")]
     public void PresentationCatalogContainsSettingsCommandsAndDockTools(
         string cultureName,
         string section,
@@ -371,14 +377,14 @@ public sealed class LocalizationTests
     [Theory]
     [InlineData(
         "en-US",
-        "Color Picker",
+        "Color Inspector",
         "Click a color in the photo",
         "Recent",
         "Transparent",
         "Approximate reference-sRGB color")]
     [InlineData(
         "ru-RU",
-        "Пипетка",
+        "Инспектор цвета",
         "Щёлкните цвет на фотографии",
         "Недавние",
         "Прозрачный",
@@ -401,5 +407,56 @@ public sealed class LocalizationTests
         Assert.Equal(approximate, localizer[UiStrings.ColorPickerApproximate]);
         Assert.Contains("{0}", localizer[UiStrings.ColorPickerRgb], StringComparison.Ordinal);
         Assert.Contains("{3}", localizer[UiStrings.ColorPickerRgba], StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(
+        "en-US",
+        "Clear color history",
+        "Creative name",
+        "Burgundy",
+        "Very dark",
+        "Muted")]
+    [InlineData(
+        "ru-RU",
+        "Очистить историю цветов",
+        "Худ. имя",
+        "Бордовый",
+        "Очень тёмная",
+        "Приглушённая")]
+    public void ColorInspectorCatalogContainsDetailAndPerceptualTerms(
+        string cultureName,
+        string clear,
+        string creativeName,
+        string burgundy,
+        string veryDark,
+        string muted)
+    {
+        var localizer = Localizer.Create(CultureInfo.GetCultureInfo(cultureName));
+
+        Assert.Equal(clear, localizer[UiStrings.ColorPickerClear]);
+        Assert.Equal(creativeName, localizer[UiStrings.ColorPickerDetailCreativeName]);
+        Assert.Equal(burgundy, localizer[UiStrings.ColorPickerHueBurgundy]);
+        Assert.Equal(veryDark, localizer[UiStrings.ColorPickerLightnessVeryDark]);
+        Assert.Equal(muted, localizer[UiStrings.ColorPickerChromaMuted]);
+        Assert.Equal("OKLCH", localizer[UiStrings.ColorPickerDetailOklch]);
+        Assert.Equal("RGBA", localizer[UiStrings.ColorPickerDetailRgba]);
+    }
+
+    [Fact]
+    public void EmbeddedEnglishAndRussianUiCatalogsHaveExactKeyParity()
+    {
+        var assembly = typeof(Localizer).Assembly;
+        using var englishStream = assembly.GetManifestResourceStream("Fovium.Localization.en.json");
+        using var russianStream = assembly.GetManifestResourceStream("Fovium.Localization.ru.json");
+        Assert.NotNull(englishStream);
+        Assert.NotNull(russianStream);
+        var english = JsonSerializer.Deserialize<Dictionary<string, string>>(englishStream);
+        var russian = JsonSerializer.Deserialize<Dictionary<string, string>>(russianStream);
+        Assert.NotNull(english);
+        Assert.NotNull(russian);
+
+        Assert.Empty(english.Keys.Except(russian.Keys, StringComparer.Ordinal));
+        Assert.Empty(russian.Keys.Except(english.Keys, StringComparer.Ordinal));
     }
 }
