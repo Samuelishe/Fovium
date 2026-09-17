@@ -127,6 +127,64 @@ internal static class UiStrings
     public const string PresentationMovePanel = "presentation.movePanel";
     public const string PhotoInfoTitle = "photoInfo.title";
     public const string PhotoInfoClose = "photoInfo.close";
+    public const string PhotoInfoCamera = "photoInfo.camera";
+    public const string PhotoInfoLens = "photoInfo.lens";
+    public const string PhotoInfoFocalLength = "photoInfo.focalLength";
+    public const string PhotoInfoAperture = "photoInfo.aperture";
+    public const string PhotoInfoShutter = "photoInfo.shutter";
+    public const string PhotoInfoIso = "photoInfo.iso";
+    public const string PhotoInfoExposureCompensation = "photoInfo.exposureCompensation";
+    public const string PhotoInfoExposureMode = "photoInfo.exposureMode";
+    public const string PhotoInfoMetering = "photoInfo.metering";
+    public const string PhotoInfoWhiteBalance = "photoInfo.whiteBalance";
+    public const string PhotoInfoFlash = "photoInfo.flash";
+    public const string PhotoInfoCaptured = "photoInfo.captured";
+    public const string PhotoInfoDimensions = "photoInfo.dimensions";
+    public const string PhotoInfoFile = "photoInfo.file";
+    public const string PhotoInfoCameraTip = "photoInfo.camera.tip";
+    public const string PhotoInfoLensTip = "photoInfo.lens.tip";
+    public const string PhotoInfoFocalLengthTip = "photoInfo.focalLength.tip";
+    public const string PhotoInfoApertureTip = "photoInfo.aperture.tip";
+    public const string PhotoInfoShutterTip = "photoInfo.shutter.tip";
+    public const string PhotoInfoIsoTip = "photoInfo.iso.tip";
+    public const string PhotoInfoExposureCompensationTip = "photoInfo.exposureCompensation.tip";
+    public const string PhotoInfoExposureModeTip = "photoInfo.exposureMode.tip";
+    public const string PhotoInfoMeteringTip = "photoInfo.metering.tip";
+    public const string PhotoInfoWhiteBalanceTip = "photoInfo.whiteBalance.tip";
+    public const string PhotoInfoFlashTip = "photoInfo.flash.tip";
+    public const string PhotoInfoCapturedTip = "photoInfo.captured.tip";
+    public const string PhotoInfoDimensionsTip = "photoInfo.dimensions.tip";
+    public const string PhotoInfoFileTip = "photoInfo.file.tip";
+    public const string PhotoInfoExposureModeAuto = "photoInfo.value.exposureMode.auto";
+    public const string PhotoInfoExposureModeManual = "photoInfo.value.exposureMode.manual";
+    public const string PhotoInfoExposureModeProgram = "photoInfo.value.exposureMode.program";
+
+    public const string PhotoInfoExposureModeAperturePriority =
+        "photoInfo.value.exposureMode.aperturePriority";
+
+    public const string PhotoInfoExposureModeShutterPriority =
+        "photoInfo.value.exposureMode.shutterPriority";
+
+    public const string PhotoInfoExposureModeCreativeProgram =
+        "photoInfo.value.exposureMode.creativeProgram";
+
+    public const string PhotoInfoExposureModeActionProgram =
+        "photoInfo.value.exposureMode.actionProgram";
+
+    public const string PhotoInfoExposureModePortrait = "photoInfo.value.exposureMode.portrait";
+    public const string PhotoInfoExposureModeLandscape = "photoInfo.value.exposureMode.landscape";
+    public const string PhotoInfoExposureModeAutoBracket = "photoInfo.value.exposureMode.autoBracket";
+    public const string PhotoInfoMeteringAverage = "photoInfo.value.metering.average";
+    public const string PhotoInfoMeteringCenterWeighted = "photoInfo.value.metering.centerWeighted";
+    public const string PhotoInfoMeteringSpot = "photoInfo.value.metering.spot";
+    public const string PhotoInfoMeteringMultiSpot = "photoInfo.value.metering.multiSpot";
+    public const string PhotoInfoMeteringMatrix = "photoInfo.value.metering.matrix";
+    public const string PhotoInfoMeteringPartial = "photoInfo.value.metering.partial";
+    public const string PhotoInfoMeteringOther = "photoInfo.value.metering.other";
+    public const string PhotoInfoWhiteBalanceAuto = "photoInfo.value.whiteBalance.auto";
+    public const string PhotoInfoWhiteBalanceManual = "photoInfo.value.whiteBalance.manual";
+    public const string PhotoInfoFlashDidNotFire = "photoInfo.value.flash.didNotFire";
+    public const string PhotoInfoFlashFired = "photoInfo.value.flash.fired";
     public const string HistogramTitle = "histogram.title";
     public const string HistogramClose = "histogram.close";
     public const string ColorPickerTitle = "colorPicker.title";

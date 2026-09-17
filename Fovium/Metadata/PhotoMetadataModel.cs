@@ -12,6 +12,43 @@ internal readonly record struct PhotoCaptureTime(DateTime RecordedTime, TimeSpan
     public DateTime UnspecifiedClockTime => DateTime.SpecifyKind(RecordedTime, DateTimeKind.Unspecified);
 }
 
+internal enum PhotoExposureMode
+{
+    Auto,
+    Manual,
+    Program,
+    AperturePriority,
+    ShutterPriority,
+    CreativeProgram,
+    ActionProgram,
+    Portrait,
+    Landscape,
+    AutoBracket,
+}
+
+internal enum PhotoMeteringMode
+{
+    Average,
+    CenterWeightedAverage,
+    Spot,
+    MultiSpot,
+    Matrix,
+    Partial,
+    Other,
+}
+
+internal enum PhotoWhiteBalanceMode
+{
+    Auto,
+    Manual,
+}
+
+internal enum PhotoFlashState
+{
+    DidNotFire,
+    Fired,
+}
+
 internal sealed record PhotoMetadataSummary(
     string? CameraMake,
     string? CameraModel,
@@ -21,9 +58,19 @@ internal sealed record PhotoMetadataSummary(
     double? Aperture,
     PhotoRational? ExposureTime,
     int? Iso,
+    double? ExposureCompensationEv,
+    PhotoExposureMode? ExposureMode,
+    PhotoMeteringMode? MeteringMode,
+    PhotoWhiteBalanceMode? WhiteBalanceMode,
+    PhotoFlashState? FlashState,
     PhotoCaptureTime? CaptureDateTime)
 {
     public static PhotoMetadataSummary Empty { get; } = new(
+        null,
+        null,
+        null,
+        null,
+        null,
         null,
         null,
         null,
@@ -43,6 +90,11 @@ internal sealed record PhotoMetadataSummary(
         Aperture is not null ||
         ExposureTime is not null ||
         Iso is not null ||
+        ExposureCompensationEv is not null ||
+        ExposureMode is not null ||
+        MeteringMode is not null ||
+        WhiteBalanceMode is not null ||
+        FlashState is not null ||
         CaptureDateTime is not null;
 }
 

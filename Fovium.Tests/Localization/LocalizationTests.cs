@@ -279,6 +279,78 @@ public sealed class LocalizationTests
     }
 
     [Theory]
+    [InlineData("en-US", "Camera", "Lens focal length at the moment of capture.", "Aperture priority", "Did not fire")]
+    [InlineData("ru-RU", "Камера", "Фокусное расстояние объектива в момент съёмки.", "Приоритет диафрагмы",
+        "Не сработала")]
+    public void PhotoInfoCatalogContainsEveryRowTooltipAndTextValue(
+        string cultureName,
+        string camera,
+        string focalLengthTip,
+        string aperturePriority,
+        string flashDidNotFire)
+    {
+        var localizer = Localizer.Create(CultureInfo.GetCultureInfo(cultureName));
+        var keys = new[]
+        {
+            UiStrings.PhotoInfoCamera,
+            UiStrings.PhotoInfoLens,
+            UiStrings.PhotoInfoFocalLength,
+            UiStrings.PhotoInfoAperture,
+            UiStrings.PhotoInfoShutter,
+            UiStrings.PhotoInfoIso,
+            UiStrings.PhotoInfoExposureCompensation,
+            UiStrings.PhotoInfoExposureMode,
+            UiStrings.PhotoInfoMetering,
+            UiStrings.PhotoInfoWhiteBalance,
+            UiStrings.PhotoInfoFlash,
+            UiStrings.PhotoInfoCaptured,
+            UiStrings.PhotoInfoDimensions,
+            UiStrings.PhotoInfoFile,
+            UiStrings.PhotoInfoCameraTip,
+            UiStrings.PhotoInfoLensTip,
+            UiStrings.PhotoInfoFocalLengthTip,
+            UiStrings.PhotoInfoApertureTip,
+            UiStrings.PhotoInfoShutterTip,
+            UiStrings.PhotoInfoIsoTip,
+            UiStrings.PhotoInfoExposureCompensationTip,
+            UiStrings.PhotoInfoExposureModeTip,
+            UiStrings.PhotoInfoMeteringTip,
+            UiStrings.PhotoInfoWhiteBalanceTip,
+            UiStrings.PhotoInfoFlashTip,
+            UiStrings.PhotoInfoCapturedTip,
+            UiStrings.PhotoInfoDimensionsTip,
+            UiStrings.PhotoInfoFileTip,
+            UiStrings.PhotoInfoExposureModeAuto,
+            UiStrings.PhotoInfoExposureModeManual,
+            UiStrings.PhotoInfoExposureModeProgram,
+            UiStrings.PhotoInfoExposureModeAperturePriority,
+            UiStrings.PhotoInfoExposureModeShutterPriority,
+            UiStrings.PhotoInfoExposureModeCreativeProgram,
+            UiStrings.PhotoInfoExposureModeActionProgram,
+            UiStrings.PhotoInfoExposureModePortrait,
+            UiStrings.PhotoInfoExposureModeLandscape,
+            UiStrings.PhotoInfoExposureModeAutoBracket,
+            UiStrings.PhotoInfoMeteringAverage,
+            UiStrings.PhotoInfoMeteringCenterWeighted,
+            UiStrings.PhotoInfoMeteringSpot,
+            UiStrings.PhotoInfoMeteringMultiSpot,
+            UiStrings.PhotoInfoMeteringMatrix,
+            UiStrings.PhotoInfoMeteringPartial,
+            UiStrings.PhotoInfoMeteringOther,
+            UiStrings.PhotoInfoWhiteBalanceAuto,
+            UiStrings.PhotoInfoWhiteBalanceManual,
+            UiStrings.PhotoInfoFlashDidNotFire,
+            UiStrings.PhotoInfoFlashFired,
+        };
+
+        Assert.All(keys, key => Assert.NotEqual(key, localizer[key]));
+        Assert.Equal(camera, localizer[UiStrings.PhotoInfoCamera]);
+        Assert.Equal(focalLengthTip, localizer[UiStrings.PhotoInfoFocalLengthTip]);
+        Assert.Equal(aperturePriority, localizer[UiStrings.PhotoInfoExposureModeAperturePriority]);
+        Assert.Equal(flashDidNotFire, localizer[UiStrings.PhotoInfoFlashDidNotFire]);
+    }
+
+    [Theory]
     [InlineData("en-US", "Histogram", "Histogram", "Close Histogram")]
     [InlineData("ru-RU", "Гистограмма", "Гистограмма", "Закрыть гистограмму")]
     public void HistogramCatalogContainsCommandAndPanelChrome(

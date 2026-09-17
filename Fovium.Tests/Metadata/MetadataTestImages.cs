@@ -91,11 +91,12 @@ internal static class MetadataTestImages
         var makeOffset = ifd0End;
         var modelOffset = makeOffset + make.Length;
         var subIfdOffset = AlignEven(modelOffset + model.Length);
-        var subIfdCount = includeExposure ? 6 : 2;
+        var subIfdCount = includeExposure ? 11 : 2;
         var subIfdData = subIfdOffset + 2 + (subIfdCount * 12) + 4;
         var exposureOffset = subIfdData;
         var apertureOffset = exposureOffset + 8;
-        var focalOffset = apertureOffset + 8;
+        var exposureBiasOffset = apertureOffset + 8;
+        var focalOffset = exposureBiasOffset + 8;
         var dateOffset = focalOffset + 8;
         var lensOffset = dateOffset + date.Length;
         var length = lensOffset + lens.Length;
@@ -120,9 +121,14 @@ internal static class MetadataTestImages
         {
             WriteOffsetEntry(writer, 0x829A, 5, 1, (uint)exposureOffset);
             WriteOffsetEntry(writer, 0x829D, 5, 1, (uint)apertureOffset);
+            WriteInlineShortEntry(writer, 0x8822, 3);
             WriteInlineShortEntry(writer, 0x8827, 400);
             WriteOffsetEntry(writer, 0x9003, 2, (uint)date.Length, (uint)dateOffset);
+            WriteOffsetEntry(writer, 0x9204, 10, 1, (uint)exposureBiasOffset);
+            WriteInlineShortEntry(writer, 0x9207, 5);
+            WriteInlineShortEntry(writer, 0x9209, 0x18);
             WriteOffsetEntry(writer, 0x920A, 5, 1, (uint)focalOffset);
+            WriteInlineShortEntry(writer, 0xA403, 0);
             WriteOffsetEntry(writer, 0xA434, 2, (uint)lens.Length, (uint)lensOffset);
         }
         else
@@ -136,6 +142,7 @@ internal static class MetadataTestImages
         {
             WriteRational(stream, exposureOffset, 1, 320);
             WriteRational(stream, apertureOffset, 2, 1);
+            WriteSignedRational(stream, exposureBiasOffset, -2, 3);
             WriteRational(stream, focalOffset, 85, 1);
         }
 
@@ -179,6 +186,14 @@ internal static class MetadataTestImages
     }
 
     private static void WriteRational(Stream stream, int offset, uint numerator, uint denominator)
+    {
+        stream.Position = offset;
+        using var writer = new BinaryWriter(stream, Encoding.ASCII, leaveOpen: true);
+        writer.Write(numerator);
+        writer.Write(denominator);
+    }
+
+    private static void WriteSignedRational(Stream stream, int offset, int numerator, int denominator)
     {
         stream.Position = offset;
         using var writer = new BinaryWriter(stream, Encoding.ASCII, leaveOpen: true);

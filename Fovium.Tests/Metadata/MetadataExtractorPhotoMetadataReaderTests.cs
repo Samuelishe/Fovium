@@ -20,6 +20,11 @@ public sealed class MetadataExtractorPhotoMetadataReaderTests
         Assert.Equal(2, result.Summary.Aperture);
         Assert.Equal(new PhotoRational(1, 320), result.Summary.ExposureTime);
         Assert.Equal(400, result.Summary.Iso);
+        Assert.Equal(-2d / 3, result.Summary.ExposureCompensationEv!.Value, 6);
+        Assert.Equal(PhotoExposureMode.AperturePriority, result.Summary.ExposureMode);
+        Assert.Equal(PhotoMeteringMode.Matrix, result.Summary.MeteringMode);
+        Assert.Equal(PhotoWhiteBalanceMode.Auto, result.Summary.WhiteBalanceMode);
+        Assert.Equal(PhotoFlashState.DidNotFire, result.Summary.FlashState);
         var captured = Assert.IsType<PhotoCaptureTime>(result.Summary.CaptureDateTime);
         Assert.Equal(new DateTime(2026, 8, 25, 18, 42, 0), captured.UnspecifiedClockTime);
         Assert.Equal(DateTimeKind.Unspecified, captured.UnspecifiedClockTime.Kind);
@@ -44,6 +49,11 @@ public sealed class MetadataExtractorPhotoMetadataReaderTests
         Assert.Equal(2, result.Summary.Aperture);
         Assert.Equal(new PhotoRational(1, 320), result.Summary.ExposureTime);
         Assert.Equal(400, result.Summary.Iso);
+        Assert.Equal(-2d / 3, result.Summary.ExposureCompensationEv!.Value, 6);
+        Assert.Equal(PhotoExposureMode.AperturePriority, result.Summary.ExposureMode);
+        Assert.Equal(PhotoMeteringMode.Matrix, result.Summary.MeteringMode);
+        Assert.Equal(PhotoWhiteBalanceMode.Auto, result.Summary.WhiteBalanceMode);
+        Assert.Equal(PhotoFlashState.DidNotFire, result.Summary.FlashState);
     }
 
     [Fact]
@@ -87,5 +97,10 @@ public sealed class MetadataExtractorPhotoMetadataReaderTests
         Assert.Null(result.Summary.Aperture);
         Assert.Null(result.Summary.FocalLengthMillimeters);
         Assert.Null(result.Summary.Iso);
+        Assert.Null(result.Summary.ExposureCompensationEv);
+        Assert.Null(result.Summary.ExposureMode);
+        Assert.Null(result.Summary.MeteringMode);
+        Assert.Null(result.Summary.WhiteBalanceMode);
+        Assert.Null(result.Summary.FlashState);
     }
 }

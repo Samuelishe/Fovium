@@ -83,8 +83,8 @@
             IsVisible="False"
             HorizontalAlignment="Left"
             VerticalAlignment="Top"
-            Width="360"
-            MaxWidth="420"
+            Width="440"
+            MaxWidth="500"
             Padding="10,8,10,10"
             CornerRadius="8"
             Background="#E6202020"
@@ -115,12 +115,7 @@
                   Padding="5"
                   Focusable="False" />
         </Grid>
-        <TextBlock x:Name="PhotoInfoCameraText" FontWeight="SemiBold" />
-        <TextBlock x:Name="PhotoInfoLensText" Opacity="0.85" />
-        <TextBlock x:Name="PhotoInfoExposureText" Margin="0,3,0,0" TextWrapping="Wrap" />
-        <TextBlock x:Name="PhotoInfoDimensionsText" Opacity="0.85" />
-        <TextBlock x:Name="PhotoInfoDateText" Margin="0,3,0,0" Opacity="0.85" />
-        <TextBlock x:Name="PhotoInfoFileText" Opacity="0.75" TextTrimming="CharacterEllipsis" />
+        <StackPanel x:Name="PhotoInfoRows" Spacing="3" />
       </StackPanel>
     </Border>
     <Border x:Name="HistogramPanel"

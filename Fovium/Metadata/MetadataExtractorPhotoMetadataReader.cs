@@ -75,6 +75,11 @@ internal sealed class MetadataExtractorPhotoMetadataReader : IPhotoMetadataReade
         var aperture = TryGetPositiveDouble(subIfd, ExifDirectoryBase.TagFNumber);
         var exposure = TryGetRational(subIfd, ExifDirectoryBase.TagExposureTime);
         var iso = TryGetPositiveInt(subIfd, ExifDirectoryBase.TagIsoEquivalent);
+        var exposureCompensation = TryGetFiniteDouble(subIfd, ExifDirectoryBase.TagExposureBias);
+        var exposureMode = TryGetExposureMode(subIfd);
+        var meteringMode = TryGetMeteringMode(subIfd);
+        var whiteBalanceMode = TryGetWhiteBalanceMode(subIfd);
+        var flashState = TryGetFlashState(subIfd);
         var capture = TryGetCaptureTime(subIfd) ?? TryGetCaptureTime(ifd0);
 
         return new PhotoMetadataSummary(
@@ -86,7 +91,19 @@ internal sealed class MetadataExtractorPhotoMetadataReader : IPhotoMetadataReade
             aperture,
             exposure,
             iso,
+            exposureCompensation,
+            exposureMode,
+            meteringMode,
+            whiteBalanceMode,
+            flashState,
             capture);
+    }
+
+    private static double? TryGetFiniteDouble(MetadataExtractor.Directory? directory, int tag)
+    {
+        return directory is not null && directory.TryGetDouble(tag, out var value) && double.IsFinite(value)
+            ? value
+            : null;
     }
 
     private static double? TryGetPositiveDouble(MetadataExtractor.Directory? directory, int tag)
@@ -115,6 +132,84 @@ internal sealed class MetadataExtractorPhotoMetadataReader : IPhotoMetadataReade
         }
 
         return new PhotoRational(value.Numerator, value.Denominator);
+    }
+
+    private static PhotoExposureMode? TryGetExposureMode(MetadataExtractor.Directory? directory)
+    {
+        if (directory is null)
+        {
+            return null;
+        }
+
+        if (directory.TryGetInt32(ExifDirectoryBase.TagExposureProgram, out var program))
+        {
+            var mappedProgram = program switch
+            {
+                1 => PhotoExposureMode.Manual,
+                2 => PhotoExposureMode.Program,
+                3 => PhotoExposureMode.AperturePriority,
+                4 => PhotoExposureMode.ShutterPriority,
+                5 => PhotoExposureMode.CreativeProgram,
+                6 => PhotoExposureMode.ActionProgram,
+                7 => PhotoExposureMode.Portrait,
+                8 => PhotoExposureMode.Landscape,
+                _ => (PhotoExposureMode?)null,
+            };
+            if (mappedProgram is not null)
+            {
+                return mappedProgram;
+            }
+        }
+
+        return directory.TryGetInt32(ExifDirectoryBase.TagExposureMode, out var mode)
+            ? mode switch
+            {
+                0 => PhotoExposureMode.Auto,
+                1 => PhotoExposureMode.Manual,
+                2 => PhotoExposureMode.AutoBracket,
+                _ => null,
+            }
+            : null;
+    }
+
+    private static PhotoMeteringMode? TryGetMeteringMode(MetadataExtractor.Directory? directory)
+    {
+        return directory is not null && directory.TryGetInt32(ExifDirectoryBase.TagMeteringMode, out var value)
+            ? value switch
+            {
+                1 => PhotoMeteringMode.Average,
+                2 => PhotoMeteringMode.CenterWeightedAverage,
+                3 => PhotoMeteringMode.Spot,
+                4 => PhotoMeteringMode.MultiSpot,
+                5 => PhotoMeteringMode.Matrix,
+                6 => PhotoMeteringMode.Partial,
+                255 => PhotoMeteringMode.Other,
+                _ => null,
+            }
+            : null;
+    }
+
+    private static PhotoWhiteBalanceMode? TryGetWhiteBalanceMode(MetadataExtractor.Directory? directory)
+    {
+        return directory is not null && directory.TryGetInt32(
+            ExifDirectoryBase.TagWhiteBalanceMode,
+            out var value)
+            ? value switch
+            {
+                0 => PhotoWhiteBalanceMode.Auto,
+                1 => PhotoWhiteBalanceMode.Manual,
+                _ => null,
+            }
+            : null;
+    }
+
+    private static PhotoFlashState? TryGetFlashState(MetadataExtractor.Directory? directory)
+    {
+        return directory is not null && directory.TryGetInt32(ExifDirectoryBase.TagFlash, out var value) && value >= 0
+            ? (value & 1) == 1
+                ? PhotoFlashState.Fired
+                : PhotoFlashState.DidNotFire
+            : null;
     }
 
     private static PhotoCaptureTime? TryGetCaptureTime(MetadataExtractor.Directory? directory)

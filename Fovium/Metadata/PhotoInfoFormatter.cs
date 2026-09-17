@@ -1,5 +1,6 @@
 using System.Globalization;
 using Fovium.Imaging;
+using Fovium.Localization;
 using Fovium.Rendering;
 
 namespace Fovium.Metadata;
@@ -19,22 +20,45 @@ internal sealed record PhotoInfoState(
 internal sealed record PhotoInfoText(
     string? Camera,
     string? Lens,
-    string? Exposure,
+    string? FocalLength,
+    string? Aperture,
+    string? Shutter,
+    string? Iso,
+    string? ExposureCompensation,
+    string? ExposureMode,
+    string? MeteringMode,
+    string? WhiteBalance,
+    string? Flash,
     string Dimensions,
     string? CaptureDateTime,
     string File);
 
 internal static class PhotoInfoFormatter
 {
-    public static PhotoInfoText Format(PhotoInfoState state, CultureInfo culture)
+    public static PhotoInfoText Format(PhotoInfoState state, CultureInfo culture) =>
+        Format(state, culture, static key => key);
+
+    public static PhotoInfoText Format(
+        PhotoInfoState state,
+        CultureInfo culture,
+        Func<string, string> localize)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(culture);
+        ArgumentNullException.ThrowIfNull(localize);
         var metadata = state.Metadata;
         return new PhotoInfoText(
             CombineDistinct(metadata.CameraMake, metadata.CameraModel),
             CombineDistinct(metadata.LensMake, metadata.LensModel, preferSecond: true),
-            FormatExposureLine(metadata),
+            FormatFocalLength(metadata.FocalLengthMillimeters),
+            FormatAperture(metadata.Aperture),
+            FormatExposure(metadata.ExposureTime),
+            FormatIso(metadata.Iso),
+            FormatExposureCompensation(metadata.ExposureCompensationEv),
+            FormatExposureMode(metadata.ExposureMode, localize),
+            FormatMeteringMode(metadata.MeteringMode, localize),
+            FormatWhiteBalance(metadata.WhiteBalanceMode, localize),
+            FormatFlash(metadata.FlashState, localize),
             FormatDimensions(state.Base.OrientedSize, culture),
             metadata.CaptureDateTime is { } captured
                 ? captured.UnspecifiedClockTime.ToString("d MMM yyyy · HH:mm", culture)
@@ -50,14 +74,25 @@ internal static class PhotoInfoFormatter
         }
 
         var seconds = value.Value;
-        if (seconds < 0.75 && value.Numerator == 1)
+        if (seconds < 0.75)
         {
-            return $"1/{value.Denominator}";
+            var reciprocal = 1d / seconds;
+            var roundedReciprocal = Math.Round(reciprocal);
+            if (roundedReciprocal >= 2 &&
+                Math.Abs(reciprocal - roundedReciprocal) <= reciprocal * 0.000_001)
+            {
+                return $"1/{roundedReciprocal.ToString("0", CultureInfo.InvariantCulture)} s";
+            }
         }
 
-        return seconds < 1
-            ? $"{seconds.ToString("0.#", CultureInfo.InvariantCulture)} s"
-            : $"{seconds.ToString("0.#", CultureInfo.InvariantCulture)} s";
+        var format = seconds >= 0.1 ? "0.#" : "0.########";
+        var formattedSeconds = seconds.ToString(format, CultureInfo.InvariantCulture);
+        if (formattedSeconds == "0")
+        {
+            formattedSeconds = seconds.ToString("G6", CultureInfo.InvariantCulture);
+        }
+
+        return $"{formattedSeconds} s";
     }
 
     public static string? FormatAperture(double? aperture) =>
@@ -70,20 +105,70 @@ internal static class PhotoInfoFormatter
             ? $"{value.ToString("0.#", CultureInfo.InvariantCulture)} mm"
             : null;
 
-    public static string? FormatIso(int? iso) => iso is > 0 ? $"ISO {iso.Value}" : null;
+    public static string? FormatIso(int? iso) => iso is > 0
+        ? iso.Value.ToString(CultureInfo.InvariantCulture)
+        : null;
 
-    private static string? FormatExposureLine(PhotoMetadataSummary metadata)
+    public static string? FormatExposureCompensation(double? exposureCompensationEv)
     {
-        var values = new[]
+        if (exposureCompensationEv is not { } value || !double.IsFinite(value))
         {
-            FormatFocalLength(metadata.FocalLengthMillimeters),
-            FormatAperture(metadata.Aperture),
-            FormatExposure(metadata.ExposureTime),
-            FormatIso(metadata.Iso),
-        }.Where(value => value is not null);
-        var line = string.Join(" · ", values!);
-        return line.Length == 0 ? null : line;
+            return null;
+        }
+
+        var normalized = Math.Abs(value) < 0.05 ? 0 : value;
+        var prefix = normalized > 0 ? "+" : string.Empty;
+        return $"{prefix}{normalized.ToString("0.#", CultureInfo.InvariantCulture)} EV";
     }
+
+    private static string? FormatExposureMode(
+        PhotoExposureMode? mode,
+        Func<string, string> localize) => mode switch
+    {
+        PhotoExposureMode.Auto => localize(UiStrings.PhotoInfoExposureModeAuto),
+        PhotoExposureMode.Manual => localize(UiStrings.PhotoInfoExposureModeManual),
+        PhotoExposureMode.Program => localize(UiStrings.PhotoInfoExposureModeProgram),
+        PhotoExposureMode.AperturePriority => localize(UiStrings.PhotoInfoExposureModeAperturePriority),
+        PhotoExposureMode.ShutterPriority => localize(UiStrings.PhotoInfoExposureModeShutterPriority),
+        PhotoExposureMode.CreativeProgram => localize(UiStrings.PhotoInfoExposureModeCreativeProgram),
+        PhotoExposureMode.ActionProgram => localize(UiStrings.PhotoInfoExposureModeActionProgram),
+        PhotoExposureMode.Portrait => localize(UiStrings.PhotoInfoExposureModePortrait),
+        PhotoExposureMode.Landscape => localize(UiStrings.PhotoInfoExposureModeLandscape),
+        PhotoExposureMode.AutoBracket => localize(UiStrings.PhotoInfoExposureModeAutoBracket),
+        _ => null,
+    };
+
+    private static string? FormatMeteringMode(
+        PhotoMeteringMode? mode,
+        Func<string, string> localize) => mode switch
+    {
+        PhotoMeteringMode.Average => localize(UiStrings.PhotoInfoMeteringAverage),
+        PhotoMeteringMode.CenterWeightedAverage => localize(UiStrings.PhotoInfoMeteringCenterWeighted),
+        PhotoMeteringMode.Spot => localize(UiStrings.PhotoInfoMeteringSpot),
+        PhotoMeteringMode.MultiSpot => localize(UiStrings.PhotoInfoMeteringMultiSpot),
+        PhotoMeteringMode.Matrix => localize(UiStrings.PhotoInfoMeteringMatrix),
+        PhotoMeteringMode.Partial => localize(UiStrings.PhotoInfoMeteringPartial),
+        PhotoMeteringMode.Other => localize(UiStrings.PhotoInfoMeteringOther),
+        _ => null,
+    };
+
+    private static string? FormatWhiteBalance(
+        PhotoWhiteBalanceMode? mode,
+        Func<string, string> localize) => mode switch
+    {
+        PhotoWhiteBalanceMode.Auto => localize(UiStrings.PhotoInfoWhiteBalanceAuto),
+        PhotoWhiteBalanceMode.Manual => localize(UiStrings.PhotoInfoWhiteBalanceManual),
+        _ => null,
+    };
+
+    private static string? FormatFlash(
+        PhotoFlashState? state,
+        Func<string, string> localize) => state switch
+    {
+        PhotoFlashState.DidNotFire => localize(UiStrings.PhotoInfoFlashDidNotFire),
+        PhotoFlashState.Fired => localize(UiStrings.PhotoInfoFlashFired),
+        _ => null,
+    };
 
     private static string FormatDimensions(PixelSize size, CultureInfo culture)
     {

@@ -151,27 +151,41 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         _markupFloatingOverlay = new FloatingOverlayInteraction(
             ViewerRoot,
             MarkupToolsPanel,
-            MarkupDragHandle,
             settings.Current.Presentation.MarkupDockPlacement,
-            _interactionDiagnostics);
+            _interactionDiagnostics,
+            [
+                MarkupHandButton,
+                MarkupBrushButton,
+                MarkupEraserButton,
+                MarkupLineButton,
+                MarkupRectangleButton,
+                MarkupEllipseButton,
+                MarkupArrowButton,
+                MarkupUndoButton,
+                MarkupRedoButton,
+                MarkupClearButton,
+                MarkupColorButton,
+                MarkupStrokeSlider,
+                MarkupOpacitySlider,
+            ]);
         _photoInfoFloatingOverlay = new FloatingOverlayInteraction(
             ViewerRoot,
             PhotoInfoPanel,
-            PhotoInfoDragHandle,
             settings.Current.Presentation.PhotoInfoPlacement,
-            _interactionDiagnostics);
+            _interactionDiagnostics,
+            [PhotoInfoCloseButton]);
         _histogramFloatingOverlay = new FloatingOverlayInteraction(
             ViewerRoot,
             HistogramPanel,
-            HistogramDragHandle,
             settings.Current.Presentation.HistogramPlacement,
-            _interactionDiagnostics);
+            _interactionDiagnostics,
+            [HistogramCloseButton]);
         _colorPickerFloatingOverlay = new FloatingOverlayInteraction(
             ViewerRoot,
             ColorPickerPanel,
-            ColorPickerDragHandle,
             settings.Current.Presentation.ColorPickerPlacement,
-            _interactionDiagnostics);
+            _interactionDiagnostics,
+            [ColorPickerCloseButton]);
         _markupFloatingOverlay.PlacementCommitted += OnMarkupPlacementCommitted;
         _photoInfoFloatingOverlay.PlacementCommitted += OnPhotoInfoPlacementCommitted;
         _histogramFloatingOverlay.PlacementCommitted += OnHistogramPlacementCommitted;
@@ -1588,31 +1602,74 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         var state = _photoInfo.CurrentState;
         if (!_photoInfo.IsVisible || state is null)
         {
-            SetPhotoInfoLine(PhotoInfoCameraText, null);
-            SetPhotoInfoLine(PhotoInfoLensText, null);
-            SetPhotoInfoLine(PhotoInfoExposureText, null);
-            SetPhotoInfoLine(PhotoInfoDimensionsText, null);
-            SetPhotoInfoLine(PhotoInfoDateText, null);
-            SetPhotoInfoLine(PhotoInfoFileText, null);
+            PhotoInfoRows.Children.Clear();
             return;
         }
 
         var culture = System.Globalization.CultureInfo.GetCultureInfo(
             _localizer.Locale == "ru" ? "ru-RU" : "en-US");
-        var text = PhotoInfoFormatter.Format(state, culture);
-        SetPhotoInfoLine(PhotoInfoCameraText, text.Camera);
-        SetPhotoInfoLine(PhotoInfoLensText, text.Lens);
-        SetPhotoInfoLine(PhotoInfoExposureText, text.Exposure);
-        SetPhotoInfoLine(PhotoInfoDimensionsText, text.Dimensions);
-        SetPhotoInfoLine(PhotoInfoDateText, text.CaptureDateTime);
-        SetPhotoInfoLine(PhotoInfoFileText, text.File);
+        var text = PhotoInfoFormatter.Format(state, culture, _localizer.Get);
+        PhotoInfoRows.Children.Clear();
+        AddPhotoInfoRow(UiStrings.PhotoInfoCamera, text.Camera, UiStrings.PhotoInfoCameraTip);
+        AddPhotoInfoRow(UiStrings.PhotoInfoLens, text.Lens, UiStrings.PhotoInfoLensTip);
+        AddPhotoInfoRow(UiStrings.PhotoInfoFocalLength, text.FocalLength, UiStrings.PhotoInfoFocalLengthTip);
+        AddPhotoInfoRow(UiStrings.PhotoInfoAperture, text.Aperture, UiStrings.PhotoInfoApertureTip);
+        AddPhotoInfoRow(UiStrings.PhotoInfoShutter, text.Shutter, UiStrings.PhotoInfoShutterTip);
+        AddPhotoInfoRow(UiStrings.PhotoInfoIso, text.Iso, UiStrings.PhotoInfoIsoTip);
+        AddPhotoInfoRow(
+            UiStrings.PhotoInfoExposureCompensation,
+            text.ExposureCompensation,
+            UiStrings.PhotoInfoExposureCompensationTip);
+        AddPhotoInfoRow(UiStrings.PhotoInfoMetering, text.MeteringMode, UiStrings.PhotoInfoMeteringTip);
+        AddPhotoInfoRow(
+            UiStrings.PhotoInfoExposureMode,
+            text.ExposureMode,
+            UiStrings.PhotoInfoExposureModeTip);
+        AddPhotoInfoRow(
+            UiStrings.PhotoInfoWhiteBalance,
+            text.WhiteBalance,
+            UiStrings.PhotoInfoWhiteBalanceTip);
+        AddPhotoInfoRow(UiStrings.PhotoInfoFlash, text.Flash, UiStrings.PhotoInfoFlashTip);
+        AddPhotoInfoRow(
+            UiStrings.PhotoInfoCaptured,
+            text.CaptureDateTime,
+            UiStrings.PhotoInfoCapturedTip);
+        AddPhotoInfoRow(
+            UiStrings.PhotoInfoDimensions,
+            text.Dimensions,
+            UiStrings.PhotoInfoDimensionsTip);
+        AddPhotoInfoRow(UiStrings.PhotoInfoFile, text.File, UiStrings.PhotoInfoFileTip);
         _photoInfoFloatingOverlay.ApplyPlacement();
     }
 
-    private static void SetPhotoInfoLine(TextBlock textBlock, string? value)
+    private void AddPhotoInfoRow(string labelKey, string? value, string tooltipKey)
     {
-        textBlock.Text = value;
-        textBlock.IsVisible = !string.IsNullOrEmpty(value);
+        if (string.IsNullOrEmpty(value))
+        {
+            return;
+        }
+
+        var row = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("128,*"),
+            ColumnSpacing = 10,
+        };
+        row.Children.Add(new TextBlock
+        {
+            Text = _localizer[labelKey],
+            Opacity = 0.68,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Top,
+        });
+        var valueText = new TextBlock
+        {
+            Text = value,
+            TextWrapping = TextWrapping.Wrap,
+            Opacity = 0.92,
+        };
+        Grid.SetColumn(valueText, 1);
+        row.Children.Add(valueText);
+        ToolTip.SetTip(row, _localizer[tooltipKey]);
+        PhotoInfoRows.Children.Add(row);
     }
 
     private void ConfigureHistogram()
