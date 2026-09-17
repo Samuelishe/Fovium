@@ -51,10 +51,10 @@ and [imaging direction](docs/IMAGING-PIPELINE.md) for details.
 
 ## Current status
 
-The current locally complete checkpoint is **`0.1.2.0006`**. R8-A-F4 polishes the horizontal Color Inspector with
-warm-neutral/earth-tone and violet/lilac-gray families, role-aware detail terminology, and a wider recent list. R8-A-F3
-is pushed at `1450df2`; GitHub CI #50 and Native libheif #24 are green. The local `0.1.2.0006` candidate is not yet
-pushed or hosted-verified. Owner-accepted R6-A-F1 Photo
+The current locally complete checkpoint is **`0.1.2.0007`**. R8-A-F5 adds a reproducible production-classifier audit
+route and corrects the systematic yellow-brown/olive taxonomy overlap. R8-A-F4 is pushed at `8864750`; GitHub CI #51,
+Native Little CMS #16, and Native libheif #25 are green across their required matrices. The local `0.1.2.0007` candidate
+is not yet pushed or hosted-verified. Owner-accepted R6-A-F1 Photo
 Info/floating-drag behavior, R10-A-F1 photo-derived styling, R9-A-F2 Matte-independent Photo Presentation scale, R9-B-F1
 Slideshow layout independence, and R8-B-W1 ordinary-Windows-SDR Monitor Color Management remain unchanged; hosted and
 non-Windows visual status must be evaluated separately.

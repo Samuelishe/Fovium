@@ -64,7 +64,7 @@ public sealed class PerceptualColorClassifierTests
     [InlineData("#5D440E", PerceptualHueFamily.Brown, PerceptualChromaClass.Moderate)]
     [InlineData("#79AC07", PerceptualHueFamily.YellowGreen, PerceptualChromaClass.Saturated)]
     [InlineData("#393D58", PerceptualHueFamily.BlueGray, PerceptualChromaClass.Muted)]
-    [InlineData("#B49101", PerceptualHueFamily.Olive, PerceptualChromaClass.Moderate)]
+    [InlineData("#B49101", PerceptualHueFamily.Ochre, PerceptualChromaClass.Moderate)]
     public void OwnerSmokeColorsRemainGeneralTaxonomySanityChecks(
         string hex,
         object expectedHue,
@@ -134,6 +134,52 @@ public sealed class PerceptualColorClassifierTests
     }
 
     [Theory]
+    [InlineData("#755A13")]
+    [InlineData("#57420D")]
+    [InlineData("#7E661C")]
+    [InlineData("#755B1E")]
+    [InlineData("#9A8045")]
+    [InlineData("#5F4C22")]
+    [InlineData("#3C341D")]
+    public void YellowBrownAuditRegionUsesOchreInsteadOfOlive(string hex)
+    {
+        Assert.Equal(PerceptualHueFamily.Ochre, Describe(hex).HueFamily);
+    }
+
+    [Theory]
+    [InlineData(0.35, 0.07, 81.999, PerceptualHueFamily.Brown)]
+    [InlineData(0.35, 0.07, 82, PerceptualHueFamily.Ochre)]
+    [InlineData(0.48, 0.07, 94.999, PerceptualHueFamily.Ochre)]
+    [InlineData(0.48, 0.07, 95, PerceptualHueFamily.Olive)]
+    public void YellowBrownToOliveHueBoundaryIsExplicitAndContiguous(
+        double lightness,
+        double chroma,
+        double hue,
+        object expected)
+    {
+        Assert.Equal(expected, PerceptualColorClassifier.ClassifyHue(new OklchColor(lightness, chroma, hue)));
+    }
+
+    [Fact]
+    public void ModerateYellowBrownRemainsOchreAcrossDarkAndMidLightness()
+    {
+        var families = new[] { 0.32, 0.40, 0.50, 0.60 }
+            .Select(lightness => PerceptualColorClassifier.ClassifyHue(new OklchColor(lightness, 0.065, 86)))
+            .ToArray();
+
+        Assert.All(families, family => Assert.Equal(PerceptualHueFamily.Ochre, family));
+    }
+
+    [Theory]
+    [InlineData(0.35, 82)]
+    [InlineData(0.51, 68.5)]
+    [InlineData(0.60, 55)]
+    public void OchreHueFloorWidensSmoothlyWithLightness(double lightness, double expectedHue)
+    {
+        Assert.Equal(expectedHue, PerceptualColorClassifier.OchreHueMinimumAt(lightness), 10);
+    }
+
+    [Theory]
     [InlineData(0.014999, PerceptualHueFamily.OliveGray)]
     [InlineData(0.015, PerceptualHueFamily.Greige)]
     [InlineData(0.037999, PerceptualHueFamily.Greige)]
@@ -187,6 +233,9 @@ public sealed class PerceptualColorClassifierTests
     [InlineData("#341D6D", PerceptualHueFamily.BlueViolet)]
     [InlineData("#6AEBF1", PerceptualHueFamily.TurquoiseCyan)]
     [InlineData("#505E23", PerceptualHueFamily.OliveGreen)]
+    [InlineData("#6E6336", PerceptualHueFamily.Olive)]
+    [InlineData("#6A693D", PerceptualHueFamily.Olive)]
+    [InlineData("#5F6058", PerceptualHueFamily.OliveGray)]
     [InlineData("#1A2529", PerceptualHueFamily.BlueGray)]
     [InlineData("#D3F5FF", PerceptualHueFamily.Blue)]
     [InlineData("#E2D9DC", PerceptualHueFamily.RoseGray)]

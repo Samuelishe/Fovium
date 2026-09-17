@@ -146,6 +146,11 @@ internal static class PerceptualColorClassifier
     internal const double BeigeChromaMaximum = 0.055;
     internal const double SandChromaMaximum = 0.090;
     internal const double MustardChromaMinimum = 0.100;
+    internal const double OchreHueMinimum = 55;
+    internal const double OchreDarkHueMinimum = 82;
+    internal const double OchreHueMaximum = 95;
+    internal const double OchreLightnessMinimum = 0.30;
+    internal const double OchreChromaMinimum = 0.035;
     internal const double PeachLightnessMinimum = 0.760;
     internal const double ApricotLightnessMinimum = 0.860;
     internal const double ApricotChromaMinimum = 0.065;
@@ -217,6 +222,12 @@ internal static class PerceptualColorClassifier
         }
 
         return limit;
+    }
+
+    internal static double OchreHueMinimumAt(double lightness)
+    {
+        var transition = Math.Clamp((lightness - 0.42) / 0.18, 0, 1);
+        return OchreDarkHueMinimum - transition * (OchreDarkHueMinimum - OchreHueMinimum);
     }
 
     internal static PerceptualLightnessClass ClassifyLightness(double lightness) => lightness switch
@@ -354,7 +365,7 @@ internal static class PerceptualColorClassifier
             return PerceptualHueFamily.Brown;
         }
 
-        if (color.HueDegrees is >= 80 and < 120 && color.L < 0.72 && color.C < 0.18)
+        if (color.HueDegrees is >= OchreHueMaximum and < 120 && color.L < 0.72 && color.C < 0.18)
         {
             return PerceptualHueFamily.Olive;
         }
@@ -438,64 +449,62 @@ internal static class PerceptualColorClassifier
             {
                 return PerceptualHueFamily.Beige;
             }
-
-            return null;
         }
 
-        if (role != PerceptualColorRole.Chromatic)
+        if (role == PerceptualColorRole.Chromatic)
         {
-            return null;
-        }
-
-        if (hue is >= 35 and < 58 &&
-            color.L >= PeachLightnessMinimum &&
-            color.C is >= 0.035 and < 0.15)
-        {
-            return PerceptualHueFamily.Peach;
-        }
-
-        if (hue is >= 58 and < 82 &&
-            color.L >= ApricotLightnessMinimum &&
-            color.C is >= ApricotChromaMinimum and < 0.12)
-        {
-            return PerceptualHueFamily.Apricot;
-        }
-
-        if (hue is >= 35 and < 55 &&
-            color.L is >= 0.62 and < PeachLightnessMinimum &&
-            color.C is >= 0.06 and < 0.16)
-        {
-            return PerceptualHueFamily.Terracotta;
-        }
-
-        if (hue is >= 45 and < 95 && color.L is >= 0.62 and < 0.90)
-        {
-            if (color.C < GreigeChromaMaximum)
+            if (hue is >= 35 and < 58 &&
+                color.L >= PeachLightnessMinimum &&
+                color.C is >= 0.035 and < 0.15)
             {
-                return PerceptualHueFamily.Greige;
+                return PerceptualHueFamily.Peach;
             }
 
-            if (color.C < BeigeChromaMaximum)
+            if (hue is >= 58 and < 82 &&
+                color.L >= ApricotLightnessMinimum &&
+                color.C is >= ApricotChromaMinimum and < 0.12)
             {
-                return PerceptualHueFamily.Beige;
+                return PerceptualHueFamily.Apricot;
             }
 
-            if (color.C < SandChromaMaximum)
+            if (hue is >= 35 and < 55 &&
+                color.L is >= 0.62 and < PeachLightnessMinimum &&
+                color.C is >= 0.06 and < 0.16)
             {
-                return PerceptualHueFamily.Sand;
+                return PerceptualHueFamily.Terracotta;
+            }
+
+            if (hue is >= 45 and < OchreHueMaximum && color.L is >= 0.62 and < 0.90)
+            {
+                if (color.C < GreigeChromaMaximum)
+                {
+                    return PerceptualHueFamily.Greige;
+                }
+
+                if (color.C < BeigeChromaMaximum)
+                {
+                    return PerceptualHueFamily.Beige;
+                }
+
+                if (color.C < SandChromaMaximum)
+                {
+                    return PerceptualHueFamily.Sand;
+                }
+            }
+
+            if (hue is >= 82 and < 90 &&
+                color.L is >= 0.58 and < 0.78 &&
+                color.C is >= MustardChromaMinimum and < 0.18)
+            {
+                return PerceptualHueFamily.Mustard;
             }
         }
 
-        if (hue is >= 82 and < 90 &&
-            color.L is >= 0.58 and < 0.78 &&
-            color.C is >= MustardChromaMinimum and < 0.18)
-        {
-            return PerceptualHueFamily.Mustard;
-        }
-
-        if (hue is >= 55 and < 90 &&
-            color.L is >= 0.50 and < 0.78 &&
-            color.C is >= SandChromaMaximum and < 0.17)
+        if ((role is PerceptualColorRole.Chromatic or PerceptualColorRole.NearNeutral or
+                PerceptualColorRole.TintedNeutral) &&
+            hue >= OchreHueMinimumAt(color.L) && hue < OchreHueMaximum &&
+            color.L is >= OchreLightnessMinimum and < 0.78 &&
+            color.C is >= OchreChromaMinimum and < 0.17)
         {
             return PerceptualHueFamily.Ochre;
         }

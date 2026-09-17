@@ -195,6 +195,16 @@ olive-green, near-white, blue-gray, and rose-gray behavior. EN/RU tests cover ev
 role-dependent `Color tone`/`Undertone` detail. The ignored production-compatible harness adds 36 read-only sample
 points across 9 owner photographs without shipping private paths, images, or output.
 
+R8-A-F5 replaces ad-hoc color clicking as the primary engineering audit with the tracked
+`Fovium.Tools.ColorTaxonomyAudit` route. Fast/deep profiles combine an in-gamut OKLCH grid, fixed-seed RGB Monte Carlo,
+an RGB cube, and deterministic one-channel refinement around discovered family boundaries; reports and optional
+downloaded reference caches remain ignored. Focused tests cover profile/seed determinism, OKLCH gamut conversion,
+boundary refinement, reference normalization/parsing/provenance, deterministic report signatures, the corrected
+yellow-brown region, exact neighboring thresholds, accepted olive/brown controls, and generated monotonicity properties.
+Run and evidence semantics are documented in
+[`../eng/color-taxonomy-audit/README.md`](../eng/color-taxonomy-audit/README.md); ordinary CI requires no network or
+external dataset.
+
 R8-B-P1 adds deterministic in-memory tests for bounded ICC display-profile validation, content identity, active-monitor
 largest-intersection/tie behavior, typed fallback precedence, complete transform-key equality, Skia destination/alpha
 behavior, and source-versus-destination ownership. The final domain-independence test proves that two destination

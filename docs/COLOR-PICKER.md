@@ -90,6 +90,13 @@ gray families instead of falling through to blue-gray. These regions combine
 hue, lightness, chroma, and perceptual role through centralized thresholds;
 there are no per-RGB overrides.
 
+The yellow-brown/olive boundary uses one bounded lightness-aware ochre hue floor:
+dark colors require a more yellow hue before leaving Brown, while the accepted
+ochre sector widens smoothly through mid/light values and ends before the greener
+Olive controls. This replaces the former ordering gap that classified moderate
+yellow-browns around 85–91° as Olive. It remains a region rule over OKLCH rather
+than a table of owner RGB samples.
+
 History names use at most one useful lightness or chroma modifier, while
 detailed names may use both. The detail row says `Color tone` for chromatic
 samples and `Undertone` for neutral, tinted, near-black, and near-white roles,
@@ -97,6 +104,13 @@ so a cream-white sample is not presented as though olive were its primary
 color. These thresholds are deterministic presentation policy backed by
 boundary tests and a bounded real-photograph corpus, not a claim of an
 objective or physical color standard.
+
+Developer changes to this taxonomy use the reproducible audit route documented in
+[`../eng/color-taxonomy-audit/README.md`](../eng/color-taxonomy-audit/README.md).
+Its structured in-gamut grid, fixed-seed RGB sampling, boundary refinement,
+topology checks, and optional named-color neighbors exercise the production
+classifier. External names rank suspicious regions only; they do not override
+the project-owned taxonomy or become runtime data.
 
 Fully transparent samples retain the localized `Transparent` semantic and do
 not invent OKLCH, hue, lightness, or chroma values. Fovium never reports

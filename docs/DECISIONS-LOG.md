@@ -618,7 +618,7 @@ Pantone/RAL/NCS or objective color-name claim.
 
 ## D-061 — Color Inspector uses bounded semantic regions for warm earth and purple neutrals
 
-Status: Implemented in the local R8-A-F4 candidate; owner acceptance pending.
+Status: Accepted in R8-A-F4.
 
 Warm-neutral and earth presentation is a small OKLCH region layer over the accepted perceptual-role model, not extra
 creative anchors or RGB exceptions. Central hue/lightness/chroma bounds distinguish greige, beige, sand, cream,
@@ -630,3 +630,17 @@ The detail pane labels a chromatic family's value as `Color tone` and a neutral,
 value as `Undertone`. This keeps semantic role and hue identity locale-independent while avoiding presentation such as
 cream-white with an apparently primary olive tone. Sampling, history, creative matching/catalogs, and rendering remain
 unchanged.
+
+## D-062 — Perceptual taxonomy corrections require reproducible topology evidence
+
+Status: Implemented in the local R8-A-F5 candidate; owner acceptance pending.
+
+Color Inspector taxonomy work uses a developer-only audit executable against the real internal production classifier,
+not a copied model or a runtime service. Fixed-seed stratified OKLCH/RGB sampling, local boundary refinement, component
+and monotonicity checks, broad family coverage, and optional k-nearest public name references produce ignored JSON,
+Markdown/HTML, CSV, and swatch evidence. External vocabularies are uneven evidence for ranking review regions, never
+product truth or shipped lookup data; ordinary CI and the viewer remain offline.
+
+The first audit-confirmed correction replaces the yellow-brown/olive ordering gap with one centralized
+lightness-aware ochre hue floor plus a greener Olive lower bound. Project-owned property/boundary regressions, accepted
+neighbor controls, and same-seed before/after topology are required; RGB-specific exceptions remain forbidden.

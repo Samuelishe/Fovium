@@ -7,10 +7,10 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R8-A-F4 Color Inspector taxonomy and presentation polish is the locally complete current product checkpoint at
-`0.1.2.0006`, following pushed R8-A-F3 `0.1.2.0005`. It adds bounded warm-neutral/earth-tone and violet/lilac-gray
-families, role-aware tone-versus-undertone detail semantics, and a wider recent list while retaining the accepted source
-sampling, history/session model, OKLCH role architecture, and creative-name matcher/catalog.
+R8-A-F5 is the locally complete Color Inspector taxonomy-audit correction at `0.1.2.0007`, following pushed and
+hosted-green R8-A-F4 `0.1.2.0006`. It adds a reproducible developer audit over the production classifier and corrects
+the systematic yellow-brown/olive overlap with one lightness-aware OKLCH region curve while retaining the accepted
+sampling, history/session model, role architecture, localization, and creative-name matcher/catalog.
 
 The retained R0 probe remains experimental evidence under `experiments/Fovium.RenderProbe`. Production code is the
 single `Fovium` assembly and does not depend on the experiment. The accepted R7-B hosted matrix restored, built, and
@@ -20,10 +20,10 @@ Windows at `RenderScaling = 1.00`.
 
 ## Current focus
 
-R8-A-F3 is pushed at commit `1450df2`. GitHub CI #50 passed Windows, Ubuntu, and macOS; Native libheif #24 also passed.
-Native Little CMS correctly did not run because its path filters were not touched. R8-A-F4 is locally ready for owner
-review with expanded classifier/localization evidence. No hosted-green claim applies to `0.1.2.0006` until a future push
-and GitHub rerun.
+R8-A-F4 is pushed at commit `886475040901afb79bb451fca17b520be43efcd9`. GitHub CI #51 passed Windows, Ubuntu, and
+macOS; Native Little CMS #16 and Native libheif #25 each passed `win-x64`, `linux-x64`, and `osx-arm64`, so all nine
+hosted jobs on that baseline are green. R8-A-F5 is locally ready for owner review with reproducible before/after audit
+evidence. No hosted-green claim applies to `0.1.2.0007` until a future push and GitHub rerun.
 
 ## Implemented application functionality
 
@@ -131,7 +131,8 @@ and GitHub rerun.
   where source color meaning is known but unpreserved.
 - Deterministic reference-sRGB-to-OKLCH perceptual taxonomy with localized short/detailed EN/RU names, separate
   perceptual roles and undertones, lightness-dependent neutral boundaries, bounded compound hue transitions, monotonic
-  lightness/chroma classes, bounded warm-neutral/earth-tone and violet/lilac-gray families, truthful Transparent
+  lightness/chroma classes, bounded warm-neutral/earth-tone and violet/lilac-gray families, a lightness-aware
+  yellow-brown/ochre boundary that leaves greener olive controls intact, truthful Transparent
   handling, and no proprietary physical-standard claims; the embedded
   offline 1,800-entry creative catalog retains standard OKLab nearest matching, stable tie order, complete Russian
   stable-ID display names, and canonical-English fallback as secondary presentation data.
@@ -162,7 +163,8 @@ RAW, file associations/thumbnails, and monitor-aware output outside ordinary Win
   production-sampler evidence over bounded owner photographs, including 36 F4 points across 9 photographs, but final
   overlay balance,
   scroll/selection feel, semantic borderlines, real fractional-DPI, and Linux/macOS cursor/panel/input feel remain owner
-  visual-review territory.
+  visual-review territory. R8-A-F5 adds systematic developer-side topology/reference evidence, not cross-platform visual
+  acceptance or an objective color-name ground truth.
 - Codec support beyond JPEG/PNG/static WebP/bounded 8-bit TIFF/bounded HEIF/AVIF and a huge/region-rendered-image
   strategy remain unselected.
 - WebP EXIF orientation is not currently surfaced by SkiaSharp 3.119.4 `SKCodec.EncodedOrigin` in the controlled

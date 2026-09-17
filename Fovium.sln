@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fovium.Tools.ProjectStats", "Fovium.Tools.ProjectStats\Fovium.Tools.ProjectStats.csproj", "{6708AED4-BEA5-47CF-BE99-53CD676F6C7C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fovium.Tools.ColorTaxonomyAudit", "Fovium.Tools.ColorTaxonomyAudit\Fovium.Tools.ColorTaxonomyAudit.csproj", "{C7BD32A4-69C8-46C9-949D-0D88AE03BCB1}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fovium.Tests", "Fovium.Tests\Fovium.Tests.csproj", "{6B99EBE7-8E9B-4691-A9B5-1500FD8D43E3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fovium.RenderProbe", "experiments\Fovium.RenderProbe\Fovium.RenderProbe.csproj", "{52C81E4E-4010-49FB-ACF0-069B47400E71}"
@@ -23,6 +25,10 @@ Global
 		{6708AED4-BEA5-47CF-BE99-53CD676F6C7C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6708AED4-BEA5-47CF-BE99-53CD676F6C7C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6708AED4-BEA5-47CF-BE99-53CD676F6C7C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C7BD32A4-69C8-46C9-949D-0D88AE03BCB1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C7BD32A4-69C8-46C9-949D-0D88AE03BCB1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C7BD32A4-69C8-46C9-949D-0D88AE03BCB1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C7BD32A4-69C8-46C9-949D-0D88AE03BCB1}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6B99EBE7-8E9B-4691-A9B5-1500FD8D43E3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{6B99EBE7-8E9B-4691-A9B5-1500FD8D43E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6B99EBE7-8E9B-4691-A9B5-1500FD8D43E3}.Release|Any CPU.ActiveCfg = Release|Any CPU

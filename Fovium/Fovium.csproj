@@ -54,6 +54,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Fovium.Tests" />
+    <InternalsVisibleTo Include="Fovium.Tools.ColorTaxonomyAudit" />
   </ItemGroup>
 
 </Project>
