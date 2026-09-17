@@ -7,12 +7,10 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R8-A-F3 Color Inspector quality refinement is the locally complete current product checkpoint at `0.1.2.0005`, following
-pushed R8-A-F2 `0.1.2.0004`. It adds a real-photo-informed OKLCH role/undertone model, lightness-dependent neutral
-boundaries, compound hue transitions, more informative history names, and clearer detail terminology while retaining
-the accepted source sampling, history/session model, and creative-name matcher/catalog. It also replaces the
-scheduler-dependent Photo Info stale-result test assumption exposed by Ubuntu CI #49 with deterministic request
-completion acknowledgement; production latest-wins semantics are unchanged.
+R8-A-F4 Color Inspector taxonomy and presentation polish is the locally complete current product checkpoint at
+`0.1.2.0006`, following pushed R8-A-F3 `0.1.2.0005`. It adds bounded warm-neutral/earth-tone and violet/lilac-gray
+families, role-aware tone-versus-undertone detail semantics, and a wider recent list while retaining the accepted source
+sampling, history/session model, OKLCH role architecture, and creative-name matcher/catalog.
 
 The retained R0 probe remains experimental evidence under `experiments/Fovium.RenderProbe`. Production code is the
 single `Fovium` assembly and does not depend on the experiment. The accepted R7-B hosted matrix restored, built, and
@@ -22,11 +20,10 @@ Windows at `RenderScaling = 1.00`.
 
 ## Current focus
 
-R8-A-F2 is pushed at commit `1161ae3`. GitHub CI #49 passed Windows and macOS; Ubuntu built successfully but failed one
-of 1,592 tests because `PhotoInfoCoordinatorTests.LatestPresentedImageWinsAndOldMetadataIsClearedImmediately` assumed
-that returning from `TaskCompletionSource.SetResult` implied inline continuation completion. R8-A-F3 is locally ready
-for owner review with a deterministic post-cleanup read acknowledgement and expanded classifier/localization evidence.
-No fully green hosted claim applies to `0.1.2.0005` until a future push and GitHub rerun.
+R8-A-F3 is pushed at commit `1450df2`. GitHub CI #50 passed Windows, Ubuntu, and macOS; Native libheif #24 also passed.
+Native Little CMS correctly did not run because its path filters were not touched. R8-A-F4 is locally ready for owner
+review with expanded classifier/localization evidence. No hosted-green claim applies to `0.1.2.0006` until a future push
+and GitHub rerun.
 
 ## Implemented application functionality
 
@@ -134,7 +131,8 @@ No fully green hosted claim applies to `0.1.2.0005` until a future push and GitH
   where source color meaning is known but unpreserved.
 - Deterministic reference-sRGB-to-OKLCH perceptual taxonomy with localized short/detailed EN/RU names, separate
   perceptual roles and undertones, lightness-dependent neutral boundaries, bounded compound hue transitions, monotonic
-  lightness/chroma classes, truthful Transparent handling, and no proprietary physical-standard claims; the embedded
+  lightness/chroma classes, bounded warm-neutral/earth-tone and violet/lilac-gray families, truthful Transparent
+  handling, and no proprietary physical-standard claims; the embedded
   offline 1,800-entry creative catalog retains standard OKLab nearest matching, stable tie order, complete Russian
   stable-ID display names, and canonical-English fallback as secondary presentation data.
 - Duplicate-preserving ten-entry per-window Color Inspector FIFO with distinct click identities, stable mouse selection
@@ -160,8 +158,9 @@ RAW, file associations/thumbnails, and monitor-aware output outside ordinary Win
 - Windows SDR Color Management has local single-monitor evidence only. Real multi-monitor tie/transition behavior,
   fractional-DPI hardware, Windows Advanced Color/HDR, macOS compositor ownership, and Linux X11/Wayland platform paths
   remain unvalidated or explicitly unsupported.
-- R8-A Color Inspector visual/input smoke is Windows-only at `RenderScaling = 1.00`. R8-A-F3 adds read-only visual and
-  production-sampler evidence over 12 owner photographs and 36 selected points, but final overlay balance,
+- R8-A Color Inspector visual/input smoke is Windows-only at `RenderScaling = 1.00`. R8-A-F3/F4 add read-only visual and
+  production-sampler evidence over bounded owner photographs, including 36 F4 points across 9 photographs, but final
+  overlay balance,
   scroll/selection feel, semantic borderlines, real fractional-DPI, and Linux/macOS cursor/panel/input feel remain owner
   visual-review territory.
 - Codec support beyond JPEG/PNG/static WebP/bounded 8-bit TIFF/bounded HEIF/AVIF and a huge/region-rendered-image

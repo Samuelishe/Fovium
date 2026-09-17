@@ -32,6 +32,18 @@ internal enum PerceptualHueFamily
     GreenGray,
     OliveGray,
     RoseGray,
+    VioletGray,
+    LilacGray,
+    Greige,
+    Beige,
+    Sand,
+    Cream,
+    Peach,
+    Apricot,
+    Ochre,
+    Mustard,
+    Taupe,
+    Terracotta,
     Red,
     RedOrange,
     Coral,
@@ -125,6 +137,20 @@ internal static class PerceptualColorClassifier
     private const double NearBlackUndertoneFloor = 0.010;
     private const double NearBlackUndertoneShadowGain = 0.060;
     private const double NearWhiteUndertoneFloor = 0.012;
+
+    // Warm earth names are useful only in the bounded low/moderate-chroma region.
+    // The ordered bands prevent nearby beige materials from falling through to
+    // orange/olive while leaving darker olive and saturated warm colors intact.
+    internal const double WarmNeutralChromaMinimum = 0.015;
+    internal const double GreigeChromaMaximum = 0.038;
+    internal const double BeigeChromaMaximum = 0.055;
+    internal const double SandChromaMaximum = 0.090;
+    internal const double MustardChromaMinimum = 0.100;
+    internal const double PeachLightnessMinimum = 0.760;
+    internal const double ApricotLightnessMinimum = 0.860;
+    internal const double ApricotChromaMinimum = 0.065;
+    internal const double VioletGrayHueMinimum = 285;
+    internal const double LilacGrayHueMinimum = 300;
 
     public static PerceptualColorDescription Describe(ColorSample sample)
     {
@@ -256,13 +282,23 @@ internal static class PerceptualColorClassifier
 
         if (role is PerceptualColorRole.NearNeutral or PerceptualColorRole.TintedNeutral)
         {
+            if (ClassifyWarmEarthTone(color, role) is { } earthTone)
+            {
+                return earthTone;
+            }
+
             return undertone switch
             {
                 PerceptualUndertone.Red or PerceptualUndertone.Rose => PerceptualHueFamily.RoseGray,
                 PerceptualUndertone.Brown => PerceptualHueFamily.WarmGray,
                 PerceptualUndertone.Olive => PerceptualHueFamily.OliveGray,
                 PerceptualUndertone.Green => PerceptualHueFamily.GreenGray,
-                PerceptualUndertone.Blue or PerceptualUndertone.Violet => PerceptualHueFamily.BlueGray,
+                PerceptualUndertone.Blue => PerceptualHueFamily.BlueGray,
+                PerceptualUndertone.Violet when color.HueDegrees < VioletGrayHueMinimum =>
+                    PerceptualHueFamily.BlueGray,
+                PerceptualUndertone.Violet when color.HueDegrees < LilacGrayHueMinimum =>
+                    PerceptualHueFamily.VioletGray,
+                PerceptualUndertone.Violet => PerceptualHueFamily.LilacGray,
                 _ => PerceptualHueFamily.CoolGray
             };
         }
@@ -272,8 +308,12 @@ internal static class PerceptualColorClassifier
             return undertone switch
             {
                 PerceptualUndertone.Red => PerceptualHueFamily.Red,
-                PerceptualUndertone.Brown => PerceptualHueFamily.Brown,
-                PerceptualUndertone.Olive => PerceptualHueFamily.Olive,
+                PerceptualUndertone.Brown => role == PerceptualColorRole.NearWhite
+                    ? PerceptualHueFamily.Cream
+                    : PerceptualHueFamily.Brown,
+                PerceptualUndertone.Olive => role == PerceptualColorRole.NearWhite
+                    ? PerceptualHueFamily.Cream
+                    : PerceptualHueFamily.Olive,
                 PerceptualUndertone.Green => PerceptualHueFamily.Green,
                 PerceptualUndertone.Cyan => PerceptualHueFamily.Cyan,
                 PerceptualUndertone.Blue => PerceptualHueFamily.Blue,
@@ -281,6 +321,11 @@ internal static class PerceptualColorClassifier
                 PerceptualUndertone.Rose => PerceptualHueFamily.Rose,
                 _ => PerceptualHueFamily.Neutral
             };
+        }
+
+        if (ClassifyWarmEarthTone(color, role) is { } chromaticEarthTone)
+        {
+            return chromaticEarthTone;
         }
 
         if ((color.HueDegrees >= 355 || color.HueDegrees < 35) &&
@@ -364,4 +409,97 @@ internal static class PerceptualColorClassifier
 
     private static double LightnessEnvelope(double lightness) =>
         1 - Math.Abs((2 * Math.Clamp(lightness, 0, 1)) - 1);
+
+    private static PerceptualHueFamily? ClassifyWarmEarthTone(
+        OklchColor color,
+        PerceptualColorRole role)
+    {
+        var hue = color.HueDegrees;
+
+        if (role is PerceptualColorRole.NearNeutral or PerceptualColorRole.TintedNeutral)
+        {
+            if (hue is >= 35 and < 65 &&
+                color.L is >= 0.35 and < 0.62 &&
+                color.C is >= 0.025 and < BeigeChromaMaximum)
+            {
+                return PerceptualHueFamily.Taupe;
+            }
+
+            if (hue is >= 45 and < 100 &&
+                color.L is >= 0.55 and < 0.88 &&
+                color.C is >= WarmNeutralChromaMinimum and < GreigeChromaMaximum)
+            {
+                return PerceptualHueFamily.Greige;
+            }
+
+            if (hue is >= 45 and < 95 &&
+                color.L is >= 0.62 and < 0.90 &&
+                color.C is >= GreigeChromaMaximum and < BeigeChromaMaximum)
+            {
+                return PerceptualHueFamily.Beige;
+            }
+
+            return null;
+        }
+
+        if (role != PerceptualColorRole.Chromatic)
+        {
+            return null;
+        }
+
+        if (hue is >= 35 and < 58 &&
+            color.L >= PeachLightnessMinimum &&
+            color.C is >= 0.035 and < 0.15)
+        {
+            return PerceptualHueFamily.Peach;
+        }
+
+        if (hue is >= 58 and < 82 &&
+            color.L >= ApricotLightnessMinimum &&
+            color.C is >= ApricotChromaMinimum and < 0.12)
+        {
+            return PerceptualHueFamily.Apricot;
+        }
+
+        if (hue is >= 35 and < 55 &&
+            color.L is >= 0.62 and < PeachLightnessMinimum &&
+            color.C is >= 0.06 and < 0.16)
+        {
+            return PerceptualHueFamily.Terracotta;
+        }
+
+        if (hue is >= 45 and < 95 && color.L is >= 0.62 and < 0.90)
+        {
+            if (color.C < GreigeChromaMaximum)
+            {
+                return PerceptualHueFamily.Greige;
+            }
+
+            if (color.C < BeigeChromaMaximum)
+            {
+                return PerceptualHueFamily.Beige;
+            }
+
+            if (color.C < SandChromaMaximum)
+            {
+                return PerceptualHueFamily.Sand;
+            }
+        }
+
+        if (hue is >= 82 and < 90 &&
+            color.L is >= 0.58 and < 0.78 &&
+            color.C is >= MustardChromaMinimum and < 0.18)
+        {
+            return PerceptualHueFamily.Mustard;
+        }
+
+        if (hue is >= 55 and < 90 &&
+            color.L is >= 0.50 and < 0.78 &&
+            color.C is >= SandChromaMaximum and < 0.17)
+        {
+            return PerceptualHueFamily.Ochre;
+        }
+
+        return null;
+    }
 }

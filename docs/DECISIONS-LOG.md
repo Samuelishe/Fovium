@@ -603,7 +603,7 @@ name. This is reference-sRGB description, not Pantone, RAL, NCS, measurement, ed
 
 ## D-060 — Color Inspector separates perceptual role from hue
 
-Status: Implemented in the local R8-A-F3 candidate; owner acceptance pending.
+Status: Accepted in R8-A-F3.
 
 Professional description classifies a sampled OKLCH color into a perceptual role before naming its hue. Chromatic,
 neutral, near-neutral, tinted-neutral, near-black, and near-white roles prevent one global chroma cutoff from calling a
@@ -615,3 +615,18 @@ specific.
 This layer remains deterministic derived presentation on the immutable reference-sRGB sample. It does not alter source
 sampling, history identity, creative matching, the 1,800-name catalogs, or photographic rendering, and it makes no
 Pantone/RAL/NCS or objective color-name claim.
+
+## D-061 — Color Inspector uses bounded semantic regions for warm earth and purple neutrals
+
+Status: Implemented in the local R8-A-F4 candidate; owner acceptance pending.
+
+Warm-neutral and earth presentation is a small OKLCH region layer over the accepted perceptual-role model, not extra
+creative anchors or RGB exceptions. Central hue/lightness/chroma bounds distinguish greige, beige, sand, cream,
+peach/apricot, ochre/mustard, taupe, and terracotta while preserving ordinary olive, orange, and brown regions.
+Low-chroma violet and lilac casts have explicit gray families so the prior blue-gray fallback does not erase their
+visible undertone. Exact boundaries and neighboring accepted regions are regression-tested.
+
+The detail pane labels a chromatic family's value as `Color tone` and a neutral, tinted, near-black, or near-white
+value as `Undertone`. This keeps semantic role and hue identity locale-independent while avoiding presentation such as
+cream-white with an apparently primary olive tone. Sampling, history, creative matching/catalogs, and rendering remain
+unchanged.

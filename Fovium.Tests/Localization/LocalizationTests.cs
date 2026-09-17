@@ -418,6 +418,9 @@ public sealed class LocalizationTests
         "Blue-gray",
         "Cream white",
         "Color tone",
+        "Undertone",
+        "Greige",
+        "Lilac-gray",
         "Color intensity",
         "Very dark",
         "Low")]
@@ -429,6 +432,9 @@ public sealed class LocalizationTests
         "Сине-серый",
         "Кремово-белый",
         "Цветовой тон",
+        "Подтон",
+        "Серо-бежевый",
+        "Лилово-серый",
         "Интенсивность",
         "Очень тёмная",
         "Низкая")]
@@ -440,6 +446,9 @@ public sealed class LocalizationTests
         string blueGray,
         string creamWhite,
         string hueLabel,
+        string undertoneLabel,
+        string greige,
+        string lilacGray,
         string chromaLabel,
         string veryDark,
         string muted)
@@ -452,6 +461,9 @@ public sealed class LocalizationTests
         Assert.Equal(blueGray, localizer[UiStrings.ColorPickerHueBlueGray]);
         Assert.Equal(creamWhite, localizer[UiStrings.ColorPickerNameCreamWhite]);
         Assert.Equal(hueLabel, localizer[UiStrings.ColorPickerDetailHue]);
+        Assert.Equal(undertoneLabel, localizer[UiStrings.ColorPickerDetailUndertone]);
+        Assert.Equal(greige, localizer[UiStrings.ColorPickerHueGreige]);
+        Assert.Equal(lilacGray, localizer[UiStrings.ColorPickerHueLilacGray]);
         Assert.Equal(chromaLabel, localizer[UiStrings.ColorPickerDetailChroma]);
         Assert.Equal(veryDark, localizer[UiStrings.ColorPickerLightnessVeryDark]);
         Assert.Equal(muted, localizer[UiStrings.ColorPickerChromaMuted]);

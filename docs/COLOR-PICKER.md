@@ -82,11 +82,21 @@ acquire false hue precision.
 Bounded hue sectors include short transition families such as red-orange,
 olive-green, turquoise-cyan, cyan-blue, blue-violet, pink-lilac, and
 red-magenta. Burgundy, brown, olive, coral, rose, crimson, pink, and the pastel
-pink-lilac role use only OKLCH hue/lightness/chroma conditions. History names
-use at most one useful lightness or chroma modifier, while detailed names may
-use both. There are no per-RGB overrides. These thresholds are deterministic
-presentation policy backed by boundary tests and a bounded real-photograph
-corpus, not a claim of an objective or physical color standard.
+pink-lilac role use only OKLCH hue/lightness/chroma conditions. A bounded warm
+earth layer distinguishes greige/beige/sand, cream, peach/apricot,
+ochre/mustard, taupe, and terracotta from neighboring olive, orange, brown, and
+near-white regions. Low-chroma violet and lilac casts likewise use dedicated
+gray families instead of falling through to blue-gray. These regions combine
+hue, lightness, chroma, and perceptual role through centralized thresholds;
+there are no per-RGB overrides.
+
+History names use at most one useful lightness or chroma modifier, while
+detailed names may use both. The detail row says `Color tone` for chromatic
+samples and `Undertone` for neutral, tinted, near-black, and near-white roles,
+so a cream-white sample is not presented as though olive were its primary
+color. These thresholds are deterministic presentation policy backed by
+boundary tests and a bounded real-photograph corpus, not a claim of an
+objective or physical color standard.
 
 Fully transparent samples retain the localized `Transparent` semantic and do
 not invent OKLCH, hue, lightness, or chroma values. Fovium never reports
@@ -111,7 +121,9 @@ neither resampling nor repeating nearest-name matching.
 ## Selection and history
 
 History is an in-memory FIFO of exactly the latest ten clicks, displayed oldest
-to newest. Each click owns a distinct session entry identity even when sampled
+to newest in a desktop-oriented column sized for the informative short names;
+ellipsis remains bounded and a row tooltip exposes the complete name. Each
+click owns a distinct session entry identity even when sampled
 RGBA and creative stable ID are equal. A new click appends and selects that
 entry. Clicking an older row changes selection only: it does not sample,
 rematch, reorder, or append. Click eleven removes click one and appends eleven

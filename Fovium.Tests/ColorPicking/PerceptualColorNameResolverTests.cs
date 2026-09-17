@@ -76,6 +76,67 @@ public sealed class PerceptualColorNameResolverTests
         Assert.Equal(expectedRussian, CreateResolver("ru-RU").ResolveShort(description));
     }
 
+    [Theory]
+    [InlineData("#C2992D", "Mustard", "Горчичный")]
+    [InlineData("#B09E8A", "Greige", "Серо-бежевый")]
+    [InlineData("#DBC5AE", "Light beige", "Светлый бежевый")]
+    [InlineData("#DDBB96", "Light sand", "Светлый песочный")]
+    [InlineData("#FFD5A8", "Very light apricot", "Очень светлый абрикосовый")]
+    [InlineData("#FEB08C", "Light peach", "Светлый персиковый")]
+    [InlineData("#EF9D77", "Light peach", "Светлый персиковый")]
+    [InlineData("#737189", "Violet-gray", "Фиолетово-серый")]
+    [InlineData("#C6C0CA", "Light lilac-gray", "Светлый лилово-серый")]
+    public void EarthAndPurpleNeutralNamesHaveEnglishAndRussianParity(
+        string hex,
+        string expectedEnglish,
+        string expectedRussian)
+    {
+        var description = Describe(hex);
+
+        Assert.Equal(expectedEnglish, CreateResolver("en-US").ResolveShort(description));
+        Assert.Equal(expectedRussian, CreateResolver("ru-RU").ResolveShort(description));
+    }
+
+    [Theory]
+    [InlineData("en-US", "Color tone", "Mustard", "Undertone", "Cream")]
+    [InlineData("ru-RU", "Цветовой тон", "Горчичный", "Подтон", "Кремовый")]
+    public void DetailToneLabelDistinguishesChromaticToneFromNeutralUndertone(
+        string cultureName,
+        string chromaticLabel,
+        string chromaticTone,
+        string neutralLabel,
+        string neutralTone)
+    {
+        var resolver = CreateResolver(cultureName);
+        var chromatic = Describe("#C2992D");
+        var nearWhite = Describe("#FFFDE8");
+
+        Assert.Equal(chromaticLabel, resolver.ResolveDetailToneLabel(chromatic));
+        Assert.Equal(chromaticTone, resolver.ResolveDetailTone(chromatic));
+        Assert.Equal(neutralLabel, resolver.ResolveDetailToneLabel(nearWhite));
+        Assert.Equal(neutralTone, resolver.ResolveDetailTone(nearWhite));
+    }
+
+    [Fact]
+    public void NeutralDetailToneReportsUndertoneInsteadOfGrayFamilyName()
+    {
+        var resolver = CreateResolver("en-US");
+
+        Assert.Equal("Blue", resolver.ResolveDetailTone(Describe("#9BA8B8")));
+        Assert.Equal("Lilac", resolver.ResolveDetailTone(Describe("#C6C0CA")));
+        Assert.Equal("Beige", resolver.ResolveDetailTone(Describe("#B09E8A")));
+    }
+
+    [Fact]
+    public void EarthToneNamesDoNotAddRedundantMutedModifier()
+    {
+        var resolver = CreateResolver("en-US");
+        var description = Describe("#DBC5AE");
+
+        Assert.Equal("Light beige", resolver.ResolveShort(description));
+        Assert.Equal("Light beige", resolver.ResolveDetailed(description));
+    }
+
     [Fact]
     public void NeutralShortNamesUseLightnessWithoutInventingHue()
     {

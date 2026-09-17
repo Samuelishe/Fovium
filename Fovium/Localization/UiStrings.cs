@@ -202,6 +202,7 @@ internal static class UiStrings
     public const string ColorPickerDetailRgba = "colorPicker.detail.rgba";
     public const string ColorPickerDetailOklch = "colorPicker.detail.oklch";
     public const string ColorPickerDetailHue = "colorPicker.detail.hue";
+    public const string ColorPickerDetailUndertone = "colorPicker.detail.undertone";
     public const string ColorPickerDetailLightness = "colorPicker.detail.lightness";
     public const string ColorPickerDetailChroma = "colorPicker.detail.chroma";
     public const string ColorPickerDetailCreativeName = "colorPicker.detail.creativeName";
@@ -217,6 +218,18 @@ internal static class UiStrings
     public const string ColorPickerHueGreenGray = "colorPicker.hue.greenGray";
     public const string ColorPickerHueOliveGray = "colorPicker.hue.oliveGray";
     public const string ColorPickerHueRoseGray = "colorPicker.hue.roseGray";
+    public const string ColorPickerHueVioletGray = "colorPicker.hue.violetGray";
+    public const string ColorPickerHueLilacGray = "colorPicker.hue.lilacGray";
+    public const string ColorPickerHueGreige = "colorPicker.hue.greige";
+    public const string ColorPickerHueBeige = "colorPicker.hue.beige";
+    public const string ColorPickerHueSand = "colorPicker.hue.sand";
+    public const string ColorPickerHueCream = "colorPicker.hue.cream";
+    public const string ColorPickerHuePeach = "colorPicker.hue.peach";
+    public const string ColorPickerHueApricot = "colorPicker.hue.apricot";
+    public const string ColorPickerHueOchre = "colorPicker.hue.ochre";
+    public const string ColorPickerHueMustard = "colorPicker.hue.mustard";
+    public const string ColorPickerHueTaupe = "colorPicker.hue.taupe";
+    public const string ColorPickerHueTerracotta = "colorPicker.hue.terracotta";
     public const string ColorPickerHueRed = "colorPicker.hue.red";
     public const string ColorPickerHueRedOrange = "colorPicker.hue.redOrange";
     public const string ColorPickerHueCoral = "colorPicker.hue.coral";
@@ -257,6 +270,9 @@ internal static class UiStrings
     public const string ColorPickerNameBlueWhite = "colorPicker.name.blueWhite";
     public const string ColorPickerNameVioletWhite = "colorPicker.name.violetWhite";
     public const string ColorPickerNamePinkWhite = "colorPicker.name.pinkWhite";
+    public const string ColorPickerUndertoneWarm = "colorPicker.undertone.warm";
+    public const string ColorPickerUndertoneCool = "colorPicker.undertone.cool";
+    public const string ColorPickerUndertoneLilac = "colorPicker.undertone.lilac";
     public const string ColorPickerLightnessVeryDark = "colorPicker.lightness.veryDark";
     public const string ColorPickerLightnessDark = "colorPicker.lightness.dark";
     public const string ColorPickerLightnessMedium = "colorPicker.lightness.medium";

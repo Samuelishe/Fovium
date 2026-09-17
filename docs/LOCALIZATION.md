@@ -50,8 +50,10 @@ RGB/HEX anchors, OKLab matching, tie order, HEX digits, and decimal channel valu
 R8-A-F2 localizes the Color Inspector's bounded semantic color taxonomy through ordinary EN/RU UI keys: hue families,
 lightness/chroma classes, phrase templates, detail labels, and Clear. R8-A-F3 extends that bounded domain with
 perceptual roles, neutral undertones, compound transition families, and near-black/near-white presentation names; it
-does not add per-color catalog entries. Core classification stores locale-independent enum identities and OKLCH values;
-short and detailed phrases are composed only at the presentation boundary. This bounded catalog is separate from the
+does not add per-color catalog entries. R8-A-F4 adds bounded warm-neutral/earth-tone and violet/lilac-gray terms and
+selects the localized `Color tone` or `Undertone` detail label from the locale-independent perceptual role. Core
+classification stores locale-independent enum identities and OKLCH values; short and detailed phrases are composed
+only at the presentation boundary. This bounded catalog is separate from the
 1,800-entry creative-name data domain, which remains available as the secondary Creative/Образное name. HEX, RGB (A),
 and labeled OKLCH numeric output remain locale-independent.
 

@@ -12,7 +12,7 @@ public sealed class PerceptualColorClassifierTests
     [InlineData("#FFFFFF", PerceptualColorRole.NearWhite, PerceptualHueFamily.Neutral,
         PerceptualLightnessClass.VeryLight)]
     [InlineData("#808080", PerceptualColorRole.Neutral, PerceptualHueFamily.Neutral, PerceptualLightnessClass.Medium)]
-    [InlineData("#807870", PerceptualColorRole.NearNeutral, PerceptualHueFamily.OliveGray,
+    [InlineData("#807870", PerceptualColorRole.NearNeutral, PerceptualHueFamily.Greige,
         PerceptualLightnessClass.Medium)]
     [InlineData("#807878", PerceptualColorRole.NearNeutral, PerceptualHueFamily.RoseGray,
         PerceptualLightnessClass.Medium)]
@@ -41,7 +41,7 @@ public sealed class PerceptualColorClassifierTests
     [InlineData("#FFC0CB", PerceptualColorRole.Chromatic, PerceptualHueFamily.Rose, PerceptualLightnessClass.Light)]
     [InlineData("#8B4513", PerceptualColorRole.Chromatic, PerceptualHueFamily.Brown, PerceptualLightnessClass.Medium)]
     [InlineData("#1D3A2B", PerceptualColorRole.Chromatic, PerceptualHueFamily.Green, PerceptualLightnessClass.Dark)]
-    [InlineData("#F5D6C6", PerceptualColorRole.Chromatic, PerceptualHueFamily.Orange,
+    [InlineData("#F5D6C6", PerceptualColorRole.Chromatic, PerceptualHueFamily.Peach,
         PerceptualLightnessClass.VeryLight)]
     public void RepresentativeReferenceSrgbColorsHaveExpectedPerceptualFamilies(
         string hex,
@@ -92,7 +92,7 @@ public sealed class PerceptualColorClassifierTests
     [InlineData("#A4256C", PerceptualColorRole.Chromatic, PerceptualHueFamily.Crimson, PerceptualUndertone.None)]
     [InlineData("#828FC4", PerceptualColorRole.Chromatic, PerceptualHueFamily.BlueViolet, PerceptualUndertone.None)]
     [InlineData("#59A3A6", PerceptualColorRole.Chromatic, PerceptualHueFamily.TurquoiseCyan, PerceptualUndertone.None)]
-    [InlineData("#F8E2CD", PerceptualColorRole.NearWhite, PerceptualHueFamily.Olive, PerceptualUndertone.Olive)]
+    [InlineData("#F8E2CD", PerceptualColorRole.NearWhite, PerceptualHueFamily.Cream, PerceptualUndertone.Olive)]
     [InlineData("#9BA29A", PerceptualColorRole.NearNeutral, PerceptualHueFamily.GreenGray, PerceptualUndertone.Green)]
     public void EmpiricalOwnerVectorsExerciseRolesUndertonesAndTransitionFamilies(
         string hex,
@@ -105,6 +105,94 @@ public sealed class PerceptualColorClassifierTests
         Assert.Equal(expectedRole, description.Role);
         Assert.Equal(expectedHue, description.HueFamily);
         Assert.Equal(expectedUndertone, description.Undertone);
+    }
+
+    [Theory]
+    [InlineData("#C2992D", PerceptualColorRole.Chromatic, PerceptualHueFamily.Mustard)]
+    [InlineData("#B09E8A", PerceptualColorRole.TintedNeutral, PerceptualHueFamily.Greige)]
+    [InlineData("#D2C1AD", PerceptualColorRole.TintedNeutral, PerceptualHueFamily.Greige)]
+    [InlineData("#DBC5AE", PerceptualColorRole.Chromatic, PerceptualHueFamily.Beige)]
+    [InlineData("#D4B99E", PerceptualColorRole.Chromatic, PerceptualHueFamily.Beige)]
+    [InlineData("#C1A98F", PerceptualColorRole.Chromatic, PerceptualHueFamily.Beige)]
+    [InlineData("#DDBB96", PerceptualColorRole.Chromatic, PerceptualHueFamily.Sand)]
+    [InlineData("#FFD5A8", PerceptualColorRole.Chromatic, PerceptualHueFamily.Apricot)]
+    [InlineData("#FEB08C", PerceptualColorRole.Chromatic, PerceptualHueFamily.Peach)]
+    [InlineData("#EF9D77", PerceptualColorRole.Chromatic, PerceptualHueFamily.Peach)]
+    [InlineData("#C6C0CA", PerceptualColorRole.NearNeutral, PerceptualHueFamily.LilacGray)]
+    [InlineData("#737189", PerceptualColorRole.TintedNeutral, PerceptualHueFamily.VioletGray)]
+    [InlineData("#6E6B72", PerceptualColorRole.NearNeutral, PerceptualHueFamily.LilacGray)]
+    [InlineData("#FFFDE8", PerceptualColorRole.NearWhite, PerceptualHueFamily.Cream)]
+    public void WarmNeutralAndPurpleNeutralOwnerVectorsUseDedicatedFamilies(
+        string hex,
+        object expectedRole,
+        object expectedHue)
+    {
+        var description = Describe(hex);
+
+        Assert.Equal(expectedRole, description.Role);
+        Assert.Equal(expectedHue, description.HueFamily);
+    }
+
+    [Theory]
+    [InlineData(0.014999, PerceptualHueFamily.OliveGray)]
+    [InlineData(0.015, PerceptualHueFamily.Greige)]
+    [InlineData(0.037999, PerceptualHueFamily.Greige)]
+    [InlineData(0.038, PerceptualHueFamily.Beige)]
+    [InlineData(0.054999, PerceptualHueFamily.Beige)]
+    [InlineData(0.055, PerceptualHueFamily.Sand)]
+    [InlineData(0.089999, PerceptualHueFamily.Sand)]
+    [InlineData(0.090, PerceptualHueFamily.Ochre)]
+    public void WarmNeutralChromaBandsMeetWithoutGapsOrOscillation(
+        double chroma,
+        object expected)
+    {
+        Assert.Equal(
+            expected,
+            PerceptualColorClassifier.ClassifyHue(new OklchColor(0.70, chroma, 70)));
+    }
+
+    [Theory]
+    [InlineData(0.759999, 0.11, 46, PerceptualHueFamily.Terracotta)]
+    [InlineData(0.760, 0.11, 46, PerceptualHueFamily.Peach)]
+    [InlineData(0.860, 0.064999, 69, PerceptualHueFamily.Sand)]
+    [InlineData(0.860, 0.065, 69, PerceptualHueFamily.Apricot)]
+    [InlineData(0.70, 0.11, 81.999, PerceptualHueFamily.Ochre)]
+    [InlineData(0.70, 0.11, 82, PerceptualHueFamily.Mustard)]
+    [InlineData(0.899999, 0.03, 100, PerceptualHueFamily.OliveGray)]
+    [InlineData(0.90, 0.03, 100, PerceptualHueFamily.Cream)]
+    public void EarthAndWarmWhiteBoundariesAreDeterministic(
+        double lightness,
+        double chroma,
+        double hue,
+        object expected)
+    {
+        Assert.Equal(expected, PerceptualColorClassifier.ClassifyHue(new OklchColor(lightness, chroma, hue)));
+    }
+
+    [Theory]
+    [InlineData(284.999, PerceptualHueFamily.BlueGray)]
+    [InlineData(285, PerceptualHueFamily.VioletGray)]
+    [InlineData(299.999, PerceptualHueFamily.VioletGray)]
+    [InlineData(300, PerceptualHueFamily.LilacGray)]
+    [InlineData(324.999, PerceptualHueFamily.LilacGray)]
+    [InlineData(325, PerceptualHueFamily.RoseGray)]
+    public void PurpleNeutralTransitionsAreDeterministic(double hue, object expected)
+    {
+        Assert.Equal(expected, PerceptualColorClassifier.ClassifyHue(new OklchColor(0.60, 0.03, hue)));
+    }
+
+    [Theory]
+    [InlineData("#FF634A", PerceptualHueFamily.Coral)]
+    [InlineData("#AC2D7A", PerceptualHueFamily.Crimson)]
+    [InlineData("#341D6D", PerceptualHueFamily.BlueViolet)]
+    [InlineData("#6AEBF1", PerceptualHueFamily.TurquoiseCyan)]
+    [InlineData("#505E23", PerceptualHueFamily.OliveGreen)]
+    [InlineData("#1A2529", PerceptualHueFamily.BlueGray)]
+    [InlineData("#D3F5FF", PerceptualHueFamily.Blue)]
+    [InlineData("#E2D9DC", PerceptualHueFamily.RoseGray)]
+    public void AcceptedColorRegionsRemainStable(string hex, object expected)
+    {
+        Assert.Equal(expected, Describe(hex).HueFamily);
     }
 
     [Fact]

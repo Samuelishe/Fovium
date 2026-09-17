@@ -40,6 +40,7 @@ internal sealed class PerceptualColorNameResolver(Localizer localizer)
         var hue = ResolveHue(description.HueFamily!.Value);
         var includeLightness = description.LightnessClass != PerceptualLightnessClass.Medium;
         var includeChroma = description.Role == PerceptualColorRole.Chromatic &&
+                            !IsEarthToneWithIntrinsicChroma(description.HueFamily!.Value) &&
                             description.ChromaClass is
                                 PerceptualChromaClass.Muted or
                                 PerceptualChromaClass.Saturated or
@@ -77,6 +78,18 @@ internal sealed class PerceptualColorNameResolver(Localizer localizer)
         PerceptualHueFamily.GreenGray => UiStrings.ColorPickerHueGreenGray,
         PerceptualHueFamily.OliveGray => UiStrings.ColorPickerHueOliveGray,
         PerceptualHueFamily.RoseGray => UiStrings.ColorPickerHueRoseGray,
+        PerceptualHueFamily.VioletGray => UiStrings.ColorPickerHueVioletGray,
+        PerceptualHueFamily.LilacGray => UiStrings.ColorPickerHueLilacGray,
+        PerceptualHueFamily.Greige => UiStrings.ColorPickerHueGreige,
+        PerceptualHueFamily.Beige => UiStrings.ColorPickerHueBeige,
+        PerceptualHueFamily.Sand => UiStrings.ColorPickerHueSand,
+        PerceptualHueFamily.Cream => UiStrings.ColorPickerHueCream,
+        PerceptualHueFamily.Peach => UiStrings.ColorPickerHuePeach,
+        PerceptualHueFamily.Apricot => UiStrings.ColorPickerHueApricot,
+        PerceptualHueFamily.Ochre => UiStrings.ColorPickerHueOchre,
+        PerceptualHueFamily.Mustard => UiStrings.ColorPickerHueMustard,
+        PerceptualHueFamily.Taupe => UiStrings.ColorPickerHueTaupe,
+        PerceptualHueFamily.Terracotta => UiStrings.ColorPickerHueTerracotta,
         PerceptualHueFamily.Red => UiStrings.ColorPickerHueRed,
         PerceptualHueFamily.RedOrange => UiStrings.ColorPickerHueRedOrange,
         PerceptualHueFamily.Coral => UiStrings.ColorPickerHueCoral,
@@ -104,6 +117,44 @@ internal sealed class PerceptualColorNameResolver(Localizer localizer)
         PerceptualHueFamily.Olive => UiStrings.ColorPickerHueOlive,
         _ => throw new ArgumentOutOfRangeException(nameof(hue))
     }];
+
+    public string ResolveDetailToneLabel(PerceptualColorDescription description)
+    {
+        ArgumentNullException.ThrowIfNull(description);
+        return localizer[description.Role == PerceptualColorRole.Chromatic
+            ? UiStrings.ColorPickerDetailHue
+            : UiStrings.ColorPickerDetailUndertone];
+    }
+
+    public string ResolveDetailTone(PerceptualColorDescription description)
+    {
+        ArgumentNullException.ThrowIfNull(description);
+        if (description.IsTransparent)
+        {
+            throw new ArgumentException("Transparent colors have no perceptual tone.", nameof(description));
+        }
+
+        if (description.Role == PerceptualColorRole.Chromatic)
+        {
+            return ResolveHue(description.HueFamily!.Value);
+        }
+
+        return description.HueFamily!.Value switch
+        {
+            PerceptualHueFamily.Neutral => ResolveHue(PerceptualHueFamily.Neutral),
+            PerceptualHueFamily.WarmGray => localizer[UiStrings.ColorPickerUndertoneWarm],
+            PerceptualHueFamily.CoolGray => localizer[UiStrings.ColorPickerUndertoneCool],
+            PerceptualHueFamily.BlueGray => ResolveHue(PerceptualHueFamily.Blue),
+            PerceptualHueFamily.GreenGray => ResolveHue(PerceptualHueFamily.Green),
+            PerceptualHueFamily.OliveGray => ResolveHue(PerceptualHueFamily.Olive),
+            PerceptualHueFamily.RoseGray => ResolveHue(PerceptualHueFamily.Rose),
+            PerceptualHueFamily.VioletGray => ResolveHue(PerceptualHueFamily.Violet),
+            PerceptualHueFamily.LilacGray => localizer[UiStrings.ColorPickerUndertoneLilac],
+            PerceptualHueFamily.Cream => ResolveHue(PerceptualHueFamily.Cream),
+            PerceptualHueFamily.Greige => ResolveHue(PerceptualHueFamily.Beige),
+            _ => ResolveHue(description.HueFamily.Value)
+        };
+    }
 
     public string ResolveLightness(PerceptualLightnessClass lightness) => localizer[lightness switch
     {
@@ -140,9 +191,11 @@ internal sealed class PerceptualColorNameResolver(Localizer localizer)
             return FormatLightnessHue(description.LightnessClass!.Value, hue);
         }
 
-        return description.Role == PerceptualColorRole.Chromatic && description.ChromaClass is
-            PerceptualChromaClass.Muted or PerceptualChromaClass.Saturated or PerceptualChromaClass.Vivid
-            ? FormatChromaHue(description.ChromaClass.Value, hue)
+        var hasUsefulChromaModifier = description.Role == PerceptualColorRole.Chromatic &&
+                                      IsUsefulChromaModifier(description.ChromaClass) &&
+                                      !IsEarthToneWithIntrinsicChroma(description.HueFamily!.Value);
+        return hasUsefulChromaModifier
+            ? FormatChromaHue(description.ChromaClass.GetValueOrDefault(), hue)
             : hue;
     }
 
@@ -215,6 +268,23 @@ internal sealed class PerceptualColorNameResolver(Localizer localizer)
         PerceptualChromaClass.Vivid => UiStrings.ColorPickerModifierVivid,
         _ => throw new ArgumentOutOfRangeException(nameof(chroma))
     }];
+
+    private static bool IsEarthToneWithIntrinsicChroma(PerceptualHueFamily hue) => hue is
+        PerceptualHueFamily.Greige or
+        PerceptualHueFamily.Beige or
+        PerceptualHueFamily.Sand or
+        PerceptualHueFamily.Cream or
+        PerceptualHueFamily.Peach or
+        PerceptualHueFamily.Apricot or
+        PerceptualHueFamily.Ochre or
+        PerceptualHueFamily.Mustard or
+        PerceptualHueFamily.Taupe or
+        PerceptualHueFamily.Terracotta;
+
+    private static bool IsUsefulChromaModifier(PerceptualChromaClass? chroma) => chroma is
+        PerceptualChromaClass.Muted or
+        PerceptualChromaClass.Saturated or
+        PerceptualChromaClass.Vivid;
 
     private static string LowercaseFirst(string value) => value.Length == 0
         ? value

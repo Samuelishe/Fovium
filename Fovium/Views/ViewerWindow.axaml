@@ -165,7 +165,7 @@
                 IsVisible="False"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Top"
-                Width="620"
+                Width="680"
                 MaxHeight="430"
                 Padding="10,8,10,10"
                 CornerRadius="8"
@@ -198,7 +198,7 @@
                             Focusable="False" />
                 </Grid>
                 <Separator Height="1" />
-                <Grid ColumnDefinitions="205,1,*" ColumnSpacing="12" MinHeight="300">
+                <Grid ColumnDefinitions="260,1,*" ColumnSpacing="12" MinHeight="300">
                     <StackPanel Grid.Column="0" Spacing="7">
                         <Grid ColumnDefinitions="*,Auto" Height="27">
                             <TextBlock x:Name="ColorPickerRecentText"

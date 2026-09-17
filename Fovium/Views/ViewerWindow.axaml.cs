@@ -1743,7 +1743,6 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         ColorPickerHexLabel.Text = _localizer[UiStrings.ColorPickerDetailHex];
         ColorPickerRgbLabel.Text = _localizer[UiStrings.ColorPickerDetailRgb];
         ColorPickerOklchLabel.Text = _localizer[UiStrings.ColorPickerDetailOklch];
-        ColorPickerHueLabel.Text = _localizer[UiStrings.ColorPickerDetailHue];
         ColorPickerLightnessLabel.Text = _localizer[UiStrings.ColorPickerDetailLightness];
         ColorPickerChromaLabel.Text = _localizer[UiStrings.ColorPickerDetailChroma];
         ColorPickerCreativeNameLabel.Text = _localizer[UiStrings.ColorPickerDetailCreativeName];
@@ -1855,7 +1854,8 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         }
 
         ColorPickerOklchValue.Text = PerceptualColorNameResolver.FormatOklch(description.Oklch!.Value);
-        ColorPickerHueValue.Text = _perceptualColorNameResolver.ResolveHue(description.HueFamily!.Value);
+        ColorPickerHueLabel.Text = _perceptualColorNameResolver.ResolveDetailToneLabel(description);
+        ColorPickerHueValue.Text = _perceptualColorNameResolver.ResolveDetailTone(description);
         ColorPickerLightnessValue.Text =
             _perceptualColorNameResolver.ResolveLightness(description.LightnessClass!.Value);
         ColorPickerChromaValue.Text =
@@ -1893,13 +1893,16 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
             BorderThickness = new Thickness(1),
             Background = CreateSampleBrush(sample),
         });
-        row.Children.Add(new TextBlock
+        var shortName = _perceptualColorNameResolver.ResolveShort(entry.Description);
+        var nameText = new TextBlock
         {
-            Text = _perceptualColorNameResolver.ResolveShort(entry.Description),
+            Text = shortName,
             TextTrimming = TextTrimming.CharacterEllipsis,
-            MaxWidth = 156,
+            MaxWidth = 220,
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
-        });
+        };
+        ToolTip.SetTip(nameText, shortName);
+        row.Children.Add(nameText);
 
         var button = new Button
         {

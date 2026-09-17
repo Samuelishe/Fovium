@@ -133,7 +133,9 @@ the fixed sample. A primary click inside the photograph commits one source-pixel
 commit nothing. Its movable horizontal overlay presents the latest ten clicks oldest-to-newest as a compact selectable
 list and inspects the selected entry beside it with reference-sRGB HEX/RGB (A), labeled OKLCH, localized perceptual
 description,
-and a secondary creative catalog name. Selecting history never resamples, rematches, reorders, or appends. Explicit
+role-appropriate color-tone/undertone detail, and a secondary creative catalog name. The recent column gives
+informative names desktop space and exposes any remaining ellipsized full name by tooltip. Selecting history never
+resamples, rematches, reorders, or appends. Explicit
 Clear removes history and selection without hiding the panel. History and selection survive navigation, Peek/Blink, and
 hide/reopen in the same viewer session, but are never persisted. List, Clear, and Close controls do not initiate panel
 drag or take global arrow navigation. Picker clicks override markup drawing, hold-Space Hand still pans, wheel still

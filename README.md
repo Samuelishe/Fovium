@@ -51,10 +51,10 @@ and [imaging direction](docs/IMAGING-PIPELINE.md) for details.
 
 ## Current status
 
-The current locally complete checkpoint is **`0.1.2.0005`**. R8-A-F3 refines the horizontal Color Inspector with
-real-photo-informed perceptual roles, neutral undertones, compound hue transitions, more informative short names, and
-deterministic metadata-test synchronization after the Ubuntu CI #49 scheduler failure. R8-A-F2 is already pushed at
-`1161ae3`; `0.1.2.0005` has not yet been pushed or verified by hosted CI. Owner-accepted R6-A-F1 Photo
+The current locally complete checkpoint is **`0.1.2.0006`**. R8-A-F4 polishes the horizontal Color Inspector with
+warm-neutral/earth-tone and violet/lilac-gray families, role-aware detail terminology, and a wider recent list. R8-A-F3
+is pushed at `1450df2`; GitHub CI #50 and Native libheif #24 are green. The local `0.1.2.0006` candidate is not yet
+pushed or hosted-verified. Owner-accepted R6-A-F1 Photo
 Info/floating-drag behavior, R10-A-F1 photo-derived styling, R9-A-F2 Matte-independent Photo Presentation scale, R9-B-F1
 Slideshow layout independence, and R8-B-W1 ordinary-Windows-SDR Monitor Color Management remain unchanged; hosted and
 non-Windows visual status must be evaluated separately.

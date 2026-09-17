@@ -189,6 +189,12 @@ and unchanged creative matcher over bounded read-only owner photographs without 
 Photo Info latest-wins regression waits for an exact internal request-completion acknowledgement emitted after metrics
 and cleanup instead of assuming `TaskCompletionSource.SetResult` runs the coordinator continuation inline.
 
+R8-A-F4 adds exact boundary pairs for greige/beige/sand/ochre, peach/terracotta, cream-white, and
+blue-gray/violet-gray/lilac-gray/rose-gray; accepted-region vectors protect coral, crimson, blue-violet, turquoise,
+olive-green, near-white, blue-gray, and rose-gray behavior. EN/RU tests cover every new semantic term and the
+role-dependent `Color tone`/`Undertone` detail. The ignored production-compatible harness adds 36 read-only sample
+points across 9 owner photographs without shipping private paths, images, or output.
+
 R8-B-P1 adds deterministic in-memory tests for bounded ICC display-profile validation, content identity, active-monitor
 largest-intersection/tie behavior, typed fallback precedence, complete transform-key equality, Skia destination/alpha
 behavior, and source-versus-destination ownership. The final domain-independence test proves that two destination
