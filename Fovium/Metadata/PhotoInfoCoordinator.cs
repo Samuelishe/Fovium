@@ -11,6 +11,18 @@ internal readonly record struct PhotoMetadataMetrics(
     long Failures,
     TimeSpan LastReadDuration);
 
+internal enum PhotoMetadataReadOutcome
+{
+    Published,
+    Stale,
+    Canceled
+}
+
+internal readonly record struct PhotoMetadataReadCompletion(
+    long ImageIdentity,
+    long Generation,
+    PhotoMetadataReadOutcome Outcome);
+
 internal sealed class PhotoInfoCoordinator : IDisposable
 {
     private readonly object _sync = new();
@@ -40,6 +52,9 @@ internal sealed class PhotoInfoCoordinator : IDisposable
     }
 
     public event EventHandler? StateChanged;
+
+    // Emitted after a read has been classified and its retained lease/request resources are released.
+    internal event Action<PhotoMetadataReadCompletion>? ReadCompleted;
 
     public bool IsVisible
     {
@@ -207,6 +222,8 @@ internal sealed class PhotoInfoCoordinator : IDisposable
         CancellationTokenSource cancellation)
     {
         var stopwatch = Stopwatch.StartNew();
+        var imageIdentity = lease.ImageIdentity;
+        var outcome = PhotoMetadataReadOutcome.Canceled;
         try
         {
             var image = lease.Image;
@@ -217,7 +234,7 @@ internal sealed class PhotoInfoCoordinator : IDisposable
             lock (_sync)
             {
                 publish = !_disposed && _visible && generation == _generation &&
-                    _state?.Base.ImageIdentity == image.Identity;
+                          _state?.Base.ImageIdentity == image.Identity;
                 if (publish)
                 {
                     _cache.Add(image.Identity, result);
@@ -232,6 +249,10 @@ internal sealed class PhotoInfoCoordinator : IDisposable
                     Interlocked.Increment(ref _staleResults);
                 }
             }
+
+            outcome = publish
+                ? PhotoMetadataReadOutcome.Published
+                : PhotoMetadataReadOutcome.Stale;
 
             if (publish)
             {
@@ -253,6 +274,10 @@ internal sealed class PhotoInfoCoordinator : IDisposable
             }
 
             cancellation.Dispose();
+            ReadCompleted?.Invoke(new PhotoMetadataReadCompletion(
+                imageIdentity,
+                generation,
+                outcome));
         }
     }
 

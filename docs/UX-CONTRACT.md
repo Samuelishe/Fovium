@@ -131,7 +131,8 @@ geometry, or inspection changes.
 The Color Inspector is hidden by default. Pointer movement shows only lightweight precision feedback and never replaces
 the fixed sample. A primary click inside the photograph commits one source-pixel sample; Stage and floating-panel clicks
 commit nothing. Its movable horizontal overlay presents the latest ten clicks oldest-to-newest as a compact selectable
-list and inspects the selected entry beside it with reference-sRGB HEX/RGB (A), OKLCH, localized perceptual description,
+list and inspects the selected entry beside it with reference-sRGB HEX/RGB (A), labeled OKLCH, localized perceptual
+description,
 and a secondary creative catalog name. Selecting history never resamples, rematches, reorders, or appends. Explicit
 Clear removes history and selection without hiding the panel. History and selection survive navigation, Peek/Blink, and
 hide/reopen in the same viewer session, but are never persisted. List, Clear, and Close controls do not initiate panel

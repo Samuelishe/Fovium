@@ -415,20 +415,32 @@ public sealed class LocalizationTests
         "Clear color history",
         "Creative name",
         "Burgundy",
+        "Blue-gray",
+        "Cream white",
+        "Color tone",
+        "Color intensity",
         "Very dark",
-        "Muted")]
+        "Low")]
     [InlineData(
         "ru-RU",
         "Очистить историю цветов",
-        "Худ. имя",
+        "Образное имя",
         "Бордовый",
+        "Сине-серый",
+        "Кремово-белый",
+        "Цветовой тон",
+        "Интенсивность",
         "Очень тёмная",
-        "Приглушённая")]
+        "Низкая")]
     public void ColorInspectorCatalogContainsDetailAndPerceptualTerms(
         string cultureName,
         string clear,
         string creativeName,
         string burgundy,
+        string blueGray,
+        string creamWhite,
+        string hueLabel,
+        string chromaLabel,
         string veryDark,
         string muted)
     {
@@ -437,6 +449,10 @@ public sealed class LocalizationTests
         Assert.Equal(clear, localizer[UiStrings.ColorPickerClear]);
         Assert.Equal(creativeName, localizer[UiStrings.ColorPickerDetailCreativeName]);
         Assert.Equal(burgundy, localizer[UiStrings.ColorPickerHueBurgundy]);
+        Assert.Equal(blueGray, localizer[UiStrings.ColorPickerHueBlueGray]);
+        Assert.Equal(creamWhite, localizer[UiStrings.ColorPickerNameCreamWhite]);
+        Assert.Equal(hueLabel, localizer[UiStrings.ColorPickerDetailHue]);
+        Assert.Equal(chromaLabel, localizer[UiStrings.ColorPickerDetailChroma]);
         Assert.Equal(veryDark, localizer[UiStrings.ColorPickerLightnessVeryDark]);
         Assert.Equal(muted, localizer[UiStrings.ColorPickerChromaMuted]);
         Assert.Equal("OKLCH", localizer[UiStrings.ColorPickerDetailOklch]);

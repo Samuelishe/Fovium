@@ -62,20 +62,31 @@ interpretation, not monitor Color Management.
 ## Perceptual and creative names
 
 Every nontransparent committed reference-sRGB sample is converted through the
-accepted project-owned OKLab math to OKLCH, then classified once into semantic
-hue, lightness, and chroma identities. The primary short and detailed names are
-built from a bounded localized taxonomy. This classification does not consult
-the creative anchor catalog, locale, monitor pixels, or image identity.
+accepted project-owned OKLab math to OKLCH, then classified once into a semantic
+role, optional undertone, hue family, lightness, and chroma identity. Roles
+separate chromatic, neutral, near-neutral, tinted-neutral, near-black, and
+near-white presentation. The primary short and detailed names are built from a
+bounded localized taxonomy. This classification does not consult the creative
+anchor catalog, locale, monitor pixels, or image identity.
 
-Thresholds are monotonic and shared for all colors: lightness boundaries are
+Thresholds are centralized and shared for all colors: lightness boundaries are
 `0.25`, `0.45`, `0.72`, and `0.88`; chroma boundaries are `0.025`, `0.07`,
-`0.14`, and `0.24`. Exact neutrals use a `0.008` chroma ceiling; restrained
-warm/cool-gray casts extend to `0.035`, with cool blue-gray extending to
-`0.055`. Bounded hue sectors provide the general families, while burgundy,
-brown, olive, coral, and pink use only OKLCH hue/lightness/chroma conditions.
-There are no per-RGB overrides. These initial thresholds are deterministic
-presentation policy backed by representative and boundary tests, not a claim
-of a physical color standard.
+`0.14`, and `0.24`. Exact neutrals use a `0.008` chroma ceiling. Subtle and
+visible-cast neutral limits follow bounded triangular lightness curves, with a
+small blue/violet allowance, so the same absolute chroma is not treated as
+equally neutral at mid-gray and near the lightness extremes. Near-black and
+near-white roles have their own bounded lightness/chroma gates; an undertone is
+reported only above a small visibility floor so almost-zero chroma does not
+acquire false hue precision.
+
+Bounded hue sectors include short transition families such as red-orange,
+olive-green, turquoise-cyan, cyan-blue, blue-violet, pink-lilac, and
+red-magenta. Burgundy, brown, olive, coral, rose, crimson, pink, and the pastel
+pink-lilac role use only OKLCH hue/lightness/chroma conditions. History names
+use at most one useful lightness or chroma modifier, while detailed names may
+use both. There are no per-RGB overrides. These thresholds are deterministic
+presentation policy backed by boundary tests and a bounded real-photograph
+corpus, not a claim of an objective or physical color standard.
 
 Fully transparent samples retain the localized `Transparent` semantic and do
 not invent OKLCH, hue, lightness, or chroma values. Fovium never reports

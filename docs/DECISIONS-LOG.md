@@ -600,3 +600,18 @@ Primary short/detailed names come from a small locale-independent perceptual tax
 conversion. EN/RU presentation resolves bounded semantic terms at the UI boundary. The 1,800-anchor stable-ID catalog
 and its Russian display catalog remain unchanged matching/provenance authority and appear only as the secondary creative
 name. This is reference-sRGB description, not Pantone, RAL, NCS, measurement, editing, or a network color service.
+
+## D-060 — Color Inspector separates perceptual role from hue
+
+Status: Implemented in the local R8-A-F3 candidate; owner acceptance pending.
+
+Professional description classifies a sampled OKLCH color into a perceptual role before naming its hue. Chromatic,
+neutral, near-neutral, tinted-neutral, near-black, and near-white roles prevent one global chroma cutoff from calling a
+visible blue cast plain gray or making almost-black pixels carry an over-precise ordinary hue. Neutral limits use one
+central lightness-dependent curve; bounded undertones and compound hue transition families supply concise presentation
+without per-RGB exceptions. The primary history name uses at most one useful modifier, while detail may remain more
+specific.
+
+This layer remains deterministic derived presentation on the immutable reference-sRGB sample. It does not alter source
+sampling, history identity, creative matching, the 1,800-name catalogs, or photographic rendering, and it makes no
+Pantone/RAL/NCS or objective color-name claim.

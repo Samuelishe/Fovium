@@ -7,8 +7,8 @@ namespace Fovium.Tests.ColorPicking;
 public sealed class PerceptualColorNameResolverTests
 {
     [Theory]
-    [InlineData("en-US", "Burgundy", "Dark muted burgundy")]
-    [InlineData("ru-RU", "Бордовый", "Тёмный приглушённый бордовый")]
+    [InlineData("en-US", "Dark burgundy", "Dark muted burgundy")]
+    [InlineData("ru-RU", "Тёмный бордовый", "Тёмный приглушённый бордовый")]
     public void ShortAndDetailedNamesUseBoundedLocaleTerms(
         string cultureName,
         string expectedShort,
@@ -43,7 +43,8 @@ public sealed class PerceptualColorNameResolverTests
             [UiStrings.ColorPickerHueBurgundy] = "Burgundy",
             [UiStrings.ColorPickerModifierDark] = "Dark",
             [UiStrings.ColorPickerModifierMuted] = "Muted",
-            [UiStrings.ColorPickerNameLightnessChromaHue] = "{0} {1} {2}",
+            [UiStrings.ColorPickerNameLightnessHue] = "{0} {1}",
+            [UiStrings.ColorPickerNameLightnessChromaHue] = "{0} {1} {2}"
         };
         var localizer = new Localizer(
             "ru",
@@ -51,8 +52,28 @@ public sealed class PerceptualColorNameResolverTests
             new Dictionary<string, string>());
         var resolver = new PerceptualColorNameResolver(localizer);
 
-        Assert.Equal("Burgundy", resolver.ResolveShort(Describe(0x69, 0x40, 0x44)));
+        Assert.Equal("Dark burgundy", resolver.ResolveShort(Describe(0x69, 0x40, 0x44)));
         Assert.Equal("Dark muted burgundy", resolver.ResolveDetailed(Describe(0x69, 0x40, 0x44)));
+    }
+
+    [Theory]
+    [InlineData("#344F67", "Dark blue-gray", "Тёмный сине-серый")]
+    [InlineData("#190B0B", "Red-black", "Красновато-чёрный")]
+    [InlineData("#F8E2CD", "Cream white", "Кремово-белый")]
+    [InlineData("#80A53E", "Olive-green", "Оливково-зелёный")]
+    [InlineData("#59A3A6", "Turquoise-cyan", "Бирюзово-голубой")]
+    [InlineData("#828FC4", "Blue-violet", "Сине-фиолетовый")]
+    [InlineData("#A4256C", "Saturated crimson", "Насыщенный малиновый")]
+    [InlineData("#FDC8F6", "Very light pink-lilac", "Очень светлый розово-лиловый")]
+    public void EmpiricalSemanticNamesHaveEnglishAndRussianParity(
+        string hex,
+        string expectedEnglish,
+        string expectedRussian)
+    {
+        var description = Describe(hex);
+
+        Assert.Equal(expectedEnglish, CreateResolver("en-US").ResolveShort(description));
+        Assert.Equal(expectedRussian, CreateResolver("ru-RU").ResolveShort(description));
     }
 
     [Fact]
@@ -84,7 +105,7 @@ public sealed class PerceptualColorNameResolverTests
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("ru-RU");
 
             Assert.Equal(
-                "42.1% · 0.058 · 14°",
+                "L 42.1% · C 0.058 · h 14°",
                 PerceptualColorNameResolver.FormatOklch(new OklchColor(0.421, 0.058, 13.5)));
         }
         finally
@@ -105,4 +126,9 @@ public sealed class PerceptualColorNameResolverTests
             $"rgb-{red:x2}{green:x2}{blue:x2}",
             "Creative",
             ColorSampleAccuracy.Exact));
+
+    private static PerceptualColorDescription Describe(string hex) => Describe(
+        Convert.ToByte(hex.Substring(1, 2), 16),
+        Convert.ToByte(hex.Substring(3, 2), 16),
+        Convert.ToByte(hex.Substring(5, 2), 16));
 }

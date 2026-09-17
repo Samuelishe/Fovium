@@ -13,21 +13,13 @@ internal sealed class PerceptualColorNameResolver(Localizer localizer)
             return localizer[UiStrings.ColorPickerTransparent];
         }
 
-        var hue = description.HueFamily!.Value;
-        if (hue == PerceptualHueFamily.Neutral)
+        return description.Role!.Value switch
         {
-            return localizer[description.LightnessClass!.Value switch
-            {
-                PerceptualLightnessClass.VeryDark => UiStrings.ColorPickerNameBlack,
-                PerceptualLightnessClass.Dark => UiStrings.ColorPickerNameDarkGray,
-                PerceptualLightnessClass.Medium => UiStrings.ColorPickerNameGray,
-                PerceptualLightnessClass.Light => UiStrings.ColorPickerNameLightGray,
-                PerceptualLightnessClass.VeryLight => UiStrings.ColorPickerNameWhite,
-                _ => throw new ArgumentOutOfRangeException(nameof(description))
-            }];
-        }
-
-        return ResolveHue(hue);
+            PerceptualColorRole.Neutral => ResolveNeutral(description.LightnessClass!.Value),
+            PerceptualColorRole.NearBlack => ResolveNearBlack(description.Undertone!.Value),
+            PerceptualColorRole.NearWhite => ResolveNearWhite(description.Undertone!.Value),
+            _ => ResolveInformativeShort(description)
+        };
     }
 
     public string ResolveDetailed(PerceptualColorDescription description)
@@ -38,22 +30,20 @@ internal sealed class PerceptualColorNameResolver(Localizer localizer)
             return localizer[UiStrings.ColorPickerTransparent];
         }
 
-        var shortName = ResolveShort(description);
-        var hue = description.HueFamily!.Value;
-        if (hue == PerceptualHueFamily.Neutral)
+        if (description.Role is PerceptualColorRole.Neutral or
+            PerceptualColorRole.NearBlack or
+            PerceptualColorRole.NearWhite)
         {
-            return shortName;
+            return ResolveShort(description);
         }
 
+        var hue = ResolveHue(description.HueFamily!.Value);
         var includeLightness = description.LightnessClass != PerceptualLightnessClass.Medium;
-        var includeChroma = description.ChromaClass is
-            PerceptualChromaClass.Muted or
-            PerceptualChromaClass.Saturated or
-            PerceptualChromaClass.Vivid;
-        if (hue is PerceptualHueFamily.WarmGray or PerceptualHueFamily.CoolGray)
-        {
-            includeChroma = false;
-        }
+        var includeChroma = description.Role == PerceptualColorRole.Chromatic &&
+                            description.ChromaClass is
+                                PerceptualChromaClass.Muted or
+                                PerceptualChromaClass.Saturated or
+                                PerceptualChromaClass.Vivid;
 
         if (includeLightness && includeChroma)
         {
@@ -62,28 +52,20 @@ internal sealed class PerceptualColorNameResolver(Localizer localizer)
                 localizer[UiStrings.ColorPickerNameLightnessChromaHue],
                 ResolveLightnessModifier(description.LightnessClass!.Value),
                 LowercaseFirst(ResolveChromaModifier(description.ChromaClass!.Value)),
-                LowercaseFirst(shortName));
+                LowercaseFirst(hue));
         }
 
         if (includeLightness)
         {
-            return string.Format(
-                CultureInfo.CurrentCulture,
-                localizer[UiStrings.ColorPickerNameLightnessHue],
-                ResolveLightnessModifier(description.LightnessClass!.Value),
-                LowercaseFirst(shortName));
+            return FormatLightnessHue(description.LightnessClass!.Value, hue);
         }
 
         if (includeChroma)
         {
-            return string.Format(
-                CultureInfo.CurrentCulture,
-                localizer[UiStrings.ColorPickerNameChromaHue],
-                ResolveChromaModifier(description.ChromaClass!.Value),
-                LowercaseFirst(shortName));
+            return FormatChromaHue(description.ChromaClass!.Value, hue);
         }
 
-        return shortName;
+        return hue;
     }
 
     public string ResolveHue(PerceptualHueFamily hue) => localizer[hue switch
@@ -91,20 +73,32 @@ internal sealed class PerceptualColorNameResolver(Localizer localizer)
         PerceptualHueFamily.Neutral => UiStrings.ColorPickerHueNeutral,
         PerceptualHueFamily.WarmGray => UiStrings.ColorPickerHueWarmGray,
         PerceptualHueFamily.CoolGray => UiStrings.ColorPickerHueCoolGray,
+        PerceptualHueFamily.BlueGray => UiStrings.ColorPickerHueBlueGray,
+        PerceptualHueFamily.GreenGray => UiStrings.ColorPickerHueGreenGray,
+        PerceptualHueFamily.OliveGray => UiStrings.ColorPickerHueOliveGray,
+        PerceptualHueFamily.RoseGray => UiStrings.ColorPickerHueRoseGray,
         PerceptualHueFamily.Red => UiStrings.ColorPickerHueRed,
+        PerceptualHueFamily.RedOrange => UiStrings.ColorPickerHueRedOrange,
         PerceptualHueFamily.Coral => UiStrings.ColorPickerHueCoral,
         PerceptualHueFamily.Orange => UiStrings.ColorPickerHueOrange,
         PerceptualHueFamily.Amber => UiStrings.ColorPickerHueAmber,
         PerceptualHueFamily.Yellow => UiStrings.ColorPickerHueYellow,
         PerceptualHueFamily.YellowGreen => UiStrings.ColorPickerHueYellowGreen,
+        PerceptualHueFamily.OliveGreen => UiStrings.ColorPickerHueOliveGreen,
         PerceptualHueFamily.Green => UiStrings.ColorPickerHueGreen,
         PerceptualHueFamily.Turquoise => UiStrings.ColorPickerHueTurquoise,
+        PerceptualHueFamily.TurquoiseCyan => UiStrings.ColorPickerHueTurquoiseCyan,
         PerceptualHueFamily.Cyan => UiStrings.ColorPickerHueCyan,
+        PerceptualHueFamily.CyanBlue => UiStrings.ColorPickerHueCyanBlue,
         PerceptualHueFamily.Blue => UiStrings.ColorPickerHueBlue,
         PerceptualHueFamily.BlueViolet => UiStrings.ColorPickerHueBlueViolet,
         PerceptualHueFamily.Violet => UiStrings.ColorPickerHueViolet,
+        PerceptualHueFamily.PinkLilac => UiStrings.ColorPickerHuePinkLilac,
         PerceptualHueFamily.Magenta => UiStrings.ColorPickerHueMagenta,
+        PerceptualHueFamily.RedMagenta => UiStrings.ColorPickerHueRedMagenta,
         PerceptualHueFamily.Pink => UiStrings.ColorPickerHuePink,
+        PerceptualHueFamily.Rose => UiStrings.ColorPickerHueRose,
+        PerceptualHueFamily.Crimson => UiStrings.ColorPickerHueCrimson,
         PerceptualHueFamily.Burgundy => UiStrings.ColorPickerHueBurgundy,
         PerceptualHueFamily.Brown => UiStrings.ColorPickerHueBrown,
         PerceptualHueFamily.Olive => UiStrings.ColorPickerHueOlive,
@@ -133,10 +127,73 @@ internal sealed class PerceptualColorNameResolver(Localizer localizer)
 
     public static string FormatOklch(OklchColor color) => string.Format(
         CultureInfo.InvariantCulture,
-        "{0:0.#}% · {1:0.000} · {2:0}°",
+        "L {0:0.#}% · C {1:0.000} · h {2:0}°",
         color.L * 100,
         color.C,
         color.HueDegrees);
+
+    private string ResolveInformativeShort(PerceptualColorDescription description)
+    {
+        var hue = ResolveHue(description.HueFamily!.Value);
+        if (description.LightnessClass != PerceptualLightnessClass.Medium)
+        {
+            return FormatLightnessHue(description.LightnessClass!.Value, hue);
+        }
+
+        return description.Role == PerceptualColorRole.Chromatic && description.ChromaClass is
+            PerceptualChromaClass.Muted or PerceptualChromaClass.Saturated or PerceptualChromaClass.Vivid
+            ? FormatChromaHue(description.ChromaClass.Value, hue)
+            : hue;
+    }
+
+    private string ResolveNeutral(PerceptualLightnessClass lightness) => localizer[lightness switch
+    {
+        PerceptualLightnessClass.VeryDark => UiStrings.ColorPickerNameBlack,
+        PerceptualLightnessClass.Dark => UiStrings.ColorPickerNameDarkGray,
+        PerceptualLightnessClass.Medium => UiStrings.ColorPickerNameGray,
+        PerceptualLightnessClass.Light => UiStrings.ColorPickerNameLightGray,
+        PerceptualLightnessClass.VeryLight => UiStrings.ColorPickerNameWhite,
+        _ => throw new ArgumentOutOfRangeException(nameof(lightness))
+    }];
+
+    private string ResolveNearBlack(PerceptualUndertone undertone) => localizer[undertone switch
+    {
+        PerceptualUndertone.None => UiStrings.ColorPickerNameBlack,
+        PerceptualUndertone.Red => UiStrings.ColorPickerNameRedBlack,
+        PerceptualUndertone.Brown => UiStrings.ColorPickerNameBrownBlack,
+        PerceptualUndertone.Olive => UiStrings.ColorPickerNameOliveBlack,
+        PerceptualUndertone.Green => UiStrings.ColorPickerNameGreenBlack,
+        PerceptualUndertone.Cyan => UiStrings.ColorPickerNameCyanBlack,
+        PerceptualUndertone.Blue => UiStrings.ColorPickerNameBlueBlack,
+        PerceptualUndertone.Violet => UiStrings.ColorPickerNameVioletBlack,
+        PerceptualUndertone.Rose => UiStrings.ColorPickerNameRoseBlack,
+        _ => throw new ArgumentOutOfRangeException(nameof(undertone))
+    }];
+
+    private string ResolveNearWhite(PerceptualUndertone undertone) => localizer[undertone switch
+    {
+        PerceptualUndertone.None => UiStrings.ColorPickerNameWhite,
+        PerceptualUndertone.Red => UiStrings.ColorPickerNameRedWhite,
+        PerceptualUndertone.Brown or PerceptualUndertone.Olive => UiStrings.ColorPickerNameCreamWhite,
+        PerceptualUndertone.Green => UiStrings.ColorPickerNameGreenWhite,
+        PerceptualUndertone.Cyan => UiStrings.ColorPickerNameCyanWhite,
+        PerceptualUndertone.Blue => UiStrings.ColorPickerNameBlueWhite,
+        PerceptualUndertone.Violet => UiStrings.ColorPickerNameVioletWhite,
+        PerceptualUndertone.Rose => UiStrings.ColorPickerNamePinkWhite,
+        _ => throw new ArgumentOutOfRangeException(nameof(undertone))
+    }];
+
+    private string FormatLightnessHue(PerceptualLightnessClass lightness, string hue) => string.Format(
+        CultureInfo.CurrentCulture,
+        localizer[UiStrings.ColorPickerNameLightnessHue],
+        ResolveLightnessModifier(lightness),
+        LowercaseFirst(hue));
+
+    private string FormatChromaHue(PerceptualChromaClass chroma, string hue) => string.Format(
+        CultureInfo.CurrentCulture,
+        localizer[UiStrings.ColorPickerNameChromaHue],
+        ResolveChromaModifier(chroma),
+        LowercaseFirst(hue));
 
     private string ResolveLightnessModifier(PerceptualLightnessClass lightness) =>
         localizer[lightness switch

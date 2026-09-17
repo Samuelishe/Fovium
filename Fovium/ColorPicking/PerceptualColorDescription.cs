@@ -1,27 +1,62 @@
 namespace Fovium.ColorPicking;
 
+internal enum PerceptualColorRole
+{
+    Chromatic,
+    Neutral,
+    NearNeutral,
+    TintedNeutral,
+    NearBlack,
+    NearWhite
+}
+
+internal enum PerceptualUndertone
+{
+    None,
+    Red,
+    Brown,
+    Olive,
+    Green,
+    Cyan,
+    Blue,
+    Violet,
+    Rose
+}
+
 internal enum PerceptualHueFamily
 {
     Neutral,
     WarmGray,
     CoolGray,
+    BlueGray,
+    GreenGray,
+    OliveGray,
+    RoseGray,
     Red,
+    RedOrange,
     Coral,
     Orange,
     Amber,
     Yellow,
     YellowGreen,
+    OliveGreen,
     Green,
     Turquoise,
+    TurquoiseCyan,
     Cyan,
+    CyanBlue,
     Blue,
     BlueViolet,
     Violet,
+    PinkLilac,
     Magenta,
+    RedMagenta,
     Pink,
+    Rose,
+    Crimson,
     Burgundy,
     Brown,
-    Olive,
+    Olive
 }
 
 internal enum PerceptualLightnessClass
@@ -30,7 +65,7 @@ internal enum PerceptualLightnessClass
     Dark,
     Medium,
     Light,
-    VeryLight,
+    VeryLight
 }
 
 internal enum PerceptualChromaClass
@@ -39,7 +74,7 @@ internal enum PerceptualChromaClass
     Muted,
     Moderate,
     Saturated,
-    Vivid,
+    Vivid
 }
 
 internal readonly record struct OklchColor(double L, double C, double HueDegrees)
@@ -60,22 +95,36 @@ internal readonly record struct OklchColor(double L, double C, double HueDegrees
 
 internal sealed record PerceptualColorDescription(
     OklchColor? Oklch,
+    PerceptualColorRole? Role,
+    PerceptualUndertone? Undertone,
     PerceptualHueFamily? HueFamily,
     PerceptualLightnessClass? LightnessClass,
     PerceptualChromaClass? ChromaClass)
 {
     public bool IsTransparent => Oklch is null;
 
-    public static PerceptualColorDescription Transparent { get; } = new(null, null, null, null);
+    public static PerceptualColorDescription Transparent { get; } =
+        new(null, null, null, null, null, null);
 }
 
 internal static class PerceptualColorClassifier
 {
-    // These thresholds are monotonic in OKLCH. The narrow cast-neutral band keeps
-    // true grays neutral while allowing a restrained warm/cool-gray distinction.
+    // Absolute OKLCH chroma alone does not describe photographic neutral roles.
+    // Dedicated black/white gates own the extremes; these symmetric triangular
+    // curves keep gray-cast bands narrow there and bounded around mid-gray.
     internal const double TrueNeutralChromaMaximum = 0.008;
-    internal const double CastNeutralChromaMaximum = 0.035;
-    internal const double CoolGrayChromaMaximum = 0.055;
+    internal const double NearBlackLightnessMaximum = 0.20;
+    internal const double NearBlackChromaMaximum = 0.055;
+    internal const double NearWhiteLightnessMinimum = 0.90;
+    internal const double NearWhiteChromaMaximum = 0.070;
+    private const double SubtleUndertoneBase = 0.014;
+    private const double SubtleUndertoneMidtoneGain = 0.008;
+    private const double TintedNeutralBase = 0.030;
+    private const double TintedNeutralMidtoneGain = 0.022;
+    private const double BlueVioletNeutralAllowance = 0.010;
+    private const double NearBlackUndertoneFloor = 0.010;
+    private const double NearBlackUndertoneShadowGain = 0.060;
+    private const double NearWhiteUndertoneFloor = 0.012;
 
     public static PerceptualColorDescription Describe(ColorSample sample)
     {
@@ -86,11 +135,62 @@ internal static class PerceptualColorClassifier
         }
 
         var oklch = OklchColor.FromSrgb(sample.Red, sample.Green, sample.Blue);
+        var role = ClassifyRole(oklch);
+        var undertone = ClassifyUndertone(oklch, role);
         return new PerceptualColorDescription(
             oklch,
-            ClassifyHue(oklch),
+            role,
+            undertone,
+            ClassifyHue(oklch, role, undertone),
             ClassifyLightness(oklch.L),
             ClassifyChroma(oklch.C));
+    }
+
+    internal static PerceptualHueFamily ClassifyHue(OklchColor color)
+    {
+        var role = ClassifyRole(color);
+        return ClassifyHue(color, role, ClassifyUndertone(color, role));
+    }
+
+    internal static PerceptualColorRole ClassifyRole(OklchColor color)
+    {
+        if (color.L < NearBlackLightnessMaximum && color.C < NearBlackChromaMaximum)
+        {
+            return PerceptualColorRole.NearBlack;
+        }
+
+        if (color.L >= NearWhiteLightnessMinimum && color.C < NearWhiteChromaMaximum)
+        {
+            return PerceptualColorRole.NearWhite;
+        }
+
+        if (color.C < TrueNeutralChromaMaximum)
+        {
+            return PerceptualColorRole.Neutral;
+        }
+
+        if (color.C < SubtleUndertoneLimit(color.L))
+        {
+            return PerceptualColorRole.NearNeutral;
+        }
+
+        return color.C < TintedNeutralLimit(color.L, color.HueDegrees)
+            ? PerceptualColorRole.TintedNeutral
+            : PerceptualColorRole.Chromatic;
+    }
+
+    internal static double SubtleUndertoneLimit(double lightness) =>
+        SubtleUndertoneBase + SubtleUndertoneMidtoneGain * LightnessEnvelope(lightness);
+
+    internal static double TintedNeutralLimit(double lightness, double hueDegrees)
+    {
+        var limit = TintedNeutralBase + TintedNeutralMidtoneGain * LightnessEnvelope(lightness);
+        if (hueDegrees is >= 205 and < 310)
+        {
+            limit += BlueVioletNeutralAllowance;
+        }
+
+        return limit;
     }
 
     internal static PerceptualLightnessClass ClassifyLightness(double lightness) => lightness switch
@@ -99,7 +199,7 @@ internal static class PerceptualColorClassifier
         < 0.45 => PerceptualLightnessClass.Dark,
         < 0.72 => PerceptualLightnessClass.Medium,
         < 0.88 => PerceptualLightnessClass.Light,
-        _ => PerceptualLightnessClass.VeryLight,
+        _ => PerceptualLightnessClass.VeryLight
     };
 
     internal static PerceptualChromaClass ClassifyChroma(double chroma) => chroma switch
@@ -108,31 +208,100 @@ internal static class PerceptualColorClassifier
         < 0.07 => PerceptualChromaClass.Muted,
         < 0.14 => PerceptualChromaClass.Moderate,
         < 0.24 => PerceptualChromaClass.Saturated,
-        _ => PerceptualChromaClass.Vivid,
+        _ => PerceptualChromaClass.Vivid
     };
 
-    private static PerceptualHueFamily ClassifyHue(OklchColor color)
+    private static PerceptualUndertone ClassifyUndertone(
+        OklchColor color,
+        PerceptualColorRole role)
     {
-        if (color.C < TrueNeutralChromaMaximum)
+        if (role is PerceptualColorRole.Neutral or PerceptualColorRole.Chromatic)
+        {
+            return PerceptualUndertone.None;
+        }
+
+        if ((role == PerceptualColorRole.NearBlack &&
+             color.C < NearBlackUndertoneFloor +
+             Math.Max(0, 0.18 - color.L) * NearBlackUndertoneShadowGain) ||
+            (role == PerceptualColorRole.NearWhite && color.C < NearWhiteUndertoneFloor))
+        {
+            return PerceptualUndertone.None;
+        }
+
+        return color.HueDegrees switch
+        {
+            < 20 => PerceptualUndertone.Red,
+            < 65 => PerceptualUndertone.Brown,
+            < 125 => PerceptualUndertone.Olive,
+            < 170 => PerceptualUndertone.Green,
+            < 210 => PerceptualUndertone.Cyan,
+            < 275 => PerceptualUndertone.Blue,
+            < 325 => PerceptualUndertone.Violet,
+            < 345 => PerceptualUndertone.Rose,
+            _ => PerceptualUndertone.Red
+        };
+    }
+
+    private static PerceptualHueFamily ClassifyHue(
+        OklchColor color,
+        PerceptualColorRole role,
+        PerceptualUndertone undertone)
+    {
+        if (role == PerceptualColorRole.Neutral ||
+            (undertone == PerceptualUndertone.None &&
+             role is PerceptualColorRole.NearBlack or PerceptualColorRole.NearWhite))
         {
             return PerceptualHueFamily.Neutral;
         }
 
-        if (color.C < CastNeutralChromaMaximum)
+        if (role is PerceptualColorRole.NearNeutral or PerceptualColorRole.TintedNeutral)
         {
-            return IsWarmHue(color.HueDegrees)
-                ? PerceptualHueFamily.WarmGray
-                : PerceptualHueFamily.CoolGray;
+            return undertone switch
+            {
+                PerceptualUndertone.Red or PerceptualUndertone.Rose => PerceptualHueFamily.RoseGray,
+                PerceptualUndertone.Brown => PerceptualHueFamily.WarmGray,
+                PerceptualUndertone.Olive => PerceptualHueFamily.OliveGray,
+                PerceptualUndertone.Green => PerceptualHueFamily.GreenGray,
+                PerceptualUndertone.Blue or PerceptualUndertone.Violet => PerceptualHueFamily.BlueGray,
+                _ => PerceptualHueFamily.CoolGray
+            };
         }
 
-        if (color.C < CoolGrayChromaMaximum && color.HueDegrees is >= 220 and < 310)
+        if (role is PerceptualColorRole.NearBlack or PerceptualColorRole.NearWhite)
         {
-            return PerceptualHueFamily.CoolGray;
+            return undertone switch
+            {
+                PerceptualUndertone.Red => PerceptualHueFamily.Red,
+                PerceptualUndertone.Brown => PerceptualHueFamily.Brown,
+                PerceptualUndertone.Olive => PerceptualHueFamily.Olive,
+                PerceptualUndertone.Green => PerceptualHueFamily.Green,
+                PerceptualUndertone.Cyan => PerceptualHueFamily.Cyan,
+                PerceptualUndertone.Blue => PerceptualHueFamily.Blue,
+                PerceptualUndertone.Violet => PerceptualHueFamily.Violet,
+                PerceptualUndertone.Rose => PerceptualHueFamily.Rose,
+                _ => PerceptualHueFamily.Neutral
+            };
         }
 
-        if (IsRedHue(color.HueDegrees) && color.L < 0.50 && color.C < 0.18)
+        if ((color.HueDegrees >= 355 || color.HueDegrees < 35) &&
+            color.L < 0.50 &&
+            color.C < 0.18)
         {
             return PerceptualHueFamily.Burgundy;
+        }
+
+        if ((color.HueDegrees >= 345 || color.HueDegrees < 20) &&
+            color.L < 0.62 &&
+            color.C >= 0.11)
+        {
+            return PerceptualHueFamily.Crimson;
+        }
+
+        if ((color.HueDegrees >= 345 || color.HueDegrees < 25) &&
+            color.L >= 0.52 &&
+            color.C < 0.12)
+        {
+            return PerceptualHueFamily.Rose;
         }
 
         if (color.HueDegrees is >= 35 and < 85 && color.L < 0.62 && color.C < 0.18)
@@ -140,9 +309,14 @@ internal static class PerceptualColorClassifier
             return PerceptualHueFamily.Brown;
         }
 
-        if (color.HueDegrees is >= 85 and < 125 && color.L < 0.72 && color.C < 0.18)
+        if (color.HueDegrees is >= 80 and < 120 && color.L < 0.72 && color.C < 0.18)
         {
             return PerceptualHueFamily.Olive;
+        }
+
+        if (color.HueDegrees is >= 120 and < 135 && color.L < 0.72 && color.C < 0.17)
+        {
+            return PerceptualHueFamily.OliveGreen;
         }
 
         if (color.HueDegrees is >= 20 and < 45 &&
@@ -159,25 +333,35 @@ internal static class PerceptualColorClassifier
             return PerceptualHueFamily.Pink;
         }
 
+        if (color.HueDegrees is >= 322 and < 340 &&
+            color.L >= 0.70 &&
+            color.C < 0.18)
+        {
+            return PerceptualHueFamily.PinkLilac;
+        }
+
         return color.HueDegrees switch
         {
-            < 40 => PerceptualHueFamily.Red,
-            < 65 => PerceptualHueFamily.Orange,
-            < 90 => PerceptualHueFamily.Amber,
-            < 115 => PerceptualHueFamily.Yellow,
-            < 140 => PerceptualHueFamily.YellowGreen,
-            < 170 => PerceptualHueFamily.Green,
-            < 195 => PerceptualHueFamily.Turquoise,
-            < 225 => PerceptualHueFamily.Cyan,
-            < 275 => PerceptualHueFamily.Blue,
-            < 305 => PerceptualHueFamily.BlueViolet,
-            < 325 => PerceptualHueFamily.Violet,
-            < 345 => PerceptualHueFamily.Magenta,
-            _ => PerceptualHueFamily.Red,
+            < 38 => PerceptualHueFamily.Red,
+            < 48 => PerceptualHueFamily.RedOrange,
+            < 70 => PerceptualHueFamily.Orange,
+            < 92 => PerceptualHueFamily.Amber,
+            < 112 => PerceptualHueFamily.Yellow,
+            < 135 => PerceptualHueFamily.YellowGreen,
+            < 165 => PerceptualHueFamily.Green,
+            < 190 => PerceptualHueFamily.Turquoise,
+            < 205 => PerceptualHueFamily.TurquoiseCyan,
+            < 230 => PerceptualHueFamily.Cyan,
+            < 245 => PerceptualHueFamily.CyanBlue,
+            < 270 => PerceptualHueFamily.Blue,
+            < 307 => PerceptualHueFamily.BlueViolet,
+            < 322 => PerceptualHueFamily.Violet,
+            < 340 => PerceptualHueFamily.Magenta,
+            < 355 => PerceptualHueFamily.RedMagenta,
+            _ => PerceptualHueFamily.Red
         };
     }
 
-    private static bool IsRedHue(double hue) => hue < 35 || hue >= 345;
-
-    private static bool IsWarmHue(double hue) => hue < 130 || hue >= 345;
+    private static double LightnessEnvelope(double lightness) =>
+        1 - Math.Abs((2 * Math.Clamp(lightness, 0, 1)) - 1);
 }

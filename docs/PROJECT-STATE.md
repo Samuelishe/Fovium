@@ -7,11 +7,12 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R8-A-F2 Color Inspector refinement is the locally complete current product checkpoint at `0.1.2.0004`, following
-owner-accepted R8-A-F1 `0.1.2.0003`. The horizontal floating inspector adds selectable duplicate-preserving history,
-explicit Clear, stable detail presentation, and deterministic localized OKLCH perceptual descriptions while retaining
-the accepted source sampling and creative-name matcher/catalog as secondary data. Accepted Markup close, Photo Info,
-floating drag, and photo-derived styling behavior remain unchanged.
+R8-A-F3 Color Inspector quality refinement is the locally complete current product checkpoint at `0.1.2.0005`, following
+pushed R8-A-F2 `0.1.2.0004`. It adds a real-photo-informed OKLCH role/undertone model, lightness-dependent neutral
+boundaries, compound hue transitions, more informative history names, and clearer detail terminology while retaining
+the accepted source sampling, history/session model, and creative-name matcher/catalog. It also replaces the
+scheduler-dependent Photo Info stale-result test assumption exposed by Ubuntu CI #49 with deterministic request
+completion acknowledgement; production latest-wins semantics are unchanged.
 
 The retained R0 probe remains experimental evidence under `experiments/Fovium.RenderProbe`. Production code is the
 single `Fovium` assembly and does not depend on the experiment. The accepted R7-B hosted matrix restored, built, and
@@ -21,11 +22,11 @@ Windows at `RenderScaling = 1.00`.
 
 ## Current focus
 
-R8-A-F1 is owner-accepted and pushed at commit `e14f6fb`, with GitHub CI #48 green. R8-A-F2 is locally complete and
-awaits owner visual review, commit, push, and a new hosted rerun, so hosted-green status is not yet claimed for
-`0.1.2.0004`. Focused evidence covers per-click history identity and selection, Clear/session retention, representative
-OKLCH taxonomy and thresholds, EN/RU semantic-name parity and fallback, unchanged creative catalog matching, and
-interactive history/Clear/Close drag exclusion.
+R8-A-F2 is pushed at commit `1161ae3`. GitHub CI #49 passed Windows and macOS; Ubuntu built successfully but failed one
+of 1,592 tests because `PhotoInfoCoordinatorTests.LatestPresentedImageWinsAndOldMetadataIsClearedImmediately` assumed
+that returning from `TaskCompletionSource.SetResult` implied inline continuation completion. R8-A-F3 is locally ready
+for owner review with a deterministic post-cleanup read acknowledgement and expanded classifier/localization evidence.
+No fully green hosted claim applies to `0.1.2.0005` until a future push and GitHub rerun.
 
 ## Implemented application functionality
 
@@ -131,7 +132,8 @@ interactive history/Clear/Close drag exclusion.
 - Exact presented-image source sampling across Fit/100%/zoom/pan/Peek/Blink and all EXIF orientations, with BGRA
   premultiplied-alpha recovery, reference-sRGB single-pixel normalization where trustworthy, and an Approximate state
   where source color meaning is known but unpreserved.
-- Deterministic reference-sRGB-to-OKLCH perceptual taxonomy with localized short/detailed EN/RU names, monotonic
+- Deterministic reference-sRGB-to-OKLCH perceptual taxonomy with localized short/detailed EN/RU names, separate
+  perceptual roles and undertones, lightness-dependent neutral boundaries, bounded compound hue transitions, monotonic
   lightness/chroma classes, truthful Transparent handling, and no proprietary physical-standard claims; the embedded
   offline 1,800-entry creative catalog retains standard OKLab nearest matching, stable tie order, complete Russian
   stable-ID display names, and canonical-English fallback as secondary presentation data.
@@ -158,9 +160,10 @@ RAW, file associations/thumbnails, and monitor-aware output outside ordinary Win
 - Windows SDR Color Management has local single-monitor evidence only. Real multi-monitor tie/transition behavior,
   fractional-DPI hardware, Windows Advanced Color/HDR, macOS compositor ownership, and Linux X11/Wayland platform paths
   remain unvalidated or explicitly unsupported.
-- R8-A Color Inspector visual/input smoke is Windows-only at `RenderScaling = 1.00`; the R8-A-F2 horizontal balance,
-  scroll/selection feel, and taxonomy over the owner's representative photographs still require owner visual review,
-  while real fractional-DPI and Linux/macOS cursor/panel/input feel remain unvalidated.
+- R8-A Color Inspector visual/input smoke is Windows-only at `RenderScaling = 1.00`. R8-A-F3 adds read-only visual and
+  production-sampler evidence over 12 owner photographs and 36 selected points, but final overlay balance,
+  scroll/selection feel, semantic borderlines, real fractional-DPI, and Linux/macOS cursor/panel/input feel remain owner
+  visual-review territory.
 - Codec support beyond JPEG/PNG/static WebP/bounded 8-bit TIFF/bounded HEIF/AVIF and a huge/region-rendered-image
   strategy remain unselected.
 - WebP EXIF orientation is not currently surfaced by SkiaSharp 3.119.4 `SKCodec.EncodedOrigin` in the controlled

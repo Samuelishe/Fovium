@@ -182,6 +182,13 @@ EN/RU semantic composition, and English fallback without changing creative match
 to XAML build validation and pure drag-origin exclusion for history/Clear/Close; horizontal balance, scrolling feel, and
 real photograph terminology remain owner desktop review rather than pixel automation.
 
+R8-A-F3 adds role/undertone vectors for near-black, near-white, near-neutral, tinted-neutral, and chromatic samples;
+lightness-dependent neutral-curve assertions; exact compound-hue transition boundaries; and EN/RU visible-name parity.
+A local ignored harness exercises the production decoder, retained-pixel sampler, OKLCH classifier, semantic resolver,
+and unchanged creative matcher over bounded read-only owner photographs without shipping private image evidence. The
+Photo Info latest-wins regression waits for an exact internal request-completion acknowledgement emitted after metrics
+and cleanup instead of assuming `TaskCompletionSource.SetResult` runs the coordinator continuation inline.
+
 R8-B-P1 adds deterministic in-memory tests for bounded ICC display-profile validation, content identity, active-monitor
 largest-intersection/tie behavior, typed fallback precedence, complete transform-key equality, Skia destination/alpha
 behavior, and source-versus-destination ownership. The final domain-independence test proves that two destination

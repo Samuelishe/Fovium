@@ -44,7 +44,7 @@ public sealed class PhotoInfoCoordinatorTests
         Assert.Equal(1, reader.CallCount);
 
         var published = NextStateChange(coordinator);
-        reader.CompleteSynchronously(7, PhotoMetadataSummary.Empty with { CameraModel = "CAMERA-7" });
+        reader.Complete(7, PhotoMetadataSummary.Empty with { CameraModel = "CAMERA-7" });
         await published;
         Assert.Equal("CAMERA-7", coordinator.CurrentState!.Metadata.CameraModel);
         Assert.False(coordinator.CurrentState.IsMetadataLoading);
@@ -61,28 +61,43 @@ public sealed class PhotoInfoCoordinatorTests
     public async Task LatestPresentedImageWinsAndOldMetadataIsClearedImmediately()
     {
         using var source = new TestPresentedImageSource();
-        source.Set(CreateImage(1, "A.jpg"));
+        var imageA = CreateImage(1, "A.jpg");
+        var imageB = CreateImage(2, "B.jpg");
+        var imageC = CreateImage(3, "C.jpg");
+        source.Set(imageA);
         var reader = new ControllableReader();
         using var coordinator = new PhotoInfoCoordinator(source, reader);
         coordinator.SetVisible(true);
-        source.Set(CreateImage(2, "B.jpg"));
+        source.Set(imageB);
         Assert.Equal("B.jpg", coordinator.CurrentState!.Base.SourcePath);
         Assert.False(coordinator.CurrentState.Metadata.HasUsefulMetadata);
-        source.Set(CreateImage(3, "C.jpg"));
+        source.Set(imageC);
         Assert.Equal("C.jpg", coordinator.CurrentState!.Base.SourcePath);
         Assert.False(coordinator.CurrentState.Metadata.HasUsefulMetadata);
 
         var currentPublished = NextStateChange(coordinator);
-        reader.CompleteSynchronously(3, PhotoMetadataSummary.Empty with { CameraModel = "CAMERA-C" });
+        reader.Complete(3, PhotoMetadataSummary.Empty with { CameraModel = "CAMERA-C" });
         await currentPublished;
 
         Assert.Equal("C.jpg", coordinator.CurrentState!.Base.SourcePath);
         Assert.Equal("CAMERA-C", coordinator.CurrentState.Metadata.CameraModel);
 
-        reader.CompleteSynchronously(1, PhotoMetadataSummary.Empty with { CameraModel = "STALE-A" });
+        var staleAProcessed = NextReadCompletion(
+            coordinator,
+            imageA.Identity,
+            PhotoMetadataReadOutcome.Stale);
+        reader.Complete(1, PhotoMetadataSummary.Empty with { CameraModel = "STALE-A" });
+        await staleAProcessed.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Equal(1, coordinator.Metrics.StaleResults);
-        reader.CompleteSynchronously(2, PhotoMetadataSummary.Empty with { CameraModel = "STALE-B" });
+        Assert.Throws<ObjectDisposedException>(imageA.AcquireRenderLease);
+        var staleBProcessed = NextReadCompletion(
+            coordinator,
+            imageB.Identity,
+            PhotoMetadataReadOutcome.Stale);
+        reader.Complete(2, PhotoMetadataSummary.Empty with { CameraModel = "STALE-B" });
+        await staleBProcessed.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Equal(2, coordinator.Metrics.StaleResults);
+        Assert.Throws<ObjectDisposedException>(imageB.AcquireRenderLease);
 
         Assert.Equal("C.jpg", coordinator.CurrentState!.Base.SourcePath);
         Assert.Equal("CAMERA-C", coordinator.CurrentState.Metadata.CameraModel);
@@ -99,7 +114,7 @@ public sealed class PhotoInfoCoordinatorTests
         using var coordinator = new PhotoInfoCoordinator(source, reader);
         coordinator.SetVisible(true);
         var published = NextStateChange(coordinator);
-        reader.CompleteSynchronously(1, PhotoMetadataSummary.Empty);
+        reader.Complete(1, PhotoMetadataSummary.Empty);
         await published;
         coordinator.SetVisible(false);
         coordinator.SetVisible(true);
@@ -185,6 +200,28 @@ public sealed class PhotoInfoCoordinatorTests
         return completion.Task;
     }
 
+    private static Task<PhotoMetadataReadCompletion> NextReadCompletion(
+        PhotoInfoCoordinator coordinator,
+        long imageIdentity,
+        PhotoMetadataReadOutcome outcome)
+    {
+        var completion = new TaskCompletionSource<PhotoMetadataReadCompletion>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        Action<PhotoMetadataReadCompletion>? handler = null;
+        handler = actual =>
+        {
+            if (actual.ImageIdentity != imageIdentity || actual.Outcome != outcome)
+            {
+                return;
+            }
+
+            coordinator.ReadCompleted -= handler;
+            completion.TrySetResult(actual);
+        };
+        coordinator.ReadCompleted += handler;
+        return completion.Task;
+    }
+
     private sealed class ControllableReader : IPhotoMetadataReader
     {
         private readonly Dictionary<byte, TaskCompletionSource<PhotoMetadataReadResult>> _pending = [];
@@ -197,18 +234,16 @@ public sealed class PhotoInfoCoordinatorTests
         {
             CallCount++;
             var marker = encodedSource.Span[0];
-            var completion = new TaskCompletionSource<PhotoMetadataReadResult>();
+            var completion = new TaskCompletionSource<PhotoMetadataReadResult>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
             _pending.Add(marker, completion);
             return completion.Task;
         }
 
-        public void CompleteSynchronously(byte marker, PhotoMetadataSummary summary)
+        public void Complete(byte marker, PhotoMetadataSummary summary)
         {
             var completion = _pending[marker];
             _pending.Remove(marker);
-
-            // Test-owned inline completion makes this return only after the
-            // coordinator has processed the controlled reader result.
             completion.SetResult(PhotoMetadataReadResult.FromSummary(summary));
         }
     }

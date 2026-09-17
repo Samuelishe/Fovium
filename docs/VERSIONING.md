@@ -154,6 +154,7 @@ never reuse an earlier version. No automatic rollover after BUILD `9999` is defi
 | `0.1.2.0002` | R6-A-F1                               | Photo Info presentation, photographic metadata, shutter formatting, and shared floating-overlay drag UX correction              |
 | `0.1.2.0003` | R8-A-F1                               | Russian color-name presentation catalog and Markup dock close UX correction                                                     |
 | `0.1.2.0004` | R8-A-F2                               | Selectable horizontal Color Inspector with deterministic perceptual descriptions and explicit session-history Clear             |
+| `0.1.2.0005` | R8-A-F3                               | Empirical Color Inspector taxonomy and deterministic metadata-CI synchronization correction                                     |
 
 The `0.0.0.xxxx` line records the completed foundation and early product-construction checkpoints. The explicit
 owner-controlled `0.1.0.0000` transition marks the first substantial usable Fovium alpha; it does not claim feature
@@ -162,9 +163,10 @@ completeness, a stable API, production release status, or `1.0` quality. Current
 
 ## Current checkpoint
 
-R8-A-F2 is the locally complete Color Picker refinement checkpoint at `0.1.2.0004`. It increments BUILD within PATCH
-`0.1.2` because it makes the accepted Color Picker more useful for professional inspection without introducing a
-separate standalone viewer capability.
+R8-A-F3 is the locally complete Color Inspector quality checkpoint at `0.1.2.0005`. It increments BUILD within PATCH
+`0.1.2` because it visibly refines the accepted inspector's professional perceptual naming without introducing a
+separate standalone viewer capability. Its accompanying metadata-test synchronization correction does not independently
+require a product-version increment.
 
 ## Future code and packaging source
 
@@ -172,9 +174,9 @@ The root `Directory.Build.props` is the canonical source for the current compone
 supplies the production `Fovium` assembly with:
 
 ```text
-InformationalVersion = 0.1.2.0004
-AssemblyVersion      = 0.1.2.4
-FileVersion          = 0.1.2.4
+InformationalVersion = 0.1.2.0005
+AssemblyVersion      = 0.1.2.5
+FileVersion          = 0.1.2.5
 ```
 
 From that source:
