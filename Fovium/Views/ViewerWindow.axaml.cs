@@ -59,6 +59,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
     private readonly ColorPickerSession _colorPicker;
     private readonly SlideshowSession _slideshow;
     private readonly PhotoColorSampler _photoColorSampler;
+    private readonly ColorSampleNameResolver _colorSampleNameResolver;
     private readonly FloatingOverlayInteraction _markupFloatingOverlay;
     private readonly FloatingOverlayInteraction _photoInfoFloatingOverlay;
     private readonly FloatingOverlayInteraction _histogramFloatingOverlay;
@@ -146,6 +147,9 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         _histogram.StateChanged += OnHistogramStateChanged;
         _colorPicker = new ColorPickerSession();
         _photoColorSampler = new PhotoColorSampler();
+        _colorSampleNameResolver = new ColorSampleNameResolver(
+            _localizer,
+            ColorNameDisplayCatalog.ForLocale(_localizer.Locale));
         _colorPicker.Changed += OnColorPickerChanged;
         PhotoViewport.ColorSampleRequested += OnColorSampleRequested;
         _markupFloatingOverlay = new FloatingOverlayInteraction(
@@ -164,6 +168,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
                 MarkupUndoButton,
                 MarkupRedoButton,
                 MarkupClearButton,
+                MarkupCloseButton,
                 MarkupColorButton,
                 MarkupStrokeSlider,
                 MarkupOpacitySlider,
@@ -1429,6 +1434,11 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         MarkupUndoButton.Click += (_, _) => _presentation.UndoCurrent();
         MarkupRedoButton.Click += (_, _) => _presentation.RedoCurrent();
         MarkupClearButton.Click += (_, _) => _presentation.ClearCurrent();
+        MarkupCloseButton.Click += (_, _) =>
+        {
+            _presentation.CloseMarkupTools();
+            PhotoViewport.Focus();
+        };
         _presentation.Changed += OnPresentationChanged;
         MarkupToolsPanel.AddHandler(
             PointerPressedEvent,
@@ -1453,10 +1463,12 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         MarkupUndoButton.Content = FoviumIconCatalog.Create(FoviumIcon.Undo);
         MarkupRedoButton.Content = FoviumIconCatalog.Create(FoviumIcon.Redo);
         MarkupClearButton.Content = FoviumIconCatalog.Create(FoviumIcon.Clear);
+        MarkupCloseButton.Content = FoviumIconCatalog.Create(FoviumIcon.Close, 14);
         MarkupStrokeText.Text = _localizer[UiStrings.PresentationStroke];
         MarkupOpacityText.Text = _localizer[UiStrings.PresentationOpacity];
         ToolTip.SetTip(MarkupDragHandle, _localizer[UiStrings.PresentationMovePanel]);
         ToolTip.SetTip(MarkupColorButton, _localizer[UiStrings.PresentationColor]);
+        ToolTip.SetTip(MarkupCloseButton, _localizer[UiStrings.PresentationCloseMarkup]);
         UpdateMarkupToolTips();
         ApplyMarkupToolsUi();
     }
@@ -1842,9 +1854,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
     private static IBrush CreateSampleBrush(ColorSample sample) => new SolidColorBrush(
         Color.FromArgb(sample.Alpha, sample.Red, sample.Green, sample.Blue));
 
-    private string GetSampleName(ColorSample sample) => sample.IsTransparent
-        ? _localizer[UiStrings.ColorPickerTransparent]
-        : sample.CanonicalName ?? _localizer[UiStrings.ColorPickerTransparent];
+    private string GetSampleName(ColorSample sample) => _colorSampleNameResolver.Resolve(sample);
 
     private static string FormatSampleCode(ColorSample sample) =>
         sample.Accuracy == ColorSampleAccuracy.Approximate ? $"≈ {sample.Hex}" : sample.Hex;

@@ -125,6 +125,7 @@ internal static class UiStrings
     public const string PresentationRedo = "presentation.redo";
     public const string PresentationHand = "presentation.hand";
     public const string PresentationMovePanel = "presentation.movePanel";
+    public const string PresentationCloseMarkup = "presentation.closeMarkup";
     public const string PhotoInfoTitle = "photoInfo.title";
     public const string PhotoInfoClose = "photoInfo.close";
     public const string PhotoInfoCamera = "photoInfo.camera";

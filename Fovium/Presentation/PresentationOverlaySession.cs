@@ -163,19 +163,37 @@ internal sealed class PresentationOverlaySession
             return false;
         }
 
-        MarkupToolsVisible = !MarkupToolsVisible;
-        if (!MarkupToolsVisible)
+        if (MarkupToolsVisible)
         {
-            _draft = null;
-            _temporaryHandActive = false;
+            CloseMarkupTools();
+            return false;
         }
 
+        MarkupToolsVisible = true;
         RaiseChanged(
             PresentationChangeKind.Visibility |
             PresentationChangeKind.ToolState |
             PresentationChangeKind.HistoryState |
             PresentationChangeKind.RenderContent);
         return MarkupToolsVisible;
+    }
+
+    public bool CloseMarkupTools()
+    {
+        if (!MarkupToolsVisible)
+        {
+            return false;
+        }
+
+        MarkupToolsVisible = false;
+        _draft = null;
+        _temporaryHandActive = false;
+        RaiseChanged(
+            PresentationChangeKind.Visibility |
+            PresentationChangeKind.ToolState |
+            PresentationChangeKind.HistoryState |
+            PresentationChangeKind.RenderContent);
+        return true;
     }
 
     public void SelectImage(string? identity)

@@ -1,3 +1,4 @@
+using Fovium.Input;
 using Fovium.Presentation;
 using Fovium.Rendering;
 
@@ -261,6 +262,31 @@ public sealed class PresentationOverlaySessionTests
 
         Assert.Single(session.GetRenderSnapshot("A").Operations);
         Assert.False(session.BeginDrawing(new PointD(5, 5), physicalScale: 1));
+    }
+
+    [Fact]
+    public void CloseMarkupToolsUsesSharedVisibilityAndKeepsHistoryForReopen()
+    {
+        var session = CreateReadySession("A");
+        DrawLine(session);
+
+        Assert.True(session.CloseMarkupTools());
+
+        Assert.False(session.MarkupToolsVisible);
+        Assert.False(ViewerOverlayMenuState.Capture(
+            session,
+            photoInfoVisible: false,
+            histogramVisible: false,
+            colorPickerVisible: false,
+            ShortcutSettings.Default).MarkupChecked);
+        Assert.Single(session.GetRenderSnapshot("A").Operations);
+        Assert.True(session.CanUndo);
+
+        Assert.True(session.ToggleMarkupTools());
+        Assert.True(session.MarkupToolsVisible);
+        Assert.Single(session.GetRenderSnapshot("A").Operations);
+        Assert.True(session.CloseMarkupTools());
+        Assert.False(session.CloseMarkupTools());
     }
 
     [Fact]

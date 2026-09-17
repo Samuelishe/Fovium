@@ -243,15 +243,16 @@ public sealed class LocalizationTests
     }
 
     [Theory]
-    [InlineData("en-US", "Presentation", "Cursor Highlight", "Markup Tools", "Brush", "Clear")]
-    [InlineData("ru-RU", "Презентация", "Подсветка курсора", "Инструменты пометок", "Кисть", "Очистить")]
+    [InlineData("en-US", "Presentation", "Cursor Highlight", "Markup Tools", "Brush", "Clear", "Close Markup Tools")]
+    [InlineData("ru-RU", "Презентация", "Подсветка курсора", "Инструменты пометок", "Кисть", "Очистить", "Закрыть инструменты пометок")]
     public void PresentationCatalogContainsSettingsCommandsAndDockTools(
         string cultureName,
         string section,
         string highlight,
         string markup,
         string brush,
-        string clear)
+        string clear,
+        string close)
     {
         var localizer = Localizer.Create(CultureInfo.GetCultureInfo(cultureName));
 
@@ -260,6 +261,7 @@ public sealed class LocalizationTests
         Assert.Equal(markup, localizer[UiStrings.CommandToggleMarkupTools]);
         Assert.Equal(brush, localizer[UiStrings.PresentationBrush]);
         Assert.Equal(clear, localizer[UiStrings.PresentationClear]);
+        Assert.Equal(close, localizer[UiStrings.PresentationCloseMarkup]);
     }
 
     [Theory]

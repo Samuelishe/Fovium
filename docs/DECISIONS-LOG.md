@@ -323,7 +323,7 @@ Pointer motion never changes the selected sample or history. One primary click i
 
 Status: Accepted in R8-A.
 
-Fovium embeds a deterministic 1,800-entry curated derivative of the MIT-licensed `meodai/color-names` dataset and precomputes standard OKLab anchors once. A click performs a stable-order linear nearest search; no package, database, service, telemetry, or network lookup is used. Canonical names remain reviewed English with EN/RU surrounding UI. Per-viewer history is a duplicate-preserving ten-item FIFO displayed oldest-to-newest and survives navigation/hide/reopen only for that session; visibility/current/history are never persisted, while normalized overlay placement may be.
+Fovium embeds a deterministic 1,800-entry curated derivative of the MIT-licensed `meodai/color-names` dataset and precomputes standard OKLab anchors once. A click performs a stable-order linear nearest search; no package, database, service, telemetry, or network lookup is used. Canonical English names remain matching/provenance authority. Optional per-locale display catalogs are Fovium-owned maps from stable ID to localized name, indexed once per locale with canonical-English fallback; they never alter RGB anchors, matching, tie order, or stored sample identity. Per-viewer history is a duplicate-preserving ten-item FIFO displayed oldest-to-newest and survives navigation/hide/reopen only for that session; visibility/current/history are never persisted, while normalized overlay placement may be.
 
 ## D-054 — Windows ordinary-SDR Color Management is photograph-only and app-local
 

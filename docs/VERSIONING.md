@@ -135,21 +135,22 @@ The displayed checkpoint is not a substitute for a Git commit, tag, or branch. G
 | `0.1.2.0000` | R10-A | Photo-derived styling foundation with Average, Dominant, Color Wash, automatic Matte color, and Hairline Auto |
 | `0.1.2.0001` | R10-A-F1 | Representative Dominant and Color Wash visual tuning |
 | `0.1.2.0002` | R6-A-F1 | Photo Info presentation, photographic metadata, shutter formatting, and shared floating-overlay drag UX correction |
+| `0.1.2.0003` | R8-A-F1 | Russian color-name presentation catalog and Markup dock close UX correction |
 
 The `0.0.0.xxxx` line records the completed foundation and early product-construction checkpoints. The explicit owner-controlled `0.1.0.0000` transition marks the first substantial usable Fovium alpha; it does not claim feature completeness, a stable API, production release status, or `1.0` quality. Current implementation state remains owned by [`PROJECT-STATE.md`](PROJECT-STATE.md).
 
 ## Current checkpoint
 
-R6-A-F1 is the locally complete corrective checkpoint at `0.1.2.0002`. It increments BUILD within PATCH `0.1.2` because it corrects and polishes accepted Photo Info and floating-overlay behavior without adding a separate standalone feature.
+R8-A-F1 is the locally complete corrective checkpoint at `0.1.2.0003`. It increments BUILD within PATCH `0.1.2` because it localizes accepted Color Picker presentation and corrects floating Markup dock close UX without adding a separate standalone feature.
 
 ## Future code and packaging source
 
 The root `Directory.Build.props` is the canonical source for the current components and formatted display identity. It supplies the production `Fovium` assembly with:
 
 ```text
-InformationalVersion = 0.1.2.0002
-AssemblyVersion      = 0.1.2.2
-FileVersion          = 0.1.2.2
+InformationalVersion = 0.1.2.0003
+AssemblyVersion      = 0.1.2.3
+FileVersion          = 0.1.2.3
 ```
 
 From that source:

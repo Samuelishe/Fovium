@@ -8,6 +8,20 @@ stable RGB ID, RGB/HEX anchor, and canonical English name required at runtime.
 The catalog is loaded from the application assembly; normal build and runtime
 do not download or regenerate it.
 
+## Localized display names
+
+Optional locale catalogs live under `localization/` as JSON objects mapping the
+canonical stable RGB ID to a localized display name. `localization/ru.json` is
+Fovium-authored presentation data with complete coverage of the same 1,800 IDs.
+It does not replace or mutate the canonical English names, RGB/HEX anchors,
+OKLab matching, deterministic tie behavior, or upstream provenance. Runtime
+loads an available locale catalog once into an ordinal dictionary and falls
+back to canonical English for a missing entry, absent locale, or invalid file.
+
+These localized names are reviewed project data, not output regenerated from
+the pinned upstream CSV. Updating them requires stable-ID coverage validation
+and product-language review independently of canonical catalog regeneration.
+
 ## Pinned source
 
 - Project: `meodai/color-names`

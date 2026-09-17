@@ -63,9 +63,13 @@ The embedded catalog contains exactly 1,800 curated RGB/name anchors derived
 deterministically from the MIT-licensed `meodai/color-names` dataset. Runtime
 stores precomputed standard OKLab coordinates and performs a deterministic
 linear nearest search using squared Euclidean distance. Exact anchors win;
-equal-distance results retain stable catalog order. Canonical names remain in
-English unless a future reviewed localized field exists; surrounding UI is
-localized in English and Russian.
+equal-distance results retain stable catalog order. Canonical English names,
+stable IDs, RGB anchors, matching, and tie order remain locale-independent.
+Optional embedded display catalogs map stable ID to a reviewed localized name;
+Russian has complete 1,800-ID coverage. Lookup is indexed once per locale and
+falls back to canonical English for any missing entry or unusable catalog.
+Current and historical samples resolve their display names at the UI boundary,
+so changing locale never requires resampling or repeating nearest-name matching.
 
 History is an in-memory FIFO of exactly the latest ten clicks, displayed oldest
 to newest. Duplicates are retained. Click eleven removes click one and appends

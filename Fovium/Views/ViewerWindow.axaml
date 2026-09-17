@@ -45,6 +45,8 @@
             <Button x:Name="MarkupUndoButton" Width="32" Height="30" Padding="6" Focusable="False" />
             <Button x:Name="MarkupRedoButton" Width="32" Height="30" Padding="6" Focusable="False" />
             <Button x:Name="MarkupClearButton" Width="32" Height="30" Padding="6" Focusable="False" />
+            <Separator Width="1" Margin="3,2" />
+            <Button x:Name="MarkupCloseButton" Width="26" Height="30" Padding="5" Focusable="False" />
           </StackPanel>
           <Separator Height="1" />
           <StackPanel Orientation="Horizontal" Spacing="6">
