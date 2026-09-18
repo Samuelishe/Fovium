@@ -57,12 +57,12 @@ public sealed class PerceptualColorNameResolverTests
     }
 
     [Theory]
-    [InlineData("#344F67", "Dark blue-gray", "Тёмный сине-серый")]
+    [InlineData("#344F67", "Slate", "Сланцевый")]
     [InlineData("#190B0B", "Red-black", "Красновато-чёрный")]
     [InlineData("#F8E2CD", "Cream white", "Кремово-белый")]
     [InlineData("#80A53E", "Olive-green", "Оливково-зелёный")]
-    [InlineData("#59A3A6", "Turquoise-cyan", "Бирюзово-голубой")]
-    [InlineData("#828FC4", "Blue-violet", "Сине-фиолетовый")]
+    [InlineData("#59A3A6", "Teal", "Сине-зелёный")]
+    [InlineData("#828FC4", "Periwinkle", "Барвинковый")]
     [InlineData("#A4256C", "Saturated crimson", "Насыщенный малиновый")]
     [InlineData("#FDC8F6", "Very light pink-lilac", "Очень светлый розово-лиловый")]
     public void EmpiricalSemanticNamesHaveEnglishAndRussianParity(

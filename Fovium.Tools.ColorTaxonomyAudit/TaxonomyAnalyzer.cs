@@ -29,6 +29,13 @@ internal static class TaxonomyAnalyzer
         ("Yellow / yellow-green", "#B9D147")
     ];
 
+    private static readonly string[] ProfessionalTermAnchorHex =
+    [
+        "#C79FEF", "#8E82FE", "#01153E", "#069AF3", "#75BBFD", "#87AE73",
+        "#01A049", "#06470C", "#04D8B2", "#029386", "#FF796C", "#80013F",
+        "#A83C09", "#BE0119", "#FF9408", "#FFFFCB", "#343837", "#516572"
+    ];
+
     public static AuditReport Analyze(
         AuditOptions options,
         StructuredGrid structured,
@@ -75,6 +82,13 @@ internal static class TaxonomyAnalyzer
             .ToArray();
         var referenceDisagreements = AnalyzeReferences(referenceCandidates, references, anomalies);
         var semantic = SemanticReferenceAudit.Analyze(balancedSemantic, references);
+        var vocabularyGaps = FindVocabularyGaps(semantic.Cohort);
+        var professionalTermClassifications = ProfessionalTermAnchorHex
+            .Select(hex => adapter.Classify(ParseHex(hex)))
+            .ToArray();
+        var professionalTermAssessments = SemanticReferenceAudit.AssessMany(
+            professionalTermClassifications,
+            references);
         var ownerClassifications = OwnerCandidateHex
             .Select(item => (item.Region, Sample: adapter.Classify(ParseHex(item.Hex))))
             .ToArray();
@@ -110,8 +124,8 @@ internal static class TaxonomyAnalyzer
             ranked.Count(anomaly => anomaly.Severity == "Medium"),
             runtimeSeconds);
 
-        return new AuditReport(
-            "fovium-color-taxonomy-audit/v2",
+        var report = new AuditReport(
+            "fovium-color-taxonomy-audit/v3",
             options.Mode.ToString(),
             options.Seed,
             options.Configuration,
@@ -129,6 +143,80 @@ internal static class TaxonomyAnalyzer
             semantic.FamilyProfiles,
             ranked,
             null);
+        return report with
+        {
+            Specificity = new AuditSpecificityMetrics(
+                semantic.Cohort.Count(item => item.Sample.Specificity == "GenericFamily"),
+                semantic.Cohort.Count(item => item.Sample.Specificity == "ExistingSpecificFamily"),
+                semantic.Cohort.Count(item => item.Sample.Specificity == "ProfessionalTerm"),
+                semantic.Cohort.Count(item => item.Sample.Specificity == "NeutralRole"),
+                vocabularyGaps.Count),
+            VocabularyGaps = vocabularyGaps,
+            ProfessionalTermSamples = professionalTermClassifications
+                .Select(sample => new OwnerCandidateSample(
+                    sample.ProfessionalTerm ?? sample.Family,
+                    sample,
+                    professionalTermAssessments.GetValueOrDefault(sample.Rgb.Packed)))
+                .ToArray(),
+            ProfessionalTermCoverage = CountBy(
+                all.Where(sample => sample.ProfessionalTerm is not null),
+                sample => sample.ProfessionalTerm!)
+        };
+    }
+
+    private static IReadOnlyList<VocabularyGapCandidate> FindVocabularyGaps(
+        IReadOnlyList<BalancedSemanticSample> cohort)
+    {
+        return cohort
+            .Where(item => item.Sample.Specificity == "GenericFamily" && item.Reference is not null)
+            .Select(item => CreateVocabularyGap(item.Sample, item.Reference!))
+            .Where(candidate => candidate is not null)
+            .Select(candidate => candidate!)
+            .GroupBy(candidate => candidate.SpecificTerm, StringComparer.Ordinal)
+            .SelectMany(group => group
+                .OrderByDescending(candidate => candidate.DatasetSupport)
+                .ThenBy(candidate => candidate.Reference.MeanNearestDeltaE)
+                .ThenBy(candidate => candidate.Sample.Rgb.Packed)
+                .Take(8))
+            .OrderByDescending(candidate => candidate.DatasetSupport)
+            .ThenBy(candidate => candidate.SpecificTerm, StringComparer.Ordinal)
+            .ThenBy(candidate => candidate.Sample.Rgb.Packed)
+            .ToArray();
+    }
+
+    private static VocabularyGapCandidate? CreateVocabularyGap(
+        AuditClassification sample,
+        AuditReferenceAssessment reference)
+    {
+        var votes = reference.Neighbors
+            .Where(neighbor => neighbor.SpecificTerm is not null && neighbor.DeltaE <= 0.060)
+            .GroupBy(neighbor => neighbor.Dataset, StringComparer.Ordinal)
+            .Select(group => group.OrderBy(neighbor => neighbor.DeltaE).First())
+            .GroupBy(neighbor => neighbor.SpecificTerm!, StringComparer.Ordinal)
+            .Select(group => new
+            {
+                Term = group.Key,
+                Datasets = group.Select(neighbor => neighbor.Dataset)
+                    .Distinct(StringComparer.Ordinal)
+                    .Order(StringComparer.Ordinal)
+                    .ToArray(),
+                MeanDistance = group.Average(neighbor => neighbor.DeltaE)
+            })
+            .OrderByDescending(candidate => candidate.Datasets.Length)
+            .ThenBy(candidate => candidate.MeanDistance)
+            .ThenBy(candidate => candidate.Term, StringComparer.Ordinal)
+            .FirstOrDefault();
+        if (votes is null || votes.Datasets.Length < 2 || votes.Term == sample.ProfessionalTerm)
+        {
+            return null;
+        }
+
+        return new VocabularyGapCandidate(
+            votes.Term,
+            votes.Datasets.Length,
+            votes.Datasets,
+            sample,
+            reference);
     }
 
     private static int AnalyzeBoundaryEdges(

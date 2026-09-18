@@ -67,6 +67,24 @@ internal static class AuditReportWriter
                 .Select(item => new SheetItem(item.CohortId, item.Sample, item.Reference, item.CohortId)));
         WriteSampleSheet(
             directory,
+            "vocabulary-gaps",
+            "Specific professional vocabulary-gap candidates",
+            report.VocabularyGaps.Select(item => new SheetItem(
+                item.SpecificTerm,
+                item.Sample,
+                item.Reference,
+                $"{item.DatasetSupport} datasets: {string.Join(", ", item.SupportingDatasets)}")));
+        WriteSampleSheet(
+            directory,
+            "professional-terms",
+            "Accepted professional-term reference anchors",
+            report.ProfessionalTermSamples.Select(item => new SheetItem(
+                item.Region,
+                item.Sample,
+                item.Reference,
+                $"Base family: {item.Sample.Family}")));
+        WriteSampleSheet(
+            directory,
             "holdout-samples",
             report.Seed == AuditOptions.DefaultSeed ? "Canonical semantic cohort" : "Independent holdout cohort",
             report.BalancedCohort.Select(item => new SheetItem(
@@ -146,6 +164,11 @@ internal static class AuditReportWriter
             builder,
             "Balanced incompatible disagreements",
             report.Metrics.BalancedIncompatibleDisagreements);
+        AppendMetric(builder, "Generic-family-only balanced samples", report.Specificity.GenericFamilyOnly);
+        AppendMetric(builder, "Existing specific-family balanced samples", report.Specificity.ExistingSpecificFamily);
+        AppendMetric(builder, "Professional-term balanced samples", report.Specificity.ProfessionalTerm);
+        AppendMetric(builder, "Neutral-role balanced samples", report.Specificity.NeutralRole);
+        AppendMetric(builder, "Vocabulary-gap candidates", report.Specificity.VocabularyGapCandidates);
         AppendMetric(builder, "High-severity anomalies", report.Metrics.HighSeverityAnomalies);
         AppendMetric(builder, "Medium-severity anomalies", report.Metrics.MediumSeverityAnomalies);
 
@@ -196,6 +219,17 @@ internal static class AuditReportWriter
         }
 
         builder.AppendLine();
+        builder.AppendLine("## Professional-term coverage");
+        builder.AppendLine();
+        builder.AppendLine("| Term | Samples | Share of audited sRGB cohort |");
+        builder.AppendLine("| --- | ---: | ---: |");
+        foreach (var (term, count) in report.ProfessionalTermCoverage.OrderByDescending(pair => pair.Value)
+                     .ThenBy(pair => pair.Key, StringComparer.Ordinal))
+        {
+            builder.AppendLine($"| {term} | {count} | {(double)count / report.Metrics.TotalUniqueSamples:P2} |");
+        }
+
+        builder.AppendLine();
         builder.AppendLine("## Balanced family semantic profiles");
         builder.AppendLine();
         builder.AppendLine(
@@ -205,6 +239,17 @@ internal static class AuditReportWriter
         {
             builder.AppendLine(
                 $"| {profile.Family} | {profile.SampleCount} | {profile.IncompatibleReferenceCount} | {profile.IncompatibleReferenceRate:P1} | {profile.NearestCompetingFamily} | {profile.Center.Rgb.Hex} | {profile.Edge.Rgb.Hex} | {profile.Dark.Rgb.Hex} / {profile.Light.Rgb.Hex} | {profile.LowChroma.Rgb.Hex} / {profile.HighChroma.Rgb.Hex} |");
+        }
+
+        builder.AppendLine();
+        builder.AppendLine("## Professional vocabulary gaps");
+        builder.AppendLine();
+        builder.AppendLine("| Candidate | Support | HEX | Current name | Base family | Datasets |");
+        builder.AppendLine("| --- | ---: | --- | --- | --- | --- |");
+        foreach (var gap in report.VocabularyGaps)
+        {
+            builder.AppendLine(
+                $"| {gap.SpecificTerm} | {gap.DatasetSupport} | {gap.Sample.Rgb.Hex} | {EscapeMarkdown(gap.Sample.DetailedName)} | {gap.Sample.Family} | {string.Join(", ", gap.SupportingDatasets)} |");
         }
 
         builder.AppendLine();
@@ -372,7 +417,7 @@ internal static class AuditReportWriter
                 $"<tr><td><span class=\"swatch\" style=\"background:{item.Sample.Rgb.Hex}\"></span></td>" +
                 $"<td>{Html(item.Label)}</td><td>{item.Sample.Rgb.Hex}</td>" +
                 $"<td>L {item.Sample.OklchL:P1} · C {item.Sample.OklchC:0.000} · h {item.Sample.OklchHue:0.0}°</td>" +
-                $"<td>{Html(item.Sample.Role)}</td><td>{Html(item.Sample.Family)}</td>" +
+                $"<td>{Html(item.Sample.Role)}</td><td>{Html(item.Sample.Family)}</td><td>{Html(item.Sample.Specificity)}</td>" +
                 $"<td>{Html(item.Sample.DetailedName)}</td><td>{Html(ReferenceSummary(item.Reference))}</td>" +
                 $"<td>{Html(item.Note)}</td></tr>"));
         return $$"""
@@ -380,7 +425,7 @@ internal static class AuditReportWriter
                  <style>body{font:13px system-ui;margin:24px;background:#161616;color:#eee}table{border-collapse:collapse;width:100%}
                  th,td{border-bottom:1px solid #444;padding:6px;text-align:left;vertical-align:top}.swatch{display:block;width:54px;height:32px;border:1px solid #888}</style>
                  <h1>{{Html(title)}}</h1><p>External references are independent evidence, not product ground truth.</p>
-                 <table><thead><tr><th>Swatch</th><th>Cohort</th><th>HEX</th><th>OKLCH</th><th>Role</th><th>Family</th><th>Name</th><th>Reference</th><th>Note</th></tr></thead>
+                 <table><thead><tr><th>Swatch</th><th>Cohort</th><th>HEX</th><th>OKLCH</th><th>Role</th><th>Family</th><th>Specificity</th><th>Name</th><th>Reference</th><th>Note</th></tr></thead>
                  <tbody>{{rows}}</tbody></table>
                  """;
     }

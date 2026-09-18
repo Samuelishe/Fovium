@@ -142,12 +142,28 @@ public sealed class ColorTaxonomyAuditTests
     [InlineData("navy blue", "Blue")]
     [InlineData("dusty rose", "DustyPink")]
     [InlineData("reddish orange", "RedOrange")]
+    [InlineData("tangerine", "Orange")]
     [InlineData("purplish blue", "BlueViolet")]
     [InlineData("mint green", "Mint")]
     [InlineData("unparseable fantasy", "Unknown")]
     public void ReferenceNamesNormalizeToBoundedAuditSemantics(string name, string expected)
     {
         Assert.Equal(expected, SemanticNameNormalizer.Normalize(name));
+    }
+
+    [Theory]
+    [InlineData("light lavender", "Lavender")]
+    [InlineData("navy blue", "Navy")]
+    [InlineData("forest green", "ForestGreen")]
+    [InlineData("salmon pink", "Salmon")]
+    [InlineData("charcoal grey", "Charcoal")]
+    [InlineData("navy green", null)]
+    [InlineData("unparseable fantasy", null)]
+    public void ReferenceNamesExposeSpecificVocabularyWithoutTreatingFantasyAsTruth(
+        string name,
+        string? expected)
+    {
+        Assert.Equal(expected, SpecificColorTermNormalizer.Normalize(name));
     }
 
     [Fact]
@@ -261,6 +277,8 @@ public sealed class ColorTaxonomyAuditTests
             Assert.True(File.Exists(Path.Combine(firstDirectory, "family-profiles.html")));
             Assert.True(File.Exists(Path.Combine(firstDirectory, "owner-candidates.svg")));
             Assert.True(File.Exists(Path.Combine(firstDirectory, "reference-disagreements.html")));
+            Assert.True(File.Exists(Path.Combine(firstDirectory, "vocabulary-gaps.html")));
+            Assert.True(File.Exists(Path.Combine(firstDirectory, "professional-terms.html")));
             Assert.True(File.Exists(Path.Combine(firstDirectory, "holdout-samples.svg")));
             Assert.True(File.Exists(Path.Combine(firstDirectory, "changed-regions.html")));
         }
@@ -290,8 +308,11 @@ public sealed class ColorTaxonomyAuditTests
             Assert.Contains("Mode: Fast", output.ToString());
             Assert.True(File.Exists(Path.Combine(directory, "summary.json")));
             using var json = JsonDocument.Parse(File.ReadAllText(Path.Combine(directory, "summary.json")));
-            Assert.Equal("fovium-color-taxonomy-audit/v2", json.RootElement.GetProperty("schema").GetString());
+            Assert.Equal("fovium-color-taxonomy-audit/v3", json.RootElement.GetProperty("schema").GetString());
             Assert.True(json.RootElement.GetProperty("balancedCohort").GetArrayLength() > 300);
+            Assert.True(json.RootElement.GetProperty("specificity").GetProperty("genericFamilyOnly").GetInt32() > 0);
+            Assert.Equal(18, json.RootElement.GetProperty("professionalTermSamples").GetArrayLength());
+            Assert.Equal(18, json.RootElement.GetProperty("professionalTermCoverage").EnumerateObject().Count());
         }
         finally
         {

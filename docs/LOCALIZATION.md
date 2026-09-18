@@ -61,6 +61,11 @@ R8-A-F6 adds one bounded EN/RU `Mint` semantic term; it does not add per-color p
 translation corrections remain keyed by the unchanged stable ID and never alter the canonical English anchor or
 matching.
 
+R8-A-F7 localizes the declarative professional-shade layer with one ordinary EN/RU UI key per supported term. Stable
+term IDs, parent families, roles, OKLCH bounds, priorities, and classification remain locale-independent; the active
+locale resolves only the final display term. Broad-family localization remains the detail/fallback path, and the
+separate 1,800-entry creative catalog remains secondary rather than becoming professional-taxonomy data.
+
 R9-A localizes Photo Presentation command/context-menu copy, its Viewing subsection, Edge margin label, and the
 explanation that the photograph stays inside the presentation margin while Matte does not change its scale. The stable
 `viewer.togglePhotoPresentation` identity, serialized property names, percentage value, and active session state are

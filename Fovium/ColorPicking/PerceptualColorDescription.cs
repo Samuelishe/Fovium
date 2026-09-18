@@ -114,6 +114,8 @@ internal sealed record PerceptualColorDescription(
     PerceptualLightnessClass? LightnessClass,
     PerceptualChromaClass? ChromaClass)
 {
+    public ProfessionalColorTerm? ProfessionalTerm { get; init; }
+
     public bool IsTransparent => Oklch is null;
 
     public static PerceptualColorDescription Transparent { get; } =
@@ -180,13 +182,20 @@ internal static class PerceptualColorClassifier
         var oklch = OklchColor.FromSrgb(sample.Red, sample.Green, sample.Blue);
         var role = ClassifyRole(oklch);
         var undertone = ClassifyUndertone(oklch, role);
-        return new PerceptualColorDescription(
+        var description = new PerceptualColorDescription(
             oklch,
             role,
             undertone,
             ClassifyHue(oklch, role, undertone),
             ClassifyLightness(oklch.L),
             ClassifyChroma(oklch.C));
+        return description with
+        {
+            ProfessionalTerm = ProfessionalShadeClassifier.Classify(
+                oklch,
+                role,
+                description.HueFamily!.Value)
+        };
     }
 
     internal static PerceptualHueFamily ClassifyHue(OklchColor color)

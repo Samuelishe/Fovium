@@ -213,6 +213,13 @@ and exact-boundary pairs cover the evidenced Mint, coral/red-orange, terracotta/
 and violet/magenta corrections plus unchanged accepted controls. Ordinary CI remains offline and does not download or
 assert against external datasets.
 
+R8-A-F7 adds audit schema v3 specificity counts for generic families, existing specific families, declarative
+professional terms, and neutral roles. Distance-gated agreement on a more specific recurring reference term produces a
+review candidate rather than a production verdict; dedicated vocabulary-gap and accepted-term contact sheets expose
+the evidence. Focused tests require stable/unique/reachable definitions, unique priorities, EN/RU completeness,
+independently sourced term anchors, accepted adjacent controls, and exact boundary behavior. Canonical and two unseen
+holdout seeds must retain the topology/reference metrics while reducing generic-only coverage.
+
 R8-B-P1 adds deterministic in-memory tests for bounded ICC display-profile validation, content identity, active-monitor
 largest-intersection/tie behavior, typed fallback precedence, complete transform-key equality, Skia destination/alpha
 behavior, and source-versus-destination ownership. The final domain-independence test proves that two destination

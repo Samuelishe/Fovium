@@ -21,14 +21,36 @@ internal sealed record AuditClassification(
     string Lightness,
     string Chroma,
     string ShortName,
-    string DetailedName);
+    string DetailedName)
+{
+    public string? ProfessionalTerm { get; init; }
+
+    public string Specificity { get; init; } = "GenericFamily";
+}
 
 internal sealed record AuditReferenceNeighbor(
     string Dataset,
     string Name,
     string Hex,
     string SemanticFamily,
-    double DeltaE);
+    double DeltaE)
+{
+    public string? SpecificTerm { get; init; }
+}
+
+internal sealed record AuditSpecificityMetrics(
+    int GenericFamilyOnly,
+    int ExistingSpecificFamily,
+    int ProfessionalTerm,
+    int NeutralRole,
+    int VocabularyGapCandidates);
+
+internal sealed record VocabularyGapCandidate(
+    string SpecificTerm,
+    int DatasetSupport,
+    IReadOnlyList<string> SupportingDatasets,
+    AuditClassification Sample,
+    AuditReferenceAssessment Reference);
 
 internal sealed record AuditReferenceAssessment(
     string ProductSemantic,
@@ -121,7 +143,17 @@ internal sealed record AuditReport(
     IReadOnlyList<BalancedSemanticSample> BalancedCohort,
     IReadOnlyList<FamilySemanticProfile> FamilyProfiles,
     IReadOnlyList<AuditAnomaly> Anomalies,
-    AuditComparison? Comparison);
+    AuditComparison? Comparison)
+{
+    public AuditSpecificityMetrics Specificity { get; init; } = new(0, 0, 0, 0, 0);
+
+    public IReadOnlyList<VocabularyGapCandidate> VocabularyGaps { get; init; } = [];
+
+    public IReadOnlyList<OwnerCandidateSample> ProfessionalTermSamples { get; init; } = [];
+
+    public IReadOnlyDictionary<string, int> ProfessionalTermCoverage { get; init; } =
+        new Dictionary<string, int>(StringComparer.Ordinal);
+}
 
 internal sealed record AuditComparison(
     string BaselinePath,

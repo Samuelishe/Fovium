@@ -647,7 +647,7 @@ neighbor controls, and same-seed before/after topology are required; RGB-specifi
 
 ## D-063 — Semantic taxonomy corrections require balanced and holdout evidence
 
-Status: Implemented in the local R8-A-F6 candidate; owner acceptance pending.
+Status: Accepted in R8-A-F6.
 
 Candidate-driven topology analysis cannot prove that coherently shaped regions have appropriate human names. The audit
 therefore also owns a coordinate-driven balanced cohort across hue, lightness, chroma, neutral, near-black, and
@@ -660,3 +660,17 @@ R8-A-F6 applies only bounded corrections supported by that process, including on
 transition refinements. The viewer remains deterministic and offline; external data, reports, and web lookups remain
 developer-only and ignored. Production sampling, history, creative matching, and the canonical 1,800 anchors do not
 depend on the audit.
+
+## D-064 — Specific professional terms layer over stable perceptual geometry
+
+Status: Implemented in the local R8-A-F7 candidate; owner acceptance pending.
+
+Broad OKLCH families remain the stable classifier geometry and truthful fallback. More useful conventional names are a
+separate declarative layer whose definitions own stable IDs, parent families, eligible roles, bounded lightness/chroma/
+hue regions, explicit priorities, and EN/RU localization keys. A matched professional term leads the short/detailed UI
+name while the broad family remains available as the detail tone. This keeps vocabulary growth reviewable without
+turning the base classifier or resolver into an unbounded conditional chain.
+
+Candidate terms require recurring independent reference evidence, visual contact-sheet review, adjacent fallback
+controls, deterministic boundary tests, and post-tuning holdouts. External anchors and web research remain developer
+evidence only; no downloaded name list enters runtime, and ambiguous colors intentionally retain the broad name.

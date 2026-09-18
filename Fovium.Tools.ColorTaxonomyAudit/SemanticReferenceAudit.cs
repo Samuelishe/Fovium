@@ -296,7 +296,10 @@ internal static class SemanticReferenceAudit
                     item.Anchor.Name,
                     item.Anchor.Rgb.Hex,
                     item.Anchor.SemanticFamily,
-                    item.Delta)));
+                    item.Delta)
+                {
+                    SpecificTerm = item.Anchor.SpecificTerm
+                }));
                 var maximumDistance = MaximumUsefulDistance.GetValueOrDefault(dataset.Key, 0.060);
                 if (nearest[0].Delta > maximumDistance)
                 {

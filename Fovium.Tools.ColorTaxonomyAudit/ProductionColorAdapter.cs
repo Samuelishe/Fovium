@@ -37,7 +37,11 @@ internal sealed class ProductionColorAdapter
             description.LightnessClass!.Value.ToString(),
             description.ChromaClass!.Value.ToString(),
             _resolver.ResolveShort(description),
-            _resolver.ResolveDetailed(description));
+            _resolver.ResolveDetailed(description))
+        {
+            ProfessionalTerm = description.ProfessionalTerm?.ToString(),
+            Specificity = ResolveSpecificity(description)
+        };
     }
 
     public static string ClassifyRole(double lightness, double chroma, double hueDegrees) =>
@@ -45,4 +49,41 @@ internal sealed class ProductionColorAdapter
 
     public static string ClassifyFamily(double lightness, double chroma, double hueDegrees) =>
         PerceptualColorClassifier.ClassifyHue(new OklchColor(lightness, chroma, hueDegrees)).ToString();
+
+    private static string ResolveSpecificity(PerceptualColorDescription description)
+    {
+        if (description.ProfessionalTerm is not null)
+        {
+            return "ProfessionalTerm";
+        }
+
+        if (description.Role is PerceptualColorRole.Neutral or
+            PerceptualColorRole.NearBlack or
+            PerceptualColorRole.NearWhite)
+        {
+            return "NeutralRole";
+        }
+
+        return description.HueFamily is
+            PerceptualHueFamily.Greige or
+            PerceptualHueFamily.Beige or
+            PerceptualHueFamily.Sand or
+            PerceptualHueFamily.Cream or
+            PerceptualHueFamily.Peach or
+            PerceptualHueFamily.Apricot or
+            PerceptualHueFamily.Ochre or
+            PerceptualHueFamily.Mustard or
+            PerceptualHueFamily.Taupe or
+            PerceptualHueFamily.Terracotta or
+            PerceptualHueFamily.Mint or
+            PerceptualHueFamily.RoseGray or
+            PerceptualHueFamily.VioletGray or
+            PerceptualHueFamily.LilacGray or
+            PerceptualHueFamily.Burgundy or
+            PerceptualHueFamily.Crimson or
+            PerceptualHueFamily.Rose or
+            PerceptualHueFamily.PinkLilac
+            ? "ExistingSpecificFamily"
+            : "GenericFamily";
+    }
 }

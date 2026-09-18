@@ -7,12 +7,12 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R8-A-F6 is the locally complete Color Inspector semantic-audit correction at `0.1.2.0008`, following pushed and
-hosted-green R8-A-F5 `0.1.2.0007`. It adds balanced all-spectrum, family-profile, and independent-seed holdout evidence
-to the reproducible production-classifier audit; introduces a bounded Mint family; refines evidenced coral/red-orange,
-terracotta/brown, burgundy/red-magenta, warm-rose, and violet/magenta boundaries; and corrects two high-confidence
-Russian creative-name translations. Sampling, history/session behavior, creative matching, and the 1,800 anchors remain
-unchanged.
+R8-A-F7 is the locally complete Color Inspector professional-vocabulary checkpoint at `0.1.2.0009`, following pushed
+and hosted-green R8-A-F6 `0.1.2.0008`. It preserves the stable broad OKLCH geometry while adding a declarative,
+locale-independent professional-shade layer with 18 bounded EN/RU terms; specific names now lead the inspector and
+history while the broad family remains visible in details and remains the fallback. The audit now reports specificity,
+vocabulary gaps, accepted-term coverage, and external-reference evidence on dedicated contact sheets. Sampling,
+history/session behavior, creative matching, and the 1,800 anchors remain unchanged.
 
 The retained R0 probe remains experimental evidence under `experiments/Fovium.RenderProbe`. Production code is the
 single `Fovium` assembly and does not depend on the experiment. The accepted R7-B hosted matrix restored, built, and
@@ -22,11 +22,12 @@ Windows at `RenderScaling = 1.00`.
 
 ## Current focus
 
-R8-A-F5 is pushed at commit `257f5421829743c2648f6acb73a9d8c7631783e5`. GitHub CI run `35278079418`, Native
-Little CMS run `35278079374`, and Native libheif run `35278079393` passed all required Windows, Ubuntu, and macOS/RID
-jobs, so all nine hosted checks on that baseline are green. R8-A-F6 is locally ready for owner review with reproducible
-same-seed before/after and independent holdout audit evidence. No hosted-green claim applies to `0.1.2.0008` until a
-future push and GitHub rerun.
+R8-A-F6 is pushed at commit `7215b314ee739ac4f0086219febd4fd30ebf57de`. GitHub CI run `35289326736` and Native
+libheif run `35289326573` passed all required Windows, Ubuntu, macOS, and RID jobs. Native Little CMS did not run
+because
+the F6 commit did not touch its filtered paths; its last applicable run `35278079374` remains green. R8-A-F7 is locally
+ready for owner review with reproducible same-seed before/after and two independent holdout audits. No hosted-green
+claim applies to `0.1.2.0009` until a future push and GitHub rerun.
 
 ## Implemented application functionality
 
@@ -136,7 +137,9 @@ future push and GitHub rerun.
   perceptual roles and undertones, lightness-dependent neutral boundaries, bounded compound hue transitions, monotonic
   lightness/chroma classes, bounded warm-neutral/earth-tone, mint, and violet/lilac-gray families, a lightness-aware
   yellow-brown/ochre boundary that leaves greener olive controls intact, truthful Transparent
-  handling, and no proprietary physical-standard claims; the embedded
+  handling, and no proprietary physical-standard claims. A declarative professional-shade layer adds bounded Lavender,
+  Periwinkle, Navy, Azure, Sky Blue, Sage, Emerald, Forest Green, Aquamarine, Teal, Salmon, Wine, Rust, Scarlet,
+  Tangerine, Ivory, Charcoal, and Slate names without replacing broad-family identity or generic fallback; the embedded
   offline 1,800-entry creative catalog retains standard OKLab nearest matching, stable tie order, complete Russian
   stable-ID display names, and canonical-English fallback as secondary presentation data.
 - Duplicate-preserving ten-entry per-window Color Inspector FIFO with distinct click identities, stable mouse selection
@@ -166,8 +169,9 @@ RAW, file associations/thumbnails, and monitor-aware output outside ordinary Win
   production-sampler evidence over bounded owner photographs, including 36 F4 points across 9 photographs, but final
   overlay balance,
   scroll/selection feel, semantic borderlines, real fractional-DPI, and Linux/macOS cursor/panel/input feel remain owner
-  visual-review territory. R8-A-F5/F6 add systematic developer-side topology, balanced semantic-reference, rendered
-  contact-sheet, and holdout evidence, not cross-platform visual acceptance or an objective color-name ground truth.
+  visual-review territory. R8-A-F5/F6/F7 add systematic developer-side topology, balanced semantic-reference,
+  specificity/vocabulary-gap, rendered contact-sheet, and holdout evidence, not cross-platform visual acceptance or an
+  objective color-name ground truth.
 - Codec support beyond JPEG/PNG/static WebP/bounded 8-bit TIFF/bounded HEIF/AVIF and a huge/region-rendered-image
   strategy remain unselected.
 - WebP EXIF orientation is not currently surfaced by SkiaSharp 3.119.4 `SKCodec.EncodedOrigin` in the controlled

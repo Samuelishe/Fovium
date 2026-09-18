@@ -11,7 +11,10 @@ internal sealed record ReferenceAnchor(
     string SemanticFamily,
     double LabL,
     double LabA,
-    double LabB);
+    double LabB)
+{
+    public string? SpecificTerm { get; init; }
+}
 
 internal sealed record ReferenceCatalog(
     IReadOnlyList<ReferenceAnchor> Anchors,
@@ -146,7 +149,10 @@ internal static partial class ReferenceCatalogLoader
             SemanticNameNormalizer.Normalize(name),
             lab.L,
             lab.A,
-            lab.B));
+            lab.B)
+        {
+            SpecificTerm = SpecificColorTermNormalizer.Normalize(name)
+        });
     }
 
     private static Dictionary<string, ProvenanceItem> LoadProvenance(string path)
@@ -229,6 +235,69 @@ internal static partial class ReferenceCatalogLoader
     private static partial Regex IsccNbsColorRegex();
 }
 
+internal static class SpecificColorTermNormalizer
+{
+    private static readonly (string Term, string[] Aliases)[] Rules =
+    [
+        ("SkyBlue", ["sky blue"]),
+        ("ForestGreen", ["forest green"]),
+        ("Lavender", ["lavender"]),
+        ("Periwinkle", ["periwinkle"]),
+        ("Navy", ["navy blue", "navy"]),
+        ("Azure", ["azure"]),
+        ("Sage", ["sage green", "sage"]),
+        ("Emerald", ["emerald green", "emerald"]),
+        ("Aquamarine", ["aquamarine"]),
+        ("Teal", ["teal"]),
+        ("Salmon", ["salmon"]),
+        ("Wine", ["wine red", "red wine", "wine"]),
+        ("Rust", ["rusty", "rust"]),
+        ("Scarlet", ["scarlet"]),
+        ("Tangerine", ["tangerine"]),
+        ("Ivory", ["ivory"]),
+        ("Charcoal", ["charcoal"]),
+        ("Slate", ["slate"]),
+    ];
+
+    public static string? Normalize(string name)
+    {
+        var normalized = name.Trim().ToLowerInvariant().Replace('_', ' ');
+        if (normalized.Contains("navy green", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        foreach (var (term, aliases) in Rules)
+        {
+            if (aliases.Any(alias => ContainsToken(normalized, alias)))
+            {
+                return term;
+            }
+        }
+
+        return null;
+    }
+
+    private static bool ContainsToken(string value, string term)
+    {
+        var index = value.IndexOf(term, StringComparison.Ordinal);
+        while (index >= 0)
+        {
+            var before = index == 0 || !char.IsLetterOrDigit(value[index - 1]);
+            var afterIndex = index + term.Length;
+            var after = afterIndex == value.Length || !char.IsLetterOrDigit(value[afterIndex]);
+            if (before && after)
+            {
+                return true;
+            }
+
+            index = value.IndexOf(term, index + 1, StringComparison.Ordinal);
+        }
+
+        return false;
+    }
+}
+
 internal static class SemanticNameNormalizer
 {
     private static readonly (string Family, string[] Terms)[] Rules =
@@ -251,7 +320,7 @@ internal static class SemanticNameNormalizer
         ("Ochre", ["ochre", "ocher", "gold", "goldenrod"]),
         ("Olive", ["olive"]),
         ("Yellow", ["yellow"]),
-        ("Orange", ["orange"]),
+        ("Orange", ["orange", "tangerine"]),
         ("Apricot", ["apricot"]),
         ("Peach", ["peach"]),
         ("Terracotta", ["terracotta", "terra cotta", "burnt sienna", "rust"]),

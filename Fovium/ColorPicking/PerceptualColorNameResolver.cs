@@ -13,6 +13,11 @@ internal sealed class PerceptualColorNameResolver(Localizer localizer)
             return localizer[UiStrings.ColorPickerTransparent];
         }
 
+        if (description.ProfessionalTerm is { } professionalTerm)
+        {
+            return ResolveProfessionalTerm(professionalTerm);
+        }
+
         return description.Role!.Value switch
         {
             PerceptualColorRole.Neutral => ResolveNeutral(description.LightnessClass!.Value),
@@ -28,6 +33,11 @@ internal sealed class PerceptualColorNameResolver(Localizer localizer)
         if (description.IsTransparent)
         {
             return localizer[UiStrings.ColorPickerTransparent];
+        }
+
+        if (description.ProfessionalTerm is { } professionalTerm)
+        {
+            return ResolveProfessionalTerm(professionalTerm);
         }
 
         if (description.Role is PerceptualColorRole.Neutral or
@@ -118,6 +128,9 @@ internal sealed class PerceptualColorNameResolver(Localizer localizer)
         PerceptualHueFamily.Olive => UiStrings.ColorPickerHueOlive,
         _ => throw new ArgumentOutOfRangeException(nameof(hue))
     }];
+
+    public string ResolveProfessionalTerm(ProfessionalColorTerm term) =>
+        localizer[ProfessionalShadeCatalog.Get(term).LocalizationKey];
 
     public string ResolveDetailToneLabel(PerceptualColorDescription description)
     {
