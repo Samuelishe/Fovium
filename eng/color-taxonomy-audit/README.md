@@ -47,14 +47,17 @@ dotnet run --project Fovium.Tools.ColorTaxonomyAudit -c Release -- --mode deep `
 Each run writes `summary.json`, `summary.md`, `summary.html`, `anomalies.csv`, `contact-sheet.svg`, balanced-spectrum,
 family-profile, owner-candidate, holdout, changed-region, reference-disagreement, vocabulary-gap, accepted
 professional-term, and professional-boundary views, plus reference-driven vocabulary-candidate and compact-component
-views, a whole-catalog unshipped vocabulary-frontier view, a current-campaign term sheet, a global professional-overlap
-report, and a deterministic SHA-256 signature.
-Runtime and the isolated indexed-classifier benchmark are retained in the reports but excluded from the signature.
-Schema v7 reports generic/existing-specific/professional/neutral coverage, per-term sampled coverage, candidate source
+views, a whole-catalog unshipped vocabulary-frontier view, current-campaign and F12 accepted/deferred sheets, a global
+professional-overlap report, per-term core-confidence report, and a deterministic SHA-256 signature.
+Runtime, master-lexicon research-clustering timing, and the isolated indexed-classifier benchmark are retained in the
+reports but excluded from the signature.
+Schema v8 reports generic/existing-specific/professional/neutral coverage, per-term sampled coverage, candidate source
 support/dispersion/components/noise, the winning/competing region explanation for accepted anchors, and deterministic
 center plus inside/outside L/C/h probes for every professional region. It additionally counts every deep sample matching
 multiple professional terms, ranks winner/competitor pairs with sampled share and semantic-domain severity, and reports
-matched/winning/shadowed volume per region. Audit-only aliases and semantic domains organize discovery and conflict
+matched/winning/shadowed volume per region. It also emits the 250-entry master candidate lexicon, semantic-domain
+density, source-independence groups, dispositions, directional containment, Dice similarity, same-core warnings, and
+per-term representative core/confidence. Audit-only aliases and research metadata organize discovery and conflict
 triage; they do not affect production classification.
 Reports rank abrupt semantic
 neighbors, role/modifier reversals, lightness A→B→A paths, small connected components, thin slivers, broad family
@@ -95,8 +98,14 @@ The script records source, retrieval UTC time, usage/license note, pinned versio
 - the 267 ISCC-NBS centroid names/RGB values from the pinned SLIB mirror at commit
   `05160e4ce21c65f99fea78dc4b29463e2c14bb22`; the file header grants redistribution, but the data remains cache-only;
 - NBS Circular 553 from NIST, retained as methodology/reference vocabulary rather than parsed as sRGB anchors.
+- Ridgway's 1912 color standards and Werner/Syme's 1821 nomenclature, public-domain/CC0 OCR retained as lexical-only
+  historical evidence;
+- Wikidata color items with sRGB color property P465 under CC0, retained as uncertain-independence anchors;
+- Wiktionary Appendix:Colors under CC BY-SA/GFDL, retained as lexical-only evidence.
 
-Names are normalized into broad audit-only semantic groups before k-nearest OKLab voting. Unknown names do not vote.
+Every provenance entry records `independence`, `independenceGroup`, and `cachePolicy`; correlated mirrors sharing a
+group count once. Names are normalized into broad audit-only semantic groups before k-nearest OKLab voting. Unknown
+names do not vote.
 Dataset agreement is independent evidence, never ground truth: source vocabularies are uneven, CSS is intentionally
 small, and nearest named anchors do not define an objective boundary. No downloaded dataset or generated report belongs
 in Git or ordinary CI.

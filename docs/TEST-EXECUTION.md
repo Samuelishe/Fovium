@@ -249,6 +249,21 @@ EN/RU completeness, exact supported anchors, both sides of meaningful new bounda
 normalization, overlap severity, and report determinism. Canonical plus two holdout seeds must retain topology metrics;
 external caches and generated reports remain optional, ignored, and absent from ordinary CI.
 
+R8-A-F12 advances the report to schema v8. The ignored reference cache adds Ridgway 1912 and Werner 1821 public-domain
+lexical evidence, CC0 Wikidata color anchors, and Wiktionary color vocabulary while recording independence group,
+cache policy, retrieval, license note, and SHA-256. The 250-entry master lexicon ranks all known candidates and reports
+aliases, provenance, independent-source count, anchors, compact components/noise, dispersion, family distribution,
+nearest shipped term, RU candidate, and disposition. Overlap evidence adds directional containment, Dice similarity,
+same-core warnings, and per-term robust-core confidence. Canonical and two untuned holdouts require 99 reachable
+regions, zero shadowed regions, deterministic signatures, and unchanged broad-family topology. Reports separately
+retain complete-audit runtime, master-lexicon clustering time, and indexed production-classifier nanoseconds per sample;
+all three machine-local timings are excluded from the deterministic signature.
+
+The R8-A-F12 Histogram regression does not assume that completing a test reader runs the coordinator continuation
+inline. Tests subscribe to an internal post-classification/post-cleanup completion signal keyed by image identity and
+outcome, then assert stale metrics and unchanged latest publication without sleeps or retries. The production
+generation, image-identity, presentation-identity, cancellation, and cleanup lifecycle remains the authority.
+
 R8-B-P1 adds deterministic in-memory tests for bounded ICC display-profile validation, content identity, active-monitor
 largest-intersection/tie behavior, typed fallback precedence, complete transform-key equality, Skia destination/alpha
 behavior, and source-versus-destination ownership. The final domain-independence test proves that two destination
@@ -369,3 +384,5 @@ $env:FOVIUM_PHOTO_STYLE_PERF_IMAGES = 'C:\path\landscape.jpg;C:\path\portrait.jp
 $env:FOVIUM_PHOTO_STYLE_SMOKE_OUTPUT = 'C:\path\ignored-output'
 dotnet test Fovium.Tests/Fovium.Tests.csproj -c Release --filter "FullyQualifiedName~PhotoDerivedStylingPerformanceSmokeTests" --logger "console;verbosity=detailed"
 ```
+
+same-core warnings, and per-term robust-core confidence. Canonical and two untuned holdouts require 99 reachable

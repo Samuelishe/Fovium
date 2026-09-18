@@ -20,6 +20,18 @@ internal readonly record struct HistogramMetrics(
     long LastSampleCount,
     bool LastWasSampled);
 
+internal enum HistogramReadOutcome
+{
+    Published,
+    Stale,
+    Canceled
+}
+
+internal readonly record struct HistogramReadCompletion(
+    long ImageIdentity,
+    long Generation,
+    HistogramReadOutcome Outcome);
+
 internal sealed class HistogramCoordinator : IDisposable
 {
     private readonly object _sync = new();
@@ -53,6 +65,9 @@ internal sealed class HistogramCoordinator : IDisposable
     }
 
     public event EventHandler? StateChanged;
+
+    // Emitted after a read has been classified and its retained lease/request resources are released.
+    internal event Action<HistogramReadCompletion>? ReadCompleted;
 
     public bool IsVisible
     {
@@ -142,7 +157,6 @@ internal sealed class HistogramCoordinator : IDisposable
             _state = null;
             _cache.Clear();
         }
-
     }
 
     private void OnPresentedImageChanged(object? sender, EventArgs e)
@@ -223,6 +237,8 @@ internal sealed class HistogramCoordinator : IDisposable
         CancellationTokenSource cancellation)
     {
         var stopwatch = Stopwatch.StartNew();
+        var imageIdentity = lease.ImageIdentity;
+        var outcome = HistogramReadOutcome.Canceled;
         try
         {
             var result = await _reader.ReadAsync(lease.Image, cancellation.Token).ConfigureAwait(false);
@@ -232,8 +248,8 @@ internal sealed class HistogramCoordinator : IDisposable
             lock (_sync)
             {
                 publish = !_disposed && _visible && generation == _generation &&
-                    _state?.ImageIdentity == lease.ImageIdentity &&
-                    _state.PresentationIdentity == lease.PresentationIdentity;
+                          _state?.ImageIdentity == lease.ImageIdentity &&
+                          _state.PresentationIdentity == lease.PresentationIdentity;
                 if (publish)
                 {
                     _cache.Add(lease.ImageIdentity, result);
@@ -260,6 +276,10 @@ internal sealed class HistogramCoordinator : IDisposable
             {
                 StateChanged?.Invoke(this, EventArgs.Empty);
             }
+
+            outcome = publish
+                ? HistogramReadOutcome.Published
+                : HistogramReadOutcome.Stale;
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
@@ -277,6 +297,10 @@ internal sealed class HistogramCoordinator : IDisposable
             }
 
             cancellation.Dispose();
+            ReadCompleted?.Invoke(new HistogramReadCompletion(
+                imageIdentity,
+                generation,
+                outcome));
         }
     }
 

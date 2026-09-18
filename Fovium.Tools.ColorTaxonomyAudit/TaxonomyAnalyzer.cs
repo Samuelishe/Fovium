@@ -1,3 +1,6 @@
+using System.Diagnostics;
+using Fovium.ColorPicking;
+
 namespace Fovium.Tools.ColorTaxonomyAudit;
 
 internal static class TaxonomyAnalyzer
@@ -111,8 +114,25 @@ internal static class TaxonomyAnalyzer
         var semantic = SemanticReferenceAudit.Analyze(balancedSemantic, references);
         var vocabularyGaps = FindVocabularyGaps(semantic.Cohort);
         var vocabularyCandidates = VocabularyCandidateAudit.Analyze(references);
-        var professionalTermClassifications = ProfessionalTermAnchorHex
+        var researchClusteringStopwatch = Stopwatch.StartNew();
+        var masterCandidateLexicon = MasterCandidateLexiconAudit.Analyze(references);
+        researchClusteringStopwatch.Stop();
+        var professionalBoundarySamples = ProfessionalShadeBoundaryAudit.Analyze(adapter);
+        var legacyProfessionalAnchors = ProfessionalTermAnchorHex
             .Select(hex => adapter.Classify(ParseHex(hex)))
+            .ToArray();
+        var professionalTermClassifications = ProfessionalShadeCatalog.Definitions
+            .Select(definition =>
+            {
+                var term = definition.Term.ToString();
+                return professionalBoundarySamples.FirstOrDefault(sample =>
+                           sample.Sample.ProfessionalTerm == term &&
+                           sample.Region.EndsWith(":center", StringComparison.Ordinal))?.Sample
+                       ?? professionalBoundarySamples.FirstOrDefault(sample =>
+                           sample.Sample.ProfessionalTerm == term &&
+                           sample.Region.EndsWith("-inside", StringComparison.Ordinal))?.Sample
+                       ?? legacyProfessionalAnchors.First(sample => sample.ProfessionalTerm == term);
+            })
             .ToArray();
         var professionalTermAssessments = SemanticReferenceAudit.AssessMany(
             professionalTermClassifications,
@@ -150,10 +170,13 @@ internal static class TaxonomyAnalyzer
             semantic.IncompatibleCount,
             ranked.Count(anomaly => anomaly.Severity == "High"),
             ranked.Count(anomaly => anomaly.Severity == "Medium"),
-            runtimeSeconds);
+            runtimeSeconds)
+        {
+            ResearchClusteringMilliseconds = researchClusteringStopwatch.Elapsed.TotalMilliseconds
+        };
 
         var report = new AuditReport(
-            "fovium-color-taxonomy-audit/v7",
+            "fovium-color-taxonomy-audit/v8",
             options.Mode.ToString(),
             options.Seed,
             options.Configuration,
@@ -171,6 +194,9 @@ internal static class TaxonomyAnalyzer
             semantic.FamilyProfiles,
             ranked,
             null);
+        var professionalOverlaps = ProfessionalShadeOverlapAudit.Analyze(
+            adapter,
+            all.Select(sample => sample.Rgb).ToArray());
         return report with
         {
             Specificity = new AuditSpecificityMetrics(
@@ -181,6 +207,8 @@ internal static class TaxonomyAnalyzer
                 vocabularyGaps.Count),
             VocabularyGaps = vocabularyGaps,
             VocabularyCandidates = vocabularyCandidates,
+            MasterCandidateLexicon = masterCandidateLexicon,
+            CandidateDomainCoverage = MasterCandidateLexiconAudit.SummarizeDomains(masterCandidateLexicon),
             ProfessionalTermSamples = professionalTermClassifications
                 .Select(sample => new OwnerCandidateSample(
                     sample.ProfessionalTerm ?? sample.Family,
@@ -190,10 +218,11 @@ internal static class TaxonomyAnalyzer
                     ProfessionalExplanation = adapter.ExplainProfessional(sample.Rgb)
                 })
                 .ToArray(),
-            ProfessionalBoundarySamples = ProfessionalShadeBoundaryAudit.Analyze(adapter),
-            ProfessionalOverlaps = ProfessionalShadeOverlapAudit.Analyze(
-                adapter,
-                all.Select(sample => sample.Rgb).ToArray()),
+            ProfessionalBoundarySamples = professionalBoundarySamples,
+            ProfessionalOverlaps = professionalOverlaps,
+            ProfessionalTermCores = ProfessionalTermCoreAudit.Analyze(
+                professionalBoundarySamples,
+                professionalOverlaps),
             ProfessionalTermCoverage = CountBy(
                 all.Where(sample => sample.ProfessionalTerm is not null),
                 sample => sample.ProfessionalTerm!)

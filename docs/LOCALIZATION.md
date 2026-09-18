@@ -87,6 +87,12 @@ Viridian/Виридиановый, Celadon/Селадоновый, Antique White
 Naples Yellow/Неаполитанский жёлтый, and Espresso/Эспрессо. Developer-only aliases and research-domain categories do
 not add UI keys or change the one-key-per-runtime-term contract.
 
+R8-A-F12 expands the paired domain to 94 terms. New keys cover Heliotrope/Гелиотроповый, Slate Blue/Сланцево-синий,
+Spring Green/Весенний зелёный, Pine Green/Сосновый зелёный, Brick Red/Кирпично-красный,
+Raw Sienna/Натуральная сиена, Raw Umber/Натуральная умбра, Canary Yellow/Канареечный жёлтый, Gamboge/Гуммигут,
+Ecru/Экрю, Buff/Палевый, Goldenrod/Золотисто-жёлтый, Russet/Рыжевато-коричневый, and Heather/Вересковый. Audit-only
+aliases and Russian research candidates do not become localization keys.
+
 R9-A localizes Photo Presentation command/context-menu copy, its Viewing subsection, Edge margin label, and the
 explanation that the photograph stays inside the presentation margin while Matte does not change its scale. The stable
 `viewer.togglePhotoPresentation` identity, serialized property names, percentage value, and active session state are

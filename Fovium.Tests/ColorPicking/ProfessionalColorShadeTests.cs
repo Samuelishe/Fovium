@@ -117,6 +117,38 @@ public sealed class ProfessionalColorShadeTests
     }
 
     [Theory]
+    [InlineData("#D94FF5", "Heliotrope", "Гелиотроповый")]
+    [InlineData("#7B68EE", "Slate blue", "Сланцево-синий")]
+    [InlineData("#00FF7F", "Spring green", "Весенний зелёный")]
+    [InlineData("#01796F", "Pine green", "Сосновый зелёный")]
+    [InlineData("#8F1402", "Brick red", "Кирпично-красный")]
+    [InlineData("#CB4154", "Brick red", "Кирпично-красный")]
+    [InlineData("#9A6200", "Raw sienna", "Натуральная сиена")]
+    [InlineData("#A75E09", "Raw umber", "Натуральная умбра")]
+    [InlineData("#FDFF63", "Canary yellow", "Канареечный жёлтый")]
+    [InlineData("#E49B0F", "Gamboge", "Гуммигут")]
+    [InlineData("#C2B280", "Ecru", "Экрю")]
+    [InlineData("#DBC7A8", "Buff", "Палевый")]
+    [InlineData("#DAA520", "Goldenrod", "Золотисто-жёлтый")]
+    [InlineData("#794029", "Russet", "Рыжевато-коричневый")]
+    [InlineData("#988E94", "Heather", "Вересковый")]
+    public void ExpandedCorpusAnchorsResolveReviewedEnglishAndRussian(
+        string hex,
+        string englishName,
+        string russianName)
+    {
+        var description = Describe(hex);
+        var english = new PerceptualColorNameResolver(Localizer.Create(CultureInfo.GetCultureInfo("en-US")));
+        var russian = new PerceptualColorNameResolver(Localizer.Create(CultureInfo.GetCultureInfo("ru-RU")));
+
+        Assert.NotNull(description.ProfessionalTerm);
+        Assert.Equal(englishName, english.ResolveShort(description));
+        Assert.Equal(englishName, english.ResolveDetailed(description));
+        Assert.Equal(russianName, russian.ResolveShort(description));
+        Assert.Equal(russianName, russian.ResolveDetailed(description));
+    }
+
+    [Theory]
     [InlineData("#341D6D")]
     [InlineData("#FF0000")]
     [InlineData("#FF00FF")]
@@ -141,10 +173,10 @@ public sealed class ProfessionalColorShadeTests
         var definitions = ProfessionalShadeCatalog.Definitions;
         var regions = definitions.SelectMany(definition => definition.Regions).ToArray();
 
-        Assert.Equal(80, definitions.Count);
+        Assert.Equal(94, definitions.Count);
         Assert.Equal(definitions.Count, definitions.Select(item => item.StableId).Distinct().Count());
         Assert.Equal(definitions.Count, definitions.Select(item => item.Term).Distinct().Count());
-        Assert.Equal(84, regions.Length);
+        Assert.Equal(99, regions.Length);
         Assert.Equal(regions.Length, regions.Select(item => item.StableId).Distinct().Count());
         Assert.Equal(regions.Length, regions.Select(item => item.Priority).Distinct().Count());
         Assert.All(definitions, definition =>
@@ -188,6 +220,7 @@ public sealed class ProfessionalColorShadeTests
     [InlineData(ProfessionalColorTerm.Gold, "professional-gold", 2)]
     [InlineData(ProfessionalColorTerm.Khaki, "professional-khaki", 2)]
     [InlineData(ProfessionalColorTerm.Mauve, "professional-mauve", 2)]
+    [InlineData(ProfessionalColorTerm.BrickRed, "professional-brick-red", 2)]
     public void ThirdWaveCompositeTermsKeepOneIdentityAcrossEvidenceLobes(
         object term,
         string stableId,

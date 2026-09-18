@@ -99,6 +99,20 @@ internal static class AuditReportWriter
                     "Aggregate reference cluster")));
         WriteSampleSheet(
             directory,
+            "master-candidate-lexicon",
+            "Ranked whole-corpus master candidate lexicon",
+            report.MasterCandidateLexicon
+                .Where(item => item.Representative is not null)
+                .Take(120)
+                .Select(item => new SheetItem(
+                    item.CanonicalTerm,
+                    item.Representative!,
+                    null,
+                    $"{item.Status} · {item.ResearchDomain} · {item.IndependentSourceCount} independent sources · " +
+                    $"{item.AnchorCount} anchors · nearest {item.NearestShippedTerm} ΔE {item.NearestShippedDeltaE:0.000}",
+                    string.Join(", ", item.SourceOccurrences.Select(source => source.Dataset)))));
+        WriteSampleSheet(
+            directory,
             "vocabulary-candidate-components",
             "Compact components inside recurring vocabulary candidates",
             report.VocabularyCandidates.SelectMany(item => item.Components.Select(component => new SheetItem(
@@ -129,6 +143,33 @@ internal static class AuditReportWriter
                     item.Sample,
                     item.Reference,
                     $"Base family: {item.Sample.Family} · region: {item.ProfessionalExplanation?.WinnerRegionStableId}")));
+        WriteSampleSheet(
+            directory,
+            "f12-accepted-terms",
+            "F12 accepted professional-term anchors",
+            report.ProfessionalTermSamples
+                .Where(item => item.ProfessionalExplanation?.Candidates.Any(candidate =>
+                    candidate.RegionStableId == item.ProfessionalExplanation.WinnerRegionStableId &&
+                    candidate.Priority >= 400) == true)
+                .Select(item => new SheetItem(
+                    item.Region,
+                    item.Sample,
+                    item.Reference,
+                    $"Base family: {item.Sample.Family} · region: {item.ProfessionalExplanation?.WinnerRegionStableId}")));
+        WriteSampleSheet(
+            directory,
+            "f12-deferred-candidates",
+            "F12 deferred, rejected, and synonym candidates",
+            report.MasterCandidateLexicon
+                .Where(item => item.Representative is not null &&
+                               item.Status is CandidateResearchStatus.Deferred or
+                                   CandidateResearchStatus.Rejected or CandidateResearchStatus.Synonym)
+                .Select(item => new SheetItem(
+                    item.CanonicalTerm,
+                    item.Representative!,
+                    null,
+                    $"{item.Status} · {item.Reason}",
+                    string.Join(", ", item.SourceOccurrences.Select(source => source.Dataset)))));
         WriteSampleSheet(
             directory,
             "professional-boundary-probes",
@@ -165,13 +206,18 @@ internal static class AuditReportWriter
             Path.Combine(directory, "professional-overlaps.html"),
             CreateProfessionalOverlapsHtml(report.ProfessionalOverlaps),
             new UTF8Encoding(false));
+        File.WriteAllText(
+            Path.Combine(directory, "professional-term-cores.html"),
+            CreateProfessionalTermCoresHtml(report.ProfessionalTermCores),
+            new UTF8Encoding(false));
 
         var deterministic = report with
         {
             Metrics = report.Metrics with
             {
                 RuntimeSeconds = 0,
-                ProfessionalClassificationNanosecondsPerSample = 0
+                ProfessionalClassificationNanosecondsPerSample = 0,
+                ResearchClusteringMilliseconds = 0
             },
             Comparison = null,
         };
@@ -233,6 +279,8 @@ internal static class AuditReportWriter
         AppendMetric(builder, "Neutral-role balanced samples", report.Specificity.NeutralRole);
         AppendMetric(builder, "Vocabulary-gap candidates", report.Specificity.VocabularyGapCandidates);
         AppendMetric(builder, "High-severity anomalies", report.Metrics.HighSeverityAnomalies);
+        builder.AppendLine(
+            $"| Master-lexicon research clustering | {report.Metrics.ResearchClusteringMilliseconds:0.0} ms |");
         AppendMetric(builder, "Medium-severity anomalies", report.Metrics.MediumSeverityAnomalies);
         builder.AppendLine(
             $"| Professional classifier benchmark | {report.Metrics.ProfessionalClassificationNanosecondsPerSample:0.0} ns/sample |");
@@ -244,12 +292,14 @@ internal static class AuditReportWriter
             builder.AppendLine();
             builder.AppendLine("## Reference inputs");
             builder.AppendLine();
-            builder.AppendLine("| Dataset | Anchors | Normalized | Source | License / usage | SHA-256 |");
-            builder.AppendLine("| --- | ---: | ---: | --- | --- | --- |");
+            builder.AppendLine("| Dataset | Anchors | Lexical | Independence | Source | License / usage | SHA-256 |");
+            builder.AppendLine("| --- | ---: | ---: | --- | --- | --- | --- |");
             foreach (var reference in report.References)
             {
                 builder.AppendLine(
-                    $"| {reference.Id} | {reference.AnchorCount} | {reference.NormalizedAnchorCount} | {EscapeMarkdown(reference.Source)} | {EscapeMarkdown(reference.License)} | `{reference.Sha256}` |");
+                    $"| {reference.Id} | {reference.AnchorCount} | {reference.LexicalOccurrenceCount} | " +
+                    $"{reference.Independence} ({reference.IndependenceGroup}) | {EscapeMarkdown(reference.Source)} | " +
+                    $"{EscapeMarkdown(reference.License)} | `{reference.Sha256}` |");
             }
         }
 
@@ -299,12 +349,29 @@ internal static class AuditReportWriter
         builder.AppendLine();
         builder.AppendLine("## Professional-term overlaps");
         builder.AppendLine();
-        builder.AppendLine("| Severity | Winner | Competing term | Samples | Share | Representative |");
-        builder.AppendLine("| --- | --- | --- | ---: | ---: | --- |");
+        builder.AppendLine(
+            "| Severity | Winner | Competing term | Samples | Share | Winner overlap | Competitor containment | Similarity | Warning | Representative |");
+        builder.AppendLine("| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- | --- |");
         foreach (var pair in report.ProfessionalOverlaps.Pairs.Take(100))
         {
             builder.AppendLine(
-                $"| {pair.Severity} | {pair.WinnerTerm} | {pair.CompetingTerm} | {pair.SampleCount} | {pair.SampleShare:P2} | {pair.RepresentativeHex} |");
+                $"| {pair.Severity} | {pair.WinnerTerm} | {pair.CompetingTerm} | {pair.SampleCount} | {pair.SampleShare:P2} | " +
+                $"{pair.WinnerOverlapRatio:P1} | {pair.CompetitorContainmentRatio:P1} | {pair.SimilarityScore:F2} | " +
+                $"{(pair.SameCoreDuplicateWarning ? "same-core" : pair.NearTotalContainment ? "containment" : string.Empty)} | {pair.RepresentativeHex} |");
+        }
+
+        builder.AppendLine();
+        builder.AppendLine("## Professional-term core confidence");
+        builder.AppendLine();
+        builder.AppendLine(
+            "| Term | Core | Regions | Interior wins | Cohort wins / matches | Max containment | Confidence | Mostly disputed |");
+        builder.AppendLine("| --- | --- | ---: | ---: | ---: | ---: | --- | --- |");
+        foreach (var core in report.ProfessionalTermCores)
+        {
+            builder.AppendLine(
+                $"| {core.Term} | {core.RepresentativeCoreHex} | {core.RegionCount} | " +
+                $"{core.WinningInteriorProbeCount}/{core.InteriorProbeCount} | {core.WinningSamples}/{core.MatchedSamples} | " +
+                $"{core.MaximumContainmentRatio:P1} | {core.ConfidenceTier} | {core.IsMostlyDisputed} |");
         }
 
         builder.AppendLine();
@@ -359,6 +426,33 @@ internal static class AuditReportWriter
         {
             builder.AppendLine(
                 $"| {candidate.SpecificTerm} | {candidate.ResearchDomain} | {candidate.IsShippedTerm} | {candidate.DatasetSupport} | {candidate.AnchorCount} | {candidate.Representative.Rgb.Hex} | {candidate.MedianDeltaE:0.000} | {candidate.P90DeltaE:0.000} | {EscapeMarkdown(string.Join(", ", candidate.ProductionFamilyCoverage.Select(pair => $"{pair.Key}={pair.Value}")))} |");
+        }
+
+        builder.AppendLine();
+        builder.AppendLine("## Master candidate lexicon");
+        builder.AppendLine();
+        builder.AppendLine(
+            "| Candidate | Domain | Status | Independent sources | Anchors | Components | Noise | Medoid | Nearest shipped | RU candidate | Reason |");
+        builder.AppendLine("| --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- | --- | --- |");
+        foreach (var candidate in report.MasterCandidateLexicon)
+        {
+            builder.AppendLine(
+                $"| {candidate.CanonicalTerm} | {candidate.ResearchDomain} | {candidate.Status} | " +
+                $"{candidate.IndependentSourceCount} | {candidate.AnchorCount} | {candidate.CompactComponentCount} | " +
+                $"{candidate.NoiseFraction:P0} | {candidate.Representative?.Rgb.Hex ?? "—"} | " +
+                $"{candidate.NearestShippedTerm} {candidate.NearestShippedDeltaE:0.000} | " +
+                $"{EscapeMarkdown(candidate.RussianCandidate)} | {EscapeMarkdown(candidate.Reason)} |");
+        }
+
+        builder.AppendLine();
+        builder.AppendLine("### Candidate coverage by semantic domain");
+        builder.AppendLine();
+        builder.AppendLine("| Domain | Candidates | Accepted | Evidence-rich | Density |");
+        builder.AppendLine("| --- | ---: | ---: | ---: | --- |");
+        foreach (var domain in report.CandidateDomainCoverage)
+        {
+            builder.AppendLine(
+                $"| {domain.Domain} | {domain.CandidateCount} | {domain.AcceptedCount} | {domain.EvidenceRichCount} | {domain.Density} |");
         }
 
         builder.AppendLine();
@@ -613,7 +707,10 @@ internal static class AuditReportWriter
             report.Pairs.Select(pair =>
                 $"<tr><td><span class=\"swatch\" style=\"background:{pair.RepresentativeHex}\"></span></td>" +
                 $"<td>{Html(pair.Severity.ToString())}</td><td>{Html(pair.WinnerTerm)}</td><td>{Html(pair.CompetingTerm)}</td>" +
-                $"<td>{pair.SampleCount}</td><td>{pair.SampleShare:P2}</td><td>{pair.RepresentativeHex}</td></tr>"));
+                $"<td>{pair.SampleCount}</td><td>{pair.SampleShare:P2}</td><td>{pair.WinnerOverlapRatio:P1}</td>" +
+                $"<td>{pair.CompetitorContainmentRatio:P1}</td><td>{pair.SimilarityScore:F2}</td>" +
+                $"<td>{(pair.SameCoreDuplicateWarning ? "same-core" : pair.NearTotalContainment ? "containment" : string.Empty)}</td>" +
+                $"<td>{pair.RepresentativeHex}</td></tr>"));
         var shadowed = string.Join(
             ", ",
             report.Regions.Where(region => region.IsShadowed).Select(region => region.RegionStableId));
@@ -624,7 +721,26 @@ internal static class AuditReportWriter
                  <h1>Professional shade overlaps</h1>
                  <p>{{report.SamplesWithMultipleTerms}} / {{report.SampleCount}} audited samples matched more than one term.</p>
                  <p>Matched but never winning regions: {{Html(shadowed.Length == 0 ? "none" : shadowed)}}.</p>
-                 <table><thead><tr><th>Swatch</th><th>Severity</th><th>Winner</th><th>Competitor</th><th>Samples</th><th>Share</th><th>Representative</th></tr></thead><tbody>{{rows}}</tbody></table>
+                 <table><thead><tr><th>Swatch</th><th>Severity</th><th>Winner</th><th>Competitor</th><th>Samples</th><th>Global share</th><th>Winner overlap</th><th>Competitor containment</th><th>Similarity</th><th>Warning</th><th>Representative</th></tr></thead><tbody>{{rows}}</tbody></table>
+                 """;
+    }
+
+    private static string CreateProfessionalTermCoresHtml(IReadOnlyList<ProfessionalTermCoreProfile> cores)
+    {
+        var rows = string.Join(
+            Environment.NewLine,
+            cores.Select(core =>
+                $"<tr><td><span class=\"swatch\" style=\"background:{core.RepresentativeCoreHex}\"></span></td>" +
+                $"<td>{Html(core.Term)}</td><td>{Html(core.ConfidenceTier)}</td><td>{core.RegionCount}</td>" +
+                $"<td>{core.WinningInteriorProbeCount}/{core.InteriorProbeCount}</td>" +
+                $"<td>{core.WinningSamples}/{core.MatchedSamples}</td><td>{core.MaximumContainmentRatio:P1}</td>" +
+                $"<td>{core.IsMostlyDisputed}</td><td>{core.RepresentativeCoreHex}</td></tr>"));
+        return $$"""
+                 <!doctype html><meta charset="utf-8"><title>Professional term core confidence</title>
+                 <style>body{font:13px system-ui;margin:24px;background:#161616;color:#eee}table{border-collapse:collapse;width:100%}
+                 th,td{border-bottom:1px solid #444;padding:6px;text-align:left}.swatch{display:block;width:54px;height:32px;border:1px solid #888}</style>
+                 <h1>Professional term core confidence</h1>
+                 <table><thead><tr><th>Core</th><th>Term</th><th>Confidence</th><th>Regions</th><th>Interior wins</th><th>Cohort wins/matches</th><th>Max containment</th><th>Mostly disputed</th><th>Representative</th></tr></thead><tbody>{{rows}}</tbody></table>
                  """;
     }
 

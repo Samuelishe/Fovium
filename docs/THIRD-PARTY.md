@@ -49,7 +49,12 @@ The cache currently supports the official XKCD crowd-survey export (cache-only b
 dataset license), the W3C CSS Color 4 named table under the W3C Document License, the MIT-licensed pinned meodai source
 as correlated evidence, and the 267 ISCC-NBS centroid names/RGB values from the SLIB mirror pinned at commit
 `05160e4ce21c65f99fea78dc4b29463e2c14bb22` under its file-header redistribution permission. NBS Circular 553 remains
-methodology vocabulary. No raw reference dataset, web lookup response, or generated report is committed.
+methodology vocabulary. R8-A-F12 adds public-domain/CC0 OCR text from Ridgway's 1912 color standards and Werner/Syme's
+1821 nomenclature as lexical-only evidence, CC0 Wikidata items carrying sRGB color property P465 as uncertain-
+independence anchors, and the Wiktionary Appendix:Colors under CC BY-SA/GFDL as lexical-only evidence. All remain in the
+ignored cache; only source URLs, policy, and parsing code are tracked. CAMEO was consulted manually but not ingested
+because its redistribution terms are not an appropriate bundled-dataset basis. No raw reference dataset, web lookup
+response, or generated report is committed.
 
 ## Planned / under evaluation
 

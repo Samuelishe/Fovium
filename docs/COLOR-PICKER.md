@@ -144,11 +144,21 @@ Green were rejected after they displaced accepted Cobalt and Forest Green contro
 candidate aliases by semantic domain, classify overlap pairs as benign siblings, suspicious siblings, or distant-family
 conflicts, and render the unshipped vocabulary frontier; none of that research metadata enters the viewer runtime.
 
+R8-A-F12 expands the layer to 94 terms and 99 regions with Heliotrope, Slate Blue, Spring Green, Pine
+Green, Brick Red, Raw Sienna, Raw Umber, Canary Yellow, Gamboge, Ecru, Buff, Goldenrod, Russet, and Heather. Brick Red
+uses two bounded lobes; the other additions use one compact box each. A 250-entry developer-only master lexicon merges
+anchor and lexical occurrences, aliases, independent-source groups, compact components, dispersion, nearest shipped
+terms, explicit accepted/deferred/rejected/synonym status, and semantic-domain density. Overlap reports add containment,
+similarity, and same-core warnings. Cadet Blue remains an audit synonym because its CSS anchor is perceptually
+indistinguishable from a shipped Teal control. Core-confidence reports retain one representative interior point and
+boundary
+evidence for every shipped term. This research layer remains absent from production runtime and localization data.
+
 Developer changes to this taxonomy use the reproducible audit route documented in
 [`../eng/color-taxonomy-audit/README.md`](../eng/color-taxonomy-audit/README.md).
 Its structured in-gamut grid, fixed-seed RGB sampling, boundary refinement,
 topology checks, coordinate-driven balanced hue/lightness/chroma cohort,
-family profiles, component-aware reference-driven vocabulary-candidate discovery, specificity/vocabulary-gap reporting,
+family profiles, component-aware whole-corpus candidate discovery, specificity/vocabulary-gap reporting,
 region explanations, accepted-term coverage, automatic region-boundary/counterexample probes, global professional-term
 overlap/reachability analysis, measured classification cost, and optional named-color neighbors exercise the production
 classifier. Independent holdout seeds validate

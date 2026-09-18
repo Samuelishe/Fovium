@@ -7,12 +7,13 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R8-A-F11 is the locally complete fourth Color Inspector professional-vocabulary campaign at `0.1.2.0013`, following
-pushed R8-A-F10 `0.1.2.0012` at `5fce387f0ae63a648e0a3d1d593f03a8716d98d0`. It preserves the stable 45-family OKLCH
-geometry while expanding the declarative, locale-independent professional-shade layer from 72 to 80 bounded EN/RU
-terms and from 76 to 84 independently explainable regions. The audit now groups developer-only aliases by semantic
-domain, ranks overlap severity, and renders the unshipped whole-catalog vocabulary frontier. Sampling, history/session
-behavior, creative matching, and the 1,800 anchors remain unchanged.
+R8-A-F12 is the locally complete research-corpus and professional-vocabulary campaign at `0.1.2.0014`, following
+pushed R8-A-F11 `0.1.2.0013` at `c0513d190fd9bf2eab5a386c16bc0655f1425a67`. It preserves the stable 45-family OKLCH
+geometry while expanding the declarative, locale-independent professional-shade layer from 80 to 94 bounded EN/RU
+terms and from 84 to 99 independently explainable regions. The developer audit now owns a 250-entry master candidate
+lexicon, source-independence/provenance grouping, component-aware mass mining, domain coverage, synonym/containment
+signals, per-term core confidence, and dedicated accepted/deferred visual sheets. Sampling, history/session behavior,
+creative matching, and the 1,800 anchors remain unchanged.
 
 The retained R0 probe remains experimental evidence under `experiments/Fovium.RenderProbe`. Production code is the
 single `Fovium` assembly and does not depend on the experiment. The accepted R7-B hosted matrix restored, built, and
@@ -22,10 +23,15 @@ Windows at `RenderScaling = 1.00`.
 
 ## Current focus
 
-R8-A-F10 is pushed at commit `5fce387f0ae63a648e0a3d1d593f03a8716d98d0`. Hosted workflows were intentionally not
-polled for this campaign. R8-A-F11 is locally ready for owner review with reproducible same-seed before/after, two
-independent holdout audits, semantic overlap evidence, and a complete local Release verification. No hosted-green
-claim applies to `0.1.2.0013` until a future push and GitHub rerun.
+R8-A-F11 is pushed at commit `c0513d190fd9bf2eab5a386c16bc0655f1425a67`. Its native libheif Linux job reached the
+shared test phase and exposed a Histogram test-harness scheduling assumption: `TaskCompletionSource.SetResult` was
+treated as synchronous continuation evidence. R8-A-F12 replaces that assumption with an explicit post-cleanup read
+completion signal and deterministic stale-result waits; the production generation/identity latest-wins guard remains
+unchanged. R8-A-F12 is locally ready with canonical plus two holdout audits and complete local verification. Hosted
+verification remains pending until a future authorized push and rerun.
+The final canonical deep audit measured the indexed professional classifier at `99.3 ns/sample`, master-lexicon
+research clustering at `149.8 ms`, and the complete audit at `4.745 s`; these machine-local timings are diagnostic and
+excluded from the deterministic signature.
 
 ## Implemented application functionality
 
@@ -135,9 +141,10 @@ claim applies to `0.1.2.0013` until a future push and GitHub rerun.
   perceptual roles and undertones, lightness-dependent neutral boundaries, bounded compound hue transitions, monotonic
   lightness/chroma classes, bounded warm-neutral/earth-tone, mint, and violet/lilac-gray families, a lightness-aware
   yellow-brown/ochre boundary that leaves greener olive controls intact, truthful Transparent
-  handling, and no proprietary physical-standard claims. A declarative professional-shade layer adds 80 bounded terms
-  across purple/pink, blue, green/cyan, yellow/earth, brown, red/orange, and neutral/off-white domains. R8-A-F11 adds
-  Ruby, Cranberry, Viridian, Celadon, Antique White, Vanilla, Naples Yellow, and Espresso. Composite regions may share
+  handling, and no proprietary physical-standard claims. A declarative professional-shade layer adds 94 bounded terms
+  across purple/pink, blue, green/cyan, yellow/earth, brown, red/orange, and neutral/off-white domains. R8-A-F12 adds
+  Heliotrope, Slate Blue, Spring Green, Pine Green, Brick Red, Raw Sienna, Raw Umber, Canary Yellow,
+  Gamboge, Ecru, Buff, Goldenrod, Russet, and Heather. Composite regions may share
   one term identity without replacing broad-family identity or generic fallback; the embedded
   offline 1,800-entry creative catalog retains standard OKLab nearest matching, stable tie order, complete Russian
   stable-ID display names, and canonical-English fallback as secondary presentation data.
@@ -168,9 +175,10 @@ RAW, file associations/thumbnails, and monitor-aware output outside ordinary Win
   production-sampler evidence over bounded owner photographs, including 36 F4 points across 9 photographs, but final
   overlay balance,
   scroll/selection feel, semantic borderlines, real fractional-DPI, and Linux/macOS cursor/panel/input feel remain owner
-  visual-review territory. R8-A-F5 through F11 add systematic developer-side topology, balanced semantic-reference,
+  visual-review territory. R8-A-F5 through F12 add systematic developer-side topology, balanced semantic-reference,
   independent component-aware vocabulary-candidate, explainability, rendered contact-sheet, boundary-counterexample,
-  overlap-severity, whole-catalog frontier, and holdout evidence, not cross-platform visual acceptance or an objective
+  overlap-severity, source-independent master lexicon, core-confidence, whole-catalog frontier, and holdout evidence,
+  not cross-platform visual acceptance or an objective
   color-name ground truth.
 - Codec support beyond JPEG/PNG/static WebP/bounded 8-bit TIFF/bounded HEIF/AVIF and a huge/region-rendered-image
   strategy remain unselected.

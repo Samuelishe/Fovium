@@ -256,12 +256,28 @@ public sealed class ColorTaxonomyAuditTests
             File.WriteAllText(Path.Combine(directory, "meodai-colornames.csv"), "name,hex\nRoyal Blue,#4169e1\n");
             File.WriteAllText(Path.Combine(directory, "nbs-iscc.txt"), "\"Vivid Reddish Orange\" sRGB:E25822\n");
             File.WriteAllText(
+                Path.Combine(directory, "wikidata-colors.csv"),
+                "item,itemLabel,color\nhttp://www.wikidata.org/entity/Q1,Raw sienna,A96728\n");
+            File.WriteAllText(
+                Path.Combine(directory, "wiktionary-colors.html"),
+                "<a href=\"/wiki/raw_sienna\" title=\"raw sienna\">raw sienna</a>");
+            File.WriteAllText(Path.Combine(directory, "ridgway-1912.txt"), "RAW SIENNA and Payne's gray");
+            File.WriteAllText(Path.Combine(directory, "werner-1821.txt"), "Raw sienna");
+            File.WriteAllText(
                 Path.Combine(directory, "provenance.json"),
-                "[{\"id\":\"xkcd\",\"source\":\"https://xkcd.com/color/rgb.txt\",\"license\":\"cache only\",\"sha256\":\"abc\"}]");
+                """
+                [
+                  {"id":"xkcd","source":"https://xkcd.com/color/rgb.txt","license":"cache only","sha256":"abc","independence":"Independent","independenceGroup":"xkcd","cachePolicy":"IgnoredCacheOnly"},
+                  {"id":"wikidata-colors","source":"https://query.wikidata.org/sparql","license":"CC0","sha256":"def","independence":"Uncertain","independenceGroup":"wikimedia-structured","cachePolicy":"IgnoredCacheOnly"},
+                  {"id":"wiktionary-colors","source":"https://en.wiktionary.org/wiki/Appendix:Colors","license":"CC BY-SA","sha256":"ghi","independence":"Independent","independenceGroup":"wiktionary","cachePolicy":"IgnoredCacheOnly"},
+                  {"id":"ridgway-1912","source":"https://archive.org/","license":"Public domain","sha256":"jkl","independence":"Independent","independenceGroup":"ridgway","cachePolicy":"IgnoredCacheOnly"},
+                  {"id":"werner-1821","source":"https://archive.org/","license":"Public domain","sha256":"mno","independence":"Independent","independenceGroup":"werner","cachePolicy":"IgnoredCacheOnly"}
+                ]
+                """);
 
             var catalog = ReferenceCatalogLoader.Load(directory);
 
-            Assert.Equal(4, catalog.Anchors.Count);
+            Assert.Equal(5, catalog.Anchors.Count);
             Assert.Contains(catalog.Anchors, anchor =>
                 anchor.Dataset == "xkcd" && anchor.SemanticFamily == "Mustard");
             Assert.Contains(catalog.Anchors, anchor =>
@@ -270,14 +286,72 @@ public sealed class ColorTaxonomyAuditTests
                 anchor.Dataset == "meodai" && anchor.SemanticFamily == "Blue");
             Assert.Contains(catalog.Anchors, anchor =>
                 anchor.Dataset == "iscc-nbs-centroids" && anchor.SemanticFamily == "RedOrange");
+            Assert.Contains(catalog.Anchors, anchor =>
+                anchor.Dataset == "wikidata-colors" && anchor.SpecificTerm == "RawSienna");
+            Assert.Equal(3, catalog.LexicalOccurrences.Count(item => item.SpecificTerm == "RawSienna"));
+            Assert.Contains(catalog.LexicalOccurrences, item =>
+                item.Dataset == "ridgway-1912" && item.SpecificTerm == "PaynesGray");
             var xkcd = Assert.Single(catalog.Summaries, summary => summary.Id == "xkcd");
             Assert.Equal("cache only", xkcd.License);
             Assert.Equal("abc", xkcd.Sha256);
+            Assert.Equal("Independent", xkcd.Independence);
+            Assert.Equal("xkcd", xkcd.IndependenceGroup);
+            Assert.Equal("IgnoredCacheOnly", xkcd.CachePolicy);
+            Assert.Equal(2, Assert.Single(catalog.Summaries, summary => summary.Id == "ridgway-1912")
+                .LexicalOccurrenceCount);
         }
         finally
         {
             Directory.Delete(directory, recursive: true);
         }
+    }
+
+    [Fact]
+    public void MasterLexiconCountsIndependentProvenanceGroupsInsteadOfMirrors()
+    {
+        var anchors = new[]
+        {
+            CreateSpecificReference("historic-a", "raw sienna", new AuditRgb(169, 103, 40), "RawSienna"),
+            CreateSpecificReference("historic-b", "natural sienna", new AuditRgb(171, 107, 45), "RawSienna")
+        };
+        var catalog = new ReferenceCatalog(
+            anchors,
+            [
+                CreateSummary("historic-a", "Independent", "same-historic-source"),
+                CreateSummary("historic-b", "Independent", "same-historic-source"),
+                CreateSummary("mirror", "Correlated", "same-historic-source")
+            ])
+        {
+            LexicalOccurrences = [new ReferenceLexicalOccurrence("mirror", "raw sienna", "RawSienna")]
+        };
+
+        var entry = Assert.Single(
+            MasterCandidateLexiconAudit.Analyze(catalog),
+            item => item.CanonicalTerm == "RawSienna");
+
+        Assert.Equal(3, entry.SourceOccurrences.Count);
+        Assert.Equal(1, entry.IndependentSourceCount);
+        Assert.Equal(CandidateResearchStatus.Accepted, entry.Status);
+        Assert.True(entry.AnchorCount >= 2);
+        Assert.True(entry.CompactComponentCount >= 1);
+    }
+
+    [Theory]
+    [InlineData("RawSienna", CandidateResearchStatus.Accepted)]
+    [InlineData("RoyalPurple", CandidateResearchStatus.Synonym)]
+    [InlineData("Sapphire", CandidateResearchStatus.Rejected)]
+    [InlineData("Parchment", CandidateResearchStatus.Deferred)]
+    [InlineData("AliceBlue", CandidateResearchStatus.Unreviewed)]
+    public void MasterLexiconRetainsExplicitResearchDisposition(
+        string term,
+        object expected)
+    {
+        var descriptor = Assert.Single(
+            ProfessionalTermResearchCatalog.Terms,
+            item => item.CanonicalTerm == term);
+
+        Assert.Equal((CandidateResearchStatus)expected, descriptor.Status);
+        Assert.False(string.IsNullOrWhiteSpace(descriptor.Reason));
     }
 
     [Fact]
@@ -407,14 +481,33 @@ public sealed class ColorTaxonomyAuditTests
         Assert.Equal(first.SamplesWithMultipleTerms, repeated.SamplesWithMultipleTerms);
         Assert.Equal(first.Pairs, repeated.Pairs);
         Assert.Equal(first.Regions, repeated.Regions);
+        Assert.Equal(first.Terms, repeated.Terms);
         Assert.Equal(samples.Length, first.SampleCount);
         Assert.Equal(regionIds, first.Regions.Select(item => item.RegionStableId));
+        Assert.Equal(
+            ProfessionalShadeCatalog.Definitions.Count,
+            first.Terms.Count);
+        Assert.All(first.Terms, term =>
+        {
+            Assert.True(term.MatchedSamples >= 0);
+            Assert.True(term.WinningSamples >= 0);
+            Assert.InRange(term.MaximumContainmentRatio, 0, 1);
+        });
         Assert.All(first.Pairs, pair =>
         {
             Assert.NotEqual(pair.WinnerTerm, pair.CompetingTerm);
             Assert.True(pair.SampleCount > 0);
             Assert.NotEmpty(pair.RepresentativeHex);
             Assert.True(pair.SampleShare > 0);
+            Assert.InRange(pair.WinnerOverlapRatio, 0, 1);
+            Assert.InRange(pair.CompetitorContainmentRatio, 0, 1);
+            Assert.InRange(pair.SimilarityScore, 0, 1);
+            Assert.Equal(
+                Math.Max(pair.WinnerOverlapRatio, pair.CompetitorContainmentRatio) >= 0.80,
+                pair.NearTotalContainment);
+            Assert.Equal(
+                pair.NearTotalContainment && pair.SimilarityScore >= 0.65,
+                pair.SameCoreDuplicateWarning);
             Assert.NotEqual(ProfessionalOverlapSeverity.Unknown, pair.Severity);
         });
         Assert.Equal(
@@ -438,6 +531,24 @@ public sealed class ColorTaxonomyAuditTests
     {
         Assert.Equal((ProfessionalOverlapSeverity)expected,
             ProfessionalTermResearchCatalog.ClassifyOverlap(winner, competitor));
+    }
+
+    [Theory]
+    [InlineData(0.66, 0.84, 0.74, true)]
+    [InlineData(0.99, 0.05, 0.10, false)]
+    [InlineData(0.79, 0.79, 0.90, false)]
+    public void SameCoreWarningRequiresContainmentAndSymmetricSimilarity(
+        double winnerOverlap,
+        double competitorContainment,
+        double similarity,
+        bool expected)
+    {
+        Assert.Equal(
+            expected,
+            ProfessionalShadeOverlapAudit.IsSameCoreDuplicate(
+                winnerOverlap,
+                competitorContainment,
+                similarity));
     }
 
     [Fact]
@@ -522,13 +633,17 @@ public sealed class ColorTaxonomyAuditTests
                     Metrics = report.Metrics with
                     {
                         RuntimeSeconds = 9.75,
-                        ProfessionalClassificationNanosecondsPerSample = 1234.5
+                        ProfessionalClassificationNanosecondsPerSample = 1234.5,
+                        ResearchClusteringMilliseconds = 678.9
                     }
                 });
 
             Assert.Equal(first, second);
             using var json = JsonDocument.Parse(File.ReadAllText(Path.Combine(secondDirectory, "summary.json")));
             Assert.Equal(9.75, json.RootElement.GetProperty("metrics").GetProperty("runtimeSeconds").GetDouble());
+            Assert.Equal(
+                678.9,
+                json.RootElement.GetProperty("metrics").GetProperty("researchClusteringMilliseconds").GetDouble());
             Assert.True(File.Exists(Path.Combine(firstDirectory, "summary.md")));
             Assert.True(File.Exists(Path.Combine(firstDirectory, "contact-sheet.svg")));
             Assert.True(File.Exists(Path.Combine(firstDirectory, "balanced-spectrum.html")));
@@ -538,12 +653,16 @@ public sealed class ColorTaxonomyAuditTests
             Assert.True(File.Exists(Path.Combine(firstDirectory, "vocabulary-gaps.html")));
             Assert.True(File.Exists(Path.Combine(firstDirectory, "vocabulary-candidates.html")));
             Assert.True(File.Exists(Path.Combine(firstDirectory, "vocabulary-candidate-components.html")));
+            Assert.True(File.Exists(Path.Combine(firstDirectory, "master-candidate-lexicon.html")));
             Assert.True(File.Exists(Path.Combine(firstDirectory, "professional-terms.html")));
             Assert.True(File.Exists(Path.Combine(firstDirectory, "campaign-terms.svg")));
+            Assert.True(File.Exists(Path.Combine(firstDirectory, "f12-accepted-terms.html")));
+            Assert.True(File.Exists(Path.Combine(firstDirectory, "f12-deferred-candidates.svg")));
             Assert.True(File.Exists(Path.Combine(firstDirectory, "professional-boundary-probes.html")));
             Assert.True(File.Exists(Path.Combine(firstDirectory, "holdout-samples.svg")));
             Assert.True(File.Exists(Path.Combine(firstDirectory, "changed-regions.html")));
             Assert.True(File.Exists(Path.Combine(firstDirectory, "professional-overlaps.html")));
+            Assert.True(File.Exists(Path.Combine(firstDirectory, "professional-term-cores.html")));
         }
         finally
         {
@@ -583,14 +702,24 @@ public sealed class ColorTaxonomyAuditTests
             Assert.DoesNotContain("No reference cache",
                 File.ReadAllText(Path.Combine(directory, "vocabulary-frontier.html")));
             using var json = JsonDocument.Parse(File.ReadAllText(Path.Combine(directory, "summary.json")));
-            Assert.Equal("fovium-color-taxonomy-audit/v7", json.RootElement.GetProperty("schema").GetString());
+            Assert.Equal("fovium-color-taxonomy-audit/v8", json.RootElement.GetProperty("schema").GetString());
             Assert.True(json.RootElement.GetProperty("balancedCohort").GetArrayLength() > 300);
             Assert.True(json.RootElement.GetProperty("specificity").GetProperty("genericFamilyOnly").GetInt32() > 0);
-            Assert.Equal(95, json.RootElement.GetProperty("professionalTermSamples").GetArrayLength());
-            Assert.Equal(80, json.RootElement.GetProperty("professionalTermCoverage").EnumerateObject().Count());
+            Assert.Equal(94, json.RootElement.GetProperty("professionalTermSamples").GetArrayLength());
+            Assert.Equal(94, json.RootElement.GetProperty("professionalTermSamples")
+                .EnumerateArray()
+                .Select(item => item.GetProperty("region").GetString())
+                .Distinct(StringComparer.Ordinal)
+                .Count());
+            Assert.True(json.RootElement.GetProperty("professionalTermCoverage").EnumerateObject().Count() >= 80);
+            Assert.True(json.RootElement.GetProperty("masterCandidateLexicon").GetArrayLength() >= 200);
+            Assert.True(json.RootElement.GetProperty("metrics")
+                .GetProperty("researchClusteringMilliseconds").GetDouble() > 0);
+            Assert.True(json.RootElement.GetProperty("candidateDomainCoverage").GetArrayLength() >= 7);
             Assert.True(json.RootElement.GetProperty("professionalOverlaps").GetProperty("sampleCount").GetInt32() > 0);
             Assert.Equal(JsonValueKind.String, json.RootElement.GetProperty("professionalOverlaps")
                 .GetProperty("pairs")[0].GetProperty("severity").ValueKind);
+            Assert.Equal(94, json.RootElement.GetProperty("professionalTermCores").GetArrayLength());
         }
         finally
         {
@@ -647,6 +776,17 @@ public sealed class ColorTaxonomyAuditTests
         CreateReference(dataset, name, rgb, SemanticNameNormalizer.Normalize(name)) with
         {
             SpecificTerm = specificTerm
+        };
+
+    private static ReferenceDatasetSummary CreateSummary(
+        string id,
+        string independence,
+        string independenceGroup) =>
+        new(id, 0, 0, $"https://example.test/{id}", "test-only", id)
+        {
+            Independence = independence,
+            IndependenceGroup = independenceGroup,
+            CachePolicy = "IgnoredCacheOnly"
         };
 
     private static string CreateTemporaryDirectory()

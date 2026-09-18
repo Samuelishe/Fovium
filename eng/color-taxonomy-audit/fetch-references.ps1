@@ -42,8 +42,73 @@ $sources = @(
         Url = 'https://raw.githubusercontent.com/taktoa/slib/05160e4ce21c65f99fea78dc4b29463e2c14bb22/nbs-iscc.txt'
         Version = 'taktoa/slib commit 05160e4ce21c65f99fea78dc4b29463e2c14bb22'
         License = 'File-header redistribution permission; ignored local audit cache only'
+        Independence = 'Independent'
+        IndependenceGroup = 'iscc-nbs'
+        CachePolicy = 'IgnoredCacheOnly'
+    },
+    @{
+        Id = 'ridgway-1912'
+        File = 'ridgway-1912.txt'
+        Url = 'https://archive.org/download/colorstandardsco00ridg/colorstandardsco00ridg_djvu.txt'
+        Version = 'Robert Ridgway, Color Standards and Color Nomenclature (1912), Internet Archive OCR snapshot'
+        License = 'Public domain; Smithsonian Libraries identifies the work as CC0/public domain'
+        Independence = 'Independent'
+        IndependenceGroup = 'ridgway'
+        CachePolicy = 'IgnoredCacheOnly'
+    },
+    @{
+        Id = 'werner-1821'
+        File = 'werner-1821.txt'
+        Url = 'https://archive.org/download/wernersnomencla00wern/wernersnomencla00wern_djvu.txt'
+        Version = "Werner/Syme, Werner's Nomenclature of Colours (1821), Internet Archive OCR snapshot"
+        License = 'Public domain; Smithsonian Libraries identifies the work as CC0/public domain'
+        Independence = 'Independent'
+        IndependenceGroup = 'werner'
+        CachePolicy = 'IgnoredCacheOnly'
     }
 )
+
+foreach ($source in $sources) {
+    if (-not $source.ContainsKey('Independence')) {
+        $source.Independence = switch ($source.Id) {
+            'meodai' { 'Correlated' }
+            'css' { 'Independent' }
+            'xkcd' { 'Independent' }
+            default { 'Independent' }
+        }
+        $source.IndependenceGroup = switch ($source.Id) {
+            'meodai' { 'meodai-color-names' }
+            'iscc-nbs' { 'iscc-nbs' }
+            default { $source.Id }
+        }
+        $source.CachePolicy = 'IgnoredCacheOnly'
+    }
+}
+
+$wikidataQuery = @'
+SELECT ?item ?itemLabel ?hex WHERE {
+  ?item wdt:P31/wdt:P279* wd:Q1075;
+        wdt:P465 ?hex.
+  FILTER(REGEX(STR(?hex), "^[0-9A-Fa-f]{6}$"))
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+}
+ORDER BY ?itemLabel ?hex
+'@
+$wikidataDestination = Join-Path $resolvedCache 'wikidata-colors.csv'
+Invoke-WebRequest `
+    -Uri 'https://query.wikidata.org/sparql' `
+    -Method Post `
+    -Body @{ query = $wikidataQuery } `
+    -Headers @{ Accept = 'text/csv'; 'User-Agent' = 'FoviumColorTaxonomyAudit/0.1' } `
+    -OutFile $wikidataDestination `
+    -UseBasicParsing
+
+$wiktionaryDestination = Join-Path $resolvedCache 'wiktionary-colors.html'
+Invoke-WebRequest `
+    -Uri 'https://en.wiktionary.org/wiki/Appendix:Colors' `
+    -Headers @{ 'User-Agent' = 'FoviumColorTaxonomyAudit/0.1 (research cache; contact repository owner)' } `
+    -OutFile $wiktionaryDestination `
+    -UseBasicParsing
 
 $provenance = foreach ($source in $sources) {
     $destination = Join-Path $resolvedCache $source.File
@@ -57,7 +122,36 @@ $provenance = foreach ($source in $sources) {
         retrievedUtc = [DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ')
         file = $source.File
         sha256 = $hash
+        independence = $source.Independence
+        independenceGroup = $source.IndependenceGroup
+        cachePolicy = $source.CachePolicy
     }
+}
+
+$provenance += [pscustomobject][ordered]@{
+    id = 'wikidata-colors'
+    source = 'https://query.wikidata.org/sparql; items that are colors and carry sRGB color hex triplet (P465)'
+    version = 'live CC0 query snapshot'
+    license = 'Wikidata structured data: CC0 1.0'
+    retrievedUtc = [DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ')
+    file = 'wikidata-colors.csv'
+    sha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $wikidataDestination).Hash.ToLowerInvariant()
+    independence = 'Uncertain'
+    independenceGroup = 'wikimedia-structured'
+    cachePolicy = 'IgnoredCacheOnly'
+}
+
+$provenance += [pscustomobject][ordered]@{
+    id = 'wiktionary-colors'
+    source = 'https://en.wiktionary.org/wiki/Appendix:Colors'
+    version = 'live English color-name appendix snapshot'
+    license = 'Wiktionary text: CC BY-SA 4.0 / GFDL; names used as lexical evidence in ignored cache only'
+    retrievedUtc = [DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ')
+    file = 'wiktionary-colors.html'
+    sha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $wiktionaryDestination).Hash.ToLowerInvariant()
+    independence = 'Independent'
+    independenceGroup = 'wiktionary'
+    cachePolicy = 'IgnoredCacheOnly'
 }
 
 $provenance |

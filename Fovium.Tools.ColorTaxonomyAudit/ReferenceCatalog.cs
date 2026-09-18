@@ -21,10 +21,23 @@ internal sealed record ReferenceCatalog(
     IReadOnlyList<ReferenceDatasetSummary> Summaries)
 {
     public static ReferenceCatalog Empty { get; } = new([], []);
+
+    public IReadOnlyList<ReferenceLexicalOccurrence> LexicalOccurrences { get; init; } = [];
 }
+
+internal sealed record ReferenceLexicalOccurrence(
+    string Dataset,
+    string Name,
+    string SpecificTerm);
 
 internal static partial class ReferenceCatalogLoader
 {
+    private static readonly Regex WiktionaryTitlePattern = new(
+        "<a href=\"/wiki/[^\"#]+(?:#English)?\" title=\"(?<name>[^\"]+)\">",
+        RegexOptions.CultureInvariant);
+
+    private static readonly Regex WhitespacePattern = new(@"\s+", RegexOptions.CultureInvariant);
+
     private static readonly JsonSerializerOptions ProvenanceJsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
@@ -43,23 +56,42 @@ internal static partial class ReferenceCatalogLoader
         LoadCss(Path.Combine(directory, "css-color-4.html"), anchors);
         LoadMeodai(Path.Combine(directory, "meodai-colornames.csv"), anchors);
         LoadIsccNbs(Path.Combine(directory, "nbs-iscc.txt"), anchors);
+        LoadWikidata(Path.Combine(directory, "wikidata-colors.csv"), anchors);
 
-        var summaries = anchors
-            .GroupBy(anchor => anchor.Dataset, StringComparer.Ordinal)
-            .OrderBy(group => group.Key, StringComparer.Ordinal)
-            .Select(group =>
+        var lexicalOccurrences = new List<ReferenceLexicalOccurrence>();
+        LoadWiktionary(Path.Combine(directory, "wiktionary-colors.html"), lexicalOccurrences);
+        LoadLexicalText(Path.Combine(directory, "ridgway-1912.txt"), "ridgway-1912", lexicalOccurrences);
+        LoadLexicalText(Path.Combine(directory, "werner-1821.txt"), "werner-1821", lexicalOccurrences);
+
+        var summaries = provenance.Values
+            .OrderBy(item => item.Id, StringComparer.Ordinal)
+            .Select(item =>
             {
-                provenance.TryGetValue(group.Key, out var item);
+                var sourceAnchors = anchors.Where(anchor => anchor.Dataset == item.Id).ToArray();
                 return new ReferenceDatasetSummary(
-                    group.Key,
-                    group.Count(),
-                    group.Count(anchor => anchor.SemanticFamily != "Unknown"),
-                    item?.Source ?? string.Empty,
-                    item?.License ?? string.Empty,
-                    item?.Sha256 ?? string.Empty);
+                    item.Id,
+                    sourceAnchors.Length,
+                    sourceAnchors.Count(anchor => anchor.SemanticFamily != "Unknown"),
+                    item.Source,
+                    item.License,
+                    item.Sha256)
+                {
+                    Independence = item.Independence,
+                    IndependenceGroup = item.IndependenceGroup,
+                    CachePolicy = item.CachePolicy,
+                    LexicalOccurrenceCount = lexicalOccurrences.Count(occurrence => occurrence.Dataset == item.Id)
+                };
             })
             .ToArray();
-        return new ReferenceCatalog(anchors, summaries);
+        return new ReferenceCatalog(anchors, summaries)
+        {
+            LexicalOccurrences = lexicalOccurrences
+                .DistinctBy(item => (item.Dataset, item.Name, item.SpecificTerm))
+                .OrderBy(item => item.SpecificTerm, StringComparer.Ordinal)
+                .ThenBy(item => item.Dataset, StringComparer.Ordinal)
+                .ThenBy(item => item.Name, StringComparer.Ordinal)
+                .ToArray()
+        };
     }
 
     private static void LoadXkcd(string path, ICollection<ReferenceAnchor> anchors)
@@ -132,6 +164,64 @@ internal static partial class ReferenceCatalogLoader
             {
                 Add("iscc-nbs-centroids", match.Groups["name"].Value, rgb, anchors);
             }
+        }
+    }
+
+    private static void LoadWikidata(string path, ICollection<ReferenceAnchor> anchors)
+    {
+        if (!File.Exists(path))
+        {
+            return;
+        }
+
+        foreach (var line in File.ReadLines(path).Skip(1))
+        {
+            var fields = ParseCsv(line);
+            if (fields.Count < 3 ||
+                (fields[1].StartsWith('Q') && fields[1].Skip(1).All(char.IsDigit)) ||
+                !TryParseHex(fields[2], out var rgb))
+            {
+                continue;
+            }
+
+            Add("wikidata-colors", fields[1], rgb, anchors);
+        }
+    }
+
+    private static void LoadWiktionary(
+        string path,
+        ICollection<ReferenceLexicalOccurrence> occurrences)
+    {
+        if (!File.Exists(path))
+        {
+            return;
+        }
+
+        var html = File.ReadAllText(path);
+        foreach (Match match in WiktionaryTitlePattern.Matches(html))
+        {
+            var name = System.Net.WebUtility.HtmlDecode(match.Groups["name"].Value);
+            if (SpecificColorTermNormalizer.Normalize(name) is { } term)
+            {
+                occurrences.Add(new ReferenceLexicalOccurrence("wiktionary-colors", name, term));
+            }
+        }
+    }
+
+    private static void LoadLexicalText(
+        string path,
+        string dataset,
+        ICollection<ReferenceLexicalOccurrence> occurrences)
+    {
+        if (!File.Exists(path))
+        {
+            return;
+        }
+
+        var text = WhitespacePattern.Replace(File.ReadAllText(path), " ");
+        foreach (var (term, alias) in SpecificColorTermNormalizer.FindOccurrences(text))
+        {
+            occurrences.Add(new ReferenceLexicalOccurrence(dataset, alias, term));
         }
     }
 
@@ -219,7 +309,14 @@ internal static partial class ReferenceCatalogLoader
         return false;
     }
 
-    private sealed record ProvenanceItem(string Id, string Source, string License, string Sha256);
+    private sealed record ProvenanceItem(
+        string Id,
+        string Source,
+        string License,
+        string Sha256,
+        string Independence = "Uncertain",
+        string IndependenceGroup = "",
+        string CachePolicy = "IgnoredCacheOnly");
 
     [GeneratedRegex(@"(?<hex>#[0-9a-fA-F]{6})\s*$", RegexOptions.CultureInvariant)]
     private static partial Regex HexAtEndRegex();
@@ -244,6 +341,139 @@ internal static class SpecificColorTermNormalizer
         // research cluster but never become a runtime classification rule.
         // Compound aliases precede their broader tokens so discovery keeps the
         // conventional specific identity rather than collapsing into a parent.
+        ("Alabaster", ["alabaster"]),
+        ("AlizarinCrimson", ["alizarin crimson", "alizarine crimson"]),
+        ("AliceBlue", ["alice blue"]),
+        ("Almond", ["almond"]),
+        ("Amaranth", ["amaranth"]),
+        ("Artichoke", ["artichoke"]),
+        ("AshGray", ["ash gray", "ash grey"]),
+        ("Asparagus", ["asparagus"]),
+        ("Auburn", ["auburn"]),
+        ("BabyPink", ["baby pink"]),
+        ("BattleshipGray", ["battleship gray", "battleship grey"]),
+        ("Beaver", ["beaver"]),
+        ("Biscuit", ["biscuit"]),
+        ("Bisque", ["bisque"]),
+        ("BloodRed", ["blood red"]),
+        ("Bone", ["bone white", "bone"]),
+        ("BrickRed", ["brick red"]),
+        ("BritishRacingGreen", ["british racing green"]),
+        ("Buckskin", ["buckskin"]),
+        ("Buff", ["buff"]),
+        ("BurntOrange", ["burnt orange"]),
+        ("CadetBlue", ["cadet blue"]),
+        ("CadmiumRed", ["cadmium red"]),
+        ("CadmiumYellow", ["cadmium yellow"]),
+        ("CambridgeBlue", ["cambridge blue"]),
+        ("Camel", ["camel"]),
+        ("Cappuccino", ["cappuccino"]),
+        ("Cardinal", ["cardinal red", "cardinal"]),
+        ("Carnelian", ["carnelian"]),
+        ("Carrot", ["carrot orange", "carrot"]),
+        ("Cerise", ["cerise"]),
+        ("Chamois", ["chamois"]),
+        ("ChineseRed", ["chinese red"]),
+        ("Cinnabar", ["cinnabar red", "cinnabar"]),
+        ("Citrine", ["citrine"]),
+        ("Citron", ["citron"]),
+        ("Claret", ["claret"]),
+        ("Cocoa", ["cocoa brown", "cocoa"]),
+        ("Cochineal", ["cochineal red", "cochineal"]),
+        ("CoolGray", ["cool gray", "cool grey"]),
+        ("Daffodil", ["daffodil yellow", "daffodil"]),
+        ("Dandelion", ["dandelion yellow", "dandelion"]),
+        ("DesertSand", ["desert sand"]),
+        ("DuckEggBlue", ["duck egg blue", "duck-egg blue"]),
+        ("EauDeNil", ["eau de nil"]),
+        ("Ebony", ["ebony"]),
+        ("EgyptianBlue", ["egyptian blue"]),
+        ("Eucalyptus", ["eucalyptus"]),
+        ("Fawn", ["fawn"]),
+        ("Firebrick", ["fire brick", "firebrick"]),
+        ("Flame", ["flame red", "flame"]),
+        ("Fuscous", ["fuscous"]),
+        ("Gainsboro", ["gainsboro"]),
+        ("Gamboge", ["gamboge"]),
+        ("Garnet", ["garnet red", "garnet"]),
+        ("GentianBlue", ["gentian blue"]),
+        ("Geranium", ["geranium red", "geranium"]),
+        ("Ginger", ["ginger"]),
+        ("Glaucous", ["glaucous"]),
+        ("Goldenrod", ["goldenrod"]),
+        ("GreenEarth", ["terre verte", "green earth"]),
+        ("Greige", ["greige"]),
+        ("HarvestGold", ["harvest gold"]),
+        ("Hazel", ["hazel"]),
+        ("Heliotrope", ["heliotrope"]),
+        ("Henna", ["henna"]),
+        ("HotPink", ["hot pink"]),
+        ("IndianRed", ["indian red"]),
+        ("IndianYellow", ["indian yellow"]),
+        ("IronGray", ["iron gray", "iron grey"]),
+        ("Jet", ["jet black", "jet"]),
+        ("Jonquil", ["jonquil"]),
+        ("JungleGreen", ["jungle green"]),
+        ("LapisLazuli", ["lapis lazuli"]),
+        ("LaurelGreen", ["laurel green"]),
+        ("Licorice", ["liquorice", "licorice"]),
+        ("LincolnGreen", ["lincoln green"]),
+        ("Loden", ["loden green", "loden"]),
+        ("Madder", ["rose madder", "madder red", "madder"]),
+        ("Magnolia", ["magnolia"]),
+        ("Malachite", ["malachite green", "malachite"]),
+        ("Manatee", ["manatee gray", "manatee grey", "manatee"]),
+        ("Mocha", ["mocha"]),
+        ("MummyBrown", ["mummy brown"]),
+        ("Myrtle", ["myrtle green", "myrtle"]),
+        ("NileBlue", ["nile blue"]),
+        ("Oatmeal", ["oatmeal"]),
+        ("OldGold", ["old gold"]),
+        ("Onyx", ["onyx"]),
+        ("Oxblood", ["oxblood red", "oxblood"]),
+        ("Oyster", ["oyster white", "oyster"]),
+        ("Paprika", ["paprika"]),
+        ("ParisGreen", ["paris green"]),
+        ("PeacockBlue", ["peacock blue"]),
+        ("PeaGreen", ["pea green"]),
+        ("PearlGray", ["pearl gray", "pearl grey"]),
+        ("PhthaloBlue", ["phthalocyanine blue", "phthalo blue"]),
+        ("PhthaloGreen", ["phthalocyanine green", "phthalo green"]),
+        ("Platinum", ["platinum gray", "platinum grey", "platinum"]),
+        ("Pomegranate", ["pomegranate red", "pomegranate"]),
+        ("PompeianRed", ["pompeian red"]),
+        ("Poppy", ["poppy red", "poppy"]),
+        ("Primrose", ["primrose yellow", "primrose"]),
+        ("Puce", ["puce"]),
+        ("Putty", ["putty"]),
+        ("Quartz", ["quartz gray", "quartz grey", "quartz"]),
+        ("RawSienna", ["raw sienna", "natural sienna"]),
+        ("RifleGreen", ["rifle green"]),
+        ("RobinsEggBlue", ["robin's egg blue", "robin egg blue"]),
+        ("RoyalPurple", ["royal purple"]),
+        ("Russet", ["russet brown", "russet"]),
+        ("Sable", ["sable brown", "sable"]),
+        ("SaddleBrown", ["saddle brown"]),
+        ("Sangria", ["sangria red", "sangria"]),
+        ("SaxeBlue", ["saxe blue"]),
+        ("Seashell", ["sea shell", "seashell"]),
+        ("ShockingPink", ["shocking pink"]),
+        ("SlateBlue", ["slate blue"]),
+        ("SpringGreen", ["spring green"]),
+        ("Straw", ["straw yellow", "straw"]),
+        ("Strawberry", ["strawberry red", "strawberry"]),
+        ("Sunflower", ["sunflower yellow", "sunflower"]),
+        ("Tawny", ["tawny brown", "tawny"]),
+        ("Teak", ["teak brown", "teak"]),
+        ("Timberwolf", ["timberwolf gray", "timberwolf grey", "timberwolf"]),
+        ("TyrianPurple", ["tyrian purple"]),
+        ("VandykeBrown", ["vandyke brown", "van dyke brown"]),
+        ("VenetianRed", ["venetian red"]),
+        ("Verdigris", ["verdigris"]),
+        ("Walnut", ["walnut brown", "walnut"]),
+        ("WedgwoodBlue", ["wedgwood blue"]),
+        ("Wenge", ["wenge"]),
+        ("Zaffre", ["zaffre blue", "zaffre"]),
         ("Aubergine", ["aubergine", "eggplant"]),
         ("Amethyst", ["amethyst"]),
         ("Orchid", ["orchid"]),
@@ -363,6 +593,12 @@ internal static class SpecificColorTermNormalizer
         ("Slate", ["slate"]),
     ];
 
+    private static readonly IReadOnlyList<(string Term, string Alias)> AliasRules = Rules
+        .SelectMany(rule => rule.Aliases.Select(alias => (rule.Term, Alias: alias)))
+        .OrderByDescending(rule => rule.Alias.Length)
+        .ThenBy(rule => rule.Term, StringComparer.Ordinal)
+        .ToArray();
+
     internal static IReadOnlyList<(string Term, string[] Aliases)> Vocabulary => Rules;
 
     public static string? Normalize(string name)
@@ -373,15 +609,45 @@ internal static class SpecificColorTermNormalizer
             return null;
         }
 
-        foreach (var (term, aliases) in Rules)
+        foreach (var (term, alias) in AliasRules)
         {
-            if (aliases.Any(alias => ContainsToken(normalized, alias)))
+            if (ContainsToken(normalized, alias))
             {
                 return term;
             }
         }
 
         return null;
+    }
+
+    internal static IReadOnlyList<(string Term, string Alias)> FindOccurrences(string text)
+    {
+        var normalized = text.ToLowerInvariant();
+        var occupied = new bool[normalized.Length];
+        var occurrences = new List<(string Term, string Alias)>();
+        foreach (var (term, alias) in AliasRules)
+        {
+            var index = normalized.IndexOf(alias, StringComparison.Ordinal);
+            while (index >= 0)
+            {
+                var end = index + alias.Length;
+                var before = index == 0 || !char.IsLetterOrDigit(normalized[index - 1]);
+                var after = end == normalized.Length || !char.IsLetterOrDigit(normalized[end]);
+                if (before && after && !occupied.AsSpan(index, alias.Length).Contains(true))
+                {
+                    occupied.AsSpan(index, alias.Length).Fill(true);
+                    occurrences.Add((term, alias));
+                }
+
+                index = normalized.IndexOf(alias, index + 1, StringComparison.Ordinal);
+            }
+        }
+
+        return occurrences
+            .Distinct()
+            .OrderBy(item => item.Term, StringComparer.Ordinal)
+            .ThenBy(item => item.Alias, StringComparer.Ordinal)
+            .ToArray();
     }
 
     private static bool ContainsToken(string value, string term)

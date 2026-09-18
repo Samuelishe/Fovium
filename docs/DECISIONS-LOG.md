@@ -722,7 +722,7 @@ new geometry engine or importing external datasets into the viewer.
 
 ## D-068 — Vocabulary research metadata and overlap severity remain developer-only
 
-Status: Implemented in the local R8-A-F11 candidate; owner acceptance pending.
+Status: Implemented and accepted in pushed R8-A-F11.
 
 As the professional catalog grows, audit-only aliases group spelling and conventional-name variants under one candidate
 identity, while semantic domains organize whole-catalog discovery and classify sampled overlap as benign sibling,
@@ -734,3 +734,20 @@ Production continues to use the existing deterministic parent-family-indexed, mu
 accepted only as a project-owned bounded core after independent terminology evidence, rendered-swatch review, sibling
 counterexamples, canonical comparison, and untuned holdouts. Broad historical aggregates, material appearance, and
 pigment composition do not become product claims, and an ambiguous candidate retains the broad-family fallback.
+
+## D-069 — Master color lexicon and source independence remain developer research infrastructure
+
+Status: Implemented in the local R8-A-F12 candidate; hosted verification pending.
+
+Professional vocabulary research uses one developer-only master lexicon that is intentionally broader than the runtime
+enum. It merges normalized canonical identities, aliases, anchor and lexical occurrences, source-independence groups,
+compact components, noise, dispersion, family distribution, nearest shipped terms, RU candidates, and explicit
+accepted/deferred/rejected/synonym dispositions. Correlated mirrors sharing one provenance group do not count as
+independent confirmation. Sources whose redistribution or semantics are unsuitable remain ignored-cache or manual
+evidence and never become bundled assets.
+
+Mass mining ranks the complete lexicon before acceptance batches. Production still receives only project-owned bounded
+OKLCH cores with EN/RU keys, reachability, counterexamples, rendered review, overlap/containment evidence, canonical
+comparison, and two untuned holdouts. The audit may flag near-total containment and same-core similarity, but useful
+specific siblings are not rejected merely because their compact region sits inside a broader term. No research metadata
+or downloaded corpus participates in viewer runtime classification.

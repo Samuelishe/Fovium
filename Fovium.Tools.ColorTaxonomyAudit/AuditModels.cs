@@ -80,6 +80,40 @@ internal sealed record VocabularyCandidateComponentProfile(
     AuditClassification Representative,
     IReadOnlyDictionary<string, int> ProductionFamilyCoverage);
 
+internal sealed record MasterCandidateSourceOccurrence(
+    string Dataset,
+    string Independence,
+    string IndependenceGroup,
+    IReadOnlyList<string> Names,
+    int AnchorCount);
+
+internal sealed record MasterCandidateLexiconEntry(
+    string CanonicalTerm,
+    IReadOnlyList<string> Aliases,
+    string ResearchDomain,
+    CandidateResearchStatus Status,
+    string Reason,
+    string RussianCandidate,
+    IReadOnlyList<MasterCandidateSourceOccurrence> SourceOccurrences,
+    int IndependentSourceCount,
+    int AnchorCount,
+    int CompactComponentCount,
+    double NoiseFraction,
+    double MedianDeltaE,
+    double P90DeltaE,
+    AuditClassification? Representative,
+    IReadOnlyDictionary<string, int> ProductionFamilyCoverage,
+    string NearestShippedTerm,
+    double? NearestShippedDeltaE,
+    double PriorityScore);
+
+internal sealed record CandidateDomainCoverage(
+    string Domain,
+    int CandidateCount,
+    int AcceptedCount,
+    int EvidenceRichCount,
+    string Density);
+
 internal sealed record AuditReferenceAssessment(
     string ProductSemantic,
     string ConsensusSemantic,
@@ -171,6 +205,8 @@ internal sealed record AuditMetrics(
     double RuntimeSeconds)
 {
     public double ProfessionalClassificationNanosecondsPerSample { get; init; }
+
+    public double ResearchClusteringMilliseconds { get; init; }
 }
 
 internal sealed record AuditReport(
@@ -199,6 +235,10 @@ internal sealed record AuditReport(
 
     public IReadOnlyList<VocabularyCandidateProfile> VocabularyCandidates { get; init; } = [];
 
+    public IReadOnlyList<MasterCandidateLexiconEntry> MasterCandidateLexicon { get; init; } = [];
+
+    public IReadOnlyList<CandidateDomainCoverage> CandidateDomainCoverage { get; init; } = [];
+
     public IReadOnlyList<OwnerCandidateSample> ProfessionalTermSamples { get; init; } = [];
 
     public IReadOnlyList<OwnerCandidateSample> ProfessionalBoundarySamples { get; init; } = [];
@@ -207,8 +247,22 @@ internal sealed record AuditReport(
         new Dictionary<string, int>(StringComparer.Ordinal);
 
     public ProfessionalOverlapReport ProfessionalOverlaps { get; init; } =
-        new(0, 0, [], []);
+        new(0, 0, [], [], []);
+
+    public IReadOnlyList<ProfessionalTermCoreProfile> ProfessionalTermCores { get; init; } = [];
 }
+
+internal sealed record ProfessionalTermCoreProfile(
+    string Term,
+    string RepresentativeCoreHex,
+    int RegionCount,
+    int InteriorProbeCount,
+    int WinningInteriorProbeCount,
+    int MatchedSamples,
+    int WinningSamples,
+    double MaximumContainmentRatio,
+    string ConfidenceTier,
+    bool IsMostlyDisputed);
 
 internal sealed record AuditComparison(
     string BaselinePath,
@@ -230,4 +284,13 @@ internal sealed record ReferenceDatasetSummary(
     int NormalizedAnchorCount,
     string Source,
     string License,
-    string Sha256);
+    string Sha256)
+{
+    public string Independence { get; init; } = "Uncertain";
+
+    public string IndependenceGroup { get; init; } = string.Empty;
+
+    public string CachePolicy { get; init; } = "IgnoredCacheOnly";
+
+    public int LexicalOccurrenceCount { get; init; }
+}

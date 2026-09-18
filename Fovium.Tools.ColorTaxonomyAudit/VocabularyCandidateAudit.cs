@@ -9,6 +9,13 @@ internal static class VocabularyCandidateAudit
 
     public static IReadOnlyList<VocabularyCandidateProfile> Analyze(ReferenceCatalog catalog)
     {
+        return AnalyzeAll(catalog)
+            .Where(profile => profile.DatasetSupport >= 2)
+            .ToArray();
+    }
+
+    internal static IReadOnlyList<VocabularyCandidateProfile> AnalyzeAll(ReferenceCatalog catalog)
+    {
         var adapter = new ProductionColorAdapter();
         var shipped = ProfessionalShadeCatalog.Definitions
             .Select(definition => definition.Term.ToString())
@@ -18,7 +25,6 @@ internal static class VocabularyCandidateAudit
             .Where(anchor => anchor.SpecificTerm is not null)
             .GroupBy(anchor => anchor.SpecificTerm!, StringComparer.Ordinal)
             .Select(group => CreateProfile(group.Key, group.ToArray(), adapter, shipped))
-            .Where(profile => profile.DatasetSupport >= 2)
             .OrderByDescending(profile => profile.DatasetSupport)
             .ThenBy(profile => profile.P90DeltaE)
             .ThenByDescending(profile => profile.AnchorCount)
