@@ -754,7 +754,7 @@ or downloaded corpus participates in viewer runtime classification.
 
 ## D-070 — Expressive photo-derived backgrounds remain exact-image bounded rasters
 
-Status: Implemented in local R10-B; hosted verification pending.
+Status: Accepted in pushed R10-B; hosted verification green.
 
 Color Gradient and Soft Glow extend the R10-A analysis rather than creating another analysis, cache, or scheduling
 pipeline. Color Gradient derives one strongest low-frequency horizontal/vertical relation from the `6×6` field. Soft
@@ -769,14 +769,35 @@ artifact, Peek reuses canonical state, Picker/Histogram remain source-domain, an
 
 ## D-071 — Native source acquisition retries availability, never trust
 
-Status: Implemented in local R10-B; hosted verification pending.
+Status: Accepted in pushed R10-B; hosted verification green.
 
 Pinned official URLs, versions, and SHA-256 values remain the sole source-acquisition trust authority. The native
 libheif builder may retry only classified transient HTTP/network failures, at most four attempts with bounded `1/2/4 s`
 backoff. Each attempt writes a unique temporary partial file; only a complete archive whose pinned hash succeeds is
-atomically published as cache. Permanent HTTP failures and hash mismatches are hard failures, and every failed partial is
+atomically published as cache. Permanent HTTP failures and hash mismatches are hard failures, and every failed partial
+is
 removed. A verified existing archive avoids network; an invalid cache is removed before one fresh acquisition.
 
 The policy is dependency-injected only at the small downloader boundary and covered by deterministic no-network tests.
 It does not add `continue-on-error`, workflow retries, vendored archives, binary commits, weaker native audits, or a
-GitHub Actions cache. Hosted clean-runner proof still requires a future authorized push.
+GitHub Actions cache. The pushed R10-B Native libheif matrix is green on Windows, Linux, and macOS.
+
+## D-072 — Color semantics is a shared in-assembly domain with one report model
+
+Status: Implemented in local R10-C; hosted verification pending.
+
+The OKLab/OKLCH model, broad family classifier, declarative Professional terms/regions and precedence, stable
+identities,
+localization-facing resolver, and separate creative nearest-name matcher belong to `Fovium.ColorSemantics`. They remain
+inside the single production assembly because no deployment, package, or dependency boundary justifies another project.
+`Fovium.ColorPicking` owns only source-pixel acquisition, alpha/accuracy adaptation, input/session/history, and overlay
+presentation. Research candidates, aliases, provenance, source independence, clustering, and audit diagnostics remain
+developer-only. Semantic interpretation is downstream of reference-sRGB source truth and never drives rendering, Color
+Management, Stage styling, Histogram, or sampling.
+
+`Fovium.Tools.ColorTaxonomyAudit` builds one ordered schema-versioned report model from production truth and optional
+deep-audit evidence. JSON, text/Markdown, SVG atlases/relations/domain sheets, and the self-contained Canvas 3D Explorer
+are projections of that model rather than independent classifiers. The production signature excludes commit and
+research evidence; core and enriched reports must retain it. Reference-sRGB reachability is represented by deterministic
+bounded sampling, while unreachable mathematical OKLCH remains visibly distinct. Generated output and research caches
+stay ignored; ProjectStats remains independent and BCL-only.

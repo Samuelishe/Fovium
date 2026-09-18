@@ -1,6 +1,6 @@
 using Fovium.ColorPicking;
 
-namespace Fovium.Tests.ColorPicking;
+namespace Fovium.Tests.ColorSemantics;
 
 public sealed class ColorNameMatcherTests
 {

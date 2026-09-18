@@ -1,7 +1,7 @@
 using System.Reflection;
 using System.Text.Json;
 
-namespace Fovium.ColorPicking;
+namespace Fovium.ColorSemantics;
 
 internal sealed record ColorNameEntry(
     string StableId,
@@ -14,6 +14,7 @@ internal sealed class ColorNameCatalog
 {
     public const int ExpectedCount = 1800;
     internal const string ResourceName = "Fovium.ColorNames.fovium-color-names.json";
+
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -32,9 +33,10 @@ internal sealed class ColorNameCatalog
     {
         ArgumentNullException.ThrowIfNull(assembly);
         using var stream = assembly.GetManifestResourceStream(ResourceName)
-            ?? throw new InvalidOperationException($"Embedded color-name catalog is missing: {ResourceName}");
+                           ?? throw new InvalidOperationException(
+                               $"Embedded color-name catalog is missing: {ResourceName}");
         var serialized = JsonSerializer.Deserialize<CatalogEntry[]>(stream, SerializerOptions)
-            ?? throw new InvalidDataException("The embedded color-name catalog is empty.");
+                         ?? throw new InvalidDataException("The embedded color-name catalog is empty.");
         var entries = new ColorNameEntry[serialized.Length];
         for (var index = 0; index < serialized.Length; index++)
         {
@@ -106,10 +108,10 @@ internal sealed class ColorNameCatalog
     {
         red = green = blue = 0;
         return value is { Length: 7 } &&
-            value[0] == '#' &&
-            byte.TryParse(value.AsSpan(1, 2), System.Globalization.NumberStyles.HexNumber, null, out red) &&
-            byte.TryParse(value.AsSpan(3, 2), System.Globalization.NumberStyles.HexNumber, null, out green) &&
-            byte.TryParse(value.AsSpan(5, 2), System.Globalization.NumberStyles.HexNumber, null, out blue);
+               value[0] == '#' &&
+               byte.TryParse(value.AsSpan(1, 2), System.Globalization.NumberStyles.HexNumber, null, out red) &&
+               byte.TryParse(value.AsSpan(3, 2), System.Globalization.NumberStyles.HexNumber, null, out green) &&
+               byte.TryParse(value.AsSpan(5, 2), System.Globalization.NumberStyles.HexNumber, null, out blue);
     }
 
     private sealed record CatalogEntry(string? Id, string? Hex, string? Name);

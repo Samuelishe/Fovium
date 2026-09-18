@@ -1,13 +1,29 @@
 # Color taxonomy audit
 
-Role: Reproducible developer audit route for the production Color Inspector taxonomy.
-Read when: Changing perceptual roles, hue families, undertones, or naming-region thresholds.
+Role: Reproducible developer audit and report route for the production Color Semantics taxonomy.
+Read when: Changing perceptual roles, hue families, undertones, naming-region thresholds, research evidence, or the
+report/Explorer.
 
 The `Fovium.Tools.ColorTaxonomyAudit` executable calls the production OKLab/OKLCH classifier and English resolver
 through an internal friend-assembly boundary. The viewer has no dependency on the tool, reference cache, reports, or
 network. Generated data stays under ignored `artifacts/color-taxonomy-audit/`.
 
 ## Run
+
+Generate the normal production-truth report and self-contained Explorer with one owner command:
+
+```powershell
+pwsh eng/color-taxonomy.ps1
+pwsh eng/color-taxonomy.ps1 -Open
+```
+
+Output is ignored under `artifacts/reports/color-semantics/`. Core mode needs no downloaded corpus. Use `-Deep` to run
+the deep audit first, or `-ResearchReport <summary.json>` to enrich from an existing audit without recomputation.
+`-Png` optionally renders the vector sheets through an installed local Chrome; it does not add a package/runtime
+dependency. Canonical model, gamut, signature, and output contracts are owned by
+[`../../docs/COLOR-SEMANTICS.md`](../../docs/COLOR-SEMANTICS.md).
+
+The legacy audit command remains the topology/research campaign route:
 
 The default fixed seed is `0x5F0A2026`. Fast mode uses a 5°/0.05/0.02 in-gamut OKLCH grid, 25,000 deterministic RGB
 samples, an RGB cube at step 32, and one-channel neighborhoods around discovered family boundaries:

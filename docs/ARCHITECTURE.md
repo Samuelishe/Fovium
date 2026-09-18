@@ -17,6 +17,11 @@ only on the BCL and remains diagnostic CLI code. `experiments/Fovium.RenderProbe
 `Fovium.Tests` may reference tooling, experiments, and production assemblies; production assemblies must never depend on
 them.
 
+`Fovium.Tools.ColorTaxonomyAudit` is separate developer tooling that may reference the internal production semantic
+model through a friend boundary. Its research corpus, report model, SVG/HTML renderers, and ignored output never become
+viewer dependencies. `Fovium.Tools.ProjectStats` remains BCL-only and does not reference this tool or production code;
+their generated reports merely share the ignored `artifacts/reports/` root.
+
 Logical responsibilities remain distinct even if physically colocated:
 
 - directory discovery and navigation;
@@ -26,6 +31,7 @@ Logical responsibilities remain distinct even if physically colocated:
 - viewport math;
 - cache and loading coordination;
 - settings;
+- common color semantics and human-readable naming;
 - platform integration;
 - UI and view-specific interaction.
 
@@ -130,9 +136,11 @@ imaging.
 R8-A keeps color inspection project-owned and behind existing presentation boundaries. `PhotoViewportControl` captures
 one retained currently presented image plus the exact oriented source pixel; `PhotoColorSampler` reads one
 BGRA8888/Premul pixel and converts only that sample to reference sRGB when needed; `ColorPickerSession` owns
-visibility/current sample/bounded history; and the floating overlay consumes immutable `ColorSample` values. The
-embedded catalog and small OKLab matcher have no service, database, general color framework, or new production package.
-Monitor destination transforms remain outside this subsystem.
+visibility/current sample/bounded history; and the floating overlay consumes immutable `ColorSample` values.
+R10-C extracts the locale-independent classifier, declarative Professional regions, stable semantic identities,
+localization-facing resolver, and separate creative catalog/matcher into the logical `Fovium.ColorSemantics` namespace
+inside the same assembly. Picker-only alpha/Transparent adaptation remains in `ColorPicking`. The common model has no
+service, database, network, rendering, or Color Management input, and no new production project/package is introduced.
 
 R8-B-W1 adds a separate photograph-color boundary. `WindowsDisplayColorProfileProvider` resolves ordinary-SDR monitor
 state and bounded profile bytes without leaking paths; `LittleCmsRuntimeLocator` and the small direct API load only the
@@ -183,7 +191,8 @@ Long-running operations receive cancellation and an explicit session/generation 
 cache/display/render leases let eviction or replacement release ownership while a retained Avalonia draw operation keeps
 native photo and optional Ambient/photo-style `SKImage` instances alive. Photo-derived analysis and its three small
 native style artifacts are attached to and byte-accounted under that same decoded entry; draw operations only lease the
-already prepared artifact selected by Stage mode. The optional blur-prepared Ambient is keyed by source identity plus blur, attached to the owning decoded
+already prepared artifact selected by Stage mode. The optional blur-prepared Ambient is keyed by source identity plus
+blur, attached to the owning decoded
 image, and charged to the same byte-budget LRU. Geometry, brightness/saturation, and Matte changes do not create new
 native images. During Blink, the canonical photo/Ambient presentation stays retained while a separately retained
 comparison photo and, only when already matching, comparison Ambient are temporarily rendered. Release never navigates,

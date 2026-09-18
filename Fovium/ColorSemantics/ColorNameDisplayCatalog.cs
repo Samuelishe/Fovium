@@ -1,9 +1,8 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.Json;
-using Fovium.Localization;
 
-namespace Fovium.ColorPicking;
+namespace Fovium.ColorSemantics;
 
 internal sealed class ColorNameDisplayCatalog
 {
@@ -118,21 +117,5 @@ internal sealed class ColorNameDisplayCatalog
         }
 
         return name;
-    }
-}
-
-internal sealed class ColorSampleNameResolver(
-    Localizer localizer,
-    ColorNameDisplayCatalog colorNames)
-{
-    public string Resolve(ColorSample sample)
-    {
-        ArgumentNullException.ThrowIfNull(sample);
-        if (sample.IsTransparent || string.IsNullOrWhiteSpace(sample.CanonicalName))
-        {
-            return localizer[UiStrings.ColorPickerTransparent];
-        }
-
-        return colorNames.Resolve(sample.ColorNameStableId, sample.CanonicalName);
     }
 }

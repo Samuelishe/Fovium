@@ -2,7 +2,7 @@ using System.Globalization;
 using Fovium.ColorPicking;
 using Fovium.Localization;
 
-namespace Fovium.Tests.ColorPicking;
+namespace Fovium.Tests.ColorSemantics;
 
 public sealed class PerceptualColorNameResolverTests
 {
@@ -187,7 +187,7 @@ public sealed class PerceptualColorNameResolverTests
         new(Localizer.Create(CultureInfo.GetCultureInfo(cultureName)));
 
     private static PerceptualColorDescription Describe(byte red, byte green, byte blue) =>
-        PerceptualColorClassifier.Describe(new ColorSample(
+        ColorSampleSemantics.Describe(new ColorSample(
             red,
             green,
             blue,

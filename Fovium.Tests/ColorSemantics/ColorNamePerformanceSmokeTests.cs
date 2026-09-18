@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using Fovium.ColorPicking;
 
-namespace Fovium.Tests.ColorPicking;
+namespace Fovium.Tests.ColorSemantics;
 
 public sealed class ColorNamePerformanceSmokeTests(Xunit.Abstractions.ITestOutputHelper output)
 {
@@ -86,16 +86,16 @@ public sealed class ColorNamePerformanceSmokeTests(Xunit.Abstractions.ITestOutpu
 
         var differingResults = 0;
         foreach (var red in GridChannels())
-            foreach (var green in GridChannels())
-                foreach (var blue in GridChannels())
-                {
-                    var perceptual = matcher.FindNearest(red, green, blue).StableId;
-                    var encodedRgb = FindNearestEncodedRgb(catalog.Entries, red, green, blue).StableId;
-                    if (!string.Equals(perceptual, encodedRgb, StringComparison.Ordinal))
-                    {
-                        differingResults++;
-                    }
-                }
+        foreach (var green in GridChannels())
+        foreach (var blue in GridChannels())
+        {
+            var perceptual = matcher.FindNearest(red, green, blue).StableId;
+            var encodedRgb = FindNearestEncodedRgb(catalog.Entries, red, green, blue).StableId;
+            if (!string.Equals(perceptual, encodedRgb, StringComparison.Ordinal))
+            {
+                differingResults++;
+            }
+        }
 
         output.WriteLine(
             "OKLab and naive encoded-RGB nearest selection differed for {0}/216 grid samples.",
@@ -127,8 +127,8 @@ public sealed class ColorNamePerformanceSmokeTests(Xunit.Abstractions.ITestOutpu
             var deltaGreen = green - entry.Green;
             var deltaBlue = blue - entry.Blue;
             var distance = (deltaRed * deltaRed) +
-                (deltaGreen * deltaGreen) +
-                (deltaBlue * deltaBlue);
+                           (deltaGreen * deltaGreen) +
+                           (deltaBlue * deltaBlue);
             if (distance < bestDistance)
             {
                 best = entry;

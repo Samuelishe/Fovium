@@ -231,7 +231,7 @@ internal static partial class ReferenceCatalogLoader
         AuditRgb rgb,
         ICollection<ReferenceAnchor> anchors)
     {
-        var lab = Fovium.ColorPicking.OklabColor.FromSrgb(rgb.Red, rgb.Green, rgb.Blue);
+        var lab = Fovium.ColorSemantics.OklabColor.FromSrgb(rgb.Red, rgb.Green, rgb.Blue);
         anchors.Add(new ReferenceAnchor(
             dataset,
             name,

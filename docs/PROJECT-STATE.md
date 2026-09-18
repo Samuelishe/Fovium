@@ -7,12 +7,17 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R10-B is the locally complete expressive photo-derived Stage capability at `0.1.3.0000`, following pushed R8-A-F12
-`0.1.2.0014` at `7e38ce3190fb88da24111b10ac6da2bc656f84ca`. It adds persisted Color Gradient and Soft Glow backgrounds from the
-existing exact-image reference-sRGB analysis. Both are prepared once as deterministic `32×32` rasters under the existing
-decoded-cache ownership, identity, latest-wins, Blink/Peek, Color Management, and truthful-fallback contracts. No second
-analysis/cache pipeline, viewport-sized style surface, source-domain Picker/Histogram change, or runtime network/ML work
-is introduced.
+R10-C is the locally complete Color Semantics ownership/reporting stage and intentionally retains product version
+`0.1.3.0000`. The pushed baseline is accepted R10-B commit `1beaa643c8552ef7ac5dc9b3a791e3b7404668d6`; normal CI and
+Native libheif/Little CMS `win-x64`, `linux-x64`, and `osx-arm64` matrices are green. R10-C changes no viewer-visible
+classification or rendering behavior. It extracts the existing 45-family, 94-term/99-region structural taxonomy and
+separate 1,800-anchor creative matcher into `Fovium.ColorSemantics` inside the same production assembly, while Picker
+sampling/session/UI remain in `Fovium.ColorPicking`.
+
+The developer-side `Fovium.Tools.ColorTaxonomyAudit report` route and `pwsh eng/color-taxonomy.ps1` now generate one
+canonical ordered JSON model plus text/Markdown, vector OKLCH/reference-sRGB atlases, relations/domain sheets, and a
+self-contained offline interactive 3D Explorer. Core mode needs only tracked production truth; optional retained audit
+JSON adds the 250-entry research frontier without changing the production signature. Generated output remains ignored.
 
 The retained R0 probe remains experimental evidence under `experiments/Fovium.RenderProbe`. Production code is the
 single `Fovium` assembly and does not depend on the experiment. The accepted R7-B hosted matrix restored, built, and
@@ -22,11 +27,11 @@ Windows at `RenderScaling = 1.00`.
 
 ## Current focus
 
-R8-A-F12 is pushed at `7e38ce3190fb88da24111b10ac6da2bc656f84ca`; normal CI #59 passed. Native libheif workflow
-#33 failed before build on transient GitHub Release HTTP 504 responses for libheif/libde265, not on product code,
-native smoke, or the already-fixed Histogram harness race. R10-B hardens only pinned dependency acquisition with four
-transient-only attempts, deterministic `1/2/4 s` backoff, temporary partial files, atomic post-hash publication, and
-mandatory SHA-256 verification. Local deterministic downloader tests pass; hosted proof awaits an authorized push.
+R10-C local verification, report generation, deterministic semantic equivalence, and headless visual inspection are
+complete. A future authorized push must provide the ordinary hosted Windows/Ubuntu/macOS proof for the namespace/tooling
+changes; no native workflow behavior changed. Optional report diffing is deferred because schema v1 stable IDs/order
+make
+it possible without requiring a Git-history framework before an actual comparison workflow exists.
 
 The current Codex/Rider ACP session negotiates no true in-app browser backend. Browser-plugin discovery returns an empty
 backend list, and the Rider Playwright MCP entry has no command or URL and is absent from the session tool registry.
@@ -149,6 +154,10 @@ capable host/session or a separately valid MCP registration plus Rider restart o
   one term identity without replacing broad-family identity or generic fallback; the embedded
   offline 1,800-entry creative catalog retains standard OKLab nearest matching, stable tie order, complete Russian
   stable-ID display names, and canonical-English fallback as secondary presentation data.
+- Shared `Fovium.ColorSemantics` ownership for the structural classifier and separate creative matcher; deterministic
+  core/deep `fovium-color-semantics-report/v1` JSON, text/Markdown, SVG overview/domain/relations sheets, and offline
+  Canvas 3D Explorer generated from one normalized model. Semantic interpretation remains downstream of source truth
+  and never feeds rendering or Color Management.
 - Duplicate-preserving ten-entry per-window Color Inspector FIFO with distinct click identities, stable mouse selection
   across navigation/hide/reopen, and explicit history/selection Clear; no sample, entry, selection, or history is
   serialized.
@@ -208,8 +217,10 @@ RAW, file associations/thumbnails, and monitor-aware output outside ordinary Win
   rendering is not implemented.
 - R9-B desktop timing and visual evidence is Windows-only at `RenderScaling = 1.00`; Linux/macOS runtime cadence,
   fractional-DPI multi-monitor movement during a running slideshow, and very-large-image fallback latency remain
-  unmeasured. Transitions, shuffle, music, countdown UI, and a multi-frame slideshow cache are intentionally absent.- R10-B visual acceptance covers eleven ignored local photographs across high/low key, neutral/chromatic, warm/cool,
-  green, portrait/skin, accent, and mixed geometry on Windows reference-sRGB renders. Automated pixels and geometry cover
+  unmeasured. Transitions, shuffle, music, countdown UI, and a multi-frame slideshow cache are intentionally absent.-
+  R10-B visual acceptance covers eleven ignored local photographs across high/low key, neutral/chromatic, warm/cool,
+  green, portrait/skin, accent, and mixed geometry on Windows reference-sRGB renders. Automated pixels and geometry
+  cover
   1.00/1.25/1.50/2.00, but real fractional-DPI and Linux/macOS visual/runtime acceptance remain unmeasured.
 
 Open technical risks are tracked in [`KNOWN-PROBLEMS.md`](KNOWN-PROBLEMS.md). Directional stages are in [

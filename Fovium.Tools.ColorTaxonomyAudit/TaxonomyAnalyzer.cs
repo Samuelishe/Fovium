@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using Fovium.ColorPicking;
+using Fovium.ColorSemantics;
 
 namespace Fovium.Tools.ColorTaxonomyAudit;
 

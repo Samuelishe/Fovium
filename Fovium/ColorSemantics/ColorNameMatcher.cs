@@ -1,4 +1,4 @@
-namespace Fovium.ColorPicking;
+namespace Fovium.ColorSemantics;
 
 internal readonly record struct ColorNameMatch(
     string StableId,

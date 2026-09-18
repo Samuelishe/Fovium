@@ -60,6 +60,12 @@ archives remain trusted only through `versions.json` SHA-256 values; bounded tra
 publication improve availability without changing provenance or accepting an unverified cache. No GitHub Actions cache
 or vendored archive is introduced.
 
+R10-C adds no shipped or developer package. The offline Explorer uses project-authored HTML/CSS/Canvas JavaScript and
+embeds its canonical JSON; it does not download Plotly, Three.js, fonts, or CDN assets. Optional `-Png` rendering
+invokes
+an already-installed owner Chrome executable as an external local tool and leaves no production/project dependency.
+The existing ignored research datasets retain their recorded provenance and are never bundled into the core report.
+
 ## Planned / under evaluation
 
 The following are evaluated candidates, not installed dependencies or promises. Stable versions were checked from

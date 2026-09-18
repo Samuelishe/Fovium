@@ -111,6 +111,12 @@ R10-B adds paired Color Gradient/Цветовой градиент and Soft Glow
 literal mixed-language Color Wash label to the natural Russian Цветовая заливка. Stable enum identities and raster data
 remain locale-independent; the correction changes presentation only.
 
+R10-C changes no product strings or stable IDs. The EN/RU broad-family and Professional-term resolvers move with the
+shared `Fovium.ColorSemantics` model, while the Picker remains only a presentation client. The developer report emits
+both localized names from the same production catalogs and its Explorer switches EN/RU display without making locale an
+input to classification, geometry, signatures, or creative matching. Research-only RU candidates remain explicitly
+separate from shipped localization.
+
 ## Locale resolution
 
 Before an explicit user choice:

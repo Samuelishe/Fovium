@@ -1,6 +1,6 @@
 using Fovium.ColorPicking;
 
-namespace Fovium.Tests.ColorPicking;
+namespace Fovium.Tests.ColorSemantics;
 
 public sealed class ColorNameCatalogTests
 {
@@ -38,8 +38,10 @@ public sealed class ColorNameCatalogTests
         Assert.Subset(
             names,
             new HashSet<string>(
-                ["Black", "White", "Red", "Green", "Blue", "Yellow", "Orange", "Purple",
-                    "Pink", "Brown", "Grey", "Cyan", "Magenta", "Teal", "Navy Blue", "Olive", "Beige"],
+                [
+                    "Black", "White", "Red", "Green", "Blue", "Yellow", "Orange", "Purple",
+                    "Pink", "Brown", "Grey", "Cyan", "Magenta", "Teal", "Navy Blue", "Olive", "Beige"
+                ],
                 StringComparer.OrdinalIgnoreCase));
     }
 }

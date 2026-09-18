@@ -259,6 +259,27 @@ regions, zero shadowed regions, deterministic signatures, and unchanged broad-fa
 retain complete-audit runtime, master-lexicon clustering time, and indexed production-classifier nanoseconds per sample;
 all three machine-local timings are excluded from the deterministic signature.
 
+## R10-C Color Semantics and report/Explorer
+
+The reusable semantic boundary and report pipeline have a focused namespace suite:
+
+```powershell
+dotnet test Fovium.Tests/Fovium.Tests.csproj -c Release --filter "FullyQualifiedName~Fovium.Tests.ColorSemantics"
+pwsh eng/color-taxonomy.ps1
+pwsh eng/color-taxonomy.ps1 -ResearchReport artifacts/color-taxonomy-audit/f12-final-canonical/summary.json
+```
+
+The tests pin the pre-extraction schema-v8 fast-audit signature over 61,721 deterministic samples, verify 45 broad
+families, 94 Professional terms, 99 regions, all stable IDs/order/cores, unchanged creative anchors and EN/RU values,
+core/deep production-signature equivalence, deterministic JSON, reachable reference-sRGB geometry, local-only HTML,
+semantic SVG structure, output modes, and missing-research degradation. Generated SVG/HTML pixels still require actual
+visual inspection; exact giant-string snapshots are deliberately absent.
+
+The retained mutation campaign proves that dropping one region fails the exact production inclusion test, accepting an
+out-of-gamut OKLCH coordinate fails the gamut guard test, and shifting the Coral boundary fails the pinned whole-audit
+semantic fingerprint. Every mutation is reverted before the normal focused/full run. Core reports are ordinary offline
+tooling; ignored deep corpora and generated reports do not become CI quality gates.
+
 The R8-A-F12 Histogram regression does not assume that completing a test reader runs the coordinator continuation
 inline. Tests subscribe to an internal post-classification/post-cleanup completion signal keyed by image identity and
 outcome, then assert stale metrics and unchanged latest publication without sleeps or retries. The production

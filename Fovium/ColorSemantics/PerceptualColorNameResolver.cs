@@ -1,7 +1,7 @@
 using System.Globalization;
 using Fovium.Localization;
 
-namespace Fovium.ColorPicking;
+namespace Fovium.ColorSemantics;
 
 internal sealed class PerceptualColorNameResolver(Localizer localizer)
 {

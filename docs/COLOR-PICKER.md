@@ -1,8 +1,8 @@
 # Color Picker
 
-Role: Canonical owner for Fovium's photographic Color Picker semantics.
-Read when: Changing sampling geometry, reference-color interpretation, names,
-history, picker input precedence, or its floating overlay.
+Role: Canonical owner for Fovium's photographic Color Picker client.
+Read when: Changing sampling geometry, reference-color acquisition, history, picker input precedence, or its floating
+overlay. Shared semantic naming is owned by [`COLOR-SEMANTICS.md`](COLOR-SEMANTICS.md).
 
 ## Product boundary
 
@@ -59,7 +59,11 @@ unpreserved, Fovium uses the available decoded value with an `Approximate`
 sample state and subtle `≈` UI marker. This is truthful source-to-reference
 interpretation, not monitor Color Management.
 
-## Perceptual and creative names
+## Semantic naming client
+
+The shared model, stable identities, structural/creative distinction, and report tooling are authoritative in
+[`COLOR-SEMANTICS.md`](COLOR-SEMANTICS.md). This section records how the Color Inspector consumes that model and retains
+the historical taxonomy checkpoints; it does not make naming a dependency of source sampling or display rendering.
 
 Every nontransparent committed reference-sRGB sample is converted through the
 accepted project-owned OKLab math to OKLCH, then classified once into a semantic
@@ -154,8 +158,8 @@ indistinguishable from a shipped Teal control. Core-confidence reports retain on
 boundary
 evidence for every shipped term. This research layer remains absent from production runtime and localization data.
 
-Developer changes to this taxonomy use the reproducible audit route documented in
-[`../eng/color-taxonomy-audit/README.md`](../eng/color-taxonomy-audit/README.md).
+Developer changes to this taxonomy use `pwsh eng/color-taxonomy.ps1` for the core report/Explorer and the reproducible
+deep-audit route documented in [`../eng/color-taxonomy-audit/README.md`](../eng/color-taxonomy-audit/README.md).
 Its structured in-gamut grid, fixed-seed RGB sampling, boundary refinement,
 topology checks, coordinate-driven balanced hue/lightness/chroma cohort,
 family profiles, component-aware whole-corpus candidate discovery, specificity/vocabulary-gap reporting,

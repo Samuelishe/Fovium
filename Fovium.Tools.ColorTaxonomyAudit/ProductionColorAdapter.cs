@@ -1,5 +1,5 @@
 using System.Globalization;
-using Fovium.ColorPicking;
+using Fovium.ColorSemantics;
 using Fovium.Localization;
 
 namespace Fovium.Tools.ColorTaxonomyAudit;
@@ -11,15 +11,7 @@ internal sealed class ProductionColorAdapter
 
     public AuditClassification Classify(AuditRgb rgb)
     {
-        var sample = new ColorSample(
-            rgb.Red,
-            rgb.Green,
-            rgb.Blue,
-            byte.MaxValue,
-            $"audit-{rgb.Packed:X6}",
-            null,
-            ColorSampleAccuracy.Exact);
-        var description = PerceptualColorClassifier.Describe(sample);
+        var description = PerceptualColorClassifier.Describe(rgb.Red, rgb.Green, rgb.Blue);
         var lab = OklabColor.FromSrgb(rgb.Red, rgb.Green, rgb.Blue);
         var oklch = description.Oklch!.Value;
 

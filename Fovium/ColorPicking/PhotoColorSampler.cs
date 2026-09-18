@@ -1,4 +1,5 @@
 using Fovium.Imaging;
+using Fovium.ColorSemantics;
 using Fovium.Rendering;
 using SkiaSharp;
 

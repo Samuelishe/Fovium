@@ -1,4 +1,4 @@
-using Fovium.ColorPicking;
+using Fovium.ColorSemantics;
 using System.Text.Json.Serialization;
 
 namespace Fovium.Tools.ColorTaxonomyAudit;

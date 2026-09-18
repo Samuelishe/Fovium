@@ -1,4 +1,4 @@
-namespace Fovium.ColorPicking;
+namespace Fovium.ColorSemantics;
 
 internal readonly record struct OklabColor(double L, double A, double B)
 {
@@ -9,14 +9,14 @@ internal readonly record struct OklabColor(double L, double A, double B)
         var linearBlue = ToLinear(blue / 255d);
 
         var l = (0.4122214708 * linearRed) +
-            (0.5363325363 * linearGreen) +
-            (0.0514459929 * linearBlue);
+                (0.5363325363 * linearGreen) +
+                (0.0514459929 * linearBlue);
         var m = (0.2119034982 * linearRed) +
-            (0.6806995451 * linearGreen) +
-            (0.1073969566 * linearBlue);
+                (0.6806995451 * linearGreen) +
+                (0.1073969566 * linearBlue);
         var s = (0.0883024619 * linearRed) +
-            (0.2817188376 * linearGreen) +
-            (0.6299787005 * linearBlue);
+                (0.2817188376 * linearGreen) +
+                (0.6299787005 * linearBlue);
         var lRoot = Math.Cbrt(l);
         var mRoot = Math.Cbrt(m);
         var sRoot = Math.Cbrt(s);

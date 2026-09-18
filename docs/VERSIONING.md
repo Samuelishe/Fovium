@@ -173,10 +173,11 @@ completeness, a stable API, production release status, or `1.0` quality. Current
 
 ## Current checkpoint
 
-R10-B is the locally complete expressive photo-derived Stage capability at `0.1.3.0000`. It increments PATCH and resets
-BUILD because Color Gradient and Soft Glow are independently useful, persisted user-visible presentation modes rather
-than a corrective refinement of the R10-A foundation. The native downloader and developer-tooling work included in the
-same engineering stage do not independently change the product version.
+R10-B is the accepted expressive photo-derived Stage capability at `0.1.3.0000`. It increments PATCH and resets BUILD
+because Color Gradient and Soft Glow are independently useful, persisted user-visible presentation modes rather than a
+corrective refinement of the R10-A foundation. R10-C retains `0.1.3.0000`: namespace ownership extraction and the
+developer-only Color Semantics report/Explorer do not change viewer behavior, classification, production catalog
+contents, or shipped capability. Tooling/refactor work does not increment BUILD under this contract.
 
 ## Future code and packaging source
 

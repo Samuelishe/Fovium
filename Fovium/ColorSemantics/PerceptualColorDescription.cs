@@ -1,4 +1,4 @@
-namespace Fovium.ColorPicking;
+namespace Fovium.ColorSemantics;
 
 internal enum PerceptualColorRole
 {
@@ -171,15 +171,9 @@ internal static class PerceptualColorClassifier
     internal const double VioletGrayHueMinimum = 285;
     internal const double LilacGrayHueMinimum = 300;
 
-    public static PerceptualColorDescription Describe(ColorSample sample)
+    public static PerceptualColorDescription Describe(byte red, byte green, byte blue)
     {
-        ArgumentNullException.ThrowIfNull(sample);
-        if (sample.IsTransparent)
-        {
-            return PerceptualColorDescription.Transparent;
-        }
-
-        var oklch = OklchColor.FromSrgb(sample.Red, sample.Green, sample.Blue);
+        var oklch = OklchColor.FromSrgb(red, green, blue);
         var role = ClassifyRole(oklch);
         var undertone = ClassifyUndertone(oklch, role);
         var description = new PerceptualColorDescription(

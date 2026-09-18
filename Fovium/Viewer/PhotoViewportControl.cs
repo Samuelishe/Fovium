@@ -6,6 +6,7 @@ using Avalonia.VisualTree;
 using Fovium.Diagnostics;
 using Fovium.ColorManagement;
 using Fovium.ColorPicking;
+using Fovium.ColorSemantics;
 using Fovium.Imaging;
 using Fovium.Input;
 using Fovium.Loading;
@@ -66,7 +67,8 @@ internal sealed class PendingPhotoPresentation : IDisposable
     }
 
     public SharedResourceLease<DecodedImage> Image => _image
-        ?? throw new ObjectDisposedException(nameof(PendingPhotoPresentation));
+                                                      ?? throw new ObjectDisposedException(
+                                                          nameof(PendingPhotoPresentation));
 
     public long NumericIdentity => Image.Value.Identity;
 
@@ -92,7 +94,8 @@ internal sealed class PendingPhotoPresentation : IDisposable
     }
 
     public SharedResourceLease<DecodedImage> TakeImage() => Interlocked.Exchange(ref _image, null)
-        ?? throw new ObjectDisposedException(nameof(PendingPhotoPresentation));
+                                                            ?? throw new ObjectDisposedException(
+                                                                nameof(PendingPhotoPresentation));
 
     public DecodedImage.AmbientLease? TakeAmbient() => Interlocked.Exchange(ref _ambient, null);
 
@@ -138,10 +141,12 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
     private ManagedPhotoPresentationCoordinator? _managedPhotoCoordinator;
     private ManagedPhotoSourceLease? _managedSource;
     private PendingPhotoPresentation? _pendingPresentation;
+
     private DisplayProfileResolution _displayProfile = new(
         MonitorColorState.DestinationUnavailable,
         null,
         "No display profile has been resolved.");
+
     private bool _displayProfileResolved;
     private ManagedPhotoKey? _requestedManagedKey;
     private bool _monitorColorManagementEnabled = true;
@@ -151,6 +156,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
     private MonitorColorState _monitorColorState = MonitorColorState.PlatformUnsupported;
     private bool _photoPresentationVisible;
     private readonly PhotoPresentationViewSession _photoPresentationView = new();
+
     private PhotoPresentationViewSettings _photoPresentationViewSettings =
         PhotoPresentationViewSettings.Default;
 
@@ -430,8 +436,8 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
         var wasResolved = _displayProfileResolved;
         _displayProfileResolved = true;
         var unchanged = _displayProfile.State == profile.State &&
-            _displayProfile.AdvancedColorEnabled == profile.AdvancedColorEnabled &&
-            _displayProfile.Profile?.Identity == profile.Profile?.Identity;
+                        _displayProfile.AdvancedColorEnabled == profile.AdvancedColorEnabled &&
+                        _displayProfile.Profile?.Identity == profile.Profile?.Identity;
         _displayProfile = profile;
         if (wasResolved && unchanged)
         {
@@ -836,6 +842,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
             e.Handled = true;
             return;
         }
+
         if (!PhotoPresentationInputPolicy.Allows(
                 PhotoPresentationInteraction.WheelZoom,
                 _photoPresentationView.IsEnabled))
@@ -844,6 +851,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
             e.Handled = true;
             return;
         }
+
         if (_image is null)
         {
             return;
@@ -1031,6 +1039,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
         {
             InvalidateAndReport();
         }
+
         e.Handled = true;
     }
 
@@ -1149,6 +1158,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
                 photoStyleRasterLease = cachedLease.Value.TryAcquirePhotoStyleRaster(
                     presentationStage.BackgroundMode);
             }
+
             var destination = GetDestination();
             var suppressLegacyPhoto = false;
             var photoPresentationVisible = true;

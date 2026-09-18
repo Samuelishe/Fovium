@@ -1,6 +1,6 @@
 using Fovium.ColorPicking;
 
-namespace Fovium.Tests.ColorPicking;
+namespace Fovium.Tests.ColorSemantics;
 
 public sealed class PerceptualColorClassifierTests
 {
@@ -440,7 +440,7 @@ public sealed class PerceptualColorClassifierTests
     {
         var sample = new ColorSample(120, 80, 40, 0, "transparent", null, ColorSampleAccuracy.Exact);
 
-        var description = PerceptualColorClassifier.Describe(sample);
+        var description = ColorSampleSemantics.Describe(sample);
 
         Assert.True(description.IsTransparent);
         Assert.Null(description.Oklch);
@@ -461,6 +461,6 @@ public sealed class PerceptualColorClassifierTests
             $"rgb-{hex[1..].ToLowerInvariant()}",
             "Creative",
             ColorSampleAccuracy.Exact);
-        return PerceptualColorClassifier.Describe(sample);
+        return ColorSampleSemantics.Describe(sample);
     }
 }

@@ -9,6 +9,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Fovium.Application;
 using Fovium.ColorPicking;
+using Fovium.ColorSemantics;
 using Fovium.ColorManagement;
 using Fovium.Diagnostics;
 using Fovium.Histogram;

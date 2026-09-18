@@ -1,6 +1,6 @@
 using Fovium.Localization;
 
-namespace Fovium.ColorPicking;
+namespace Fovium.ColorSemantics;
 
 internal enum ProfessionalColorTerm
 {

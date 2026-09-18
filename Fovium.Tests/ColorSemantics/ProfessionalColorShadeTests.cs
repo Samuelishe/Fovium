@@ -2,7 +2,7 @@ using System.Globalization;
 using Fovium.ColorPicking;
 using Fovium.Localization;
 
-namespace Fovium.Tests.ColorPicking;
+namespace Fovium.Tests.ColorSemantics;
 
 public sealed class ProfessionalColorShadeTests
 {
@@ -491,7 +491,7 @@ public sealed class ProfessionalColorShadeTests
     }
 
     private static PerceptualColorDescription Describe(string hex) =>
-        PerceptualColorClassifier.Describe(new ColorSample(
+        ColorSampleSemantics.Describe(new ColorSample(
             Convert.ToByte(hex.Substring(1, 2), 16),
             Convert.ToByte(hex.Substring(3, 2), 16),
             Convert.ToByte(hex.Substring(5, 2), 16),

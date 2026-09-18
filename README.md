@@ -52,11 +52,11 @@ and [imaging direction](docs/IMAGING-PIPELINE.md) for details.
 
 ## Current status
 
-The current locally complete checkpoint is **`0.1.3.0000`**. R10-B adds two bounded offline photo-derived Stage modes:
-directional Color Gradient and restrained Soft Glow. Both reuse R10-A's exact-image analysis, add only two `32×32`
-byte-accounted rasters, and retain Black fallback, Blink/Peek identity, source-domain inspection, and the existing
-geometry-independent Color Management path. The previous R8-A-F12 baseline is pushed at `7e38ce3`; hosted verification
-for the current work awaits a future authorized push.
+The product remains **`0.1.3.0000`**. Accepted R10-B commit `1beaa64` adds two bounded offline photo-derived Stage
+modes:
+directional Color Gradient and restrained Soft Glow; ordinary and native hosted matrices are green. The locally complete
+R10-C developer stage changes no viewer behavior: it makes the existing taxonomy a shared in-assembly Color Semantics
+model and adds a deterministic offline report/3D Explorer.
 
 This is an alpha milestone, not a feature-complete or stable release claim. Textured Matte/background materials,
 inner shadows, broad material presets, slideshow transitions/shuffle/music/countdown UI, animated formats, RAW, Advanced
@@ -82,16 +82,17 @@ Full monitor-aware ICC, broad codec coverage, and huge/tiled image handling rema
 
 ## Repository structure
 
-| Path                              | Purpose                                                                                     |
-|-----------------------------------|---------------------------------------------------------------------------------------------|
-| `docs/`                           | Canonical product, technical, planning, and repository contracts                            |
-| `eng/`                            | Small repository verification wrappers                                                      |
-| `resources/`                      | Tracked asset root governed by provenance policy                                            |
-| `Fovium/`                         | First production Core Viewer application                                                    |
-| `Fovium.Tools.ProjectStats/`      | BCL-only repository diagnostics CLI                                                         |
-| `Fovium.Tests/`                   | Automated tests for repository tooling, retained R0 logic, and production viewer boundaries |
-| `experiments/Fovium.RenderProbe/` | Disposable R0 rendering/imaging evidence executable; not the viewer                         |
-| `.github/workflows/ci.yml`        | Windows, Linux, and macOS restore/build/test workflow                                       |
+| Path                               | Purpose                                                                                     |
+|------------------------------------|---------------------------------------------------------------------------------------------|
+| `docs/`                            | Canonical product, technical, planning, and repository contracts                            |
+| `eng/`                             | Small repository verification wrappers                                                      |
+| `resources/`                       | Tracked asset root governed by provenance policy                                            |
+| `Fovium/`                          | First production Core Viewer application                                                    |
+| `Fovium.Tools.ProjectStats/`       | BCL-only repository diagnostics CLI                                                         |
+| `Fovium.Tools.ColorTaxonomyAudit/` | Color Semantics deep audit and deterministic report/Explorer CLI                            |
+| `Fovium.Tests/`                    | Automated tests for repository tooling, retained R0 logic, and production viewer boundaries |
+| `experiments/Fovium.RenderProbe/`  | Disposable R0 rendering/imaging evidence executable; not the viewer                         |
+| `.github/workflows/ci.yml`         | Windows, Linux, and macOS restore/build/test workflow                                       |
 
 ## Development / verification
 
@@ -103,10 +104,14 @@ dotnet build Fovium.sln -c Release
 dotnet test Fovium.sln -c Release --no-build
 pwsh eng/repo-baseline.ps1
 pwsh eng/project-stats.ps1
+pwsh eng/color-taxonomy.ps1
+pwsh eng/color-taxonomy.ps1 -Open
 ```
 
-ProjectStats generates an ignored local `project-stats.md` report. Test details are
-in [TEST-EXECUTION.md](docs/TEST-EXECUTION.md).
+ProjectStats generates an ignored local `project-stats.md` report. Color Semantics generates an ignored
+`artifacts/reports/color-semantics/` bundle with JSON, text/Markdown, SVG atlases, and a self-contained interactive
+Explorer. Test details are in [TEST-EXECUTION.md](docs/TEST-EXECUTION.md); model/report ownership is in
+[COLOR-SEMANTICS.md](docs/COLOR-SEMANTICS.md).
 
 Run the viewer with zero or more paths (zero opens the picker):
 

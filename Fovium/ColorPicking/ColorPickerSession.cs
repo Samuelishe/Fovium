@@ -1,3 +1,5 @@
+using Fovium.ColorSemantics;
+
 namespace Fovium.ColorPicking;
 
 internal sealed class ColorPickerSession
@@ -44,7 +46,7 @@ internal sealed class ColorPickerSession
         var entry = new ColorHistoryEntry(
             checked(++_nextEntryId),
             sample,
-            PerceptualColorClassifier.Describe(sample));
+            ColorSampleSemantics.Describe(sample));
         _history.Add(entry);
         SelectedEntry = entry;
         Changed?.Invoke(this, EventArgs.Empty);
