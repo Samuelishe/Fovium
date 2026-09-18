@@ -125,6 +125,40 @@ public sealed class PhotoColorProfilePresentationTests
         Assert.False(string.IsNullOrWhiteSpace(notable.StructuralName));
     }
 
+    [Theory]
+    [InlineData(0, 0, 0)]
+    [InlineData(1, 1, 1)]
+    [InlineData(5, 1, 5)]
+    [InlineData(6, 2, 5)]
+    [InlineData(10, 2, 5)]
+    [InlineData(12, 2, 5)]
+    public void NotableLayoutUsesAtMostTwoRowsOfFive(
+        int requested,
+        int expectedRows,
+        int expectedMaximumRowLength)
+    {
+        var colors = Enumerable.Range(0, requested)
+            .Select(index => new PhotoColorProfileDisplayColor(
+                new StageColor((byte)(20 + index), (byte)(40 + index), (byte)(60 + index)),
+                $"Structural {index}",
+                $"Creative {index}",
+                $"#{index:X6}",
+                $"L {index}"))
+            .ToImmutableArray();
+
+        var rows = PhotoColorProfileLayout.ArrangeNotableColors(colors);
+
+        Assert.Equal(expectedRows, rows.Length);
+        Assert.True(rows.Length <= 2);
+        Assert.All(rows, row => Assert.InRange(row.Length, 1, 5));
+        if (rows.Length > 0)
+        {
+            Assert.Equal(expectedMaximumRowLength, rows.Max(row => row.Length));
+        }
+
+        Assert.Equal(Math.Min(requested, 10), rows.Sum(row => row.Length));
+    }
+
     private static PhotoStyleAnalysis CreateAnalysis(
         StageColor color,
         ImmutableArray<PhotoPaletteEntry> palette,

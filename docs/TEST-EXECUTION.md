@@ -22,6 +22,20 @@ dotnet build Fovium.sln -c Release --no-restore
 dotnet test Fovium.sln -c Release --no-build
 ```
 
+Generated local evidence and build artifacts under ignored `artifacts/` are project-owned only where the cleanup
+allowlist says so. Preview cleanup before applying it:
+
+```powershell
+pwsh eng/clean-artifacts.ps1 -Mode Safe -WhatIf
+pwsh eng/clean-artifacts.ps1 -Mode AllGenerated -WhatIf
+```
+
+`Safe` removes known transient/test and stale stage-evidence paths, `Reports` adds known generated reports,
+`NativeBuilds` targets reproducible native output trees, and explicit `AllGenerated` combines those scopes. Verified
+download/package and pinned research caches require the additional `-IncludeCaches`; unknown top-level directories and
+owner/source photographs are never targets. Apply an inspected plan with `-Confirm:$false`. Evidence harnesses that own
+an output directory mark it and clean/recreate only that exact directory before regeneration.
+
 Run only the current ProjectStats tests when iterating on repository tooling:
 
 ```powershell
@@ -515,3 +529,24 @@ and final contact sheets; it must never be committed or copied into tracked reso
 The final local Windows verification passes the 105-test focused filter above and 2,210/2,210 tests for
 `dotnet test Fovium.sln -c Release --no-build`; the preceding Release build completes with zero warnings and errors.
 Hosted CI and non-Windows runtime/visual acceptance remain pending.
+
+## R11-B-F1 robust and adaptive Notable Colors
+
+R11-B-F1 keeps the R11-B command above and adds generalized route, diagnostics, adaptive-capacity, and two-row layout
+contracts. Synthetic cases cover a muted warm mass on green, compact saturated red, a light neutral on dark surround,
+distributed brick stripes, mustard against burgundy, chromatic information in a neutral crowd, sparse noise, uniform
+input, close-shade consolidation, and two perceptually separate colors in one broad family. The developer-only evidence
+result exposes candidate features, admission/rejection, rank, presentation disposition, and phase timings; production
+`DecodedImage` retains only final colors.
+
+The opt-in real-photo harness writes a marked, self-cleaning ignored directory containing
+`photo-color-profile-contact-sheet.png`, `notable-diagnostics.png`, and `notable-diagnostics.json`. The accepted local
+protocol freezes coefficients after the known-class tuning set, then selects and inspects a fresh holdout without
+changing coefficients for isolated misses. R11-B-F1 used 16 tuning photographs and a separately selected 20-photo
+three-date holdout. Evidence remains local and ignored; photographs and absolute owner paths must not enter tracked
+files.
+
+The final local Windows verification passes the expanded 199-test targeted filter and 2,229/2,229 tests for
+`dotnet test Fovium.sln -c Release --no-build`; the preceding Release solution build completes with zero warnings and
+errors. Eleven representative injected mutations are killed and exactly reverted. Hosted CI and non-Windows
+runtime/visual acceptance remain pending.

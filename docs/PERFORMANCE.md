@@ -169,12 +169,15 @@ still cannot fit is discarded and the visible Stage uses a matching same-image p
 
 R10 photo-derived analysis keeps one oriented reference-sRGB raster capped at `96 px` long edge (`≤9,216` samples), an
 unchanged five-entry raw palette, fixed 12 chromatic plus eight neutral representative candidate families, and a `6×6`
-field. R11-B retains a quantized-bin `ushort` plus alpha byte per bounded sample during that same scan, then performs
-bounded OKLab family consolidation and one 8-neighbor component traversal; it owns no second decode, full-image pass,
-or raster. The sample maps add at most 27,648 transient bytes, and selector maps/visited/queue remain bounded by the
-same 9,216 samples and 4,096 quantized bins. A five-entry result with three Notable values retains 548 estimated
-managed bytes under the same byte-accounted `DecodedImage`; Color Wash adds `64×64×4 = 16,384` bytes, while R10-B Color
-Gradient and Soft Glow add `2 × 32×32×4 = 8,192` bytes. Maximum retained styling state is therefore 25,124 bytes per
+field. R11-B-F1 retains a quantized-bin `ushort` plus alpha byte per bounded sample during that same scan, then performs
+bounded OKLab family consolidation, one 8-neighbor component traversal, and one immediate-boundary contrast traversal;
+it owns no second decode, full-image pass, auxiliary thumbnail, or raster. The sample maps add at most 27,648 transient
+bytes. The sample and principal selector arrays together remain bounded by the same 9,216 samples, 4,096 quantized bins,
+and `6×6` occupancy grid (at most 274,432 bytes in their theoretical simultaneous maxima, excluding small bounded
+objects), and none
+is retained. A five-entry result with ten Notable values retains 884 estimated managed bytes under the same
+byte-accounted `DecodedImage`; Color Wash adds `64×64×4 = 16,384` bytes, while R10-B Color Gradient and Soft Glow add
+`2 × 32×32×4 = 8,192` bytes. Maximum retained styling state is therefore 25,460 bytes per
 decoded image. Draw operations acquire leases rather than regenerate it, so zoom, pan, resize, fullscreen, scaling
 changes, and settings reuse existing work. There is no full-resolution or viewport-sized styling cache. Exact image
 identity plus existing latest-wins selection forbids stale publication, and failed/missing analysis or raster uses
@@ -199,6 +202,16 @@ settled to `14.66–17.39 µs` on the final six rows, with earlier process warm-
 Zero to three Notable values retained 404–548 analysis bytes and 1,304–1,784 profile bytes. The warm analysis range
 remains inside the previously observed R10/R10-B performance class; these are local comparative observations, not a
 cross-platform guarantee.
+
+R11-B-F1 raises only final capacity: zero to ten adaptive Notable values retain 404–884 analysis bytes and
+1,304–2,904 profile bytes. Diagnostics are returned only by the developer analysis entry point and are not attached to
+`DecodedImage`. On the 16-photo known-class tuning set plus frozen 20-photo holdout, selected counts ranged from zero to
+six; no image was padded to ten. Selector grouping/components/local contrast/admission/ranking measured respectively
+`0.03–7.12`, `0.14–4.39`, `0.04–2.07`, `0.00–0.05`, and `0.01–0.05 ms`; combined selector work was `0.28–7.72 ms` with
+a `0.48 ms` median. Whole existing bounded analysis measured `5.95–62.48 ms`, while decode plus analysis/profile was
+`99.52–421.73 ms` across different JPEG sizes and cold/warm states. These are single-machine engineering observations,
+not latency guarantees. Existing R10 representative, palette, field, boundary, and raster inputs remain on the same
+unchanged `96 px` scan.
 
 The final local Windows Release run measured analysis at `8.37 ms` for a 1.16 MP near-monochrome input, `16.73 ms` at
 6.32 MP, `12.10 ms` at 12 MP, `17.73 ms` at 15 MP, and `20.03 ms` at 24 MP. The prior accepted R10-A five-image range

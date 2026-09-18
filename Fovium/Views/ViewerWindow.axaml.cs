@@ -1689,7 +1689,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
             Orientation = Avalonia.Layout.Orientation.Horizontal,
             Spacing = 8,
         };
-        dominantContent.Children.Add(CreatePhotoColorSwatch(presentation.Dominant.Color, 30, 22));
+        dominantContent.Children.Add(CreatePhotoColorSwatch(presentation.Dominant.Color, 32, 26));
         dominantContent.Children.Add(new TextBlock
         {
             Text = presentation.Dominant.StructuralName,
@@ -1706,16 +1706,16 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         var paletteContent = new StackPanel
         {
             Orientation = Avalonia.Layout.Orientation.Horizontal,
-            Spacing = 7,
+            Spacing = 6,
         };
         foreach (var entry in presentation.Palette)
         {
             var item = new StackPanel
             {
-                Width = 43,
-                Spacing = 1,
+                Width = 34,
+                Spacing = 2,
             };
-            item.Children.Add(CreatePhotoColorSwatch(entry.Color.Color, 38, 24));
+            item.Children.Add(CreatePhotoColorSwatch(entry.Color.Color, 30, 24));
             item.Children.Add(new TextBlock
             {
                 Text = entry.Share,
@@ -1735,14 +1735,24 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         {
             var notableContent = new StackPanel
             {
-                Orientation = Avalonia.Layout.Orientation.Horizontal,
-                Spacing = 7,
+                Spacing = 5,
             };
-            foreach (var color in presentation.NotableColors)
+            foreach (var colors in PhotoColorProfileLayout.ArrangeNotableColors(
+                         presentation.NotableColors))
             {
-                var swatch = CreatePhotoColorSwatch(color.Color, 46, 26);
-                ToolTip.SetTip(swatch, FormatPhotoColorTooltip(color));
-                notableContent.Children.Add(swatch);
+                var row = new StackPanel
+                {
+                    Orientation = Avalonia.Layout.Orientation.Horizontal,
+                    Spacing = 6,
+                };
+                foreach (var color in colors)
+                {
+                    var swatch = CreatePhotoColorSwatch(color.Color, 28, 28);
+                    ToolTip.SetTip(swatch, FormatPhotoColorTooltip(color));
+                    row.Children.Add(swatch);
+                }
+
+                notableContent.Children.Add(row);
             }
 
             AddPhotoInfoControlRow(

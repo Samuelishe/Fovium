@@ -23,6 +23,34 @@ internal sealed record PhotoColorProfilePresentation(
     ImmutableArray<PhotoColorProfileDisplayEntry> Palette,
     ImmutableArray<PhotoColorProfileDisplayColor> NotableColors);
 
+internal static class PhotoColorProfileLayout
+{
+    internal const int MaximumNotableColors = 10;
+    internal const int MaximumNotableColorsPerRow = 5;
+
+    public static ImmutableArray<ImmutableArray<PhotoColorProfileDisplayColor>> ArrangeNotableColors(
+        ImmutableArray<PhotoColorProfileDisplayColor> colors)
+    {
+        if (colors.IsDefaultOrEmpty)
+        {
+            return [];
+        }
+
+        var bounded = colors.Take(MaximumNotableColors).ToArray();
+        var rows = ImmutableArray.CreateBuilder<ImmutableArray<PhotoColorProfileDisplayColor>>(
+            (bounded.Length + MaximumNotableColorsPerRow - 1) / MaximumNotableColorsPerRow);
+        for (var offset = 0; offset < bounded.Length; offset += MaximumNotableColorsPerRow)
+        {
+            rows.Add(bounded
+                .Skip(offset)
+                .Take(MaximumNotableColorsPerRow)
+                .ToImmutableArray());
+        }
+
+        return rows.MoveToImmutable();
+    }
+}
+
 internal static class PhotoColorProfilePresenter
 {
     public static PhotoColorProfilePresentation Format(

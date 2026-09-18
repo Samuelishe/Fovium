@@ -872,3 +872,26 @@ pass, retained raster, classifier cache, machine-learning model, or network inpu
 The resulting immutable values are attached through the existing exact `DecodedImage` analysis/profile path. Photo
 Info shows swatches and semantic tooltip detail but no misleading Notable percentage; structural names remain primary
 and creative nearest names remain secondary. Uniform and transparent inputs produce no invented Notable row.
+
+## D-077 — Notable evidence uses route-specific admission and incremental selection
+
+Status: Implemented in local R11-B-F1; hosted verification pending.
+
+One universal salience threshold cannot truthfully cover a substantial muted mass, compact saturated accent, strong
+lightness-neutral structure, and repeated distributed color. R11-B-F1 therefore keeps deterministic OKLab grouping but
+separates candidate evidence, route-specific admission, information ranking, and final presentation. Immediate-boundary
+OKLab contrast is accepted as bounded classical evidence on the existing `96 px` grid. Support remains a hard noise
+guard and soft rank factor rather than the sole meaning of importance.
+
+Presentation incrementally discounts information already supplied by Characteristic, weighted Frequent shades, and
+perceptual near-duplicates. It stops below an information threshold, emits zero to ten colors, and never fills capacity
+for hue diversity alone. Photo Info lays those values out as at most two rows of five equal compact swatches without
+percentages. Candidate diagnostics and phase timings are engineering output only and are never attached to the retained
+production image.
+
+The existing one-scan exact-`DecodedImage` lifecycle remains authoritative. The 16-photo tuning set demonstrated that
+the necessary cat/crane/brick/bust/cap/coat/crowd evidence survives at `96 px`, so no auxiliary thumbnail was admitted.
+A separately selected 20-photo holdout was inspected only after coefficients were frozen and showed no repeated new
+failure class or noisy capacity filling. Tiny downscaled evidence, human material-color constancy under deep shadow,
+and subject importance requiring recognition are accepted boundaries; they do not justify ML, object detection, a
+second decode, or weaker noise guards.

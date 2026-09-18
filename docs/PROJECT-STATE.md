@@ -7,12 +7,13 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R11-B is locally complete on R11-A baseline `318ab14cdbe48c1b0462f4a204f5e6152dfe617c`. Product version is
-`0.1.4.0001`: Photo Info now distinguishes Characteristic color, unchanged population-ranked Frequent shades, and up
-to three separately selected Notable colors for the exact photograph being presented. The new deterministic salience
-projection reuses the existing bounded R10 analysis scan and exact `DecodedImage` ownership; it adds no second decode,
-full-image analyzer, CMM pass, raster, model, network path, or recomputation on UI geometry. Structural Color Semantics
-remain primary and creative names remain secondary tooltip detail. The existing 45 broad families, 99 Professional
+R11-B-F1 is locally complete on pushed R11-B baseline `890ed592b1af18789c942909808bc3c11003e158`. Product version is
+`0.1.4.0002`: Photo Info retains Characteristic color and unchanged population-ranked Frequent shades, while adaptive
+Notable colors now use separate route-specific admission, information ranking, and incremental presentation selection
+with capacity from zero to ten. The deterministic salience projection reuses the existing bounded R10 analysis scan and
+exact `DecodedImage` ownership; it adds no second decode, full-image analyzer, auxiliary thumbnail, CMM pass, raster,
+model, network path, or recomputation on UI geometry. Structural Color Semantics remain primary and creative names
+remain secondary tooltip detail. The existing 45 broad families, 99 Professional
 terms / 104 reachable lobes, and 1,800 creative anchors are unchanged.
 
 The ignored research corpus now includes pinned UW/LabintheWild and Stanford CoCoLab human-survey numeric evidence plus
@@ -29,12 +30,13 @@ Windows at `RenderScaling = 1.00`.
 
 ## Current focus
 
-R11-B is ready for owner review/commit and hosted CI. Its ignored Windows evidence covers 14 real photographs, including
-ginger cat/greenery, orange trucks, flowers, industrial red/blue, brick/rust, wet asphalt, and controls where raw
-frequency was already useful. The 105-test focused selector/profile/lifecycle/localization filter and full 2,210-test
-local Windows Release suite pass; hosted CI, Linux/macOS, runtime fractional-DPI visual acceptance, and broader
-photographic validation remain
-future evidence. R10-E's whole 250-entry research frontier and Antique White/Linen warning remain unchanged.
+R11-B-F1 is ready for owner review/commit and hosted CI. Its ignored Windows evidence separates 16 known-class tuning
+photographs from a frozen 20-photo holdout selected across three other dates. The holdout produced adaptive zero-to-six
+results without weak ten-slot filling or a repeated new failure class. Tiny evidence lost at `96 px`, shadowed canonical
+material color, and subject importance requiring recognition remain accepted model limits. Hosted CI, Linux/macOS,
+runtime fractional-DPI visual acceptance, and broader photographic validation remain future evidence. The expanded
+199-test targeted Release filter and full 2,229-test local Windows Release suite pass after a zero-warning/error build.
+R10-E's whole 250-entry research frontier and Antique White/Linen warning remain unchanged.
 
 The current Codex/Rider ACP session negotiates no true in-app browser backend. Browser-plugin discovery returns an empty
 backend list, and the Rider Playwright MCP entry has no command or URL and is absent from the session tool registry.
@@ -76,7 +78,7 @@ capable host/session or a separately valid MCP registration plus Rider restart o
   presentation-safe Average, or presentation-safe Dominant source and may add Hairline Auto separation.
 - One deterministic oriented reference-sRGB analysis per decoded photograph, bounded to a 96-pixel long edge and
   attached to the existing byte-accounted decoded cache entry; exact-source publication exposes mathematical average,
-  representative dominant, unchanged five-entry population palette, up to three perceptually grouped Notable colors,
+  representative dominant, unchanged five-entry population palette, zero to ten adaptively selected Notable colors,
   `6×6` spatial field, and boundary tone without source re-decode or geometry recomputation. Color Gradient and Soft
   Glow add two `32×32` retained rasters prepared
   once from that same result; zoom, pan, resize, DPI, Matte, and slideshow cadence only stretch the existing artifact.

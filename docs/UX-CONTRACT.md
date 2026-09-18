@@ -187,7 +187,9 @@ geometry or Matte before its matching photograph.
 Rare features live behind right click. `I` or Overlays → Photo Info toggles a compact movable label/value card for the
 currently presented image. Its sparse photographic rows cover available camera, lens, exposure, capture, dimensions, and
 file facts. A leading Colors section distinguishes one representative Characteristic swatch/name, up to five unchanged
-population-ranked Frequent shades with shares, and an optional row of at most three Notable colors. Notable swatches
+population-ranked Frequent shades with shares, and an optional adaptive grid of zero to ten Notable colors. Notable
+swatches are equal compact squares arranged in at most two rows of five; the Characteristic swatch is intentionally
+slightly larger, the label column stays aligned, and an empty Notable result collapses the complete row. Notable colors
 reflect bounded perceptual distinctness plus coherent/repeated presence and deliberately omit percentages; they are not
 object-area estimates. Structural Professional name or broad-family fallback is primary; hover exposes exact HEX,
 OKLCH, raw-palette share where applicable, and secondary creative name. Average is retained in the model but not shown.

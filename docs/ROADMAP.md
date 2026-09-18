@@ -301,6 +301,20 @@ Photo Info now labels the existing signals Characteristic and Frequent shades an
 without population percentages. The exact-image attachment, Blink/Peek/latest-wins behavior, one-decode ownership,
 source-domain Color Picker/Histogram truth, and raw top-five palette order remain unchanged.
 
+## R11-B-F1 — Robust Notable Colors and adaptive layout
+
+Locally complete at `0.1.4.0002`: retain R11-B's three-signal model and `96 px` one-scan ownership while separating
+candidate consolidation, route-specific admission, information ranking, and incremental presentation selection.
+Explainable routes cover substantial coherent masses, compact chromatic accents, strong lightness-neutral contrast,
+distributed repeated structures, and muted distinct secondary masses. Deterministic immediate-boundary OKLab contrast
+was accepted as useful classical evidence; no ML, object semantics, second decode, auxiliary thumbnail, or CMM was
+added.
+
+Notable output is adaptive from zero to ten, stops before weak candidates, and uses at most two UI rows of five compact
+swatches. A 16-photo known-class tuning corpus and a frozen, separately selected 20-photo three-date holdout were
+visually reviewed; accepted limits remain tiny evidence lost at `96 px`, heavily shadowed canonical material color, and
+importance that requires human subject recognition.
+
 ## Later / separate platform milestones
 
 - file association and Open With integration;

@@ -168,6 +168,7 @@ never reuse an earlier version. No automatic rollover after BUILD `9999` is defi
 | `0.1.3.0001` | R10-E                                 | Independently evidenced Professional color vocabulary refinement: five terms and five bounded regions                           |
 | `0.1.4.0000` | R11-A                                 | On-demand semantic Photo Color Profile derived from the existing exact-image photo analysis                                     |
 | `0.1.4.0001` | R11-B                                 | Separate bounded Notable colors signal plus truthful Characteristic and Frequent shades Photo Info wording                      |
+| `0.1.4.0002` | R11-B-F1                              | Multi-route Notable color admission, adaptive zero-to-ten output, and compact two-row Color Profile layout                      |
 
 The `0.0.0.xxxx` line records the completed foundation and early product-construction checkpoints. The explicit
 owner-controlled `0.1.0.0000` transition marks the first substantial usable Fovium alpha; it does not claim feature
@@ -192,6 +193,9 @@ user-visible inspection capability inside Photo Info, not a correction to the R1
 R11-B increments BUILD to `0.1.4.0001`: the separate Notable colors row and more truthful Characteristic/Frequent
 shades wording refine that existing Photo Color Profile surface without adding another overlay, command, or analysis
 pipeline.
+R11-B-F1 increments BUILD to `0.1.4.0002`: robust route-specific admission and adaptive/two-row presentation correct
+the existing Notable colors capability without adding a new product surface or image-analysis pipeline. Artifact
+cleanup tooling alone has no version effect.
 
 ## Future code and packaging source
 
@@ -199,9 +203,9 @@ The root `Directory.Build.props` is the canonical source for the current compone
 supplies the production `Fovium` assembly with:
 
 ```text
-InformationalVersion = 0.1.4.0001
-AssemblyVersion      = 0.1.4.1
-FileVersion          = 0.1.4.1
+InformationalVersion = 0.1.4.0002
+AssemblyVersion      = 0.1.4.2
+FileVersion          = 0.1.4.2
 ```
 
 From that source:

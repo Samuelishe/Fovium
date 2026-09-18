@@ -134,11 +134,11 @@ public sealed class PhotoColorProfileTests
     [Fact]
     public void MaximumNotableProfileIsByteAccountedWithoutChangingRawPaletteCapacity()
     {
-        var colors = Enumerable.Range(0, 8)
+        var colors = Enumerable.Range(0, 15)
             .Select(index => new StageColor(
-                (byte)(30 + index * 20),
-                (byte)(50 + index * 12),
-                (byte)(70 + index * 8)))
+                (byte)(20 + index * 13),
+                (byte)(35 + index * 9),
+                (byte)(50 + index * 7)))
             .ToArray();
         var palette = colors.Take(5)
             .Select((color, index) => new PhotoPaletteEntry(color, (5 - index) / 15d))
@@ -146,12 +146,13 @@ public sealed class PhotoColorProfileTests
         var notable = colors.Skip(5)
             .Select(color => new PhotoNotableColor(color, 0.08, 0.04, 0.06, 0.5))
             .ToImmutableArray();
-        var profile = Assert.IsType<PhotoColorProfile>(CreateProjector(colors).Create(
-            CreateAnalysis(colors[0], colors[0], palette, notableColors: notable)));
+        var analysis = CreateAnalysis(colors[0], colors[0], palette, notableColors: notable);
+        var profile = Assert.IsType<PhotoColorProfile>(CreateProjector(colors).Create(analysis));
 
         Assert.Equal(5, profile.Palette.Length);
-        Assert.Equal(3, profile.NotableColors.Length);
-        Assert.Equal(1784, profile.RetainedBytes);
+        Assert.Equal(10, profile.NotableColors.Length);
+        Assert.Equal(884, analysis.RetainedBytes);
+        Assert.Equal(2904, profile.RetainedBytes);
     }
 
     [Theory]

@@ -20,7 +20,8 @@ internal readonly record struct PhotoStyleAnalysisDiagnostics(
     double RepresentativeLightness,
     double RepresentativeChroma,
     double RepresentativeScore,
-    int RepresentativeFamilyIndex)
+    int RepresentativeFamilyIndex,
+    NotableColorSelectionDiagnostics Notable)
 {
     public bool RawLargestDiffers => RawLargestColor != RepresentativeColor;
 }
@@ -182,7 +183,7 @@ internal sealed class PhotoStyleAnalyzer : IPhotoStyleAnalyzer
                 .Select(cell => cell.ToColor(average))
                 .ToImmutableArray();
             var representative = RepresentativeColorSelector.Select(rankedClusters, average);
-            var notableColors = NotableColorSelector.Select(
+            var notable = NotableColorSelector.SelectWithDiagnostics(
                 _size,
                 _sampleBins,
                 _sampleAlpha,
@@ -201,7 +202,7 @@ internal sealed class PhotoStyleAnalyzer : IPhotoStyleAnalyzer
                 _size,
                 _visibleSamples,
                 stopwatch.Elapsed,
-                notableColors);
+                notable.Colors);
             var rawLargest = rankedClusters.FirstOrDefault();
             var diagnostics = rankedClusters.Length > 0
                 ? new PhotoStyleAnalysisDiagnostics(
@@ -212,7 +213,8 @@ internal sealed class PhotoStyleAnalyzer : IPhotoStyleAnalyzer
                     representative.Lightness,
                     representative.Chroma,
                     representative.Score,
-                    representative.FamilyIndex)
+                    representative.FamilyIndex,
+                    notable.Diagnostics)
                 : new PhotoStyleAnalysisDiagnostics(
                     average,
                     1,
@@ -221,7 +223,8 @@ internal sealed class PhotoStyleAnalyzer : IPhotoStyleAnalyzer
                     representative.Lightness,
                     representative.Chroma,
                     representative.Score,
-                    representative.FamilyIndex);
+                    representative.FamilyIndex,
+                    notable.Diagnostics);
             return new PhotoStyleAnalysisResult(analysis, diagnostics);
         }
 

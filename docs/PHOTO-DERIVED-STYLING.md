@@ -14,7 +14,7 @@ Every successful canonical decode produces one deterministic analysis from the o
 the existing off-UI decode work. The analyzer resamples once to at most `96 px` on the long edge and reads no more than
 `9,216` visible samples. It records a linear-light alpha-weighted average, raw deterministic 4-bit/channel population
 clusters, up to five unchanged population-ranked palette entries, a representative Dominant derived from those raw
-clusters, up to three separately ranked Notable colors, a `6×6` spatial color field, and an outer-boundary tone. Fully
+clusters, zero to ten separately selected Notable colors, a `6×6` spatial color field, and an outer-boundary tone. Fully
 transparent samples do not contribute.
 
 Representative Dominant aggregates the raw clusters into a fixed bounded set of 12 OKLab hue families and eight
@@ -30,14 +30,20 @@ selection.
 
 Notable selection does not replace or reorder that raw palette. During the same bounded scan the analyzer records one
 quantized-bin identity and alpha byte per sample. Occupied bins are consolidated deterministically in OKLab: close
-colors merge directly, while chromatic shades may also merge across bounded lightness when their hue and chroma remain
-close. Each resulting family is measured for aggregate support, largest 8-neighbor component, and repeated coherent
-support on the same sample grid. Admission requires at least `1.2%` total support and either a `0.6%` component or
-`2%` repeated coherent support; ranking combines distance from the representative color, chroma, average-lightness
-contrast, population, and coherence. Representative-distance and near-duplicate suppression keep the result distinct,
-and at most one achromatic candidate prevents several dark/light neutral masses from crowding out a coherent chromatic
-accent. Isolated pixels, uniform inputs, and fully transparent inputs produce no invented Notable color. The output is
-a bounded explainable salience projection, not object recognition or semantic segmentation.
+colors merge directly, while chromatic shades may also merge across bounded lightness only when hue and chroma remain
+close. Each resulting family is measured for aggregate support, largest and top-three 8-neighbor components, component
+count, `6×6` cell occupancy, and OKLab contrast at immediate group boundaries on the same sample grid.
+
+Admission is separate from ranking. A candidate may qualify through substantial coherent mass, a compact chromatic
+accent, a strong lightness-contrast neutral, distributed repeated structure, or a muted but distinct secondary mass.
+Every route combines a hard support/coherence guard with the perceptual/spatial evidence relevant to that shape; no
+single scalar is simultaneously the noise gate and rank. After admission, ranking treats support as a soft factor and
+combines route strength, perceptual novelty, local contrast, spatial evidence, and chroma/lightness strength. Final
+selection incrementally discounts candidates already explained by Characteristic, weighted Frequent shades, or an
+already selected perceptual near-duplicate. It stops below an information threshold, retains at most one achromatic
+candidate, and caps the qualified shortlist/result at 16/10 rather than filling slots. Isolated pixels, uniform inputs,
+and fully transparent inputs therefore produce no invented Notable color. This is bounded classical color/spatial
+salience, not object recognition, subject importance, semantic segmentation, or a material-color correction.
 
 The immutable managed result is attached to its exact `DecodedImage` and charged to the same session-local byte-bounded
 decoded cache entry. There is no second file decode, independent styling cache, full-resolution analysis loop, or
@@ -69,8 +75,8 @@ average and representative Dominant, whose middle remains average-led, and whose
 lightness separation. Both descriptions become opaque `32×32` OKLab-interpolated rasters, 4,096 bytes each.
 
 All three rasters are prepared once with the analysis, byte-accounted under the same `DecodedImage`, and shared with
-draw operations through retained leases. The maximum combined production styling state is 25,124 bytes: 548 managed
-analysis with three Notable values,
+draw operations through retained leases. The maximum combined production styling state is 25,460 bytes: 884 managed
+analysis with ten Notable values,
 16,384 Color Wash, and two 4,096-byte gradient rasters. Geometry only stretches the selected artifact and never rebuilds
 it. A missing raster never triggers UI-thread gradient synthesis; it uses the same truthful Black fallback.
 
@@ -85,15 +91,17 @@ canonical photograph and therefore reuses its analysis without recomputation.
 ## Semantic Color Profile
 
 R11-A derives one immutable `PhotoColorProfile` from this already-computed analysis immediately after successful
-attachment. R11-B extends that same projection with up to three Notable colors. It classifies representative, Average,
+attachment. R11-B-F1 extends that same projection with zero to ten adaptive Notable colors. It classifies
+representative, Average,
 raw palette, and Notable values through shared `Fovium.ColorSemantics`; it does not read pixels, decode again, invoke
-CMM, or create a raster. A five-entry profile with three Notable values retains an estimated 1,784 bytes and is charged
-to the same exact `DecodedImage`. The final 14-photo Windows Release evidence measured warm bounded analysis at
-`5.53–18.40 ms` after one `31.30 ms` cold/JIT observation and warm semantic projection at `14.66–17.39 µs` on the final
-six rows; these are local engineering observations rather than latency guarantees.
+CMM, or create a raster. A five-entry profile with ten Notable values retains an estimated 2,904 bytes and is charged
+to the same exact `DecodedImage`. R11-B-F1's 16-photo tuning set plus untouched 20-photo holdout measured the selector's
+grouping/components/local-contrast/admission/ranking work at a combined `0.28–7.72 ms` (`0.48 ms` median); these are
+local engineering observations rather than latency guarantees.
 
 Photo Info labels representative Dominant as Characteristic, labels the unchanged population palette Frequent shades,
-and shows Notable colors as a separate optional swatch row. Average remains in the reusable data model but is omitted
+and shows Notable colors as a separate optional grid of at most two five-swatch rows. Average remains in the reusable
+data model but is omitted
 from the compact UI. Raw entries are not merged merely because structural names repeat: they may encode visibly
 distinct lightness/chroma masses within one human category. Notable swatches omit percentages because family support is
 an admission/ranking measure, not an object-area claim. Professional terms win over broad fallback, while creative
