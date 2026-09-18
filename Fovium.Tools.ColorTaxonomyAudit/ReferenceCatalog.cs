@@ -39,6 +39,7 @@ internal static partial class ReferenceCatalogLoader
         LoadXkcd(Path.Combine(directory, "xkcd-rgb.txt"), anchors);
         LoadCss(Path.Combine(directory, "css-color-4.html"), anchors);
         LoadMeodai(Path.Combine(directory, "meodai-colornames.csv"), anchors);
+        LoadIsccNbs(Path.Combine(directory, "nbs-iscc.txt"), anchors);
 
         var summaries = anchors
             .GroupBy(anchor => anchor.Dataset, StringComparer.Ordinal)
@@ -111,6 +112,23 @@ internal static partial class ReferenceCatalogLoader
             }
 
             Add("meodai", fields[0], rgb, anchors);
+        }
+    }
+
+    private static void LoadIsccNbs(string path, ICollection<ReferenceAnchor> anchors)
+    {
+        if (!File.Exists(path))
+        {
+            return;
+        }
+
+        foreach (var line in File.ReadLines(path))
+        {
+            var match = IsccNbsColorRegex().Match(line);
+            if (match.Success && TryParseHex(match.Groups["hex"].Value, out var rgb))
+            {
+                Add("iscc-nbs-centroids", match.Groups["name"].Value, rgb, anchors);
+            }
         }
     }
 
@@ -204,36 +222,55 @@ internal static partial class ReferenceCatalogLoader
         """id="valdef-color-(?<name>[a-z]+)">[a-z]+</dfn>\s*<td>#(?<hex>[0-9a-fA-F]{6})""",
         RegexOptions.CultureInvariant)]
     private static partial Regex CssColorRegex();
+
+    [GeneratedRegex(
+        @"\x22(?<name>[^\x22]+)\x22\s+sRGB:(?<hex>[0-9a-fA-F]{6})",
+        RegexOptions.CultureInvariant)]
+    private static partial Regex IsccNbsColorRegex();
 }
 
 internal static class SemanticNameNormalizer
 {
     private static readonly (string Family, string[] Terms)[] Rules =
     [
-        ("Black", ["black", "ebony", "charcoal"]),
-        ("White", ["white", "snow"]),
-        ("Cream", ["cream", "ivory", "cornsilk", "seashell", "old lace", "floral"]),
-        ("Gray", ["gray", "grey", "silver", "slate"]),
-        ("Beige", ["beige", "tan", "sand", "khaki", "wheat", "burlywood", "greige", "taupe"]),
-        ("Ochre", ["mustard", "ochre", "ocher", "gold", "goldenrod"]),
+        ("RedOrange", ["reddish orange", "red orange", "red-orange"]),
+        ("Amber", ["orange yellow", "orange-yellow", "amber"]),
+        ("YellowGreen", ["greenish yellow", "yellow green", "yellow-green", "lime", "chartreuse"]),
+        ("OliveGreen", ["olive green", "olive-green"]),
+        ("Turquoise", ["bluish green", "blue green", "blue-green", "turquoise", "teal", "aquamarine"]),
+        ("CyanBlue", ["greenish blue", "cyan blue", "cyan-blue"]),
+        ("BlueViolet", ["purplish blue", "violet blue", "blue violet", "blue-violet", "indigo"]),
+        ("RedMagenta", ["reddish purple", "red purple", "red-purple"]),
+        ("PinkLilac", ["purplish pink", "pink lilac", "pink-lilac"]),
+        ("DustyPink", ["dusty pink", "dusty rose", "old rose"]),
+        ("Mint", ["mint"]),
+        ("Cream", ["cream", "ivory", "cornsilk", "seashell", "old lace"]),
+        ("Greige", ["greige", "taupe"]),
+        ("Beige", ["beige", "tan", "sand", "khaki", "wheat", "burlywood"]),
+        ("Mustard", ["mustard"]),
+        ("Ochre", ["ochre", "ocher", "gold", "goldenrod"]),
         ("Olive", ["olive"]),
-        ("YellowGreen", ["yellow green", "yellow-green", "lime", "chartreuse"]),
-        ("Yellow", ["yellow", "amber"]),
+        ("Yellow", ["yellow"]),
         ("Orange", ["orange"]),
-        ("Peach", ["peach", "apricot"]),
+        ("Apricot", ["apricot"]),
+        ("Peach", ["peach"]),
         ("Terracotta", ["terracotta", "terra cotta", "burnt sienna", "rust"]),
         ("Brown", ["brown", "umber", "sienna", "chocolate"]),
         ("Burgundy", ["burgundy", "maroon", "wine"]),
         ("Crimson", ["crimson", "scarlet"]),
-        ("Pink", ["pink", "rose", "salmon"]),
+        ("Rose", ["rose"]),
+        ("Pink", ["pink"]),
         ("Coral", ["coral"]),
+        ("Coral", ["salmon"]),
         ("Red", ["red", "vermilion"]),
         ("Magenta", ["magenta", "fuchsia"]),
-        ("Violet", ["purple", "violet", "lilac", "lavender", "mauve", "plum", "periwinkle"]),
-        ("Blue", ["blue", "navy", "azure", "indigo"]),
+        ("Violet", ["purple", "violet", "lilac", "lavender", "mauve", "plum"]),
+        ("Blue", ["blue", "navy", "azure", "periwinkle"]),
         ("Cyan", ["cyan", "aqua"]),
-        ("Turquoise", ["turquoise", "teal", "aquamarine"]),
-        ("Green", ["green", "emerald", "mint"]),
+        ("Green", ["green", "emerald"]),
+        ("Gray", ["gray", "grey", "silver", "slate", "charcoal"]),
+        ("Black", ["black", "ebony"]),
+        ("White", ["white", "snow"]),
     ];
 
     public static string Normalize(string name)

@@ -30,6 +30,10 @@ internal static class ColorTaxonomyAuditApplication
                 adapter);
             var rgbGrid = AuditSampling.GenerateRgbGrid(options.Configuration.RgbStep, adapter);
             var boundaryRefinement = AuditSampling.GenerateBoundaryRefinement(structured, adapter);
+            var balancedSemantic = AuditSampling.GenerateBalancedSemantic(
+                options.Configuration,
+                options.Seed,
+                adapter);
             var references = ReferenceCatalogLoader.Load(options.ReferenceDirectory);
             var report = TaxonomyAnalyzer.Analyze(
                 options,
@@ -37,6 +41,7 @@ internal static class ColorTaxonomyAuditApplication
                 monteCarlo,
                 rgbGrid,
                 boundaryRefinement,
+                balancedSemantic,
                 references,
                 runtimeSeconds: 0);
             report = report with
@@ -84,5 +89,20 @@ internal static class ColorTaxonomyAuditApplication
         current.Metrics.ModifierReversals - baseline.Metrics.ModifierReversals,
         current.Metrics.TinyComponents - baseline.Metrics.TinyComponents,
         current.Metrics.ThinSlivers - baseline.Metrics.ThinSlivers,
-        current.Metrics.ReferenceDisagreements - baseline.Metrics.ReferenceDisagreements);
+        current.Metrics.ReferenceDisagreements - baseline.Metrics.ReferenceDisagreements,
+        current.Metrics.BalancedIncompatibleDisagreements -
+        baseline.Metrics.BalancedIncompatibleDisagreements,
+        baseline.BalancedCohort
+            .Join(
+                current.BalancedCohort,
+                before => before.CohortId,
+                after => after.CohortId,
+                (before, after) => new AuditClassificationChange(before.Sample, after.Sample),
+                StringComparer.Ordinal)
+            .Where(change => change.Before.Family != change.After.Family ||
+                             change.Before.Role != change.After.Role ||
+                             change.Before.ShortName != change.After.ShortName ||
+                             change.Before.DetailedName != change.After.DetailedName)
+            .OrderBy(change => change.After.Rgb.Packed)
+            .ToArray());
 }

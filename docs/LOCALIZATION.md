@@ -57,6 +57,10 @@ only at the presentation boundary. This bounded catalog is separate from the
 1,800-entry creative-name data domain, which remains available as the secondary Creative/Образное name. HEX, RGB (A),
 and labeled OKLCH numeric output remain locale-independent.
 
+R8-A-F6 adds one bounded EN/RU `Mint` semantic term; it does not add per-color professional-name data. Creative-name
+translation corrections remain keyed by the unchanged stable ID and never alter the canonical English anchor or
+matching.
+
 R9-A localizes Photo Presentation command/context-menu copy, its Viewing subsection, Edge margin label, and the
 explanation that the photograph stays inside the presentation margin while Matte does not change its scale. The stable
 `viewer.togglePhotoPresentation` identity, serialized property names, percentage value, and active session state are

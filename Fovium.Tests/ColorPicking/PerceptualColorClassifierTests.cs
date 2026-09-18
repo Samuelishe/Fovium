@@ -147,6 +147,72 @@ public sealed class PerceptualColorClassifierTests
     }
 
     [Theory]
+    [InlineData("#FF6B0A", PerceptualHueFamily.RedOrange)]
+    [InlineData("#C95E3A", PerceptualHueFamily.Terracotta)]
+    [InlineData("#321020", PerceptualHueFamily.Burgundy)]
+    [InlineData("#ADF0D1", PerceptualHueFamily.Mint)]
+    [InlineData("#CDFFCC", PerceptualHueFamily.Mint)]
+    [InlineData("#DFAAA4", PerceptualHueFamily.Rose)]
+    [InlineData("#D4A299", PerceptualHueFamily.Rose)]
+    [InlineData("#8A4794", PerceptualHueFamily.Violet)]
+    public void IndependentSemanticAuditVectorsUseEvidenceBackedFamilies(string hex, object expected)
+    {
+        Assert.Equal(expected, Describe(hex).HueFamily);
+    }
+
+    [Theory]
+    [InlineData("#FF634A", PerceptualHueFamily.Coral)]
+    [InlineData("#6D461D", PerceptualHueFamily.Brown)]
+    [InlineData("#7EFFD4", PerceptualHueFamily.Turquoise)]
+    [InlineData("#C7FCEC", PerceptualHueFamily.Cyan)]
+    [InlineData("#A562B1", PerceptualHueFamily.Violet)]
+    [InlineData("#E685DC", PerceptualHueFamily.PinkLilac)]
+    public void SemanticAuditCorrectionsPreserveAdjacentAcceptedControls(string hex, object expected)
+    {
+        Assert.Equal(expected, Describe(hex).HueFamily);
+    }
+
+    [Theory]
+    [InlineData(0.65, 0.20, 42.999, PerceptualHueFamily.Coral)]
+    [InlineData(0.65, 0.20, 43.000, PerceptualHueFamily.RedOrange)]
+    [InlineData(0.549999, 0.14, 40, PerceptualHueFamily.Brown)]
+    [InlineData(0.550000, 0.14, 40, PerceptualHueFamily.Terracotta)]
+    [InlineData(0.30, 0.08, 349.999, PerceptualHueFamily.RedMagenta)]
+    [InlineData(0.30, 0.08, 350.000, PerceptualHueFamily.Burgundy)]
+    [InlineData(0.60, 0.08, 31.999, PerceptualHueFamily.Rose)]
+    [InlineData(0.60, 0.08, 32.000, PerceptualHueFamily.Coral)]
+    [InlineData(0.55, 0.16, 329.999, PerceptualHueFamily.Violet)]
+    [InlineData(0.55, 0.16, 330.000, PerceptualHueFamily.Magenta)]
+    public void AuditedSemanticBoundariesMeetWithoutGaps(
+        double lightness,
+        double chroma,
+        double hue,
+        object expected)
+    {
+        Assert.Equal(expected, PerceptualColorClassifier.ClassifyHue(new OklchColor(lightness, chroma, hue)));
+    }
+
+    [Theory]
+    [InlineData(0.92, 0.08, 139.999, PerceptualHueFamily.Green)]
+    [InlineData(0.92, 0.08, 140.000, PerceptualHueFamily.Mint)]
+    [InlineData(0.92, 0.08, 179.999, PerceptualHueFamily.Mint)]
+    [InlineData(0.92, 0.08, 180.000, PerceptualHueFamily.Turquoise)]
+    [InlineData(0.859999, 0.08, 160, PerceptualHueFamily.Green)]
+    [InlineData(0.860000, 0.08, 160, PerceptualHueFamily.Mint)]
+    [InlineData(0.92, 0.069999, 160, PerceptualHueFamily.Green)]
+    [InlineData(0.92, 0.070000, 160, PerceptualHueFamily.Mint)]
+    [InlineData(0.92, 0.129999, 160, PerceptualHueFamily.Mint)]
+    [InlineData(0.92, 0.130000, 160, PerceptualHueFamily.Green)]
+    public void MintOccupiesABoundedLightGreenToBlueGreenRegion(
+        double lightness,
+        double chroma,
+        double hue,
+        object expected)
+    {
+        Assert.Equal(expected, PerceptualColorClassifier.ClassifyHue(new OklchColor(lightness, chroma, hue)));
+    }
+
+    [Theory]
     [InlineData(0.35, 0.07, 81.999, PerceptualHueFamily.Brown)]
     [InlineData(0.35, 0.07, 82, PerceptualHueFamily.Ochre)]
     [InlineData(0.48, 0.07, 94.999, PerceptualHueFamily.Ochre)]
@@ -292,8 +358,8 @@ public sealed class PerceptualColorClassifierTests
     [InlineData(270, PerceptualHueFamily.BlueViolet)]
     [InlineData(306.999, PerceptualHueFamily.BlueViolet)]
     [InlineData(307, PerceptualHueFamily.Violet)]
-    [InlineData(321.999, PerceptualHueFamily.Violet)]
-    [InlineData(322, PerceptualHueFamily.Magenta)]
+    [InlineData(329.999, PerceptualHueFamily.Magenta)]
+    [InlineData(330, PerceptualHueFamily.Magenta)]
     [InlineData(339.999, PerceptualHueFamily.Magenta)]
     [InlineData(340, PerceptualHueFamily.RedMagenta)]
     [InlineData(354.999, PerceptualHueFamily.RedMagenta)]

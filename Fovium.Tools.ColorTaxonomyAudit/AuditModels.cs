@@ -30,6 +30,47 @@ internal sealed record AuditReferenceNeighbor(
     string SemanticFamily,
     double DeltaE);
 
+internal sealed record AuditReferenceAssessment(
+    string ProductSemantic,
+    string ConsensusSemantic,
+    int ConsensusSupport,
+    bool IsExactAgreement,
+    bool IsCompatible,
+    double MeanNearestDeltaE,
+    IReadOnlyDictionary<string, string> DatasetVotes,
+    IReadOnlyList<AuditReferenceNeighbor> Neighbors);
+
+internal sealed record BalancedSemanticSample(
+    string CohortId,
+    string HueStratum,
+    string LightnessStratum,
+    string ChromaStratum,
+    AuditClassification Sample,
+    AuditReferenceAssessment? Reference);
+
+internal sealed record FamilySemanticProfile(
+    string Family,
+    int SampleCount,
+    int ReferenceAssessedCount,
+    int IncompatibleReferenceCount,
+    double IncompatibleReferenceRate,
+    string NearestCompetingFamily,
+    AuditClassification Center,
+    AuditClassification Edge,
+    AuditClassification Dark,
+    AuditClassification Light,
+    AuditClassification LowChroma,
+    AuditClassification HighChroma);
+
+internal sealed record OwnerCandidateSample(
+    string Region,
+    AuditClassification Sample,
+    AuditReferenceAssessment? Reference);
+
+internal sealed record AuditClassificationChange(
+    AuditClassification Before,
+    AuditClassification After);
+
 internal sealed record AuditAnomaly(
     string Id,
     string Severity,
@@ -55,6 +96,9 @@ internal sealed record AuditMetrics(
     int TinyComponents,
     int ThinSlivers,
     int ReferenceDisagreements,
+    int BalancedSemanticSamples,
+    int BalancedReferenceAssessments,
+    int BalancedIncompatibleDisagreements,
     int HighSeverityAnomalies,
     int MediumSeverityAnomalies,
     double RuntimeSeconds);
@@ -68,8 +112,14 @@ internal sealed record AuditReport(
     IReadOnlyDictionary<string, int> FamilyCoverage,
     IReadOnlyDictionary<string, int> RoleCoverage,
     IReadOnlyDictionary<string, int> ComponentCounts,
+    IReadOnlyDictionary<string, int> BalancedHueCoverage,
+    IReadOnlyDictionary<string, int> BalancedLightnessCoverage,
+    IReadOnlyDictionary<string, int> BalancedChromaCoverage,
     IReadOnlyList<ReferenceDatasetSummary> References,
     IReadOnlyList<AuditClassification> OwnerSeeds,
+    IReadOnlyList<OwnerCandidateSample> OwnerCandidates,
+    IReadOnlyList<BalancedSemanticSample> BalancedCohort,
+    IReadOnlyList<FamilySemanticProfile> FamilyProfiles,
     IReadOnlyList<AuditAnomaly> Anomalies,
     AuditComparison? Comparison);
 
@@ -83,7 +133,9 @@ internal sealed record AuditComparison(
     int ModifierReversalDelta,
     int TinyComponentDelta,
     int ThinSliverDelta,
-    int ReferenceDisagreementDelta);
+    int ReferenceDisagreementDelta,
+    int BalancedIncompatibleDisagreementDelta,
+    IReadOnlyList<AuditClassificationChange> ChangedBalancedSamples);
 
 internal sealed record ReferenceDatasetSummary(
     string Id,

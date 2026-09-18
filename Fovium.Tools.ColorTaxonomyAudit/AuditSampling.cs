@@ -10,6 +10,24 @@ internal sealed record StructuredGrid(
 
 internal static class AuditSampling
 {
+    private static readonly (string Name, double Center, double Jitter)[] SemanticLightnessBands =
+    [
+        ("VeryDark", 0.14, 0.035),
+        ("Dark", 0.34, 0.045),
+        ("Medium", 0.58, 0.050),
+        ("Light", 0.78, 0.040),
+        ("VeryLight", 0.93, 0.025),
+    ];
+
+    private static readonly (string Name, double Center, double Jitter)[] SemanticChromaBands =
+    [
+        ("NearNeutral", 0.012, 0.003),
+        ("Muted", 0.045, 0.008),
+        ("Moderate", 0.105, 0.012),
+        ("Saturated", 0.175, 0.018),
+        ("Vivid", 0.255, 0.020),
+    ];
+
     public static StructuredGrid GenerateStructured(
         AuditConfiguration configuration,
         ProductionColorAdapter adapter)
@@ -110,6 +128,66 @@ internal static class AuditSampling
             .ToArray();
     }
 
+    public static IReadOnlyList<BalancedSemanticSample> GenerateBalancedSemantic(
+        AuditConfiguration configuration,
+        int seed,
+        ProductionColorAdapter adapter)
+    {
+        var samples = new List<BalancedSemanticSample>();
+        var random = new Random(seed ^ 0x42C0_10A5);
+        for (var hue = 0; hue < 360; hue += configuration.BalancedHueStep)
+        {
+            foreach (var lightnessBand in SemanticLightnessBands)
+            {
+                foreach (var chromaBand in SemanticChromaBands)
+                {
+                    var adjustedHue = NormalizeHue(hue + NextSymmetric(random, configuration.BalancedHueStep * 0.35));
+                    var lightness = Math.Clamp(
+                        lightnessBand.Center + NextSymmetric(random, lightnessBand.Jitter),
+                        0,
+                        1);
+                    var chroma = Math.Max(0, chromaBand.Center + NextSymmetric(random, chromaBand.Jitter));
+                    if (!TryOklchToSrgb(lightness, chroma, adjustedHue, out var rgb))
+                    {
+                        continue;
+                    }
+
+                    samples.Add(new BalancedSemanticSample(
+                        $"H{hue:000}-{lightnessBand.Name}-{chromaBand.Name}",
+                        $"H{hue:000}",
+                        lightnessBand.Name,
+                        chromaBand.Name,
+                        adapter.Classify(rgb),
+                        null));
+                }
+            }
+        }
+
+        foreach (var lightnessBand in SemanticLightnessBands)
+        {
+            if (!TryOklchToSrgb(lightnessBand.Center, 0, 0, out var rgb))
+            {
+                continue;
+            }
+
+            samples.Add(new BalancedSemanticSample(
+                $"Neutral-{lightnessBand.Name}",
+                "Neutral",
+                lightnessBand.Name,
+                "Neutral",
+                adapter.Classify(rgb),
+                null));
+        }
+
+        return samples
+            .GroupBy(sample => sample.Sample.Rgb.Packed)
+            .Select(group => group.First())
+            .OrderBy(sample => sample.HueStratum, StringComparer.Ordinal)
+            .ThenBy(sample => sample.LightnessStratum, StringComparer.Ordinal)
+            .ThenBy(sample => sample.ChromaStratum, StringComparer.Ordinal)
+            .ToArray();
+    }
+
     public static bool TryOklchToSrgb(
         double lightness,
         double chroma,
@@ -187,5 +265,14 @@ internal static class AuditSampling
             ? 12.92 * linear
             : 1.055 * Math.Pow(linear, 1 / 2.4) - 0.055;
         return (byte)Math.Round(Math.Clamp(encoded, 0, 1) * 255, MidpointRounding.AwayFromZero);
+    }
+
+    private static double NextSymmetric(Random random, double magnitude) =>
+        (random.NextDouble() * 2 - 1) * magnitude;
+
+    private static double NormalizeHue(double hue)
+    {
+        var normalized = hue % 360;
+        return normalized < 0 ? normalized + 360 : normalized;
     }
 }

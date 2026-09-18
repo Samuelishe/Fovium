@@ -49,6 +49,46 @@ public sealed class ColorTaxonomyAuditTests
     }
 
     [Fact]
+    public void BalancedSemanticCohortIsCoordinateDrivenDeterministicAndSeedControlled()
+    {
+        var adapter = new ProductionColorAdapter();
+        var configuration = new AuditOptions(
+            AuditMode.Deep,
+            "unused",
+            null,
+            null,
+            AuditOptions.DefaultSeed).Configuration;
+
+        var canonical = AuditSampling.GenerateBalancedSemantic(configuration, AuditOptions.DefaultSeed, adapter);
+        var repeated = AuditSampling.GenerateBalancedSemantic(configuration, AuditOptions.DefaultSeed, adapter);
+        var holdout = AuditSampling.GenerateBalancedSemantic(configuration, 0x6A09_E667, adapter);
+
+        Assert.Equal(
+            canonical.Select(item => (item.CohortId, item.Sample.Rgb.Packed)),
+            repeated.Select(item => (item.CohortId, item.Sample.Rgb.Packed)));
+        Assert.NotEqual(
+            canonical.Select(item => item.Sample.Rgb.Packed),
+            holdout.Select(item => item.Sample.Rgb.Packed));
+        Assert.True(canonical.Count > 300);
+        Assert.Equal(
+            36,
+            canonical.Where(item => item.HueStratum != "Neutral")
+                .Select(item => item.HueStratum)
+                .Distinct()
+                .Count());
+        Assert.Equal(
+            ["Dark", "Light", "Medium", "VeryDark", "VeryLight"],
+            canonical.Select(item => item.LightnessStratum).Distinct().Order().ToArray());
+        Assert.Contains("NearNeutral", canonical.Select(item => item.ChromaStratum));
+        Assert.Contains("Muted", canonical.Select(item => item.ChromaStratum));
+        Assert.Contains("Moderate", canonical.Select(item => item.ChromaStratum));
+        Assert.Contains("Saturated", canonical.Select(item => item.ChromaStratum));
+        Assert.Contains("Vivid", canonical.Select(item => item.ChromaStratum));
+        Assert.Contains(canonical, item => item.Sample.Role == "NearBlack");
+        Assert.Contains(canonical, item => item.Sample.Role == "NearWhite");
+    }
+
+    [Fact]
     public void BoundaryRefinementSamplesDeterministicLocalRgbNeighborhoods()
     {
         var adapter = new ProductionColorAdapter();
@@ -98,9 +138,12 @@ public sealed class ColorTaxonomyAuditTests
     }
 
     [Theory]
-    [InlineData("dark mustard", "Ochre")]
+    [InlineData("dark mustard", "Mustard")]
     [InlineData("navy blue", "Blue")]
-    [InlineData("dusty rose", "Pink")]
+    [InlineData("dusty rose", "DustyPink")]
+    [InlineData("reddish orange", "RedOrange")]
+    [InlineData("purplish blue", "BlueViolet")]
+    [InlineData("mint green", "Mint")]
     [InlineData("unparseable fantasy", "Unknown")]
     public void ReferenceNamesNormalizeToBoundedAuditSemantics(string name, string expected)
     {
@@ -118,19 +161,22 @@ public sealed class ColorTaxonomyAuditTests
                 Path.Combine(directory, "css-color-4.html"),
                 "<dfn id=\"valdef-color-coral\">coral</dfn><td>#ff7f50");
             File.WriteAllText(Path.Combine(directory, "meodai-colornames.csv"), "name,hex\nRoyal Blue,#4169e1\n");
+            File.WriteAllText(Path.Combine(directory, "nbs-iscc.txt"), "\"Vivid Reddish Orange\" sRGB:E25822\n");
             File.WriteAllText(
                 Path.Combine(directory, "provenance.json"),
                 "[{\"id\":\"xkcd\",\"source\":\"https://xkcd.com/color/rgb.txt\",\"license\":\"cache only\",\"sha256\":\"abc\"}]");
 
             var catalog = ReferenceCatalogLoader.Load(directory);
 
-            Assert.Equal(3, catalog.Anchors.Count);
+            Assert.Equal(4, catalog.Anchors.Count);
             Assert.Contains(catalog.Anchors, anchor =>
-                anchor.Dataset == "xkcd" && anchor.SemanticFamily == "Ochre");
+                anchor.Dataset == "xkcd" && anchor.SemanticFamily == "Mustard");
             Assert.Contains(catalog.Anchors, anchor =>
                 anchor.Dataset == "css" && anchor.SemanticFamily == "Coral");
             Assert.Contains(catalog.Anchors, anchor =>
                 anchor.Dataset == "meodai" && anchor.SemanticFamily == "Blue");
+            Assert.Contains(catalog.Anchors, anchor =>
+                anchor.Dataset == "iscc-nbs-centroids" && anchor.SemanticFamily == "RedOrange");
             var xkcd = Assert.Single(catalog.Summaries, summary => summary.Id == "xkcd");
             Assert.Equal("cache only", xkcd.License);
             Assert.Equal("abc", xkcd.Sha256);
@@ -139,6 +185,57 @@ public sealed class ColorTaxonomyAuditTests
         {
             Directory.Delete(directory, recursive: true);
         }
+    }
+
+    [Theory]
+    [InlineData("Coral", "RedOrange", true)]
+    [InlineData("Orange", "RedOrange", true)]
+    [InlineData("Coral", "Blue", false)]
+    [InlineData("Gray", "White", true)]
+    [InlineData("Mint", "Green", true)]
+    public void SemanticCompatibilityKeepsAdjacentNamesButExposesDistantMismatches(
+        string product,
+        string reference,
+        bool expected)
+    {
+        Assert.Equal(expected, SemanticReferenceAudit.AreCompatible(product, reference));
+    }
+
+    [Fact]
+    public void SemanticReferenceConsensusRejectsDistantSparseAnchorsAndClustersAdjacentVotes()
+    {
+        var adapter = new ProductionColorAdapter();
+        var sample = adapter.Classify(new AuditRgb(255, 107, 10)) with { Family = "Coral" };
+        var catalog = new ReferenceCatalog(
+            [
+                CreateReference("css", "distant beige", new AuditRgb(245, 245, 220), "Beige"),
+                CreateReference("iscc-nbs-centroids", "reddish orange", new AuditRgb(226, 88, 34), "RedOrange"),
+                CreateReference("meodai", "orange", new AuditRgb(255, 110, 28), "Orange"),
+                CreateReference("xkcd", "bright orange", new AuditRgb(255, 91, 0), "Orange")
+            ],
+            []);
+
+        var assessment = Assert.IsType<AuditReferenceAssessment>(SemanticReferenceAudit.Assess(sample, catalog));
+
+        Assert.DoesNotContain("css", assessment.DatasetVotes.Keys);
+        Assert.Equal("Orange", assessment.ConsensusSemantic);
+        Assert.Equal(3, assessment.ConsensusSupport);
+        Assert.False(assessment.IsCompatible);
+        Assert.Contains(assessment.Neighbors, neighbor =>
+            neighbor is { Dataset: "css", SemanticFamily: "Beige" });
+    }
+
+    [Theory]
+    [InlineData("Brown", "Orange", false)]
+    [InlineData("Brown", "Terracotta", true)]
+    [InlineData("Beige", "Greige", true)]
+    [InlineData("Ochre", "Blue", false)]
+    public void SemanticCompatibilityDoesNotCollapseEarthAndSpectralFamilies(
+        string product,
+        string reference,
+        bool expected)
+    {
+        Assert.Equal(expected, SemanticReferenceAudit.AreCompatible(product, reference));
     }
 
     [Fact]
@@ -160,6 +257,12 @@ public sealed class ColorTaxonomyAuditTests
             Assert.Equal(9.75, json.RootElement.GetProperty("metrics").GetProperty("runtimeSeconds").GetDouble());
             Assert.True(File.Exists(Path.Combine(firstDirectory, "summary.md")));
             Assert.True(File.Exists(Path.Combine(firstDirectory, "contact-sheet.svg")));
+            Assert.True(File.Exists(Path.Combine(firstDirectory, "balanced-spectrum.html")));
+            Assert.True(File.Exists(Path.Combine(firstDirectory, "family-profiles.html")));
+            Assert.True(File.Exists(Path.Combine(firstDirectory, "owner-candidates.svg")));
+            Assert.True(File.Exists(Path.Combine(firstDirectory, "reference-disagreements.html")));
+            Assert.True(File.Exists(Path.Combine(firstDirectory, "holdout-samples.svg")));
+            Assert.True(File.Exists(Path.Combine(firstDirectory, "changed-regions.html")));
         }
         finally
         {
@@ -168,22 +271,73 @@ public sealed class ColorTaxonomyAuditTests
         }
     }
 
+    [Fact]
+    public void ApplicationProducesACompleteOfflineFastReport()
+    {
+        var directory = CreateTemporaryDirectory();
+        try
+        {
+            var output = new StringWriter();
+            var error = new StringWriter();
+
+            var exitCode = ColorTaxonomyAuditApplication.Run(
+                ["--mode", "fast", "--output", directory],
+                output,
+                error);
+
+            Assert.Equal(0, exitCode);
+            Assert.Equal(string.Empty, error.ToString());
+            Assert.Contains("Mode: Fast", output.ToString());
+            Assert.True(File.Exists(Path.Combine(directory, "summary.json")));
+            using var json = JsonDocument.Parse(File.ReadAllText(Path.Combine(directory, "summary.json")));
+            Assert.Equal("fovium-color-taxonomy-audit/v2", json.RootElement.GetProperty("schema").GetString());
+            Assert.True(json.RootElement.GetProperty("balancedCohort").GetArrayLength() > 300);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     private static AuditReport CreateMinimalReport(double runtimeSeconds)
     {
         var sample = new ProductionColorAdapter().Classify(new AuditRgb(117, 90, 19));
         return new AuditReport(
-            "fovium-color-taxonomy-audit/v1",
+            "fovium-color-taxonomy-audit/v2",
             "Fast",
             AuditOptions.DefaultSeed,
             new AuditOptions(AuditMode.Fast, "unused", null, null, AuditOptions.DefaultSeed).Configuration,
-            new AuditMetrics(1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, runtimeSeconds),
+            new AuditMetrics(1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, runtimeSeconds),
             new Dictionary<string, int> { [sample.Family] = 1 },
             new Dictionary<string, int> { [sample.Role] = 1 },
             new Dictionary<string, int> { [sample.Family] = 1 },
+            new Dictionary<string, int> { ["H080"] = 1 },
+            new Dictionary<string, int> { ["Medium"] = 1 },
+            new Dictionary<string, int> { ["Moderate"] = 1 },
             [],
             [sample],
             [],
+            [new BalancedSemanticSample("sample", "H080", "Medium", "Moderate", sample, null)],
+            [],
+            [],
             null);
+    }
+
+    private static ReferenceAnchor CreateReference(
+        string dataset,
+        string name,
+        AuditRgb rgb,
+        string semanticFamily)
+    {
+        var classified = new ProductionColorAdapter().Classify(rgb);
+        return new ReferenceAnchor(
+            dataset,
+            name,
+            rgb,
+            semanticFamily,
+            classified.LabL,
+            classified.LabA,
+            classified.LabB);
     }
 
     private static string CreateTemporaryDirectory()

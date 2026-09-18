@@ -38,6 +38,19 @@ introduced the Avalonia/Skia line for the disposable RenderProbe; R1 adopts the 
 No separate coverage collector is introduced. Other transitive package resolution remains NuGet/MSBuild data rather than
 a manually duplicated version ledger here.
 
+### Developer-only color-taxonomy references
+
+R8-A-F5/F6 may populate an ignored audit cache with public color-name references. They are neither shipped assets nor
+runtime/CI dependencies, and their names provide review evidence rather than product ground truth. The fetch route
+records retrieval UTC, pinned version where available, usage/license note, and SHA-256 in local `provenance.json`.
+Tracked instructions are in [`../eng/color-taxonomy-audit/README.md`](../eng/color-taxonomy-audit/README.md).
+
+The cache currently supports the official XKCD crowd-survey export (cache-only because the export has no explicit
+dataset license), the W3C CSS Color 4 named table under the W3C Document License, the MIT-licensed pinned meodai source
+as correlated evidence, and the 267 ISCC-NBS centroid names/RGB values from the SLIB mirror pinned at commit
+`05160e4ce21c65f99fea78dc4b29463e2c14bb22` under its file-header redistribution permission. NBS Circular 553 remains
+methodology vocabulary. No raw reference dataset, web lookup response, or generated report is committed.
+
 ## Planned / under evaluation
 
 The following are evaluated candidates, not installed dependencies or promises. Stable versions were checked from

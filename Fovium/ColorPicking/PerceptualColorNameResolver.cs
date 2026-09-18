@@ -99,6 +99,7 @@ internal sealed class PerceptualColorNameResolver(Localizer localizer)
         PerceptualHueFamily.YellowGreen => UiStrings.ColorPickerHueYellowGreen,
         PerceptualHueFamily.OliveGreen => UiStrings.ColorPickerHueOliveGreen,
         PerceptualHueFamily.Green => UiStrings.ColorPickerHueGreen,
+        PerceptualHueFamily.Mint => UiStrings.ColorPickerHueMint,
         PerceptualHueFamily.Turquoise => UiStrings.ColorPickerHueTurquoise,
         PerceptualHueFamily.TurquoiseCyan => UiStrings.ColorPickerHueTurquoiseCyan,
         PerceptualHueFamily.Cyan => UiStrings.ColorPickerHueCyan,

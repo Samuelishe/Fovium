@@ -34,11 +34,24 @@ dotnet run --project Fovium.Tools.ColorTaxonomyAudit -c Release -- --mode deep `
   --output artifacts/color-taxonomy-audit/after
 ```
 
-Each run writes `summary.json`, `summary.md`, `summary.html`, `anomalies.csv`, `contact-sheet.svg`, and a deterministic
-SHA-256 signature. Runtime is retained in the reports but excluded from the signature. Reports rank abrupt semantic
+The default balanced semantic cohort is independent of the classifier's family result: it samples every 10° hue slice
+across five representative lightness and five chroma bands, retains only in-gamut reference-sRGB points, and adds
+neutral/near-black/near-white controls. Use additional fixed seeds only as post-tuning holdouts, for example:
+
+```powershell
+dotnet run --project Fovium.Tools.ColorTaxonomyAudit -c Release -- --mode deep `
+  --seed 1779033703 --references artifacts/color-taxonomy-audit/references `
+  --output artifacts/color-taxonomy-audit/holdout-b
+```
+
+Each run writes `summary.json`, `summary.md`, `summary.html`, `anomalies.csv`, `contact-sheet.svg`, balanced-spectrum,
+family-profile, owner-candidate, holdout, changed-region, and reference-disagreement views, plus a deterministic SHA-256
+signature. Runtime is retained in the reports but excluded from the signature. Reports rank abrupt semantic
 neighbors, role/modifier reversals, lightness A→B→A paths, small connected components, thin slivers, broad family
-coverage, and cross-reference disagreements. These signals locate regions for engineering review; a high score is not
-an automatic product verdict.
+coverage, distance-gated k-nearest reference disagreements, and per-family semantic profiles. These signals locate
+regions for engineering review; a high score or a distant named anchor is not an automatic product verdict. Inspect the
+rendered contact sheets, preserve the tuning seed, and require one or more unseen holdout seeds before accepting a
+classifier correction.
 
 ## Optional reference cache
 
@@ -56,7 +69,9 @@ The script records source, retrieval UTC time, usage/license note, pinned versio
 - the dated W3C CSS Color 4 named-color table, used as a small standardized sanity reference;
 - `meodai/color-names` at commit `cc5fc08de437ea2522d32f751cecb4aa1e96f8e3` under MIT, treated as correlated
   secondary evidence because Fovium's creative catalog has the same upstream lineage;
-- NBS Circular 553 from NIST, retained only as methodology/reference vocabulary and not parsed as sRGB anchors.
+- the 267 ISCC-NBS centroid names/RGB values from the pinned SLIB mirror at commit
+  `05160e4ce21c65f99fea78dc4b29463e2c14bb22`; the file header grants redistribution, but the data remains cache-only;
+- NBS Circular 553 from NIST, retained as methodology/reference vocabulary rather than parsed as sRGB anchors.
 
 Names are normalized into broad audit-only semantic groups before k-nearest OKLab voting. Unknown names do not vote.
 Dataset agreement is independent evidence, never ground truth: source vocabularies are uneven, CSS is intentionally

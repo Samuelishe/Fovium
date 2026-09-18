@@ -9,12 +9,33 @@ internal static class TaxonomyAnalyzer
         "#D3F5FF", "#666577", "#FF634A"
     ];
 
+    private static readonly (string Region, string Hex)[] OwnerCandidateHex =
+    [
+        ("Coral / red-orange / orange", "#FF6B0A"),
+        ("Brown / terracotta", "#C95E3A"),
+        ("Burgundy / red-magenta", "#321020"),
+        ("Mint", "#ADF0D1"), ("Mint", "#CDFFCC"), ("Mint", "#7EFFD4"), ("Mint", "#C7FCEC"),
+        ("Warm near-white", "#F8EFD2"), ("Warm near-white", "#F7F5E6"),
+        ("Warm near-white", "#FEF8DE"), ("Warm near-white", "#F8F0DB"),
+        ("Warm near-white", "#F0DEC8"), ("Warm near-white", "#F8E8D8"),
+        ("Warm near-white", "#F4F2E3"), ("Warm near-white", "#EEEDDB"),
+        ("Warm near-white", "#FEF2CA"), ("Warm near-white", "#E6D4C0"),
+        ("Warm rose", "#DFAAA4"), ("Warm rose", "#D4A299"),
+        ("Violet / purple", "#A562B1"), ("Violet / purple", "#8A4794"),
+        ("Yellow / yellow-green", "#D4D88E"), ("Yellow / yellow-green", "#D5DB5D"),
+        ("Yellow / yellow-green", "#C7CD75"), ("Yellow / yellow-green", "#CBDFA2"),
+        ("Yellow / yellow-green", "#CBD97A"), ("Yellow / yellow-green", "#D5E29C"),
+        ("Yellow / yellow-green", "#CBD862"), ("Yellow / yellow-green", "#AFBC4A"),
+        ("Yellow / yellow-green", "#B9D147")
+    ];
+
     public static AuditReport Analyze(
         AuditOptions options,
         StructuredGrid structured,
         IReadOnlyList<AuditClassification> monteCarlo,
         IReadOnlyList<AuditClassification> rgbGrid,
         IReadOnlyList<AuditClassification> boundaryRefinement,
+        IReadOnlyList<BalancedSemanticSample> balancedSemantic,
         ReferenceCatalog references,
         double runtimeSeconds)
     {
@@ -53,6 +74,19 @@ internal static class TaxonomyAnalyzer
             .Take(options.Configuration.ReferenceCandidateLimit)
             .ToArray();
         var referenceDisagreements = AnalyzeReferences(referenceCandidates, references, anomalies);
+        var semantic = SemanticReferenceAudit.Analyze(balancedSemantic, references);
+        var ownerClassifications = OwnerCandidateHex
+            .Select(item => (item.Region, Sample: adapter.Classify(ParseHex(item.Hex))))
+            .ToArray();
+        var ownerAssessments = SemanticReferenceAudit.AssessMany(
+            ownerClassifications.Select(item => item.Sample),
+            references);
+        var ownerCandidates = ownerClassifications
+            .Select(item => new OwnerCandidateSample(
+                item.Region,
+                item.Sample,
+                ownerAssessments.GetValueOrDefault(item.Sample.Rgb.Packed)))
+            .ToArray();
 
         var ranked = ClusterAndRank(anomalies);
         var metrics = new AuditMetrics(
@@ -69,12 +103,15 @@ internal static class TaxonomyAnalyzer
             tinyComponents,
             thinSlivers,
             referenceDisagreements,
+            semantic.Cohort.Count,
+            semantic.AssessedCount,
+            semantic.IncompatibleCount,
             ranked.Count(anomaly => anomaly.Severity == "High"),
             ranked.Count(anomaly => anomaly.Severity == "Medium"),
             runtimeSeconds);
 
         return new AuditReport(
-            "fovium-color-taxonomy-audit/v1",
+            "fovium-color-taxonomy-audit/v2",
             options.Mode.ToString(),
             options.Seed,
             options.Configuration,
@@ -82,8 +119,14 @@ internal static class TaxonomyAnalyzer
             CountBy(all, sample => sample.Family),
             CountBy(all, sample => sample.Role),
             componentCounts,
+            semantic.HueCoverage,
+            semantic.LightnessCoverage,
+            semantic.ChromaCoverage,
             references.Summaries,
             ownerSeeds,
+            ownerCandidates,
+            semantic.Cohort,
+            semantic.FamilyProfiles,
             ranked,
             null);
     }
@@ -322,60 +365,27 @@ internal static class TaxonomyAnalyzer
             return 0;
         }
 
-        var datasets = catalog.Anchors
-            .Where(anchor => anchor.SemanticFamily != "Unknown")
-            .GroupBy(anchor => anchor.Dataset, StringComparer.Ordinal)
-            .OrderBy(group => group.Key, StringComparer.Ordinal)
-            .ToArray();
+        var assessments = SemanticReferenceAudit.AssessMany(candidates, catalog);
         var count = 0;
         foreach (var candidate in candidates)
         {
-            var neighbors = new List<AuditReferenceNeighbor>();
-            var votes = new List<string>();
-            foreach (var dataset in datasets)
-            {
-                var nearest = dataset
-                    .Select(anchor => (Anchor: anchor, Delta: DeltaE(candidate, anchor)))
-                    .OrderBy(item => item.Delta)
-                    .ThenBy(item => item.Anchor.Name, StringComparer.Ordinal)
-                    .Take(3)
-                    .ToArray();
-                neighbors.AddRange(nearest.Select(item => new AuditReferenceNeighbor(
-                    item.Anchor.Dataset,
-                    item.Anchor.Name,
-                    item.Anchor.Rgb.Hex,
-                    item.Anchor.SemanticFamily,
-                    item.Delta)));
-                var vote = nearest
-                    .GroupBy(item => item.Anchor.SemanticFamily, StringComparer.Ordinal)
-                    .OrderByDescending(group => group.Count())
-                    .ThenBy(group => group.Average(item => item.Delta))
-                    .ThenBy(group => group.Key, StringComparer.Ordinal)
-                    .First().Key;
-                votes.Add(vote);
-            }
-
-            var consensus = votes.GroupBy(vote => vote, StringComparer.Ordinal)
-                .OrderByDescending(group => group.Count())
-                .ThenBy(group => group.Key, StringComparer.Ordinal)
-                .First();
-            var productSemantic = ProductSemantic(candidate);
-            if (consensus.Count() < 2 || consensus.Key == productSemantic)
+            if (!assessments.TryGetValue(candidate.Rgb.Packed, out var assessment) ||
+                assessment.ConsensusSupport < 2 ||
+                assessment.IsCompatible)
             {
                 continue;
             }
 
             count++;
             var isOwnerSeed = OwnerSeedHex.Contains(candidate.Rgb.Hex, StringComparer.Ordinal);
-            var score = 62 + consensus.Count() * 8 + (isOwnerSeed ? 8 : 0);
+            var score = 62 + assessment.ConsensusSupport * 8 + (isOwnerSeed ? 8 : 0);
             anomalies.Add(CreateAnomaly(
                 "ReferenceDisagreement",
                 score,
-                $"{consensus.Count()} datasets support {consensus.Key}; Fovium maps to {productSemantic} ({candidate.Family}).",
+                $"{assessment.ConsensusSupport} datasets support {assessment.ConsensusSemantic}; " +
+                $"Fovium maps to {assessment.ProductSemantic} ({candidate.Family}).",
                 candidate,
-                references: neighbors.OrderBy(item => item.Dataset, StringComparer.Ordinal)
-                    .ThenBy(item => item.DeltaE)
-                    .ToArray()));
+                references: assessment.Neighbors));
         }
 
         return count;
@@ -594,7 +604,7 @@ internal static class TaxonomyAnalyzer
         "NearBlack" => "Black",
         "NearWhite" when sample.Family == "Cream" => "Cream",
         "NearWhite" => "White",
-        _ => ProductSemantic(sample.Family),
+        _ => SemanticReferenceAudit.ProductSemantic(sample),
     };
 
     private static int RoleRank(string role) => role switch

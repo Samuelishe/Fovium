@@ -205,6 +205,14 @@ Run and evidence semantics are documented in
 [`../eng/color-taxonomy-audit/README.md`](../eng/color-taxonomy-audit/README.md); ordinary CI requires no network or
 external dataset.
 
+R8-A-F6 extends the same tool with a classifier-independent coordinate cohort across 10-degree hue slices, five
+lightness bands, five chroma bands, neutrals, near-black, and near-white. Each reference dataset contributes bounded
+distance-gated k-nearest OKLab evidence; per-family profiles, changed-region/owner/holdout contact sheets, and two
+independent post-tuning seeds expose semantic coverage without making external names product truth. Focused regression
+and exact-boundary pairs cover the evidenced Mint, coral/red-orange, terracotta/brown, burgundy/red-magenta, warm-rose,
+and violet/magenta corrections plus unchanged accepted controls. Ordinary CI remains offline and does not download or
+assert against external datasets.
+
 R8-B-P1 adds deterministic in-memory tests for bounded ICC display-profile validation, content identity, active-monitor
 largest-intersection/tie behavior, typed fallback precedence, complete transform-key equality, Skia destination/alpha
 behavior, and source-versus-destination ownership. The final domain-independence test proves that two destination

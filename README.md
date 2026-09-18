@@ -51,10 +51,10 @@ and [imaging direction](docs/IMAGING-PIPELINE.md) for details.
 
 ## Current status
 
-The current locally complete checkpoint is **`0.1.2.0007`**. R8-A-F5 adds a reproducible production-classifier audit
-route and corrects the systematic yellow-brown/olive taxonomy overlap. R8-A-F4 is pushed at `8864750`; GitHub CI #51,
-Native Little CMS #16, and Native libheif #25 are green across their required matrices. The local `0.1.2.0007` candidate
-is not yet pushed or hosted-verified. Owner-accepted R6-A-F1 Photo
+The current locally complete checkpoint is **`0.1.2.0008`**. R8-A-F6 expands the reproducible Color Inspector audit
+with balanced spectrum/reference coverage and independent holdouts, then applies bounded evidenced semantic and Russian
+creative-name corrections. R8-A-F5 is pushed at `257f542`; its ordinary CI and both native workflow matrices are green.
+The local `0.1.2.0008` candidate is not yet pushed or hosted-verified. Owner-accepted R6-A-F1 Photo
 Info/floating-drag behavior, R10-A-F1 photo-derived styling, R9-A-F2 Matte-independent Photo Presentation scale, R9-B-F1
 Slideshow layout independence, and R8-B-W1 ordinary-Windows-SDR Monitor Color Management remain unchanged; hosted and
 non-Windows visual status must be evaluated separately.

@@ -98,6 +98,14 @@ public sealed class PerceptualColorNameResolverTests
     }
 
     [Theory]
+    [InlineData("en-US", "Very light mint")]
+    [InlineData("ru-RU", "Очень светлый мятный")]
+    public void MintUsesBoundedUiLocalizationTerms(string cultureName, string expected)
+    {
+        Assert.Equal(expected, CreateResolver(cultureName).ResolveShort(Describe("#ADF0D1")));
+    }
+
+    [Theory]
     [InlineData("en-US", "Color tone", "Mustard", "Undertone", "Cream")]
     [InlineData("ru-RU", "Цветовой тон", "Горчичный", "Подтон", "Кремовый")]
     public void DetailToneLabelDistinguishesChromaticToneFromNeutralUndertone(

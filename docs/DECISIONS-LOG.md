@@ -633,7 +633,7 @@ unchanged.
 
 ## D-062 — Perceptual taxonomy corrections require reproducible topology evidence
 
-Status: Implemented in the local R8-A-F5 candidate; owner acceptance pending.
+Status: Accepted in R8-A-F5.
 
 Color Inspector taxonomy work uses a developer-only audit executable against the real internal production classifier,
 not a copied model or a runtime service. Fixed-seed stratified OKLCH/RGB sampling, local boundary refinement, component
@@ -644,3 +644,19 @@ product truth or shipped lookup data; ordinary CI and the viewer remain offline.
 The first audit-confirmed correction replaces the yellow-brown/olive ordering gap with one centralized
 lightness-aware ochre hue floor plus a greener Olive lower bound. Project-owned property/boundary regressions, accepted
 neighbor controls, and same-seed before/after topology are required; RGB-specific exceptions remain forbidden.
+
+## D-063 — Semantic taxonomy corrections require balanced and holdout evidence
+
+Status: Implemented in the local R8-A-F6 candidate; owner acceptance pending.
+
+Candidate-driven topology analysis cannot prove that coherently shaped regions have appropriate human names. The audit
+therefore also owns a coordinate-driven balanced cohort across hue, lightness, chroma, neutral, near-black, and
+near-white strata, then profiles production families after sampling rather than using them to choose the cohort.
+Distance-gated k-nearest evidence from independent public vocabularies, rendered swatches, same-seed before/after
+comparison, and independent post-tuning holdout seeds must corroborate semantic corrections. Sparse/distant named
+anchors and external disagreement remain visible evidence, not votes forced into a verdict.
+
+R8-A-F6 applies only bounded corrections supported by that process, including one common-language Mint region and five
+transition refinements. The viewer remains deterministic and offline; external data, reports, and web lookups remain
+developer-only and ignored. Production sampling, history, creative matching, and the canonical 1,800 anchors do not
+depend on the audit.

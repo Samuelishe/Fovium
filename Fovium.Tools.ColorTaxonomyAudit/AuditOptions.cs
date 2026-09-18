@@ -111,4 +111,5 @@ internal sealed record AuditConfiguration(
     int HueStep,
     int MonteCarloSamples,
     int RgbStep,
-    int ReferenceCandidateLimit);
+    int ReferenceCandidateLimit,
+    int BalancedHueStep = 10);

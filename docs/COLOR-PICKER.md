@@ -105,11 +105,21 @@ color. These thresholds are deterministic presentation policy backed by
 boundary tests and a bounded real-photograph corpus, not a claim of an
 objective or physical color standard.
 
+Very light, visibly green-to-turquoise chromatic samples may use the bounded
+`Mint` family. It is a professional descriptive region, not another creative
+anchor: its shared lightness, chroma, and hue bounds deliberately preserve pale
+green, ordinary turquoise/aquamarine, and near-white cyan. Coral/red-orange,
+terracotta/brown, dark burgundy/red-magenta, warm rose/red, and
+violet/magenta transitions likewise use shared OKLCH regions rather than RGB
+exceptions.
+
 Developer changes to this taxonomy use the reproducible audit route documented in
 [`../eng/color-taxonomy-audit/README.md`](../eng/color-taxonomy-audit/README.md).
 Its structured in-gamut grid, fixed-seed RGB sampling, boundary refinement,
-topology checks, and optional named-color neighbors exercise the production
-classifier. External names rank suspicious regions only; they do not override
+topology checks, coordinate-driven balanced hue/lightness/chroma cohort,
+family profiles, and optional named-color neighbors exercise the production
+classifier. Independent holdout seeds validate corrections after tuning.
+External names rank suspicious regions only; they do not override
 the project-owned taxonomy or become runtime data.
 
 Fully transparent samples retain the localized `Transparent` semantic and do

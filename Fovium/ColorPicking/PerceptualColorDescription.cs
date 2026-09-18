@@ -53,6 +53,7 @@ internal enum PerceptualHueFamily
     YellowGreen,
     OliveGreen,
     Green,
+    Mint,
     Turquoise,
     TurquoiseCyan,
     Cyan,
@@ -154,6 +155,17 @@ internal static class PerceptualColorClassifier
     internal const double PeachLightnessMinimum = 0.760;
     internal const double ApricotLightnessMinimum = 0.860;
     internal const double ApricotChromaMinimum = 0.065;
+    internal const double MintLightnessMinimum = 0.860;
+    internal const double MintChromaMinimum = 0.070;
+    internal const double MintChromaMaximum = 0.130;
+    internal const double MintHueMinimum = 140;
+    internal const double MintHueMaximum = 180;
+    internal const double TerracottaLightnessMinimum = 0.550;
+    internal const double CoralHueMaximum = 43;
+    internal const double BurgundyHueMinimum = 350;
+    internal const double RoseHueMaximum = 32;
+    internal const double VioletHueMaximum = 330;
+    internal const double VividMagentaChromaMinimum = 0.240;
     internal const double VioletGrayHueMinimum = 285;
     internal const double LilacGrayHueMinimum = 300;
 
@@ -339,9 +351,20 @@ internal static class PerceptualColorClassifier
             return chromaticEarthTone;
         }
 
-        if ((color.HueDegrees >= 355 || color.HueDegrees < 35) &&
+        // Mint is a light chromatic green-to-blue-green role. The lower chroma
+        // bound deliberately meets the near-white gate, while the upper bound
+        // leaves stronger aquamarine/turquoise samples in their spectral family.
+        if (role == PerceptualColorRole.Chromatic &&
+            color.HueDegrees is >= MintHueMinimum and < MintHueMaximum &&
+            color.L >= MintLightnessMinimum &&
+            color.C is >= MintChromaMinimum and < MintChromaMaximum)
+        {
+            return PerceptualHueFamily.Mint;
+        }
+
+        if ((color.HueDegrees >= BurgundyHueMinimum || color.HueDegrees < 35) &&
             color.L < 0.50 &&
-            color.C < 0.18)
+            color.C < 0.14)
         {
             return PerceptualHueFamily.Burgundy;
         }
@@ -353,7 +376,7 @@ internal static class PerceptualColorClassifier
             return PerceptualHueFamily.Crimson;
         }
 
-        if ((color.HueDegrees >= 345 || color.HueDegrees < 25) &&
+        if ((color.HueDegrees >= 345 || color.HueDegrees < RoseHueMaximum) &&
             color.L >= 0.52 &&
             color.C < 0.12)
         {
@@ -375,7 +398,7 @@ internal static class PerceptualColorClassifier
             return PerceptualHueFamily.OliveGreen;
         }
 
-        if (color.HueDegrees is >= 20 and < 45 &&
+        if (color.HueDegrees is >= 20 and < CoralHueMaximum &&
             color.L >= 0.52 &&
             color.C is >= 0.08 and < 0.22)
         {
@@ -396,6 +419,12 @@ internal static class PerceptualColorClassifier
             return PerceptualHueFamily.PinkLilac;
         }
 
+        if (color.HueDegrees is >= 322 and < VioletHueMaximum &&
+            color.C >= VividMagentaChromaMinimum)
+        {
+            return PerceptualHueFamily.Magenta;
+        }
+
         return color.HueDegrees switch
         {
             < 38 => PerceptualHueFamily.Red,
@@ -411,7 +440,7 @@ internal static class PerceptualColorClassifier
             < 245 => PerceptualHueFamily.CyanBlue,
             < 270 => PerceptualHueFamily.Blue,
             < 307 => PerceptualHueFamily.BlueViolet,
-            < 322 => PerceptualHueFamily.Violet,
+            < VioletHueMaximum => PerceptualHueFamily.Violet,
             < 340 => PerceptualHueFamily.Magenta,
             < 355 => PerceptualHueFamily.RedMagenta,
             _ => PerceptualHueFamily.Red
@@ -468,7 +497,7 @@ internal static class PerceptualColorClassifier
             }
 
             if (hue is >= 35 and < 55 &&
-                color.L is >= 0.62 and < PeachLightnessMinimum &&
+                color.L is >= TerracottaLightnessMinimum and < PeachLightnessMinimum &&
                 color.C is >= 0.06 and < 0.16)
             {
                 return PerceptualHueFamily.Terracotta;

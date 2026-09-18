@@ -239,6 +239,7 @@ internal static class UiStrings
     public const string ColorPickerHueYellowGreen = "colorPicker.hue.yellowGreen";
     public const string ColorPickerHueOliveGreen = "colorPicker.hue.oliveGreen";
     public const string ColorPickerHueGreen = "colorPicker.hue.green";
+    public const string ColorPickerHueMint = "colorPicker.hue.mint";
     public const string ColorPickerHueTurquoise = "colorPicker.hue.turquoise";
     public const string ColorPickerHueTurquoiseCyan = "colorPicker.hue.turquoiseCyan";
     public const string ColorPickerHueCyan = "colorPicker.hue.cyan";

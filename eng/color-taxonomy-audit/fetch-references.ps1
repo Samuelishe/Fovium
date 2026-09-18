@@ -35,6 +35,13 @@ $sources = @(
         Url = 'https://nvlpubs.nist.gov/nistpubs/Legacy/circ/nbscircular553.pdf'
         Version = 'NBS Circular 553 (1955), NIST-hosted scan'
         License = 'U.S. Government publication; evaluated as methodology, not parsed as sRGB anchors'
+    },
+    @{
+        Id = 'iscc-nbs-centroids'
+        File = 'nbs-iscc.txt'
+        Url = 'https://raw.githubusercontent.com/taktoa/slib/05160e4ce21c65f99fea78dc4b29463e2c14bb22/nbs-iscc.txt'
+        Version = 'taktoa/slib commit 05160e4ce21c65f99fea78dc4b29463e2c14bb22'
+        License = 'File-header redistribution permission; ignored local audit cache only'
     }
 )
 
@@ -42,7 +49,7 @@ $provenance = foreach ($source in $sources) {
     $destination = Join-Path $resolvedCache $source.File
     Invoke-WebRequest -Uri $source.Url -OutFile $destination -UseBasicParsing
     $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $destination).Hash.ToLowerInvariant()
-    [ordered]@{
+    [pscustomobject][ordered]@{
         id = $source.Id
         source = $source.Url
         version = $source.Version

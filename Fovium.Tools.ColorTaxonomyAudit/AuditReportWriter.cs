@@ -38,6 +38,56 @@ internal static class AuditReportWriter
             Path.Combine(directory, "contact-sheet.svg"),
             CreateSvg(report.Anomalies.Take(100).ToArray()),
             new UTF8Encoding(false));
+        WriteSampleSheet(
+            directory,
+            "balanced-spectrum",
+            "Balanced whole-spectrum cohort",
+            report.BalancedCohort.Select(item => new SheetItem(
+                item.CohortId,
+                item.Sample,
+                item.Reference,
+                $"{item.HueStratum} · {item.LightnessStratum} · {item.ChromaStratum}")));
+        WriteSampleSheet(
+            directory,
+            "owner-candidates",
+            "Owner candidate regions",
+            report.OwnerCandidates.Select(item => new SheetItem(
+                item.Region,
+                item.Sample,
+                item.Reference,
+                item.Region)));
+        WriteSampleSheet(
+            directory,
+            "reference-disagreements",
+            "Balanced external-reference disagreements",
+            report.BalancedCohort
+                .Where(item => item.Reference is { IsCompatible: false })
+                .OrderByDescending(item => item.Reference!.ConsensusSupport)
+                .ThenBy(item => item.Sample.Rgb.Packed)
+                .Select(item => new SheetItem(item.CohortId, item.Sample, item.Reference, item.CohortId)));
+        WriteSampleSheet(
+            directory,
+            "holdout-samples",
+            report.Seed == AuditOptions.DefaultSeed ? "Canonical semantic cohort" : "Independent holdout cohort",
+            report.BalancedCohort.Select(item => new SheetItem(
+                item.CohortId,
+                item.Sample,
+                item.Reference,
+                item.CohortId)));
+        WriteSampleSheet(
+            directory,
+            "changed-regions",
+            "Changed balanced regions",
+            (report.Comparison?.ChangedBalancedSamples ?? [])
+            .Select(change => new SheetItem(
+                $"{change.Before.Family} → {change.After.Family}",
+                change.After,
+                null,
+                $"{change.Before.DetailedName} → {change.After.DetailedName}")));
+        File.WriteAllText(
+            Path.Combine(directory, "family-profiles.html"),
+            CreateFamilyProfilesHtml(report.FamilyProfiles),
+            new UTF8Encoding(false));
 
         var deterministic = report with
         {
@@ -90,6 +140,12 @@ internal static class AuditReportWriter
         AppendMetric(builder, "Tiny components", report.Metrics.TinyComponents);
         AppendMetric(builder, "Thin slivers", report.Metrics.ThinSlivers);
         AppendMetric(builder, "Reference disagreements", report.Metrics.ReferenceDisagreements);
+        AppendMetric(builder, "Balanced semantic samples", report.Metrics.BalancedSemanticSamples);
+        AppendMetric(builder, "Balanced reference assessments", report.Metrics.BalancedReferenceAssessments);
+        AppendMetric(
+            builder,
+            "Balanced incompatible disagreements",
+            report.Metrics.BalancedIncompatibleDisagreements);
         AppendMetric(builder, "High-severity anomalies", report.Metrics.HighSeverityAnomalies);
         AppendMetric(builder, "Medium-severity anomalies", report.Metrics.MediumSeverityAnomalies);
 
@@ -116,8 +172,17 @@ internal static class AuditReportWriter
             builder.AppendLine();
             builder.AppendLine(
                 $"High severity Δ `{comparison.HighSeverityDelta:+#;-#;0}`, medium Δ `{comparison.MediumSeverityDelta:+#;-#;0}`, " +
-                $"abrupt Δ `{comparison.AbruptDiscontinuityDelta:+#;-#;0}`, reference disagreement Δ `{comparison.ReferenceDisagreementDelta:+#;-#;0}`.");
+                $"abrupt Δ `{comparison.AbruptDiscontinuityDelta:+#;-#;0}`, reference disagreement Δ `{comparison.ReferenceDisagreementDelta:+#;-#;0}`, " +
+                $"balanced incompatible Δ `{comparison.BalancedIncompatibleDisagreementDelta:+#;-#;0}`, " +
+                $"changed balanced samples `{comparison.ChangedBalancedSamples.Count}`.");
         }
+
+        builder.AppendLine();
+        builder.AppendLine("## Balanced coordinate coverage");
+        builder.AppendLine();
+        AppendCoverage(builder, "Hue", report.BalancedHueCoverage);
+        AppendCoverage(builder, "Lightness", report.BalancedLightnessCoverage);
+        AppendCoverage(builder, "Chroma", report.BalancedChromaCoverage);
 
         builder.AppendLine();
         builder.AppendLine("## Family coverage");
@@ -131,6 +196,18 @@ internal static class AuditReportWriter
         }
 
         builder.AppendLine();
+        builder.AppendLine("## Balanced family semantic profiles");
+        builder.AppendLine();
+        builder.AppendLine(
+            "| Family | Samples | Incompatible | Rate | Competitor | Center | Edge | Dark / light | Low / high C |");
+        builder.AppendLine("| --- | ---: | ---: | ---: | --- | --- | --- | --- | --- |");
+        foreach (var profile in report.FamilyProfiles)
+        {
+            builder.AppendLine(
+                $"| {profile.Family} | {profile.SampleCount} | {profile.IncompatibleReferenceCount} | {profile.IncompatibleReferenceRate:P1} | {profile.NearestCompetingFamily} | {profile.Center.Rgb.Hex} | {profile.Edge.Rgb.Hex} | {profile.Dark.Rgb.Hex} / {profile.Light.Rgb.Hex} | {profile.LowChroma.Rgb.Hex} / {profile.HighChroma.Rgb.Hex} |");
+        }
+
+        builder.AppendLine();
         builder.AppendLine("## Owner regression seeds");
         builder.AppendLine();
         builder.AppendLine("| HEX | Role | Family | Short name | Detailed name |");
@@ -139,6 +216,19 @@ internal static class AuditReportWriter
         {
             builder.AppendLine(
                 $"| {sample.Rgb.Hex} | {sample.Role} | {sample.Family} | {sample.ShortName} | {sample.DetailedName} |");
+        }
+
+        builder.AppendLine();
+        builder.AppendLine("## Owner candidate evidence");
+        builder.AppendLine();
+        builder.AppendLine(
+            "| Region | HEX | Fovium | Product semantic | Reference consensus | Compatible | Dataset votes |");
+        builder.AppendLine("| --- | --- | --- | --- | --- | --- | --- |");
+        foreach (var candidate in report.OwnerCandidates)
+        {
+            var reference = candidate.Reference;
+            builder.AppendLine(
+                $"| {EscapeMarkdown(candidate.Region)} | {candidate.Sample.Rgb.Hex} | {candidate.Sample.DetailedName} | {reference?.ProductSemantic} | {reference?.ConsensusSemantic} | {reference?.IsCompatible} | {EscapeMarkdown(ReferenceVotes(reference))} |");
         }
 
         builder.AppendLine();
@@ -245,6 +335,120 @@ internal static class AuditReportWriter
 
     private static void AppendMetric(StringBuilder builder, string name, int value) =>
         builder.AppendLine($"| {name} | {value} |");
+
+    private static void AppendCoverage(
+        StringBuilder builder,
+        string label,
+        IReadOnlyDictionary<string, int> coverage)
+    {
+        builder.AppendLine($"**{label}:** " + string.Join(
+            ", ",
+            coverage.Select(pair => $"{pair.Key}={pair.Value}")));
+        builder.AppendLine();
+    }
+
+    private static void WriteSampleSheet(
+        string directory,
+        string fileName,
+        string title,
+        IEnumerable<SheetItem> source)
+    {
+        var items = source.ToArray();
+        File.WriteAllText(
+            Path.Combine(directory, fileName + ".html"),
+            CreateSampleHtml(title, items),
+            new UTF8Encoding(false));
+        File.WriteAllText(
+            Path.Combine(directory, fileName + ".svg"),
+            CreateSampleSvg(title, items.Take(180).ToArray()),
+            new UTF8Encoding(false));
+    }
+
+    private static string CreateSampleHtml(string title, IReadOnlyList<SheetItem> items)
+    {
+        var rows = string.Join(
+            Environment.NewLine,
+            items.Select(item =>
+                $"<tr><td><span class=\"swatch\" style=\"background:{item.Sample.Rgb.Hex}\"></span></td>" +
+                $"<td>{Html(item.Label)}</td><td>{item.Sample.Rgb.Hex}</td>" +
+                $"<td>L {item.Sample.OklchL:P1} · C {item.Sample.OklchC:0.000} · h {item.Sample.OklchHue:0.0}°</td>" +
+                $"<td>{Html(item.Sample.Role)}</td><td>{Html(item.Sample.Family)}</td>" +
+                $"<td>{Html(item.Sample.DetailedName)}</td><td>{Html(ReferenceSummary(item.Reference))}</td>" +
+                $"<td>{Html(item.Note)}</td></tr>"));
+        return $$"""
+                 <!doctype html><meta charset="utf-8"><title>{{Html(title)}}</title>
+                 <style>body{font:13px system-ui;margin:24px;background:#161616;color:#eee}table{border-collapse:collapse;width:100%}
+                 th,td{border-bottom:1px solid #444;padding:6px;text-align:left;vertical-align:top}.swatch{display:block;width:54px;height:32px;border:1px solid #888}</style>
+                 <h1>{{Html(title)}}</h1><p>External references are independent evidence, not product ground truth.</p>
+                 <table><thead><tr><th>Swatch</th><th>Cohort</th><th>HEX</th><th>OKLCH</th><th>Role</th><th>Family</th><th>Name</th><th>Reference</th><th>Note</th></tr></thead>
+                 <tbody>{{rows}}</tbody></table>
+                 """;
+    }
+
+    private static string CreateSampleSvg(string title, IReadOnlyList<SheetItem> items)
+    {
+        const int columns = 4;
+        const int cellWidth = 300;
+        const int cellHeight = 126;
+        const int headerHeight = 42;
+        var rows = Math.Max(1, (items.Count + columns - 1) / columns);
+        var builder = new StringBuilder();
+        builder.AppendLine(
+            $"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{columns * cellWidth}\" height=\"{headerHeight + rows * cellHeight}\" viewBox=\"0 0 {columns * cellWidth} {headerHeight + rows * cellHeight}\">");
+        builder.AppendLine(
+            "<rect width=\"100%\" height=\"100%\" fill=\"#171717\"/><style>text{font-family:system-ui;fill:#eee;font-size:12px}.small{fill:#bbb;font-size:10px}</style>");
+        builder.AppendLine($"<text x=\"12\" y=\"26\" font-size=\"18\">{Xml(title)}</text>");
+        for (var index = 0; index < items.Count; index++)
+        {
+            var item = items[index];
+            var x = index % columns * cellWidth;
+            var y = headerHeight + index / columns * cellHeight;
+            builder.AppendLine(
+                $"<rect x=\"{x + 8}\" y=\"{y + 8}\" width=\"64\" height=\"64\" rx=\"4\" fill=\"{item.Sample.Rgb.Hex}\" stroke=\"#888\"/>");
+            builder.AppendLine(
+                $"<text x=\"{x + 80}\" y=\"{y + 20}\">{Xml(item.Sample.Rgb.Hex)} · {Xml(item.Sample.Family)}</text>");
+            builder.AppendLine($"<text x=\"{x + 80}\" y=\"{y + 38}\">{Xml(Trim(item.Sample.DetailedName, 31))}</text>");
+            builder.AppendLine(
+                $"<text class=\"small\" x=\"{x + 80}\" y=\"{y + 55}\">L {item.Sample.OklchL:P1} C {item.Sample.OklchC:0.000} h {item.Sample.OklchHue:0}°</text>");
+            builder.AppendLine(
+                $"<text class=\"small\" x=\"{x + 8}\" y=\"{y + 91}\">{Xml(Trim(ReferenceSummary(item.Reference), 47))}</text>");
+            builder.AppendLine(
+                $"<text class=\"small\" x=\"{x + 8}\" y=\"{y + 108}\">{Xml(Trim(item.Note, 47))}</text>");
+        }
+
+        builder.AppendLine("</svg>");
+        return builder.ToString();
+    }
+
+    private static string CreateFamilyProfilesHtml(IReadOnlyList<FamilySemanticProfile> profiles)
+    {
+        var rows = string.Join(
+            Environment.NewLine,
+            profiles.Select(profile =>
+                $"<tr><td>{Html(profile.Family)}</td><td>{profile.SampleCount}</td><td>{profile.IncompatibleReferenceRate:P1}</td>" +
+                $"<td>{Html(profile.NearestCompetingFamily)}</td><td>{profile.Center.Rgb.Hex}</td><td>{profile.Edge.Rgb.Hex}</td>" +
+                $"<td>{profile.Dark.Rgb.Hex} / {profile.Light.Rgb.Hex}</td><td>{profile.LowChroma.Rgb.Hex} / {profile.HighChroma.Rgb.Hex}</td></tr>"));
+        return $$"""
+                 <!doctype html><meta charset="utf-8"><title>Family semantic profiles</title>
+                 <style>body{font:13px system-ui;margin:24px;background:#161616;color:#eee}table{border-collapse:collapse;width:100%}th,td{border-bottom:1px solid #444;padding:6px;text-align:left}</style>
+                 <h1>Family semantic profiles</h1><table><thead><tr><th>Family</th><th>Samples</th><th>Incompatible rate</th><th>Competitor</th><th>Center</th><th>Edge</th><th>Dark/light</th><th>Low/high C</th></tr></thead><tbody>{{rows}}</tbody></table>
+                 """;
+    }
+
+    private static string ReferenceSummary(AuditReferenceAssessment? reference) => reference is null
+        ? "No reference cache"
+        : $"{reference.ProductSemantic} vs {reference.ConsensusSemantic} ({reference.ConsensusSupport}); " +
+          (reference.IsCompatible ? "compatible" : "incompatible");
+
+    private static string ReferenceVotes(AuditReferenceAssessment? reference) => reference is null
+        ? string.Empty
+        : string.Join(", ", reference.DatasetVotes.Select(pair => $"{pair.Key}:{pair.Value}"));
+
+    private sealed record SheetItem(
+        string Label,
+        AuditClassification Sample,
+        AuditReferenceAssessment? Reference,
+        string Note);
 
     private static string Csv(string value) => $"\"{value.Replace("\"", "\"\"")}\"";
 

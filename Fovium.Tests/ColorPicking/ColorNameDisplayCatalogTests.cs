@@ -113,6 +113,8 @@ public sealed class ColorNameDisplayCatalogTests
         Assert.Equal("Небопад", russian.Names["rgb-89c6df"]);
         Assert.Equal("Желейный слизень", russian.Names["rgb-de6646"]);
         Assert.Equal("Папоротниковый", russian.Names["rgb-71ab62"]);
+        Assert.Equal("Сланцевая гладь", russian.Names["rgb-577396"]);
+        Assert.Equal("Сердитая паста", russian.Names["rgb-ffcc55"]);
     }
 
     [Fact]
