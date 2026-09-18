@@ -90,6 +90,13 @@ internal enum PerceptualChromaClass
     Vivid
 }
 
+internal enum HueSemanticMeaningfulness
+{
+    Undefined,
+    Weak,
+    Strong
+}
+
 internal readonly record struct OklchColor(double L, double C, double HueDegrees)
 {
     public static OklchColor FromSrgb(byte red, byte green, byte blue)
@@ -115,6 +122,16 @@ internal sealed record PerceptualColorDescription(
     PerceptualChromaClass? ChromaClass)
 {
     public ProfessionalColorTerm? ProfessionalTerm { get; init; }
+
+    public HueSemanticMeaningfulness HueMeaningfulness => Role switch
+    {
+        null or PerceptualColorRole.Neutral => HueSemanticMeaningfulness.Undefined,
+        PerceptualColorRole.NearBlack or PerceptualColorRole.NearWhite
+            when Undertone is null or PerceptualUndertone.None => HueSemanticMeaningfulness.Undefined,
+        PerceptualColorRole.NearNeutral or PerceptualColorRole.TintedNeutral or
+            PerceptualColorRole.NearBlack or PerceptualColorRole.NearWhite => HueSemanticMeaningfulness.Weak,
+        _ => HueSemanticMeaningfulness.Strong
+    };
 
     public bool IsTransparent => Oklch is null;
 

@@ -41,12 +41,14 @@ internal static class ColorSemanticsReportWriter
         if (options.Json)
         {
             WriteArtifact("taxonomy.json", JsonSerializer.Serialize(report, IndentedJson));
+            WriteArtifact("analysis-summary.json", BuildCompactAnalysisJson(report));
         }
 
         if (options.Text)
         {
             WriteArtifact("summary.txt", BuildTextSummary(report));
             WriteArtifact("summary.md", BuildMarkdownSummary(report));
+            WriteArtifact("analysis-summary.md", BuildCompactAnalysisMarkdown(report));
         }
 
         if (options.Static)
@@ -96,6 +98,7 @@ internal static class ColorSemanticsReportWriter
             $"Commit: {report.Metadata.Commit}",
             $"Schema: {report.Schema}",
             $"Production signature: {report.ProductionSignature}",
+            $"Classification outcomes: {report.Signatures.ClassificationOutcomes}",
             $"Report signature: {report.ReportSignature}",
             string.Empty,
             $"Broad families: {report.Summary.BroadFamilyCount}",
@@ -110,6 +113,11 @@ internal static class ColorSemanticsReportWriter
             "Domains:"
         };
         lines.AddRange(domains);
+        lines.Add(string.Empty);
+        lines.Add("Explicit sample cohorts:");
+        lines.AddRange(report.Sampling.Cohorts.Select(cohort =>
+            $"  {cohort.Id}: {cohort.ProfessionalHitCount}/{cohort.SampleCount} Professional hits " +
+            $"({cohort.ProfessionalHitRate:P1}); denominator={cohort.DenominatorMeaning}"));
         lines.Add(string.Empty);
         lines.Add($"Research: {(report.Research.Available ? "available" : "not supplied")}");
         lines.AddRange(disposition);
@@ -126,6 +134,7 @@ internal static class ColorSemanticsReportWriter
         builder.AppendLine($"- Commit: `{report.Metadata.Commit}`");
         builder.AppendLine($"- Schema: `{report.Schema}`");
         builder.AppendLine($"- Production signature: `{report.ProductionSignature}`");
+        builder.AppendLine($"- Classification-outcome signature: `{report.Signatures.ClassificationOutcomes}`");
         builder.AppendLine($"- Report signature: `{report.ReportSignature}`");
         builder.AppendLine(
             $"- Evidence: {report.Metadata.EvidenceMode}; source domain: {report.Metadata.SourceColorDomain}");
@@ -157,6 +166,82 @@ internal static class ColorSemanticsReportWriter
         {
             builder.AppendLine(
                 $"- **{EscapeMarkdown(warning.Severity)} / {EscapeMarkdown(warning.Kind)}:** {EscapeMarkdown(warning.Message)}");
+        }
+
+        return builder.ToString();
+    }
+
+    internal static string BuildCompactAnalysisJson(ColorSemanticsReport report)
+    {
+        var compact = new
+        {
+            Schema = "fovium-color-semantics-analysis-summary/v1",
+            report.Metadata,
+            report.Summary,
+            report.Signatures,
+            Sampling = report.Sampling.Cohorts,
+            MultiLobeTerms = report.ProfessionalTerms.Where(term => term.RegionCount > 1)
+                .Select(term => new { term.Id, term.EnglishName, term.RussianName, term.RegionIds })
+                .ToArray(),
+            Warnings = report.Warnings,
+            WeakestLocalStability = report.ProfessionalTerms.Where(term => term.LocalStability is not null)
+                .OrderBy(term => term.LocalStability!.RetentionFraction)
+                .ThenBy(term => term.Id, StringComparer.Ordinal)
+                .Take(20)
+                .Select(term => new { term.Id, term.LocalStability })
+                .ToArray(),
+            Overlaps = report.DeepEvidence.Overlaps,
+            ShadowedRegions = report.DeepEvidence.RegionReachability.Where(region => region.Shadowed).ToArray(),
+            DomainVocabulary = report.Research.DomainCoverage,
+            ResearchFrontier = report.Research.Candidates
+                .OrderByDescending(candidate => candidate.IndependentNumericSourceGroupCount)
+                .ThenByDescending(candidate => candidate.PriorityScore)
+                .ThenBy(candidate => candidate.CanonicalTerm, StringComparer.Ordinal)
+                .Select(candidate => new
+                {
+                    candidate.CanonicalTerm,
+                    candidate.Domain,
+                    candidate.Disposition,
+                    candidate.Reason,
+                    candidate.LexicalSourceCount,
+                    candidate.NumericSourceCount,
+                    candidate.IndependentNumericSourceGroupCount,
+                    candidate.AnchorCount,
+                    candidate.CompactComponentCount,
+                    candidate.NoiseFraction,
+                    candidate.NearestShippedTerm,
+                    candidate.NearestShippedDeltaE
+                }).ToArray()
+        };
+        return JsonSerializer.Serialize(compact, IndentedJson);
+    }
+
+    internal static string BuildCompactAnalysisMarkdown(ColorSemanticsReport report)
+    {
+        var builder = new StringBuilder();
+        builder.AppendLine("# Fovium Color Semantics compact analysis");
+        builder.AppendLine();
+        builder.AppendLine($"- Definition: `{report.Signatures.ProductionDefinition}`");
+        builder.AppendLine($"- Classification outcomes: `{report.Signatures.ClassificationOutcomes}`");
+        builder.AppendLine($"- Canonical report: `{report.Signatures.CanonicalReport}`");
+        builder.AppendLine($"- Taxonomy: {report.Summary.BroadFamilyCount} broad / " +
+                           $"{report.Summary.ProfessionalTermCount} Professional / {report.Summary.RegionCount} lobes");
+        builder.AppendLine($"- Deep evidence: {(report.DeepEvidence.Available ? "available" : "not supplied")}");
+        builder.AppendLine();
+        builder.AppendLine("## Sampling cohorts");
+        builder.AppendLine();
+        foreach (var cohort in report.Sampling.Cohorts)
+        {
+            builder.AppendLine($"- `{cohort.Id}`: {cohort.ProfessionalHitCount}/{cohort.SampleCount} " +
+                               $"({cohort.ProfessionalHitRate:P1}); {cohort.DenominatorMeaning}.");
+        }
+
+        builder.AppendLine();
+        builder.AppendLine("## Warnings");
+        builder.AppendLine();
+        foreach (var warning in report.Warnings)
+        {
+            builder.AppendLine($"- `{warning.Id}` {warning.Severity}/{warning.Kind}: {warning.Message}");
         }
 
         return builder.ToString();
@@ -280,12 +365,12 @@ internal static class ColorSemanticsReportWriter
     internal static string BuildRelationsSvg(ColorSemanticsReport report)
     {
         var rows = report.BroadFamilies.Select(family => new
-            {
-                Family = family,
-                Terms = report.ProfessionalTerms.Where(term => term.ParentFamilyIds.Contains(family.Id))
+        {
+            Family = family,
+            Terms = report.ProfessionalTerms.Where(term => term.ParentFamilyIds.Contains(family.Id))
                     .OrderBy(term => term.Id, StringComparer.Ordinal)
                     .ToArray()
-            })
+        })
             .Where(row => row.Terms.Length > 0)
             .ToArray();
         var rowHeights = rows.Select(row => 48 + (int)Math.Ceiling(row.Terms.Length / 4d) * 42).ToArray();
@@ -349,7 +434,7 @@ internal static class ColorSemanticsReportWriter
                    <nav><button data-tab="summary" class="active">Summary</button><button data-tab="explorer">3D Explorer</button><button data-tab="atlas">OKLCH atlas</button><button data-tab="relations">Relations</button><button data-tab="research">Warnings / frontier</button><button data-tab="metadata">Metadata</button></nav>
                    <main>
                    <section id="summary" class="tab active"><div class="cards" id="summary-cards"></div><div class="panel" style="margin-top:16px"><h2>Semantic domains</h2><table class="table" id="domain-table"></table></div></section>
-                   <section id="explorer" class="tab"><div class="explorer"><div class="canvas-wrap"><canvas id="scene"></canvas><div class="hint">Drag to rotate · Shift-drag to pan · wheel to zoom · click a point for details</div></div><aside class="controls"><div class="control"><input id="search" placeholder="Brick Red, Ecru, stable ID…" style="width:100%"><select id="domain" style="width:100%;margin-top:8px"><option value="">All domains</option></select><select id="locale" style="width:100%;margin-top:8px"><option value="en">English</option><option value="ru">Русский</option></select></div><div class="control"><strong>Layers</strong><label><input id="gamut" type="checkbox" checked> reference-sRGB gamut</label><label><input id="families" type="checkbox"> broad-family color</label><label><input id="regions" type="checkbox" checked> Professional coverage</label><label><input id="cores" type="checkbox" checked> representative cores</label><label><input id="anchors" type="checkbox"> creative anchors</label><label><input id="accepted" type="checkbox"> research: accepted</label><label><input id="deferred" type="checkbox"> research: deferred</label><label><input id="synonym" type="checkbox"> research: synonym</label><label><input id="rejected" type="checkbox"> research: rejected</label></div><div class="control"><label>Lightness minimum <output id="lmin-o">0.00</output></label><input id="lmin" type="range" min="0" max="1" value="0" step=".01"><label>Lightness maximum <output id="lmax-o">1.00</output></label><input id="lmax" type="range" min="0" max="1" value="1" step=".01"><label>Point density <output id="density-o">35%</output></label><input id="density" type="range" min="5" max="100" value="35" step="5"></div><div class="control detail" id="detail">Select or search a term, lobe, anchor, or research candidate.</div></aside></div></section>
+                   <section id="explorer" class="tab"><div class="explorer"><div class="canvas-wrap"><canvas id="scene"></canvas><div class="hint">Drag to rotate · Shift-drag to pan · wheel to zoom · click a point for details</div></div><aside class="controls"><div class="control"><input id="search" placeholder="Brick Red, Ecru, stable ID…" style="width:100%"><select id="domain" style="width:100%;margin-top:8px"><option value="">All domains</option></select><select id="locale" style="width:100%;margin-top:8px"><option value="en">English</option><option value="ru">Русский</option></select><button id="reset-view" style="width:100%;margin-top:8px">Reset view / selection</button></div><div class="control"><strong>Layers</strong><label><input id="gamut" type="checkbox" checked> reference-sRGB gamut</label><label><input id="families" type="checkbox"> broad-family color</label><label><input id="regions" type="checkbox" checked> Professional coverage</label><label><input id="cores" type="checkbox" checked> representative cores</label><label><input id="anchors" type="checkbox"> creative anchors</label><label><input id="accepted" type="checkbox"> research: accepted</label><label><input id="deferred" type="checkbox"> research: deferred</label><label><input id="synonym" type="checkbox"> research: synonym</label><label><input id="rejected" type="checkbox"> research: rejected</label></div><div class="control"><label>Lightness minimum <output id="lmin-o">0.00</output></label><input id="lmin" type="range" min="0" max="1" value="0" step=".01"><label>Lightness maximum <output id="lmax-o">1.00</output></label><input id="lmax" type="range" min="0" max="1" value="1" step=".01"><label>Point density <output id="density-o">35%</output></label><input id="density" type="range" min="5" max="100" value="35" step="5"></div><div class="control detail" id="detail">Select or search a term, lobe, anchor, or research candidate.</div></aside></div></section>
                    <section id="atlas" class="tab"><div class="links">{{{{domainLinks}}}}</div><object class="artifact" data="static/overview.svg" type="image/svg+xml"></object></section>
                    <section id="relations" class="tab"><object class="artifact" data="static/relations.svg" type="image/svg+xml"></object></section>
                    <section id="research" class="tab"><div id="warnings"></div><div class="panel"><h2>Research frontier</h2><table class="table" id="research-table"></table></div></section>
@@ -360,17 +445,17 @@ internal static class ColorSemanticsReportWriter
                    'use strict';const report=JSON.parse(document.getElementById('taxonomy-data').textContent);const $=id=>document.getElementById(id);document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button,.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');$(b.dataset.tab).classList.add('active');if(b.dataset.tab==='explorer')resize()});
                    const metrics=[['Broad families',report.summary.broadFamilyCount],['Professional terms',report.summary.professionalTermCount],['Regions / lobes',report.summary.regionCount],['Multi-lobe terms',report.summary.multiRegionTermCount],['Creative anchors',report.summary.creativeAnchorCount],['sRGB samples',report.summary.gamutSampleCount],['Research candidates',report.summary.researchCandidateCount],['Warnings',report.warnings.length]];$('summary-cards').innerHTML=metrics.map(x=>`<div class=card><div class=value>${x[1]}</div><div class=label>${x[0]}</div></div>`).join('')+`<div class=card style="grid-column:1/-1"><div class=label>Production signature</div><div class=sign>${report.productionSignature}</div></div>`;
                    const domains=[...new Set(report.professionalTerms.map(x=>x.domain))].sort();$('domain').innerHTML+=[...domains].map(x=>`<option>${x}</option>`).join('');$('domain-table').innerHTML='<tr><th>Domain</th><th>Terms</th><th>Regions</th></tr>'+domains.map(d=>{const t=report.professionalTerms.filter(x=>x.domain===d);return `<tr><td>${d}</td><td>${t.length}</td><td>${t.reduce((n,x)=>n+x.regionCount,0)}</td></tr>`}).join('');
-                   $('warnings').innerHTML=report.warnings.map(x=>`<div class=warning><b>${x.severity} · ${x.kind}</b><br>${x.message}</div>`).join('');$('research-table').innerHTML='<tr><th>Candidate</th><th>Disposition</th><th>Domain</th><th>Independent sources</th><th>Reason</th></tr>'+report.research.candidates.slice().sort((a,b)=>a.canonicalTerm.localeCompare(b.canonicalTerm)).map(x=>`<tr><td>${x.canonicalTerm}</td><td>${x.disposition}</td><td>${x.domain}</td><td>${x.independentSourceCount}</td><td>${x.reason}</td></tr>`).join('');$('metadata-json').textContent=JSON.stringify({schema:report.schema,metadata:report.metadata,summary:report.summary,productionSignature:report.productionSignature,reportSignature:report.reportSignature,research:{available:report.research.available,status:report.research.status,sources:report.research.sources}},null,2);
-                   const canvas=$('scene'),ctx=canvas.getContext('2d');let yaw=-.65,pitch=.45,zoom=1,panX=0,panY=0,drag=null,projected=[];const termById=new Map(report.professionalTerms.map(x=>[x.id,x]));const familyById=new Map(report.broadFamilies.map(x=>[x.id,x]));
+                   $('warnings').innerHTML=report.warnings.map(x=>`<div class=warning><b>${x.severity} · ${x.kind}</b><br>${x.message}</div>`).join('');$('research-table').innerHTML='<tr><th>Candidate</th><th>Disposition</th><th>Domain</th><th>Lexical / numeric / independent numeric</th><th>Reason</th></tr>'+report.research.candidates.slice().sort((a,b)=>a.canonicalTerm.localeCompare(b.canonicalTerm)).map(x=>`<tr><td>${x.canonicalTerm}</td><td>${x.disposition}</td><td>${x.domain}</td><td>${x.lexicalSourceCount} / ${x.numericSourceCount} / ${x.independentNumericSourceGroupCount}</td><td>${x.reason}</td></tr>`).join('');$('metadata-json').textContent=JSON.stringify({schema:report.schema,metadata:report.metadata,summary:report.summary,signatures:report.signatures,sampling:report.sampling.cohorts,research:{available:report.research.available,status:report.research.status,sources:report.research.sources}},null,2);
+                   const canvas=$('scene'),ctx=canvas.getContext('2d');let yaw=-.65,pitch=.45,zoom=1,panX=0,panY=0,drag=null,projected=[],selectedTermId=null;const termById=new Map(report.professionalTerms.map(x=>[x.id,x]));const familyById=new Map(report.broadFamilies.map(x=>[x.id,x]));const overlaps=report.deepEvidence?.overlaps||[];
                    function resize(){const r=canvas.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);canvas.width=Math.max(1,Math.round(r.width*d));canvas.height=Math.max(1,Math.round(r.height*d));ctx.setTransform(d,0,0,d,0,0);draw()}
                    function projection(p){let x=p.x,y=p.y,z=(p.z-.5)*.55;const cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);const x1=x*cy-y*sy,y1=x*sy+y*cy,y2=y1*cp-z*sp,z2=y1*sp+z*cp;const rect=canvas.getBoundingClientRect(),s=Math.min(rect.width,rect.height)*1.32*zoom,k=1/(1-z2*1.25);return{x:rect.width/2+panX+x1*s*k,y:rect.height/2+panY-y2*s*k,d:z2,k}}
                    function allowed(p){return p.lightness>=+$('lmin').value&&p.lightness<=+$('lmax').value}function dot(item,r,color,label,kind){const q=projection(item);ctx.beginPath();ctx.arc(q.x,q.y,r*q.k,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();if(label){ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.stroke();projected.push({x:q.x,y:q.y,r:Math.max(7,r*q.k),label,kind,item})}}
                    function axis(a,b,label){const p=projection(a),q=projection(b);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.strokeStyle='#536783';ctx.lineWidth=1;ctx.stroke();ctx.fillStyle='#91a5bf';ctx.font='12px Segoe UI';ctx.fillText(label,q.x+5,q.y-4)}
-                   function draw(){if(!ctx)return;const rect=canvas.getBoundingClientRect();ctx.clearRect(0,0,rect.width,rect.height);ctx.fillStyle='#070c13';ctx.fillRect(0,0,rect.width,rect.height);projected=[];axis({x:0,y:0,z:0},{x:0,y:0,z:1},'L');axis({x:0,y:0,z:0},{x:.34,y:0,z:0},'C · h 0°');axis({x:0,y:0,z:0},{x:0,y:.34,z:0},'C · h 90°');const density=Math.max(1,Math.round(100/+$('density').value));if($('gamut').checked){ctx.globalAlpha=.30;report.gamut.samples.forEach((p,i)=>{if(i%density||!allowed(p))return;const q=projection(p);ctx.fillStyle=$('families').checked?p.hex:'#7890aa';ctx.fillRect(q.x,q.y,1.7*q.k,1.7*q.k)});ctx.globalAlpha=1}if($('regions').checked){ctx.globalAlpha=.52;report.gamut.samples.forEach((p,i)=>{if(i%density||!p.professionalRegionId||!allowed(p))return;dot(p,2.4,p.hex,null,'region')});ctx.globalAlpha=1}const domain=$('domain').value;if($('cores').checked)report.regions.forEach(r=>{const t=termById.get(r.termId);if(!r.representativeCore||!allowed(r.representativeCore)||(domain&&t.domain!==domain))return;dot(r.representativeCore,t.regionCount>1?6:5,r.representativeCore.hex,{region:r,term:t},'lobe')});if($('anchors').checked)report.creativeAnchors.forEach((a,i)=>{if(i%2||!allowed(a.point))return;dot(a.point,3,a.point.hex,a,'creative anchor')});for(const disposition of ['accepted','deferred','synonym','rejected'])if($(disposition).checked)report.research.candidates.filter(x=>x.disposition.toLowerCase()===disposition&&x.representative&&allowed(x.representative)).forEach(x=>dot(x.representative,5,{accepted:'#71e39a',deferred:'#f0c86b',synonym:'#b89cff',rejected:'#ff7485'}[disposition],x,'research '+disposition));}
-                   function describe(hit){const locale=$('locale').value,item=hit.label;if(hit.kind.includes('term'))return `${locale==='ru'?item.russianName:item.englishName}\n${item.id}\n${item.domain}\n${item.regionCount} region/lobe${item.regionCount===1?'':'s'}\n${item.regionIds.join('\n')}\n${item.representativeCore.hex}\nL ${item.representativeCore.lightness.toFixed(3)} · C ${item.representativeCore.chroma.toFixed(3)} · h ${item.representativeCore.hueDegrees.toFixed(1)}°`;if(hit.kind==='lobe'){const r=item.region,t=item.term;return `${locale==='ru'?t.russianName:t.englishName}\n${r.id} · lobe ${r.lobeIndex}/${t.regionCount}\n${t.domain}\nL [${r.lightness.minimumInclusive.toFixed(3)}, ${r.lightness.maximumExclusive.toFixed(3)})\nC [${r.chroma.minimumInclusive.toFixed(3)}, ${r.chroma.maximumExclusive.toFixed(3)})\nh ${r.hue.minimumInclusive.toFixed(1)}–${r.hue.maximumExclusive.toFixed(1)}°${r.hue.wrapsZero?' (wraps 0°)':''}\npriority ${r.priority}`};if(hit.kind==='creative anchor')return `${locale==='ru'?item.russianName:item.englishName}\n${item.id}\n${item.point.hex}\n${familyById.get(item.point.broadFamilyId)?.[locale==='ru'?'russianName':'englishName']}`;return `${item.canonicalTerm}\n${hit.kind}\n${item.domain}\n${item.reason}`}
-                   function pick(x,y,show){let best=null,dist=1e9;for(const p of projected){const d=Math.hypot(x-p.x,y-p.y);if(d<p.r+6&&d<dist){best=p;dist=d}}if(best&&show)$('detail').textContent=describe(best);return best}
+                   function draw(){if(!ctx)return;const rect=canvas.getBoundingClientRect();ctx.clearRect(0,0,rect.width,rect.height);ctx.fillStyle='#070c13';ctx.fillRect(0,0,rect.width,rect.height);projected=[];axis({x:0,y:0,z:0},{x:0,y:0,z:1},'L');axis({x:0,y:0,z:0},{x:.34,y:0,z:0},'C · h 0°');axis({x:0,y:0,z:0},{x:0,y:.34,z:0},'C · h 90°');const density=Math.max(1,Math.round(100/+$('density').value));if($('gamut').checked){ctx.globalAlpha=selectedTermId ? .12 : .30;report.gamut.samples.forEach((p,i)=>{if(i%density||!allowed(p))return;const q=projection(p);ctx.fillStyle=$('families').checked?p.hex:'#7890aa';ctx.fillRect(q.x,q.y,1.7*q.k,1.7*q.k)});ctx.globalAlpha=1}if($('regions').checked){ctx.globalAlpha=.52;report.gamut.samples.forEach((p,i)=>{if(i%density||!p.professionalRegionId||!allowed(p)||(selectedTermId&&p.professionalTermId!==selectedTermId))return;dot(p,2.4,p.hex,null,'region')});ctx.globalAlpha=1}const domain=$('domain').value;if($('cores').checked)report.regions.forEach(r=>{const t=termById.get(r.termId);if(!r.representativeCore||!allowed(r.representativeCore)||(domain&&t.domain!==domain))return;ctx.globalAlpha=selectedTermId&&r.termId!==selectedTermId ? .15 : 1;dot(r.representativeCore,t.regionCount>1?6:5,r.representativeCore.hex,{region:r,term:t},'lobe');ctx.globalAlpha=1});if($('anchors').checked)report.creativeAnchors.forEach((a,i)=>{if(i%2||!allowed(a.point))return;dot(a.point,3,a.point.hex,a,'creative anchor')});for(const disposition of ['accepted','deferred','synonym','rejected'])if($(disposition).checked)report.research.candidates.filter(x=>x.disposition.toLowerCase()===disposition&&x.representative&&allowed(x.representative)).forEach(x=>dot(x.representative,5,{accepted:'#71e39a',deferred:'#f0c86b',synonym:'#b89cff',rejected:'#ff7485'}[disposition],x,'research '+disposition));}
+                   function describe(hit){const locale=$('locale').value,item=hit.label;if(hit.kind.includes('term'))return `${locale==='ru'?item.russianName:item.englishName}\n${item.id}\n${item.domain}\n${item.regionCount} region/lobe${item.regionCount===1?'':'s'}\n${item.regionIds.join('\n')}\nrepresentative ${item.representativeCore.hex}\nwitness ${item.reachabilityWitness?.hex||'—'}\nretention ${(100*(item.localStability?.retentionFraction||0)).toFixed(1)}% · transition ${item.localStability?.minimumRgbTransitionSteps||'—'} RGB steps`;if(hit.kind==='lobe'){const r=item.region,t=item.term,ov=overlaps.filter(x=>x.winnerTermId===t.id||x.competingTermId===t.id);return `${locale==='ru'?t.russianName:t.englishName}\n${r.id} · lobe ${r.lobeIndex}/${t.regionCount}\nparents ${r.parentFamilyIds.join(', ')}\nroles ${r.roles.join(', ')}\nL [${r.lightness.minimumInclusive.toFixed(3)}, ${r.lightness.maximumExclusive.toFixed(3)})\nC [${r.chroma.minimumInclusive.toFixed(3)}, ${r.chroma.maximumExclusive.toFixed(3)})\nh ${r.hue.minimumInclusive.toFixed(1)}–${r.hue.maximumExclusive.toFixed(1)}°${r.hue.wrapsZero?' (wraps 0°)':''}\npriority ${r.priority}\nrepresentative ${r.representativeCore?.hex||'—'} · witness ${r.reachabilityWitness?.hex||'—'}\nlocal retention ${(100*(r.localStability?.retentionFraction||0)).toFixed(1)}%\noverlap competitors ${ov.map(x=>(x.winnerTermId===t.id?x.competingTermId:x.winnerTermId)+' Dice '+x.diceSimilarity.toFixed(3)).join('; ')||'none'}`};if(hit.kind==='creative anchor')return `${locale==='ru'?item.russianName:item.englishName}\n${item.id}\n${item.point.hex}\n${familyById.get(item.point.broadFamilyId)?.[locale==='ru'?'russianName':'englishName']}`;return `${item.canonicalTerm}\n${hit.kind}\n${item.domain}\n${item.reason}\nlexical sources ${item.lexicalSourceCount} · numeric sources ${item.numericSourceCount} · independent numeric groups ${item.independentNumericSourceGroupCount}`}
+                   function pick(x,y,show){let best=null,dist=1e9;for(const p of projected){const d=Math.hypot(x-p.x,p.y-y);if(d<p.r+6&&d<dist){best=p;dist=d}}if(best&&show){selectedTermId=best.label?.term?.id||best.label?.id||null;$('detail').textContent=describe(best);draw()}return best}
                    canvas.onpointerdown=e=>{canvas.setPointerCapture(e.pointerId);drag={x:e.clientX,y:e.clientY,shift:e.shiftKey}};canvas.onpointermove=e=>{if(!drag){canvas.style.cursor=pick(e.offsetX,e.offsetY,false)?'pointer':'grab';return}const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(drag.shift){panX+=dx;panY+=dy}else{yaw+=dx*.008;pitch=Math.max(-1.35,Math.min(1.35,pitch+dy*.008))}drag.x=e.clientX;drag.y=e.clientY;draw()};canvas.onpointerup=e=>{if(drag&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<3)pick(e.offsetX,e.offsetY,true);drag=null};canvas.onwheel=e=>{e.preventDefault();zoom=Math.max(.45,Math.min(3.5,zoom*Math.exp(-e.deltaY*.001)));draw()};
-                   document.querySelectorAll('.controls input,.controls select').forEach(x=>x.oninput=()=>{if(x.id==='lmin')$('lmin-o').textContent=(+x.value).toFixed(2);if(x.id==='lmax')$('lmax-o').textContent=(+x.value).toFixed(2);if(x.id==='density')$('density-o').textContent=x.value+'%';draw()});$('search').onchange=()=>{const q=$('search').value.trim().toLowerCase();if(!q)return;const t=report.professionalTerms.find(x=>[x.id,x.identity,x.englishName,x.russianName].some(v=>v.toLowerCase().includes(q)));if(t&&t.representativeCore){$('detail').textContent=describe({label:t,kind:t.regionCount>1?'multi-lobe term':'term'});const target=Math.atan2(t.representativeCore.y,t.representativeCore.x);yaw=-target;draw();return}const a=report.creativeAnchors.find(x=>[x.id,x.englishName,x.russianName].some(v=>v.toLowerCase().includes(q)));if(a){$('anchors').checked=true;$('detail').textContent=describe({label:a,kind:'creative anchor'});yaw=-Math.atan2(a.point.y,a.point.x);draw();return}$('detail').textContent='No matching term or creative anchor.'};window.addEventListener('resize',resize);const initialTab=location.hash.slice(1);const initialButton=document.querySelector(`nav button[data-tab="${initialTab}"]`);if(initialButton){initialButton.click();setTimeout(()=>window.scrollTo(0,0),0)}else resize();
+                   document.querySelectorAll('.controls input,.controls select').forEach(x=>x.oninput=()=>{if(x.id==='lmin')$('lmin-o').textContent=(+x.value).toFixed(2);if(x.id==='lmax')$('lmax-o').textContent=(+x.value).toFixed(2);if(x.id==='density')$('density-o').textContent=x.value+'%';draw()});$('reset-view').onclick=()=>{yaw=-.65;pitch=.45;zoom=1;panX=panY=0;selectedTermId=null;$('detail').textContent='Select or search a term, lobe, anchor, or research candidate.';draw()};$('search').onchange=()=>{const q=$('search').value.trim().toLowerCase();if(!q)return;const t=report.professionalTerms.find(x=>[x.id,x.identity,x.englishName,x.russianName].some(v=>v.toLowerCase().includes(q)));if(t&&t.representativeCore){selectedTermId=t.id;$('detail').textContent=describe({label:t,kind:t.regionCount>1?'multi-lobe term':'term'});const target=Math.atan2(t.representativeCore.y,t.representativeCore.x);yaw=-target;draw();return}const c=report.research.candidates.find(x=>[x.canonicalTerm,x.russianCandidate].some(v=>(v||'').toLowerCase().includes(q)));if(c){$(c.disposition.toLowerCase()).checked=true;$('detail').textContent=describe({label:c,kind:'research '+c.disposition.toLowerCase()});if(c.representative)yaw=-Math.atan2(c.representative.y,c.representative.x);draw();return}const a=report.creativeAnchors.find(x=>[x.id,x.englishName,x.russianName].some(v=>v.toLowerCase().includes(q)));if(a){$('anchors').checked=true;$('detail').textContent=describe({label:a,kind:'creative anchor'});yaw=-Math.atan2(a.point.y,a.point.x);draw();return}$('detail').textContent='No matching term, research candidate, or creative anchor.'};window.addEventListener('resize',resize);const initialTab=location.hash.slice(1);const initialButton=document.querySelector(`nav button[data-tab="${initialTab}"]`);if(initialButton){initialButton.click();setTimeout(()=>window.scrollTo(0,0),0)}else resize();
                    </script>
                    </body></html>
                    """;

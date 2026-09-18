@@ -23,6 +23,14 @@ the deep audit first, or `-ResearchReport <summary.json>` to enrich from an exis
 dependency. Canonical model, gamut, signature, and output contracts are owned by
 [`../../docs/COLOR-SEMANTICS.md`](../../docs/COLOR-SEMANTICS.md).
 
+Schema v2 also writes `analysis-summary.json`/`.md` without the 4,096 gamut points or 1,800 creative anchors. Compare
+two canonical reports with:
+
+```powershell
+pwsh eng/color-taxonomy.ps1 -CompareBefore artifacts/before/taxonomy.json `
+  -CompareAfter artifacts/after/taxonomy.json -OutputDirectory artifacts/report-diff
+```
+
 The legacy audit command remains the topology/research campaign route:
 
 The default fixed seed is `0x5F0A2026`. Fast mode uses a 5°/0.05/0.02 in-gamut OKLCH grid, 25,000 deterministic RGB
@@ -67,12 +75,14 @@ views, a whole-catalog unshipped vocabulary-frontier view, current-campaign and 
 professional-overlap report, per-term core-confidence report, and a deterministic SHA-256 signature.
 Runtime, master-lexicon research-clustering timing, and the isolated indexed-classifier benchmark are retained in the
 reports but excluded from the signature.
-Schema v8 reports generic/existing-specific/professional/neutral coverage, per-term sampled coverage, candidate source
+Schema v8 reports generic/existing-specific/professional/neutral hit rates on named cohorts, per-term sampled coverage,
+candidate source
 support/dispersion/components/noise, the winning/competing region explanation for accepted anchors, and deterministic
 center plus inside/outside L/C/h probes for every professional region. It additionally counts every deep sample matching
 multiple professional terms, ranks winner/competitor pairs with sampled share and semantic-domain severity, and reports
 matched/winning/shadowed volume per region. It also emits the 250-entry master candidate lexicon, semantic-domain
-density, source-independence groups, dispositions, directional containment, Dice similarity, same-core warnings, and
+vocabulary density, source-independence groups, dispositions, directional containment, Dice similarity, same-core
+warnings, and
 per-term representative core/confidence. Audit-only aliases and research metadata organize discovery and conflict
 triage; they do not affect production classification.
 Reports rank abrupt semantic
@@ -87,8 +97,10 @@ Candidate discovery uses an audit-only vocabulary normalizer that is intentional
 This prevents current product vocabulary from defining its own research questions. Candidate profiles group recurring
 names across datasets, report medoid/dispersion and production-family coverage, and deterministically extract compact
 fixed-radius OKLab components before marking remote anchors as noise. They remain evidence for review rather than
-generated runtime definitions. Region explanations identify the winning stable term/region and why competitors failed
-(`parent-family`, `role`, `lightness`, `chroma`, or `hue`).
+generated runtime definitions. Lexical source occurrences, numeric anchor sources, independent numeric groups, and
+component-specific numeric support are separate fields; a lexical-only source cannot promote a runtime region. Region
+explanations identify the winning stable term/region and why competitors failed (`parent-family`, `role`, `lightness`,
+`chroma`, or `hue`).
 
 The overlap report is a conflict diagnostic rather than a prohibition on related regions. Intentional sibling overlap is
 valid when priority is unique, the winner is explainable, both regions remain reachable, and just-inside/outside

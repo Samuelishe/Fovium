@@ -85,7 +85,10 @@ internal sealed record MasterCandidateSourceOccurrence(
     string Independence,
     string IndependenceGroup,
     IReadOnlyList<string> Names,
-    int AnchorCount);
+    int AnchorCount)
+{
+    public int LexicalOccurrenceCount { get; init; }
+}
 
 internal sealed record MasterCandidateLexiconEntry(
     string CanonicalTerm,
@@ -105,14 +108,30 @@ internal sealed record MasterCandidateLexiconEntry(
     IReadOnlyDictionary<string, int> ProductionFamilyCoverage,
     string NearestShippedTerm,
     double? NearestShippedDeltaE,
-    double PriorityScore);
+    double PriorityScore)
+{
+    public int LexicalSourceCount { get; init; }
+
+    public int NumericSourceCount { get; init; }
+
+    public int IndependentNumericSourceGroupCount { get; init; }
+
+    public IReadOnlyList<CandidateComponentEvidence> ComponentEvidence { get; init; } = [];
+}
+
+internal sealed record CandidateComponentEvidence(
+    int ComponentIndex,
+    int AnchorCount,
+    int NumericSourceCount,
+    int IndependentNumericSourceGroupCount,
+    IReadOnlyList<string> SourceIds);
 
 internal sealed record CandidateDomainCoverage(
     string Domain,
     int CandidateCount,
     int AcceptedCount,
     int EvidenceRichCount,
-    string Density);
+    string VocabularyDensity);
 
 internal sealed record AuditReferenceAssessment(
     string ProductSemantic,

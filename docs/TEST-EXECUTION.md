@@ -280,6 +280,27 @@ out-of-gamut OKLCH coordinate fails the gamut guard test, and shifting the Coral
 semantic fingerprint. Every mutation is reverted before the normal focused/full run. Core reports are ordinary offline
 tooling; ignored deep corpora and generated reports do not become CI quality gates.
 
+## R10-D canonical identity, evidence, and report diff
+
+Report schema v2 uses separate definition, fixed-RGB classification-outcome, and normalized-report signatures. The
+cross-platform local gate runs the same Release DLL on Windows and WSL, generates two reports, and compares artifacts:
+
+```powershell
+pwsh eng/color-taxonomy.ps1 -OutputDirectory artifacts/r10d/windows
+$repositoryWsl = (wsl -d Ubuntu-24.04 -- wslpath -a ((Get-Location).Path -replace '\\', '/')).Trim()
+wsl -d Ubuntu-24.04 -- bash -lc "cd '$repositoryWsl' && \
+  dotnet Fovium.Tools.ColorTaxonomyAudit/bin/Release/net10.0/Fovium.Tools.ColorTaxonomyAudit.dll \
+  report --output artifacts/r10d/wsl --commit <same-sha> --static-only"
+pwsh eng/color-taxonomy.ps1 -CompareBefore artifacts/r10d/windows/taxonomy.json `
+  -CompareAfter artifacts/r10d/wsl/taxonomy.json -OutputDirectory artifacts/r10d/diff
+```
+
+An empty structured diff plus equal definition/outcome signatures is the semantic gate; OS-specific expected hashes are
+forbidden. Focused tests cover explicit cohort denominators, every-lobe witnesses, separate representatives and local
+stability, neutral/weak/strong hue meaningfulness, lexical-versus-numeric provenance, authoritative deep-overlap export,
+compact-summary payload, v2 offline HTML, and field-level report diff. The 4,096-point visualization cloud is never used
+as proof that every thin region was sampled.
+
 The R8-A-F12 Histogram regression does not assume that completing a test reader runs the coordinator continuation
 inline. Tests subscribe to an internal post-classification/post-cleanup completion signal keyed by image identity and
 outcome, then assert stale metrics and unchanged latest publication without sleeps or retries. The production

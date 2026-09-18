@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -108,7 +107,8 @@ internal static class AuditReportWriter
                     item.CanonicalTerm,
                     item.Representative!,
                     null,
-                    $"{item.Status} · {item.ResearchDomain} · {item.IndependentSourceCount} independent sources · " +
+                    $"{item.Status} · {item.ResearchDomain} · {item.LexicalSourceCount} lexical / " +
+                    $"{item.NumericSourceCount} numeric / {item.IndependentNumericSourceGroupCount} independent numeric · " +
                     $"{item.AnchorCount} anchors · nearest {item.NearestShippedTerm} ΔE {item.NearestShippedDeltaE:0.000}",
                     string.Join(", ", item.SourceOccurrences.Select(source => source.Dataset)))));
         WriteSampleSheet(
@@ -211,18 +211,7 @@ internal static class AuditReportWriter
             CreateProfessionalTermCoresHtml(report.ProfessionalTermCores),
             new UTF8Encoding(false));
 
-        var deterministic = report with
-        {
-            Metrics = report.Metrics with
-            {
-                RuntimeSeconds = 0,
-                ProfessionalClassificationNanosecondsPerSample = 0,
-                ResearchClusteringMilliseconds = 0
-            },
-            Comparison = null,
-        };
-        var bytes = JsonSerializer.SerializeToUtf8Bytes(deterministic, JsonOptions);
-        var hash = Convert.ToHexStringLower(SHA256.HashData(bytes));
+        var hash = CanonicalSemanticIdentity.BuildAuditOutcomeSignature(report);
         File.WriteAllText(
             Path.Combine(directory, "deterministic-signature.sha256"),
             hash + Environment.NewLine,
@@ -432,13 +421,15 @@ internal static class AuditReportWriter
         builder.AppendLine("## Master candidate lexicon");
         builder.AppendLine();
         builder.AppendLine(
-            "| Candidate | Domain | Status | Independent sources | Anchors | Components | Noise | Medoid | Nearest shipped | RU candidate | Reason |");
-        builder.AppendLine("| --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- | --- | --- |");
+            "| Candidate | Domain | Status | Lexical sources | Numeric sources | Independent numeric groups | Anchors | Components | Noise | Medoid | Nearest shipped | RU candidate | Reason |");
+        builder.AppendLine("| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- | --- |");
         foreach (var candidate in report.MasterCandidateLexicon)
         {
             builder.AppendLine(
                 $"| {candidate.CanonicalTerm} | {candidate.ResearchDomain} | {candidate.Status} | " +
-                $"{candidate.IndependentSourceCount} | {candidate.AnchorCount} | {candidate.CompactComponentCount} | " +
+                $"{candidate.LexicalSourceCount} | {candidate.NumericSourceCount} | " +
+                $"{candidate.IndependentNumericSourceGroupCount} | {candidate.AnchorCount} | " +
+                $"{candidate.CompactComponentCount} | " +
                 $"{candidate.NoiseFraction:P0} | {candidate.Representative?.Rgb.Hex ?? "—"} | " +
                 $"{candidate.NearestShippedTerm} {candidate.NearestShippedDeltaE:0.000} | " +
                 $"{EscapeMarkdown(candidate.RussianCandidate)} | {EscapeMarkdown(candidate.Reason)} |");
@@ -447,12 +438,13 @@ internal static class AuditReportWriter
         builder.AppendLine();
         builder.AppendLine("### Candidate coverage by semantic domain");
         builder.AppendLine();
-        builder.AppendLine("| Domain | Candidates | Accepted | Evidence-rich | Density |");
+        builder.AppendLine("| Domain | Candidates | Accepted | Numeric-evidence-rich | Vocabulary density |");
         builder.AppendLine("| --- | ---: | ---: | ---: | --- |");
         foreach (var domain in report.CandidateDomainCoverage)
         {
             builder.AppendLine(
-                $"| {domain.Domain} | {domain.CandidateCount} | {domain.AcceptedCount} | {domain.EvidenceRichCount} | {domain.Density} |");
+                $"| {domain.Domain} | {domain.CandidateCount} | {domain.AcceptedCount} | " +
+                $"{domain.EvidenceRichCount} | {domain.VocabularyDensity} |");
         }
 
         builder.AppendLine();

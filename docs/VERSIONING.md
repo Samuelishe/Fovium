@@ -178,6 +178,9 @@ because Color Gradient and Soft Glow are independently useful, persisted user-vi
 corrective refinement of the R10-A foundation. R10-C retains `0.1.3.0000`: namespace ownership extraction and the
 developer-only Color Semantics report/Explorer do not change viewer behavior, classification, production catalog
 contents, or shipped capability. Tooling/refactor work does not increment BUILD under this contract.
+R10-D likewise retains `0.1.3.0000`: cross-platform signature correction, schema-v2 evidence/export, Explorer
+explainability, and a vocabulary campaign that accepts no new production terms do not change observable viewer
+semantics.
 
 ## Future code and packaging source
 

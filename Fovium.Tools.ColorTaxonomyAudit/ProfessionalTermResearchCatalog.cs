@@ -183,7 +183,8 @@ internal static class ProfessionalTermResearchCatalog
         {
             "Fuchsia" or "RoyalPurple" or "IndianRed" or "CadetBlue" => CandidateResearchStatus.Synonym,
             "Sapphire" or "BottleGreen" => CandidateResearchStatus.Rejected,
-            "Cherry" or "Raspberry" or "Ecru" or "Parchment" or "RawUmber" or "BurntUmber" or
+            "BurntOrange" or "Gainsboro" or "Almond" or "Straw" or "Cinnabar" or "Primrose" or
+                "Cherry" or "Raspberry" or "Ecru" or "Parchment" or "RawUmber" or "BurntUmber" or
                 "PaynesGray" or "Coffee" or "Stone" or "Pearl" or "Champagne" or "Pewter" or
                 "Graphite" or "Auburn" => CandidateResearchStatus.Deferred,
             _ => CandidateResearchStatus.Unreviewed
@@ -206,7 +207,22 @@ internal static class ProfessionalTermResearchCatalog
             "Auburn" => "Expanded-corpus core overlaps accepted Brick Red and Carmine controls.",
             "Sapphire" => "F11 evidence displaced accepted Cobalt controls without a distinct robust core.",
             "BottleGreen" => "F11 evidence displaced accepted Forest Green controls without a distinct robust core.",
-            "Cherry" or "Raspberry" => "Useful conventional berry term; expanded-corpus component review pending.",
+            "BurntOrange" =>
+                "One compact three-anchor component, but only XKCD is an independent numeric source group; deferred pending a second independent numeric core.",
+            "Gainsboro" =>
+                "CSS/meodai/Wikidata agree exactly at #DCDCDC, but CSS is the only independent numeric group and the core sits near shipped Linen; deferred rather than promoting a standard alias-like neutral.",
+            "Almond" =>
+                "Five numeric components, 18% noise, no independent numeric source group, and a nearest core close to shipped Ecru; lexical support does not establish a standalone region.",
+            "Straw" =>
+                "Five components split pale sand and bright yellow meanings; only one independent numeric group and no single cross-source component defines the conventional lexical core.",
+            "Cinnabar" =>
+                "Cinnabar Green homonym contamination was removed; remaining two correlated red anchors do not form a supported compact component, so the historical name remains deferred.",
+            "Primrose" =>
+                "Rose-like product compounds were excluded from numeric evidence; the surviving Primrose Yellow anchor is directionally correct but single-source and noise-only.",
+            "Cherry" =>
+                "Twelve components and 10% noise span crimson, pink, brown, and neutral product names; the best core has only one independent numeric group.",
+            "Raspberry" =>
+                "Eight components and 22% noise span crimson, rose, pink, and neutral product names; the best core has only one independent numeric group.",
             "Ecru" or "Parchment" or "Stone" or "Pearl" or "Champagne" or "Pewter" or "Graphite" =>
                 "Material-origin neutral requires a compact RGB core distinct from shipped neighbors.",
             "RawUmber" or "BurntUmber" or "PaynesGray" =>
@@ -221,6 +237,7 @@ internal static class ProfessionalTermResearchCatalog
         "Alabaster" => "Алебастровый",
         "AlizarinCrimson" => "Ализариновый кармин",
         "Bone" => "Костяной",
+        "BurntOrange" => "Жжёный оранжевый",
         "BurntUmber" => "Жжёная умбра",
         "CadmiumRed" => "Кадмиевый красный",
         "CadmiumYellow" => "Кадмиевый жёлтый",
@@ -230,8 +247,12 @@ internal static class ProfessionalTermResearchCatalog
         "EgyptianBlue" => "Египетский синий",
         "Graphite" => "Графитовый",
         "GreenEarth" => "Зелёная земля",
+        "Gainsboro" => "Гейнсборо",
         "IndianRed" => "Индийский красный",
         "IndianYellow" => "Индийский жёлтый",
+        "Almond" => "Миндальный",
+        "Cherry" => "Вишнёвый",
+        "Cinnabar" => "Киноварь",
         "Parchment" => "Пергаментный",
         "PaynesGray" => "Серая Пейна",
         "Pearl" => "Жемчужный",
@@ -241,6 +262,9 @@ internal static class ProfessionalTermResearchCatalog
         "Putty" => "Шпаклёвочный",
         "RawSienna" => "Натуральная сиена",
         "RawUmber" => "Натуральная умбра",
+        "Primrose" => "Примуловый жёлтый",
+        "Raspberry" => "Малиновый",
+        "Straw" => "Соломенный",
         "VenetianRed" => "Венецианский красный",
         _ => string.Empty
     };

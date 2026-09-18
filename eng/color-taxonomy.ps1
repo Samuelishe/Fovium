@@ -6,6 +6,8 @@ param(
     [switch]$Deep,
     [string]$ResearchReport,
     [string]$ReferenceDirectory,
+    [string]$CompareBefore,
+    [string]$CompareAfter,
     [switch]$Open,
     [switch]$Png,
     [Parameter(ParameterSetName = 'Static')]
@@ -33,6 +35,23 @@ elseif (-not [System.IO.Path]::IsPathRooted($OutputDirectory)) {
     $OutputDirectory = Join-Path $repositoryRoot $OutputDirectory
 }
 
+if (-not [string]::IsNullOrWhiteSpace($CompareBefore) -or
+    -not [string]::IsNullOrWhiteSpace($CompareAfter)) {
+    if ([string]::IsNullOrWhiteSpace($CompareBefore) -or [string]::IsNullOrWhiteSpace($CompareAfter)) {
+        throw '-CompareBefore and -CompareAfter must be supplied together.'
+    }
+    if (-not [System.IO.Path]::IsPathRooted($CompareBefore)) {
+        $CompareBefore = Join-Path $repositoryRoot $CompareBefore
+    }
+    if (-not [System.IO.Path]::IsPathRooted($CompareAfter)) {
+        $CompareAfter = Join-Path $repositoryRoot $CompareAfter
+    }
+
+    & dotnet run --project $projectPath --configuration Release -- compare `
+        --before $CompareBefore --after $CompareAfter --output $OutputDirectory
+    exit $LASTEXITCODE
+}
+
 if (-not [string]::IsNullOrWhiteSpace($ResearchReport) -and -not [System.IO.Path]::IsPathRooted($ResearchReport)) {
     $ResearchReport = Join-Path $repositoryRoot $ResearchReport
 }
@@ -44,8 +63,14 @@ if ($Deep -and [string]::IsNullOrWhiteSpace($ResearchReport)) {
         '--mode', 'deep', '--output', $auditDirectory
     )
     if ([string]::IsNullOrWhiteSpace($ReferenceDirectory)) {
-        $defaultReferences = Join-Path $repositoryRoot 'artifacts/color-taxonomy-audit/references'
-        if (Test-Path -LiteralPath $defaultReferences -PathType Container) {
+        $referenceCandidates = @(
+            (Join-Path $repositoryRoot 'artifacts/color-taxonomy-audit/references-f12'),
+            (Join-Path $repositoryRoot 'artifacts/color-taxonomy-audit/references')
+        )
+        $defaultReferences = $referenceCandidates |
+            Where-Object { Test-Path -LiteralPath $_ -PathType Container } |
+            Select-Object -First 1
+        if (-not [string]::IsNullOrWhiteSpace($defaultReferences)) {
             $ReferenceDirectory = $defaultReferences
         }
     }

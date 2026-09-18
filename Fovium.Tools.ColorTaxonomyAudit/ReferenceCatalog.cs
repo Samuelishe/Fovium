@@ -609,6 +609,15 @@ internal static class SpecificColorTermNormalizer
             return null;
         }
 
+        // These are documented homonyms/marketing compounds, not numeric
+        // evidence for the conventional red cinnabar or yellow primrose core.
+        if (normalized.Contains("cinnabar green", StringComparison.Ordinal) ||
+            (normalized.Contains("primrose", StringComparison.Ordinal) &&
+             normalized != "primrose yellow"))
+        {
+            return null;
+        }
+
         foreach (var (term, alias) in AliasRules)
         {
             if (ContainsToken(normalized, alias))

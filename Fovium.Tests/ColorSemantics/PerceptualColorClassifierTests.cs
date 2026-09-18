@@ -5,6 +5,23 @@ namespace Fovium.Tests.ColorSemantics;
 public sealed class PerceptualColorClassifierTests
 {
     [Theory]
+    [InlineData("#808080", "Undefined")]
+    [InlineData("#807878", "Weak")]
+    [InlineData("#988E94", "Weak")]
+    [InlineData("#BDACA3", "Weak")]
+    [InlineData("#FF0000", "Strong")]
+    public void HueMeaningfulnessSeparatesRawHueFromSemanticReliability(
+        string hex,
+        string expected)
+    {
+        var description = Describe(hex);
+
+        Assert.NotNull(description.Oklch);
+        Assert.InRange(description.Oklch.Value.HueDegrees, 0, 360);
+        Assert.Equal(expected, description.HueMeaningfulness.ToString());
+    }
+
+    [Theory]
     [InlineData("#000000", PerceptualColorRole.NearBlack, PerceptualHueFamily.Neutral,
         PerceptualLightnessClass.VeryDark)]
     [InlineData("#08090A", PerceptualColorRole.NearBlack, PerceptualHueFamily.Neutral,

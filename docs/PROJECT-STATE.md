@@ -7,17 +7,16 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R10-C is the locally complete Color Semantics ownership/reporting stage and intentionally retains product version
-`0.1.3.0000`. The pushed baseline is accepted R10-B commit `1beaa643c8552ef7ac5dc9b3a791e3b7404668d6`; normal CI and
-Native libheif/Little CMS `win-x64`, `linux-x64`, and `osx-arm64` matrices are green. R10-C changes no viewer-visible
-classification or rendering behavior. It extracts the existing 45-family, 94-term/99-region structural taxonomy and
-separate 1,800-anchor creative matcher into `Fovium.ColorSemantics` inside the same production assembly, while Picker
-sampling/session/UI remain in `Fovium.ColorPicking`.
+R10-D is locally complete on pushed R10-C baseline `a7a1ffdbfb63d97e84795a980bb85b00c9af0d91` and intentionally
+retains product version `0.1.3.0000`. It changes no viewer-visible classification or rendering behavior: the structural
+taxonomy remains 45 broad families, 94 Professional terms, 99 regions, and 1,800 creative anchors.
 
-The developer-side `Fovium.Tools.ColorTaxonomyAudit report` route and `pwsh eng/color-taxonomy.ps1` now generate one
-canonical ordered JSON model plus text/Markdown, vector OKLCH/reference-sRGB atlases, relations/domain sheets, and a
-self-contained offline interactive 3D Explorer. Core mode needs only tracked production truth; optional retained audit
-JSON adds the 250-entry research frontier without changing the production signature. Generated output remains ignored.
+Report schema v2 separates declarative definition, fixed-RGB classification-outcome, and normalized full-report
+signatures. Windows and WSL reproduce all three; the old hosted Linux/macOS failures were report-only floating/libm
+tails plus nearly tied medoid selection, not semantic classification drift. Explicit visualization, whole-spectrum,
+near-neutral, reachability, boundary, and creative cohorts replace ambiguous global coverage wording. Deep reports now
+retain overlap, containment/Dice, shadowing, core, boundary, competitor, component, and source evidence. Compact
+analysis summaries and report-to-report diff output are generated beside the full Explorer.
 
 The retained R0 probe remains experimental evidence under `experiments/Fovium.RenderProbe`. Production code is the
 single `Fovium` assembly and does not depend on the experiment. The accepted R7-B hosted matrix restored, built, and
@@ -27,11 +26,12 @@ Windows at `RenderScaling = 1.00`.
 
 ## Current focus
 
-R10-C local verification, report generation, deterministic semantic equivalence, and headless visual inspection are
-complete. A future authorized push must provide the ordinary hosted Windows/Ubuntu/macOS proof for the namespace/tooling
-changes; no native workflow behavior changed. Optional report diffing is deferred because schema v1 stable IDs/order
-make
-it possible without requiring a Git-history framework before an actual comparison workflow exists.
+R10-D's evidence gate is complete locally. The whole 250-entry frontier was rerun with lexical support separated from
+numeric and independent-numeric groups. Burnt Orange, Gainsboro, Almond, Straw, Cherry, Raspberry, Cinnabar, and
+Primrose remain Deferred for documented insufficient, multimodal, or contaminated numeric evidence; Cinnabar Green
+and rose-like Primrose compounds are excluded from numeric aggregation. No new production term passed the gate, so
+taxonomy counts and version remain unchanged. A future push must prove ordinary and native-workflow shared .NET tests
+on hosted Windows/Linux/macOS; native libheif itself is not implicated.
 
 The current Codex/Rider ACP session negotiates no true in-app browser backend. Browser-plugin discovery returns an empty
 backend list, and the Rider Playwright MCP entry has no command or URL and is absent from the session tool registry.
@@ -155,9 +155,9 @@ capable host/session or a separately valid MCP registration plus Rider restart o
   offline 1,800-entry creative catalog retains standard OKLab nearest matching, stable tie order, complete Russian
   stable-ID display names, and canonical-English fallback as secondary presentation data.
 - Shared `Fovium.ColorSemantics` ownership for the structural classifier and separate creative matcher; deterministic
-  core/deep `fovium-color-semantics-report/v1` JSON, text/Markdown, SVG overview/domain/relations sheets, and offline
-  Canvas 3D Explorer generated from one normalized model. Semantic interpretation remains downstream of source truth
-  and never feeds rendering or Color Management.
+  core/deep `fovium-color-semantics-report/v2` JSON, compact analysis JSON/Markdown, report diff, SVG
+  overview/domain/relations sheets, and offline Canvas 3D Explorer generated from one normalized model. Semantic
+  interpretation remains downstream of source truth and never feeds rendering or Color Management.
 - Duplicate-preserving ten-entry per-window Color Inspector FIFO with distinct click identities, stable mouse selection
   across navigation/hide/reopen, and explicit history/selection Clear; no sample, entry, selection, or history is
   serialized.

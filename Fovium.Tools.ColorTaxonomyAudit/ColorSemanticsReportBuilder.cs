@@ -1,8 +1,6 @@
 using System.Globalization;
 using System.Reflection;
-using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
 using Fovium.ColorSemantics;
 using Fovium.Localization;
 
@@ -10,7 +8,7 @@ namespace Fovium.Tools.ColorTaxonomyAudit;
 
 internal static class ColorSemanticsReportBuilder
 {
-    public const string Schema = "fovium-color-semantics-report/v1";
+    public const string Schema = "fovium-color-semantics-report/v2";
     public const int GamutChannelStep = 17;
 
     public static ColorSemanticsReport Build(string commit, string? researchReport = null)
@@ -26,14 +24,32 @@ internal static class ColorSemanticsReportBuilder
             StringComparer.Ordinal);
         var boundary = ProfessionalShadeBoundaryAudit.Analyze(adapter);
         var samples = BuildGamutSamples(adapter, definitionByIdentity);
-        var cores = FindCores(boundary, definitions, adapter);
+        var witnesses = FindReachabilityWitnesses(boundary, definitions, adapter);
+        var cores = definitions.SelectMany(definition => definition.Regions.Select(region => new
+        {
+            region.StableId,
+            Core = FindRepresentativeCore(definition, region, adapter)
+        }))
+            .ToDictionary(item => item.StableId, item => item.Core, StringComparer.Ordinal);
         foreach (var region in definitions.SelectMany(definition => definition.Regions))
         {
             if (cores[region.StableId] is null)
             {
                 cores[region.StableId] = FindSampleCore(region, samples);
             }
+
+            if (witnesses[region.StableId] is null)
+            {
+                witnesses[region.StableId] = cores[region.StableId];
+            }
         }
+
+        var stability = definitions.SelectMany(definition => definition.Regions.Select(region => new
+        {
+            region.StableId,
+            Stability = MeasureLocalStability(definition, region, cores[region.StableId], adapter)
+        }))
+            .ToDictionary(item => item.StableId, item => item.Stability, StringComparer.Ordinal);
 
         var creativeAnchors = BuildCreativeAnchors(definitionByIdentity);
         var families = Enum.GetValues<PerceptualHueFamily>()
@@ -54,11 +70,22 @@ internal static class ColorSemanticsReportBuilder
                     .Order(StringComparer.Ordinal)
                     .ToArray(),
                 ExpandRoles(region.Roles),
-                new ReportRange(region.MinimumLightness, region.MaximumLightness),
-                new ReportRange(region.MinimumChroma, region.MaximumChroma),
-                new ReportHueRange(region.MinimumHue, region.MaximumHue, region.MinimumHue > region.MaximumHue),
+                new ReportRange(
+                    CanonicalSemanticIdentity.Semantic(region.MinimumLightness),
+                    CanonicalSemanticIdentity.Semantic(region.MaximumLightness)),
+                new ReportRange(
+                    CanonicalSemanticIdentity.Semantic(region.MinimumChroma),
+                    CanonicalSemanticIdentity.Semantic(region.MaximumChroma)),
+                new ReportHueRange(
+                    CanonicalSemanticIdentity.Semantic(region.MinimumHue),
+                    CanonicalSemanticIdentity.Semantic(region.MaximumHue),
+                    region.MinimumHue > region.MaximumHue),
                 region.Priority,
-                cores.GetValueOrDefault(region.StableId))))
+                cores.GetValueOrDefault(region.StableId))
+            {
+                ReachabilityWitness = witnesses.GetValueOrDefault(region.StableId),
+                LocalStability = stability.GetValueOrDefault(region.StableId)
+            }))
             .OrderBy(region => region.Id, StringComparer.Ordinal)
             .ToArray();
         var terms = definitions.Select(definition =>
@@ -71,6 +98,12 @@ internal static class ColorSemanticsReportBuilder
                     .Select(family => StableId("family", family.ToString()))
                     .Order(StringComparer.Ordinal)
                     .ToArray();
+                var representative = definition.Regions.Select(region => cores.GetValueOrDefault(region.StableId))
+                    .Where(core => core is not null)
+                    .OrderByDescending(core => stability.GetValueOrDefault(
+                        core!.ProfessionalRegionId!)?.NormalizedRegionMargin ?? 0)
+                    .ThenBy(core => core!.Hex, StringComparer.Ordinal)
+                    .FirstOrDefault();
                 return new ReportProfessionalTerm(
                     definition.StableId,
                     definition.Term.ToString(),
@@ -80,14 +113,23 @@ internal static class ColorSemanticsReportBuilder
                     regionIds.Length,
                     regionIds,
                     parentIds,
-                    definition.Regions.Select(region => cores.GetValueOrDefault(region.StableId))
-                        .FirstOrDefault(core => core is not null));
+                    representative)
+                {
+                    ReachabilityWitness = definition.Regions
+                        .Select(region => witnesses.GetValueOrDefault(region.StableId))
+                        .FirstOrDefault(point => point is not null),
+                    LocalStability = representative?.ProfessionalRegionId is { } representativeRegion
+                        ? stability.GetValueOrDefault(representativeRegion)
+                        : null
+                };
             })
             .OrderBy(term => term.Id, StringComparer.Ordinal)
             .ToArray();
         var relations = BuildRelations(terms, regions);
-        var research = LoadResearch(researchReport);
-        var warnings = BuildWarnings(terms, regions, research);
+        var research = LoadResearch(researchReport, out var deepEvidence);
+        var warnings = BuildWarnings(terms, regions, research, deepEvidence);
+        var classificationOutcomes = BuildClassificationOutcomes(adapter, definitionByIdentity);
+        var sampling = BuildSampling(samples, classificationOutcomes, boundary, witnesses, creativeAnchors);
         var version = typeof(PerceptualColorClassifier).Assembly
                           .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
                       ?? "unknown";
@@ -104,26 +146,8 @@ internal static class ColorSemanticsReportBuilder
             commit,
             research.Available ? "production+research" : "production",
             "reference-sRGB");
-        var productionSignature = Signature(new
-        {
-            Schema,
-            Metadata = new { metadata.ProductVersion, metadata.SourceColorDomain },
-            Summary = new
-            {
-                summary.BroadFamilyCount,
-                summary.ProfessionalTermCount,
-                summary.RegionCount,
-                summary.MultiRegionTermCount,
-                summary.CreativeAnchorCount,
-                summary.GamutSampleCount
-            },
-            BroadFamilies = families,
-            ProfessionalTerms = terms,
-            Regions = regions,
-            Relations = relations,
-            CreativeAnchors = creativeAnchors,
-            Gamut = new ReportGamut("OKLCH/reference-sRGB", GamutChannelStep, samples)
-        });
+        var productionSignature = CanonicalSemanticIdentity.BuildDefinitionSignature();
+        var outcomeSignature = CanonicalSemanticIdentity.BuildOutcomeSignature(classificationOutcomes);
         var unsigned = new
         {
             Schema,
@@ -137,9 +161,13 @@ internal static class ColorSemanticsReportBuilder
             Gamut = new ReportGamut("OKLCH/reference-sRGB", GamutChannelStep, samples),
             Research = research,
             Warnings = warnings,
-            ProductionSignature = productionSignature
+            DeepEvidence = deepEvidence,
+            Sampling = sampling,
+            ProductionSignature = productionSignature,
+            ClassificationOutcomeSignature = outcomeSignature,
+            CanonicalSemanticIdentity.NumericContract
         };
-        var reportSignature = Signature(unsigned);
+        var reportSignature = CanonicalSemanticIdentity.Hash(unsigned);
         return new ColorSemanticsReport(
             Schema,
             metadata,
@@ -153,13 +181,25 @@ internal static class ColorSemanticsReportBuilder
             research,
             warnings,
             productionSignature,
-            reportSignature);
+            reportSignature)
+        {
+            Signatures = new ReportSignatures(
+                productionSignature,
+                outcomeSignature,
+                reportSignature,
+                CanonicalSemanticIdentity.NumericContract),
+            Sampling = sampling,
+            DeepEvidence = deepEvidence
+        };
     }
 
     internal static (double X, double Y, double Z) ToCartesian(double lightness, double chroma, double hueDegrees)
     {
         var radians = hueDegrees * Math.PI / 180;
-        return (chroma * Math.Cos(radians), chroma * Math.Sin(radians), lightness);
+        return (
+            CanonicalSemanticIdentity.Derived(chroma * Math.Cos(radians)),
+            CanonicalSemanticIdentity.Derived(chroma * Math.Sin(radians)),
+            CanonicalSemanticIdentity.Derived(lightness));
     }
 
     internal static string StableId(string prefix, string identity)
@@ -179,7 +219,7 @@ internal static class ColorSemanticsReportBuilder
         return builder.ToString();
     }
 
-    private static Dictionary<string, ReportColorPoint?> FindCores(
+    private static Dictionary<string, ReportColorPoint?> FindReachabilityWitnesses(
         IReadOnlyList<OwnerCandidateSample> boundary,
         IReadOnlyList<ProfessionalShadeDefinition> definitions,
         ProductionColorAdapter adapter)
@@ -204,6 +244,46 @@ internal static class ColorSemanticsReportBuilder
         return result;
     }
 
+    private static ReportColorPoint? FindRepresentativeCore(
+        ProfessionalShadeDefinition definition,
+        ProfessionalShadeRegionDefinition region,
+        ProductionColorAdapter adapter)
+    {
+        var positions = new[] { 0.50, 0.40, 0.60, 0.30, 0.70, 0.20, 0.80 };
+        var candidates = new List<(ReportColorPoint Point, double Margin)>();
+        foreach (var lightnessPosition in positions)
+        {
+            foreach (var chromaPosition in positions)
+            {
+                foreach (var huePosition in positions)
+                {
+                    var lightness = Interpolate(region.MinimumLightness, region.MaximumLightness, lightnessPosition);
+                    var chroma = Interpolate(region.MinimumChroma, region.MaximumChroma, chromaPosition);
+                    var hue = InterpolateHue(region.MinimumHue, region.MaximumHue, huePosition);
+                    if (!AuditSampling.TryOklchToSrgb(lightness, chroma, hue, out var rgb))
+                    {
+                        continue;
+                    }
+
+                    var explanation = adapter.ExplainProfessional(rgb);
+                    if (explanation.WinnerRegionStableId != region.StableId)
+                    {
+                        continue;
+                    }
+
+                    candidates.Add((
+                        ToPoint(adapter.Classify(rgb), definition.StableId, region.StableId),
+                        RegionMargin(lightness, chroma, hue, region)));
+                }
+            }
+        }
+
+        return candidates.OrderByDescending(item => CanonicalSemanticIdentity.Derived(item.Margin))
+            .ThenBy(item => item.Point.Hex, StringComparer.Ordinal)
+            .Select(item => item.Point)
+            .FirstOrDefault();
+    }
+
     private static ReportColorPoint? FindSampleCore(
         ProfessionalShadeRegionDefinition region,
         IReadOnlyList<ReportColorPoint> samples)
@@ -212,14 +292,17 @@ internal static class ColorSemanticsReportBuilder
         var centerChroma = (region.MinimumChroma + region.MaximumChroma) / 2;
         var centerHue = InterpolateHue(region.MinimumHue, region.MaximumHue, 0.5);
         return samples.Where(sample => sample.ProfessionalRegionId == region.StableId)
-            .MinBy(sample =>
+            .OrderBy(sample =>
             {
                 var hueDistance = Math.Abs(sample.HueDegrees - centerHue);
                 hueDistance = Math.Min(hueDistance, 360 - hueDistance) / 180;
-                return Math.Pow(sample.Lightness - centerLightness, 2) +
-                       Math.Pow(sample.Chroma - centerChroma, 2) +
-                       Math.Pow(hueDistance, 2);
-            });
+                return CanonicalSemanticIdentity.Derived(
+                    Math.Pow(sample.Lightness - centerLightness, 2) +
+                    Math.Pow(sample.Chroma - centerChroma, 2) +
+                    Math.Pow(hueDistance, 2));
+            })
+            .ThenBy(sample => sample.Hex, StringComparer.Ordinal)
+            .FirstOrDefault();
     }
 
     private static ReportColorPoint? FindReachableCore(
@@ -253,6 +336,91 @@ internal static class ColorSemanticsReportBuilder
         }
 
         return null;
+    }
+
+    private static ReportLocalStability? MeasureLocalStability(
+        ProfessionalShadeDefinition definition,
+        ProfessionalShadeRegionDefinition region,
+        ReportColorPoint? representative,
+        ProductionColorAdapter adapter)
+    {
+        if (representative is null)
+        {
+            return null;
+        }
+
+        var retained = 0;
+        var total = 0;
+        var transition = 9;
+        for (var radius = 1; radius <= 8; radius++)
+        {
+            var radiusChanged = false;
+            foreach (var (red, green, blue) in new[]
+                     {
+                         (radius, 0, 0), (-radius, 0, 0), (0, radius, 0),
+                         (0, -radius, 0), (0, 0, radius), (0, 0, -radius)
+                     })
+            {
+                var r = representative.Red + red;
+                var g = representative.Green + green;
+                var b = representative.Blue + blue;
+                if (r is < 0 or > 255 || g is < 0 or > 255 || b is < 0 or > 255)
+                {
+                    continue;
+                }
+
+                total++;
+                var explanation = adapter.ExplainProfessional(new AuditRgb((byte)r, (byte)g, (byte)b));
+                if (explanation.WinnerTermStableId == definition.StableId &&
+                    explanation.WinnerRegionStableId == region.StableId)
+                {
+                    retained++;
+                }
+                else
+                {
+                    radiusChanged = true;
+                }
+            }
+
+            if (radiusChanged && transition == 9)
+            {
+                transition = radius;
+            }
+        }
+
+        return new ReportLocalStability(
+            total,
+            retained,
+            total == 0 ? 0 : CanonicalSemanticIdentity.Derived((double)retained / total),
+            transition,
+            CanonicalSemanticIdentity.Derived(RegionMargin(
+                representative.Lightness,
+                representative.Chroma,
+                representative.HueDegrees,
+                region)));
+    }
+
+    private static double RegionMargin(
+        double lightness,
+        double chroma,
+        double hue,
+        ProfessionalShadeRegionDefinition region)
+    {
+        var lightnessSpan = region.MaximumLightness - region.MinimumLightness;
+        var chromaSpan = region.MaximumChroma - region.MinimumChroma;
+        var hueSpan = region.MinimumHue <= region.MaximumHue
+            ? region.MaximumHue - region.MinimumHue
+            : 360 - region.MinimumHue + region.MaximumHue;
+        var hueOffset = (hue - region.MinimumHue + 360) % 360;
+        return new[]
+        {
+            (lightness - region.MinimumLightness) / lightnessSpan,
+            (region.MaximumLightness - lightness) / lightnessSpan,
+            (chroma - region.MinimumChroma) / chromaSpan,
+            (region.MaximumChroma - chroma) / chromaSpan,
+            hueOffset / hueSpan,
+            (hueSpan - hueOffset) / hueSpan
+        }.Min();
     }
 
     private static double Interpolate(double minimum, double maximum, double position) =>
@@ -298,6 +466,114 @@ internal static class ColorSemanticsReportBuilder
             .ToArray();
     }
 
+    private static IReadOnlyList<ReportClassificationOutcome> BuildClassificationOutcomes(
+        ProductionColorAdapter adapter,
+        IReadOnlyDictionary<string, ProfessionalShadeDefinition> definitionByIdentity)
+    {
+        var colors = new SortedSet<int>();
+        for (var red = 0; red <= 255; red += GamutChannelStep)
+        {
+            for (var green = 0; green <= 255; green += GamutChannelStep)
+            {
+                for (var blue = 0; blue <= 255; blue += GamutChannelStep)
+                {
+                    colors.Add((red << 16) | (green << 8) | blue);
+                }
+            }
+        }
+
+        colors.Add(0xFFFFFF);
+        var nearNeutral = new SortedSet<int>();
+        foreach (var gray in Enumerable.Range(0, 33).Select(index => Math.Min(255, index * 8)))
+        {
+            foreach (var redOffset in new[] { -6, -3, -1, 0, 1, 3, 6 })
+            {
+                foreach (var blueOffset in new[] { -6, -3, -1, 0, 1, 3, 6 })
+                {
+                    var red = Math.Clamp(gray + redOffset, 0, 255);
+                    var blue = Math.Clamp(gray + blueOffset, 0, 255);
+                    nearNeutral.Add((red << 16) | (gray << 8) | blue);
+                }
+            }
+        }
+
+        return colors.Select(packed => CreateOutcome("spectrum", packed))
+            .Concat(nearNeutral.Select(packed => CreateOutcome("near-neutral", packed)))
+            .OrderBy(item => item.SampleId, StringComparer.Ordinal)
+            .ToArray();
+
+        ReportClassificationOutcome CreateOutcome(string cohort, int packed)
+        {
+            var rgb = new AuditRgb((byte)(packed >> 16), (byte)(packed >> 8), (byte)packed);
+            var classification = adapter.Classify(rgb);
+            var explanation = adapter.ExplainProfessional(rgb);
+            var termId = classification.ProfessionalTerm is { } identity &&
+                         definitionByIdentity.TryGetValue(identity, out var definition)
+                ? definition.StableId
+                : null;
+            return new ReportClassificationOutcome(
+                $"{cohort}:{rgb.Hex}",
+                rgb.Hex,
+                classification.Role,
+                classification.Undertone,
+                StableId("family", classification.Family),
+                classification.Lightness,
+                classification.Chroma,
+                termId,
+                explanation.WinnerRegionStableId);
+        }
+    }
+
+    private static ReportSampling BuildSampling(
+        IReadOnlyList<ReportColorPoint> gamut,
+        IReadOnlyList<ReportClassificationOutcome> outcomes,
+        IReadOnlyList<OwnerCandidateSample> boundary,
+        IReadOnlyDictionary<string, ReportColorPoint?> witnesses,
+        IReadOnlyList<ReportCreativeAnchor> creativeAnchors)
+    {
+        var spectrum = outcomes.Where(item => item.SampleId.StartsWith("spectrum:", StringComparison.Ordinal))
+            .ToArray();
+        var nearNeutral = outcomes.Where(item => item.SampleId.StartsWith("near-neutral:", StringComparison.Ordinal))
+            .ToArray();
+        var cohorts = new[]
+        {
+            Cohort("visualization-gamut-cloud", "Bounded interactive reference-sRGB shape",
+                "16×16×16 RGB grid; visualization only", gamut.Count,
+                gamut.Count(item => item.ProfessionalTermId is not null), false),
+            Cohort("whole-spectrum-semantic-audit", "Fixed RGB classification outcome regression",
+                "16×16×16 RGB grid including exact white", spectrum.Length,
+                spectrum.Count(item => item.ProfessionalTermId is not null), true),
+            Cohort("near-neutral-targeted", "Thin neutral/off-white and weak-tint exercise",
+                "Gray axis at 8-code steps with bounded red/blue offsets", nearNeutral.Length,
+                nearNeutral.Count(item => item.ProfessionalTermId is not null), true),
+            Cohort("region-reachability", "One winning witness sought for every production lobe",
+                "All production regions/lobes", witnesses.Count,
+                witnesses.Count(item => item.Value is not null), true),
+            Cohort("boundary-counterexamples", "Inside/outside and sibling/fallback probes",
+                "Generated deterministic region boundary probes", boundary.Count,
+                boundary.Count(item => item.ProfessionalExplanation?.WinnerTermStableId is not null), true),
+            Cohort("creative-anchors", "Optional creative-name reference anchors",
+                "Tracked creative catalog; not structural taxonomy truth", creativeAnchors.Count,
+                creativeAnchors.Count(item => item.Point.ProfessionalTermId is not null), false)
+        };
+        return new ReportSampling(cohorts, outcomes);
+
+        static ReportSamplingCohort Cohort(
+            string id,
+            string purpose,
+            string denominator,
+            int count,
+            int hits,
+            bool authority) => new(
+            id,
+            purpose,
+            denominator,
+            count,
+            hits,
+            count == 0 ? 0 : CanonicalSemanticIdentity.Derived((double)hits / count),
+            authority);
+    }
+
     private static ReportColorPoint ToPoint(
         AuditClassification sample,
         string? termId,
@@ -309,9 +585,9 @@ internal static class ColorSemanticsReportBuilder
             sample.Rgb.Red,
             sample.Rgb.Green,
             sample.Rgb.Blue,
-            sample.OklchL,
-            sample.OklchC,
-            sample.OklchHue,
+            CanonicalSemanticIdentity.Derived(sample.OklchL),
+            CanonicalSemanticIdentity.Derived(sample.OklchC),
+            CanonicalSemanticIdentity.Hue(sample.OklchHue),
             x,
             y,
             z,
@@ -340,9 +616,9 @@ internal static class ColorSemanticsReportBuilder
                     entry.Red,
                     entry.Green,
                     entry.Blue,
-                    oklch.L,
-                    oklch.C,
-                    oklch.HueDegrees,
+                    CanonicalSemanticIdentity.Derived(oklch.L),
+                    CanonicalSemanticIdentity.Derived(oklch.C),
+                    CanonicalSemanticIdentity.Hue(oklch.HueDegrees),
                     x,
                     y,
                     z,
@@ -396,18 +672,28 @@ internal static class ColorSemanticsReportBuilder
             .ToArray();
     }
 
-    private static ReportResearch LoadResearch(string? path)
+    private static ReportResearch LoadResearch(string? path, out ReportDeepEvidence deepEvidence)
     {
         if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
         {
+            deepEvidence = ReportDeepEvidence.Empty;
             return new ReportResearch(false, "Research audit not supplied; production truth is complete.", [], [], []);
         }
 
         var audit = AuditReportWriter.Read(path);
         if (audit is null)
         {
+            deepEvidence = ReportDeepEvidence.Empty;
             return new ReportResearch(false, "Research audit was invalid; production truth is complete.", [], [], []);
         }
+
+        var termIds = ProfessionalShadeCatalog.Definitions.ToDictionary(
+            definition => definition.Term.ToString(),
+            definition => definition.StableId,
+            StringComparer.Ordinal);
+        var candidateProfiles = audit.VocabularyCandidates.ToDictionary(
+            candidate => candidate.SpecificTerm,
+            StringComparer.Ordinal);
 
         var sources = audit.References.Select(source => new ReportResearchSource(
                 source.Id,
@@ -417,7 +703,10 @@ internal static class ColorSemanticsReportBuilder
                 source.Sha256,
                 source.Independence,
                 source.IndependenceGroup,
-                source.CachePolicy))
+                source.CachePolicy)
+        {
+            LexicalOccurrenceCount = source.LexicalOccurrenceCount
+        })
             .OrderBy(source => source.Id, StringComparer.Ordinal)
             .ToArray();
         var candidates = audit.MasterCandidateLexicon.Select(candidate => new ReportResearchCandidate(
@@ -436,7 +725,32 @@ internal static class ColorSemanticsReportBuilder
                 candidate.PriorityScore,
                 candidate.Representative is null
                     ? null
-                    : ToPoint(candidate.Representative, null, null)))
+                    : ToPoint(candidate.Representative, null, null))
+        {
+            LexicalSourceCount = candidate.LexicalSourceCount,
+            NumericSourceCount = candidate.NumericSourceCount,
+            IndependentNumericSourceGroupCount = candidate.IndependentNumericSourceGroupCount,
+            Components = candidateProfiles.GetValueOrDefault(candidate.CanonicalTerm)?.Components
+                    .Select(component => new ReportResearchComponent(
+                        component.ComponentIndex,
+                        component.AnchorCount,
+                        component.SupportingDatasets.Count,
+                        candidate.ComponentEvidence
+                            .FirstOrDefault(item => item.ComponentIndex == component.ComponentIndex)
+                            ?.IndependentNumericSourceGroupCount ?? 0,
+                        CanonicalSemanticIdentity.Derived(component.MedianDeltaE),
+                        CanonicalSemanticIdentity.Derived(component.P90DeltaE),
+                        ToPoint(component.Representative, null, null),
+                        component.SupportingDatasets.Order(StringComparer.Ordinal).ToArray()))
+                    .OrderBy(component => component.Index)
+                    .ToArray() ?? [],
+            SynonymTermIds = candidate.Status == CandidateResearchStatus.Synonym
+                    ? termIds.Where(item => candidate.Reason.Contains(item.Key, StringComparison.OrdinalIgnoreCase))
+                        .Select(item => item.Value)
+                        .Order(StringComparer.Ordinal)
+                        .ToArray()
+                    : []
+        })
             .OrderBy(candidate => candidate.CanonicalTerm, StringComparer.Ordinal)
             .ToArray();
         var coverage = audit.CandidateDomainCoverage.Select(domain => new ReportDomainCoverage(
@@ -444,9 +758,56 @@ internal static class ColorSemanticsReportBuilder
                 domain.CandidateCount,
                 domain.AcceptedCount,
                 domain.EvidenceRichCount,
-                domain.Density))
+                domain.VocabularyDensity))
             .OrderBy(domain => domain.Domain, StringComparer.Ordinal)
             .ToArray();
+        deepEvidence = new ReportDeepEvidence(
+            true,
+            audit.ProfessionalOverlaps.Regions.Select(region => new ReportRegionReachability(
+                    region.RegionStableId,
+                    region.MatchedSamples,
+                    region.WinningSamples,
+                    region.IsShadowed))
+                .OrderBy(region => region.RegionId, StringComparer.Ordinal)
+                .ToArray(),
+            audit.ProfessionalOverlaps.Pairs.Select(pair => new ReportOverlapPair(
+                    termIds.GetValueOrDefault(pair.WinnerTerm, pair.WinnerTerm),
+                    termIds.GetValueOrDefault(pair.CompetingTerm, pair.CompetingTerm),
+                    pair.SampleCount,
+                    CanonicalSemanticIdentity.Derived(pair.WinnerOverlapRatio),
+                    CanonicalSemanticIdentity.Derived(pair.CompetitorContainmentRatio),
+                    CanonicalSemanticIdentity.Derived(pair.SimilarityScore),
+                    pair.NearTotalContainment,
+                    pair.SameCoreDuplicateWarning,
+                    pair.Severity.ToString(),
+                    pair.RepresentativeHex))
+                .OrderBy(pair => pair.WinnerTermId, StringComparer.Ordinal)
+                .ThenBy(pair => pair.CompetingTermId, StringComparer.Ordinal)
+                .ToArray(),
+            audit.ProfessionalTermCores.Select(core => new ReportTermCoreEvidence(
+                    termIds.GetValueOrDefault(core.Term, core.Term),
+                    core.RepresentativeCoreHex,
+                    core.InteriorProbeCount,
+                    core.WinningInteriorProbeCount,
+                    core.MatchedSamples,
+                    core.WinningSamples,
+                    CanonicalSemanticIdentity.Derived(core.MaximumContainmentRatio),
+                    core.ConfidenceTier,
+                    core.IsMostlyDisputed))
+                .OrderBy(core => core.TermId, StringComparer.Ordinal)
+                .ToArray(),
+            audit.ProfessionalBoundarySamples.Select(sample => new ReportBoundaryProbe(
+                    sample.Region,
+                    sample.Sample.Rgb.Hex,
+                    sample.ProfessionalExplanation?.WinnerTermStableId,
+                    sample.ProfessionalExplanation?.WinnerRegionStableId,
+                    sample.ProfessionalExplanation?.Candidates.Where(candidate => candidate.Matched)
+                        .Select(candidate => candidate.RegionStableId)
+                        .Order(StringComparer.Ordinal)
+                        .ToArray() ?? []))
+                .OrderBy(probe => probe.ProbeId, StringComparer.Ordinal)
+                .ThenBy(probe => probe.Hex, StringComparer.Ordinal)
+                .ToArray());
         return new ReportResearch(true, $"Research audit loaded from schema {audit.Schema}.", sources, candidates,
             coverage);
     }
@@ -454,7 +815,8 @@ internal static class ColorSemanticsReportBuilder
     private static IReadOnlyList<ReportWarning> BuildWarnings(
         IReadOnlyList<ReportProfessionalTerm> terms,
         IReadOnlyList<ReportRegion> regions,
-        ReportResearch research)
+        ReportResearch research,
+        ReportDeepEvidence deepEvidence)
     {
         var warnings = new List<ReportWarning>();
         warnings.AddRange(terms.Where(term => term.RepresentativeCore is null)
@@ -471,6 +833,21 @@ internal static class ColorSemanticsReportBuilder
                 "region-core",
                 "This lobe has no winning center/inside probe; the term may be represented by another lobe.",
                 [region.TermId, region.Id])));
+        warnings.AddRange(deepEvidence.RegionReachability.Where(region => region.Shadowed)
+            .Select(region => new ReportWarning(
+                $"shadowed-{region.RegionId}",
+                "error",
+                "shadowed-region",
+                "The deep audit observed matches but no wins for this production lobe.",
+                [region.RegionId])));
+        warnings.AddRange(deepEvidence.Overlaps.Where(pair => pair.SameCoreWarning)
+            .Select(pair => new ReportWarning(
+                $"same-core-{pair.WinnerTermId}-{pair.CompetingTermId}",
+                "warning",
+                "same-core-overlap",
+                $"Dice {pair.DiceSimilarity:0.000}; directional containment " +
+                $"{pair.WinnerOverlapRatio:0.000}/{pair.CompetitorContainmentRatio:0.000}.",
+                [pair.WinnerTermId, pair.CompetingTermId])));
         if (!research.Available)
         {
             warnings.Add(new ReportWarning(
@@ -482,15 +859,5 @@ internal static class ColorSemanticsReportBuilder
         }
 
         return warnings.OrderBy(warning => warning.Id, StringComparer.Ordinal).ToArray();
-    }
-
-    private static string Signature<T>(T value)
-    {
-        var bytes = JsonSerializer.SerializeToUtf8Bytes(value, new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
-        });
-        return Convert.ToHexStringLower(SHA256.HashData(bytes));
     }
 }

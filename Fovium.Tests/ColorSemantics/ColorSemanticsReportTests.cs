@@ -10,7 +10,7 @@ public sealed class ColorSemanticsReportTests
     {
         var report = ColorSemanticsReportBuilder.Build("test-commit");
 
-        Assert.Equal("fovium-color-semantics-report/v1", report.Schema);
+        Assert.Equal("fovium-color-semantics-report/v2", report.Schema);
         Assert.Equal(45, report.Summary.BroadFamilyCount);
         Assert.Equal(94, report.Summary.ProfessionalTermCount);
         Assert.Equal(99, report.Summary.RegionCount);
@@ -36,6 +36,8 @@ public sealed class ColorSemanticsReportTests
             report.Regions.Select(region => region.Id));
         Assert.All(report.ProfessionalTerms, term => Assert.NotNull(term.RepresentativeCore));
         Assert.All(report.Regions, region => Assert.NotNull(region.RepresentativeCore));
+        Assert.All(report.Regions, region => Assert.NotNull(region.ReachabilityWitness));
+        Assert.All(report.Regions, region => Assert.NotNull(region.LocalStability));
     }
 
     [Fact]
@@ -53,8 +55,15 @@ public sealed class ColorSemanticsReportTests
             JsonSerializer.Serialize(first, JsonOptions),
             JsonSerializer.Serialize(repeated, JsonOptions));
         Assert.Equal(
-            "5d2af1ce16e3f2ed9d5541fab68865b8a96d77fb0df47b39d7fb68715cc8a85b",
+            "d343f63bcb34201c3f4eb479aef8fd3095582aa36a70feb798ac70b1ee0cc233",
             first.ProductionSignature);
+        Assert.Equal(
+            "93800b41ab52da69c55ad8adadcd13f91a0f10ea4c18e628329c16ad60ea2735",
+            first.Signatures.ClassificationOutcomes);
+        _ = ColorSemanticsReportBuilder.ToCartesian(0.61, 0.17, 243.5);
+        Assert.Equal(first.ProductionSignature, CanonicalSemanticIdentity.BuildDefinitionSignature());
+        Assert.NotEqual(first.ProductionSignature, first.ReportSignature);
+        Assert.Contains("derived report geometry", first.Signatures.NumericCanonicalization);
     }
 
     [Fact]
@@ -102,7 +111,7 @@ public sealed class ColorSemanticsReportTests
 
             Assert.Equal(0, exitCode);
             Assert.Equal(
-                "3dd7072f7db6fd8e5afdd78735424cc9816491bd7a47d8a5eb49231aeb58dd34",
+                "463c213b7f8b981459773d509d439613df16b7e2511bbfbc8947b5f8454878d9",
                 File.ReadAllText(Path.Combine(directory, "deterministic-signature.sha256")).Trim());
         }
         finally
@@ -177,6 +186,10 @@ public sealed class ColorSemanticsReportTests
         Assert.Contains("3D Explorer", html);
         Assert.Contains("reference-sRGB gamut", html);
         Assert.Contains("id=\"taxonomy-data\"", html);
+        Assert.Contains("id=\"reset-view\"", html);
+        Assert.Contains("reachabilityWitness", html);
+        Assert.Contains("localStability", html);
+        Assert.Contains("independentNumericSourceGroupCount", html);
         Assert.Contains("static/overview.svg", html);
         Assert.DoesNotContain("https://", html, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("http://", html, StringComparison.OrdinalIgnoreCase);
@@ -199,11 +212,13 @@ public sealed class ColorSemanticsReportTests
             var options = new ColorSemanticsReportOptions(directory, null, "writer", true, true, true, true);
             var artifacts = ColorSemanticsReportWriter.Write(ColorSemanticsReportBuilder.Build("writer"), options);
 
-            Assert.Equal(13, artifacts.Paths.Count);
+            Assert.Equal(15, artifacts.Paths.Count);
             Assert.True(artifacts.TotalBytes > 1_000_000);
             Assert.All(artifacts.Paths, path => Assert.StartsWith(directory, path, StringComparison.OrdinalIgnoreCase));
             Assert.True(File.Exists(Path.Combine(directory, "index.html")));
             Assert.True(File.Exists(Path.Combine(directory, "taxonomy.json")));
+            Assert.True(File.Exists(Path.Combine(directory, "analysis-summary.json")));
+            Assert.True(File.Exists(Path.Combine(directory, "analysis-summary.md")));
             Assert.True(File.Exists(Path.Combine(directory, "static", "overview.svg")));
             Assert.True(File.Exists(Path.Combine(directory, "static", "relations.svg")));
 
@@ -245,6 +260,17 @@ public sealed class ColorSemanticsReportTests
             Assert.Equal("Deferred", candidate.Disposition);
             Assert.NotNull(candidate.Representative);
             Assert.Single(deep.Research.Sources);
+            Assert.Equal(1, candidate.LexicalSourceCount);
+            Assert.Equal(1, candidate.NumericSourceCount);
+            Assert.Equal(1, candidate.IndependentNumericSourceGroupCount);
+            Assert.True(deep.DeepEvidence.Available);
+            var overlap = Assert.Single(deep.DeepEvidence.Overlaps);
+            Assert.Equal(0.72, overlap.DiceSimilarity);
+            Assert.True(overlap.SameCoreWarning);
+            Assert.Single(deep.DeepEvidence.RegionReachability);
+            Assert.Single(deep.DeepEvidence.TermCores);
+            Assert.Single(deep.DeepEvidence.BoundaryProbes);
+            Assert.Contains(deep.Warnings, warning => warning.Kind == "same-core-overlap");
         }
         finally
         {
@@ -252,9 +278,117 @@ public sealed class ColorSemanticsReportTests
         }
     }
 
+    [Fact]
+    public void SamplingCohortsKeepVisualizationCoverageSeparateFromSemanticReachability()
+    {
+        var report = ColorSemanticsReportBuilder.Build("sampling");
+
+        var visualization = Assert.Single(report.Sampling.Cohorts,
+            cohort => cohort.Id == "visualization-gamut-cloud");
+        Assert.Equal(4096, visualization.SampleCount);
+        Assert.False(visualization.IsCoverageAuthority);
+        Assert.Contains("visualization only", visualization.DenominatorMeaning);
+        var reachability = Assert.Single(report.Sampling.Cohorts,
+            cohort => cohort.Id == "region-reachability");
+        Assert.Equal(99, reachability.SampleCount);
+        Assert.Equal(99, reachability.ProfessionalHitCount);
+        Assert.True(reachability.IsCoverageAuthority);
+        Assert.Contains(report.Regions, region =>
+            report.Gamut.Samples.All(sample => sample.ProfessionalRegionId != region.Id) &&
+            region.ReachabilityWitness is not null);
+        var neutral = Assert.Single(report.Sampling.Cohorts,
+            cohort => cohort.Id == "near-neutral-targeted");
+        Assert.True(neutral.SampleCount > 1000);
+        Assert.Contains(report.Sampling.ClassificationOutcomes,
+            outcome => outcome.SampleId.StartsWith("near-neutral:", StringComparison.Ordinal) &&
+                       outcome.ProfessionalTermId is "professional-heather" or "professional-mushroom");
+    }
+
+    [Fact]
+    public void RepresentativeWitnessAndLocalStabilityHaveDistinctExplainableContracts()
+    {
+        var report = ColorSemanticsReportBuilder.Build("explainability");
+        var plum = Assert.Single(report.ProfessionalTerms, term => term.Identity == "Plum");
+
+        Assert.NotNull(plum.RepresentativeCore);
+        Assert.NotNull(plum.ReachabilityWitness);
+        Assert.NotNull(plum.LocalStability);
+        Assert.InRange(plum.LocalStability.RetentionFraction, 0, 1);
+        Assert.InRange(plum.LocalStability.MinimumRgbTransitionSteps, 1, 9);
+        Assert.InRange(plum.LocalStability.NormalizedRegionMargin, 0, 0.5);
+        Assert.All(report.Regions, region =>
+        {
+            Assert.Equal(region.Id, region.RepresentativeCore!.ProfessionalRegionId);
+            Assert.Equal(region.Id, region.ReachabilityWitness!.ProfessionalRegionId);
+        });
+    }
+
+    [Fact]
+    public void ReportDiffNamesTermLobeAndOutcomeChangesAndNoOpIsEmpty()
+    {
+        var baseline = ColorSemanticsReportBuilder.Build("diff");
+        Assert.True(ColorSemanticsReportDiffer.Compare(baseline, baseline).IsEmpty);
+        var firstTerm = baseline.ProfessionalTerms[0];
+        var first = baseline.Regions[0];
+        var changedRegion = first with
+        {
+            Priority = first.Priority + 1,
+            Hue = first.Hue with { MinimumInclusive = first.Hue.MinimumInclusive + 0.001 }
+        };
+        var firstOutcome = baseline.Sampling.ClassificationOutcomes[0];
+        var changed = baseline with
+        {
+            ProfessionalTerms =
+            [firstTerm with { ParentFamilyIds = ["family-diff-sentinel"] }, .. baseline.ProfessionalTerms.Skip(1)],
+            Regions = [changedRegion, .. baseline.Regions.Skip(1).SkipLast(1)],
+            Sampling = baseline.Sampling with
+            {
+                ClassificationOutcomes =
+                [
+                    firstOutcome with { BroadFamilyId = "family-diff-sentinel" },
+                    .. baseline.Sampling.ClassificationOutcomes.Skip(1)
+                ]
+            }
+        };
+
+        var diff = ColorSemanticsReportDiffer.Compare(baseline, changed);
+
+        var term = Assert.Single(diff.ChangedTerms);
+        Assert.Equal(firstTerm.Id, term.Id);
+        Assert.Contains("parentFamilyIds", term.Fields);
+        var region = Assert.Single(diff.ChangedRegions);
+        Assert.Equal(first.Id, region.Id);
+        Assert.Contains("priority", region.Fields);
+        Assert.Contains("hue", region.Fields);
+        Assert.Equal(baseline.Regions[^1].Id, Assert.Single(diff.RemovedRegions));
+        var outcome = Assert.Single(diff.ClassificationChanges);
+        Assert.Equal(firstOutcome.SampleId, outcome.SampleId);
+        Assert.Equal("family-diff-sentinel", outcome.After.BroadFamilyId);
+    }
+
+    [Fact]
+    public void CompactAnalysisOmitsGeometryPayloadButRetainsDecisionEvidence()
+    {
+        var report = ColorSemanticsReportBuilder.Build("compact");
+        var json = ColorSemanticsReportWriter.BuildCompactAnalysisJson(report);
+        using var document = JsonDocument.Parse(json);
+
+        Assert.Equal("fovium-color-semantics-analysis-summary/v1",
+            document.RootElement.GetProperty("schema").GetString());
+        Assert.True(document.RootElement.TryGetProperty("sampling", out _));
+        Assert.True(document.RootElement.TryGetProperty("weakestLocalStability", out _));
+        Assert.False(document.RootElement.TryGetProperty("gamut", out _));
+        Assert.False(document.RootElement.TryGetProperty("creativeAnchors", out _));
+        Assert.True(json.Length < 100_000);
+    }
+
     private static AuditReport CreateResearchAudit()
     {
         var sample = new ProductionColorAdapter().Classify(new AuditRgb(230, 220, 190));
+        var linen = Assert.Single(ProfessionalShadeCatalog.Definitions, definition =>
+            definition.Term == ProfessionalColorTerm.Linen);
+        var ivory = Assert.Single(ProfessionalShadeCatalog.Definitions, definition =>
+            definition.Term == ProfessionalColorTerm.Ivory);
         return new AuditReport(
             "fovium-color-taxonomy-audit/v8",
             "Deep",
@@ -272,7 +406,8 @@ public sealed class ColorSemanticsReportTests
                 {
                     Independence = "Independent",
                     IndependenceGroup = "museum",
-                    CachePolicy = "IgnoredCacheOnly"
+                    CachePolicy = "IgnoredCacheOnly",
+                    LexicalOccurrenceCount = 2
                 }
             ],
             [],
@@ -303,8 +438,65 @@ public sealed class ColorSemanticsReportTests
                     "AntiqueWhite",
                     0.02,
                     1.5)
+                {
+                    LexicalSourceCount = 1,
+                    NumericSourceCount = 1,
+                    IndependentNumericSourceGroupCount = 1
+                }
             ],
-            CandidateDomainCoverage = [new CandidateDomainCoverage("NeutralOffWhite", 1, 0, 1, "Sparse")]
+            CandidateDomainCoverage = [new CandidateDomainCoverage("NeutralOffWhite", 1, 0, 1, "Sparse")],
+            ProfessionalOverlaps = new ProfessionalOverlapReport(
+                100,
+                10,
+                [
+                    new ProfessionalOverlapPair(
+                        linen.Term.ToString(),
+                        ivory.Term.ToString(),
+                        10,
+                        sample.Rgb.Hex,
+                        0.1,
+                        0.85,
+                        0.82,
+                        0.72,
+                        true,
+                        true,
+                        ProfessionalOverlapSeverity.SuspiciousSibling)
+                ],
+                [new ProfessionalRegionOverlapProfile(linen.Regions[0].StableId, 7, 7, false)],
+                [new ProfessionalTermOverlapProfile(linen.Term.ToString(), 7, 7, 0.85, false)]),
+            ProfessionalTermCores =
+            [
+                new ProfessionalTermCoreProfile(
+                    linen.Term.ToString(),
+                    sample.Rgb.Hex,
+                    1,
+                    7,
+                    7,
+                    7,
+                    7,
+                    0.85,
+                    "High",
+                    false)
+            ],
+            ProfessionalBoundarySamples =
+            [
+                new OwnerCandidateSample(linen.Regions[0].StableId + ":center", sample, null)
+                {
+                    ProfessionalExplanation = new AuditProfessionalExplanation(
+                        linen.Term.ToString(),
+                        linen.StableId,
+                        linen.Regions[0].StableId,
+                        [
+                            new AuditProfessionalRegionEvaluation(
+                                linen.Term.ToString(),
+                                linen.StableId,
+                                linen.Regions[0].StableId,
+                                linen.Regions[0].Priority,
+                                true,
+                                null)
+                        ])
+                }
+            ]
         };
     }
 

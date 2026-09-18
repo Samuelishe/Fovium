@@ -186,12 +186,19 @@ internal static class SemanticReferenceAudit
                 var centerL = familySamples.Average(sample => sample.LabL);
                 var centerA = familySamples.Average(sample => sample.LabA);
                 var centerB = familySamples.Average(sample => sample.LabB);
-                var center = familySamples.MinBy(sample => SquaredDistance(sample, centerL, centerA, centerB))!;
-                var edge = familySamples.MinBy(sample => samples
-                    .Where(other => other.Family != sample.Family)
-                    .Select(other => DeltaE(sample, other))
-                    .DefaultIfEmpty(double.MaxValue)
-                    .Min())!;
+                var center = familySamples
+                    .OrderBy(sample => CanonicalSemanticIdentity.Derived(
+                        SquaredDistance(sample, centerL, centerA, centerB)))
+                    .ThenBy(sample => sample.Rgb.Packed)
+                    .First();
+                var edge = familySamples
+                    .OrderBy(sample => CanonicalSemanticIdentity.Derived(samples
+                        .Where(other => other.Family != sample.Family)
+                        .Select(other => DeltaE(sample, other))
+                        .DefaultIfEmpty(double.MaxValue)
+                        .Min()))
+                    .ThenBy(sample => sample.Rgb.Packed)
+                    .First();
                 var assessed = items.Where(item => item.Reference is not null).ToArray();
                 var incompatible = assessed.Count(item =>
                     item.Reference is { ConsensusSupport: >= 2, IsCompatible: false });

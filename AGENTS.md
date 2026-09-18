@@ -44,6 +44,7 @@ Do not load every document by default. If documents conflict, follow the owner n
 | ICC, color, or display profiles                                        | [`docs/COLOR-MANAGEMENT.md`](docs/COLOR-MANAGEMENT.md) + [`docs/RENDERING.md`](docs/RENDERING.md)                                      |
 | Color semantics, taxonomy, OKLab/OKLCH, Professional or creative names | [`docs/COLOR-SEMANTICS.md`](docs/COLOR-SEMANTICS.md)                                                                                   |
 | Color Picker sampling, input, overlay, or history                      | [`docs/COLOR-PICKER.md`](docs/COLOR-PICKER.md) + [`docs/IMAGING-PIPELINE.md`](docs/IMAGING-PIPELINE.md)                                |
+| Semantic color math, taxonomy, naming, audit, or Explorer              | [`docs/COLOR-SEMANTICS.md`](docs/COLOR-SEMANTICS.md) + [`docs/CODING-GUIDELINES.md`](docs/CODING-GUIDELINES.md)                        |
 | Architecture or dependencies                                           | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)                                                                                         |
 | C# implementation                                                      | [`docs/CODING-GUIDELINES.md`](docs/CODING-GUIDELINES.md) + affected area owner                                                         |
 | Tests or test execution                                                | [`docs/TEST-EXECUTION.md`](docs/TEST-EXECUTION.md) + [`docs/CODING-GUIDELINES.md`](docs/CODING-GUIDELINES.md)                          |

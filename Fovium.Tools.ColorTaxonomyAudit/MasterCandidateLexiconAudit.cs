@@ -33,7 +33,7 @@ internal static class MasterCandidateLexiconAudit
             {
                 var accepted = group.Count(item => item.Status == CandidateResearchStatus.Accepted);
                 var evidenceRich = group.Count(item =>
-                    item.IndependentSourceCount >= 2 && item.CompactComponentCount > 0);
+                    item.IndependentNumericSourceGroupCount >= 2 && item.CompactComponentCount > 0);
                 var density = accepted >= 15 ? "Dense" : accepted >= 8 ? "Medium" : "Sparse";
                 return new CandidateDomainCoverage(group.Key, group.Count(), accepted, evidenceRich, density);
             })
@@ -67,12 +67,22 @@ internal static class MasterCandidateLexiconAudit
                         : source.IndependenceGroup,
                     group.Select(item => item.Name).Distinct(StringComparer.OrdinalIgnoreCase)
                         .Order(StringComparer.OrdinalIgnoreCase).ToArray(),
-                    group.Count(item => item.IsAnchor));
+                    group.Count(item => item.IsAnchor))
+                {
+                    LexicalOccurrenceCount = group.Count(item => !item.IsAnchor)
+                };
             })
             .OrderBy(item => item.Dataset, StringComparer.Ordinal)
             .ToArray();
         var independentSources = occurrences
             .Where(item => item.Independence == "Independent")
+            .Select(item => item.IndependenceGroup)
+            .Distinct(StringComparer.Ordinal)
+            .Count();
+        var lexicalSourceCount = occurrences.Count(item => item.LexicalOccurrenceCount > 0);
+        var numericSourceCount = occurrences.Count(item => item.AnchorCount > 0);
+        var independentNumericSourceGroups = occurrences
+            .Where(item => item.AnchorCount > 0 && item.Independence == "Independent")
             .Select(item => item.IndependenceGroup)
             .Distinct(StringComparer.Ordinal)
             .Count();
@@ -82,7 +92,7 @@ internal static class MasterCandidateLexiconAudit
         var noiseFraction = anchorCount == 0 ? 0 : (double)profile!.NoiseAnchorCount / anchorCount;
         var compactSupport = profile?.Components.Sum(item => item.DatasetSupport) ?? 0;
         var distinctness = nearestDistance is null ? 0 : Math.Min(nearestDistance.Value, 0.15) * 100;
-        var priorityScore = independentSources * 100 + occurrences.Length * 20 + compactSupport * 12 +
+        var priorityScore = independentNumericSourceGroups * 120 + lexicalSourceCount * 20 + compactSupport * 12 +
             distinctness - noiseFraction * 25;
 
         return new MasterCandidateLexiconEntry(
@@ -103,7 +113,34 @@ internal static class MasterCandidateLexiconAudit
             profile?.ProductionFamilyCoverage ?? new Dictionary<string, int>(StringComparer.Ordinal),
             nearestTerm,
             nearestDistance,
-            priorityScore);
+            priorityScore)
+        {
+            LexicalSourceCount = lexicalSourceCount,
+            NumericSourceCount = numericSourceCount,
+            IndependentNumericSourceGroupCount = independentNumericSourceGroups,
+            ComponentEvidence = profile?.Components.Select(component =>
+                {
+                    var componentSources = component.SupportingDatasets
+                        .Order(StringComparer.Ordinal)
+                        .ToArray();
+                    var independentGroups = componentSources
+                        .Select(sourceById.GetValueOrDefault)
+                        .Where(source => source is { Independence: "Independent" })
+                        .Select(source => string.IsNullOrWhiteSpace(source!.IndependenceGroup)
+                            ? source.Id
+                            : source.IndependenceGroup)
+                        .Distinct(StringComparer.Ordinal)
+                        .Count();
+                    return new CandidateComponentEvidence(
+                        component.ComponentIndex,
+                        component.AnchorCount,
+                        componentSources.Length,
+                        independentGroups,
+                        componentSources);
+                })
+                .OrderBy(item => item.ComponentIndex)
+                .ToArray() ?? []
+        };
     }
 
     private static (string Term, double? Distance) FindNearestShipped(

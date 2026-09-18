@@ -801,3 +801,22 @@ are projections of that model rather than independent classifiers. The productio
 research evidence; core and enriched reports must retain it. Reference-sRGB reachability is represented by deterministic
 bounded sampling, while unreachable mathematical OKLCH remains visibly distinct. Generated output and research caches
 stay ignored; ProjectStats remains independent and BCL-only.
+
+## D-073 — Semantic identity and evidence metrics are cohort-specific
+
+Status: Implemented in local R10-D; hosted verification pending.
+
+Color Semantics has three distinct hashes: authored production definitions, discrete outcomes over fixed source-RGB
+cohorts, and the complete normalized report. Visualization Cartesian coordinates, timing, commit identity, research
+availability, and platform libm tail bits cannot change production semantic identity. Numeric canonicalization is
+explicit and much finer than authored thresholds. Report-to-report diff names structural and outcome changes.
+
+The 4,096-point RGB cube is only the Explorer gamut cloud. Whole-spectrum outcomes, near-neutral targeting, lobe
+reachability, boundary/counterexample probes, and creative/research anchors are separately named cohorts with explicit
+denominators. Vocabulary density means accepted-term count only. Deep evidence reuses the authoritative audit overlap,
+core, boundary, and clustering engines. Lexical occurrence, numeric anchors, independent numeric groups, and
+component-specific support are distinct; broad lexical familiarity alone cannot justify a runtime region.
+
+Reachability witnesses prove that a lobe can win; human representatives are separately selected for interior margin.
+Local RGB retention/margin and hue meaningfulness are diagnostic interpretations, not probabilities and not inputs to
+rendering, Color Management, or the Picker sampling truth.

@@ -6,6 +6,17 @@ namespace Fovium.Tests.ColorSemantics;
 
 public sealed class ColorTaxonomyAuditTests
 {
+    [Theory]
+    [InlineData("cinnabar green", null)]
+    [InlineData("primrose", null)]
+    [InlineData("pretty primrose", null)]
+    [InlineData("primrose yellow", "Primrose")]
+    [InlineData("cinnabar red", "Cinnabar")]
+    public void NumericAnchorNormalizationRejectsKnownHomonymContamination(string name, string? expected)
+    {
+        Assert.Equal(expected, SpecificColorTermNormalizer.Normalize(name));
+    }
+
     [Fact]
     public void OptionsSelectDocumentedDeterministicFastAndDeepProfiles()
     {
@@ -319,10 +330,10 @@ public sealed class ColorTaxonomyAuditTests
             [
                 CreateSummary("historic-a", "Independent", "same-historic-source"),
                 CreateSummary("historic-b", "Independent", "same-historic-source"),
-                CreateSummary("mirror", "Correlated", "same-historic-source")
+                CreateSummary("lexical-only", "Independent", "lexical-only")
             ])
         {
-            LexicalOccurrences = [new ReferenceLexicalOccurrence("mirror", "raw sienna", "RawSienna")]
+            LexicalOccurrences = [new ReferenceLexicalOccurrence("lexical-only", "raw sienna", "RawSienna")]
         };
 
         var entry = Assert.Single(
@@ -330,7 +341,19 @@ public sealed class ColorTaxonomyAuditTests
             item => item.CanonicalTerm == "RawSienna");
 
         Assert.Equal(3, entry.SourceOccurrences.Count);
-        Assert.Equal(1, entry.IndependentSourceCount);
+        Assert.Equal(2, entry.IndependentSourceCount);
+        Assert.Equal(1, entry.LexicalSourceCount);
+        Assert.Equal(2, entry.NumericSourceCount);
+        Assert.Equal(1, entry.IndependentNumericSourceGroupCount);
+        Assert.All(entry.ComponentEvidence, component =>
+        {
+            Assert.Equal(2, component.NumericSourceCount);
+            Assert.Equal(1, component.IndependentNumericSourceGroupCount);
+        });
+        Assert.Equal(0, Assert.Single(entry.SourceOccurrences, item => item.Dataset == "historic-a")
+            .LexicalOccurrenceCount);
+        Assert.Equal(1, Assert.Single(entry.SourceOccurrences, item => item.Dataset == "lexical-only")
+            .LexicalOccurrenceCount);
         Assert.Equal(CandidateResearchStatus.Accepted, entry.Status);
         Assert.True(entry.AnchorCount >= 2);
         Assert.True(entry.CompactComponentCount >= 1);
@@ -341,6 +364,10 @@ public sealed class ColorTaxonomyAuditTests
     [InlineData("RoyalPurple", CandidateResearchStatus.Synonym)]
     [InlineData("Sapphire", CandidateResearchStatus.Rejected)]
     [InlineData("Parchment", CandidateResearchStatus.Deferred)]
+    [InlineData("BurntOrange", CandidateResearchStatus.Deferred)]
+    [InlineData("Gainsboro", CandidateResearchStatus.Deferred)]
+    [InlineData("Cinnabar", CandidateResearchStatus.Deferred)]
+    [InlineData("Primrose", CandidateResearchStatus.Deferred)]
     [InlineData("AliceBlue", CandidateResearchStatus.Unreviewed)]
     public void MasterLexiconRetainsExplicitResearchDisposition(
         string term,

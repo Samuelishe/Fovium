@@ -253,6 +253,18 @@ Professional domain/relations sheets, and a self-contained offline interactive 3
 clean clone; optional retained deep-audit JSON supplies the 250-candidate frontier. The report is developer tooling, not
 a viewer feature, semantic quality gate, or input to rendering/Color Management.
 
+## R10-D — Color Semantics evidence hardening and explainability
+
+Locally complete without a product-version transition at `0.1.3.0000`: make semantic identity cross-platform canonical,
+split visual sampling from audit cohorts, retain authoritative deep evidence in report schema v2, and add representative
+versus witness, local-stability, hue-meaningfulness, compact-analysis, and report-diff diagnostics. Windows/WSL
+structured comparison is empty for definitions and fixed RGB outcomes.
+
+The improved audit was used immediately against all 250 research candidates. Eight named frontier cases were moved or
+confirmed as Deferred with numeric-evidence reasons; known Cinnabar/Primrose component contamination was removed. No
+candidate demonstrated enough independent compact numeric support for a new production region, so 45/94/99 remains
+the evidence-driven result rather than a count target.
+
 ## Later / separate platform milestones
 
 - file association and Open With integration;

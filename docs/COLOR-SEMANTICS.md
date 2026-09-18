@@ -44,7 +44,7 @@ production truth. External datasets do not generate runtime definitions.
 
 ## Deterministic report and Explorer
 
-`Fovium.Tools.ColorTaxonomyAudit report` builds one ordered `fovium-color-semantics-report/v1` model, then renders all
+`Fovium.Tools.ColorTaxonomyAudit report` builds one ordered `fovium-color-semantics-report/v2` model, then renders all
 representations from it. The normal owner route is:
 
 ```powershell
@@ -57,6 +57,8 @@ The default ignored output is `artifacts/reports/color-semantics/`:
 ```text
 index.html
 taxonomy.json
+analysis-summary.json
+analysis-summary.md
 summary.txt
 summary.md
 static/overview.svg
@@ -69,10 +71,22 @@ Codex browser backend. `-StaticOnly` and `-HtmlOnly` select bounded output subse
 enriches the report from an existing audit, while `-Deep` first produces a fresh deep audit and uses the ignored
 reference cache when present. A missing research report never prevents the production/core report.
 
-The canonical JSON uses stable ordered arrays and separate `productionSignature` and `reportSignature` SHA-256 values.
-The production signature excludes commit identity and research evidence, so core and deep modes prove identical
-runtime truth. Research fields are explicitly marked available/unavailable. Schema v1 is designed for future report
-diffing; a diff CLI is intentionally deferred until a real comparison workflow justifies it.
+The canonical JSON exposes three identities. `productionDefinition` hashes stable IDs, parents, roles, bounds,
+priorities, precedence, and creative-catalog source RGB definitions using explicit decimal canonicalization.
+`classificationOutcomes` hashes only discrete results for fixed source-RGB cohorts. `canonicalReport` hashes the full
+normalized report. Commit identity and research evidence never enter the first two. Visualization `X/Y/Z`, timings,
+and raw libm tail bits never decide whether production semantics changed. Semantic bounds use `1e-6`, derived geometry
+uses `1e-9`, and serialized hue uses `1e-5°`; all are substantially finer than authored classifier resolution.
+
+Compare two v2 reports without Git archaeology:
+
+```powershell
+pwsh eng/color-taxonomy.ps1 -CompareBefore artifacts/before/taxonomy.json `
+  -CompareAfter artifacts/after/taxonomy.json -OutputDirectory artifacts/report-diff
+```
+
+The machine-readable and Markdown diff name added/removed terms and lobes, changed bounds/priority/parents/
+representatives, fixed-cohort classification changes, warning changes, and research disposition changes.
 
 ## Geometry and gamut truth
 
@@ -81,19 +95,23 @@ document with rotation, zoom, pan, lightness/density controls, layer toggles, EN
 hover/click details, Professional cores/coverage, creative anchors, and research dispositions when present. It uses no
 CDN or frontend framework.
 
-The visible gamut is a deterministic 16×16×16 reference-sRGB cube (4,096 samples) transformed to OKLCH. Professional
-coverage in 3D is drawn only from reachable winning source samples; exact region bounds remain in JSON and domain
-sheets. The vector overview uses six fixed lightness slices and visibly hatches unreachable mathematical OKLCH. It must
-never depict the full cylinder as attainable source color.
+The visible gamut is a deterministic 16×16×16 reference-sRGB cube (4,096 samples) transformed to OKLCH. It is a
+visualization cohort, not universal semantic coverage evidence. Report v2 separately names the whole-spectrum RGB
+outcome cohort, every-lobe reachability witnesses, boundary/counterexample probes, a dense near-neutral RGB cohort,
+and optional creative/research anchors. Every hit rate states its cohort and denominator; none is called accuracy.
+The vector overview uses six fixed lightness slices and visibly hatches unreachable mathematical OKLCH.
 
-Every Professional term and lobe has a deterministic reachable winning core. The report first reuses canonical
-inside/center probes, then bounded interior search and the sampled source cube for numerically narrow edge cases. This
-is explainability evidence, not a new classification rule.
+Every Professional lobe has a deterministic reachable winning witness. A separate representative maximizes a bounded
+interior margin among winning probes and is intended for human display. Local stability reports fixed ±1…8 RGB-axis
+retention, first transition step, and normalized region margin; it is a deterministic diagnostic, not a probability.
+Raw OKLCH hue remains available, while `HueMeaningfulness` distinguishes undefined neutral hue, weak tint hue, and
+strong chromatic hue without changing RGB or OKLCH math.
 
 ## Evidence, performance, and limits
 
-On the R10-C implementation machine, core generation was about `0.25 s` and the full 13-file report about `5.4 MiB`;
-loading the retained F12 250-candidate audit took about `0.7 s` and produced about `5.8 MiB`. The interactive scene uses
+On the R10-D implementation machine, core generation is about `0.5 s`; the v2 deep model/report is about `1.1 s` after
+the deep audit and its canonical JSON is about `5.8 MiB`. `analysis-summary.json` is about `0.2 MiB` and intentionally
+omits gamut geometry and creative anchors. The interactive scene uses
 4,096 gamut points, 94 term cores, 99 lobe identities, and optional 1,800 creative anchors rather than DOM nodes per
 sample. Viewer runtime and classifier hot paths are unchanged.
 
@@ -103,5 +121,6 @@ This is not a claim of manual mouse/rotation acceptance or cross-browser/macOS U
 
 Generated reports, PNGs, browser profiles, ignored reference corpora, owner images, and absolute/private paths never
 belong in Git or deterministic signatures. Ordinary CI tests report structure and determinism but do not make semantic
-coverage a quality percentage or gate.
-
+coverage a quality percentage or gate. Deep evidence exports authoritative overlap/Dice/directional containment,
+shadowing/reachability, core, boundary competitors, component provenance, and separate lexical, numeric, and
+independent-numeric support. Vocabulary density is only the count of accepted terms in a domain.
