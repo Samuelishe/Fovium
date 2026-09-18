@@ -705,7 +705,8 @@ internal static class ColorSemanticsReportBuilder
                 source.IndependenceGroup,
                 source.CachePolicy)
         {
-            LexicalOccurrenceCount = source.LexicalOccurrenceCount
+            LexicalOccurrenceCount = source.LexicalOccurrenceCount,
+            SourceQuality = source.SourceQuality
         })
             .OrderBy(source => source.Id, StringComparer.Ordinal)
             .ToArray();

@@ -301,6 +301,25 @@ stability, neutral/weak/strong hue meaningfulness, lexical-versus-numeric proven
 compact-summary payload, v2 offline HTML, and field-level report diff. The 4,096-point visualization cloud is never used
 as proof that every thin region was sampled.
 
+## R10-E independent evidence and vocabulary wave
+
+Source-adapter tests cover UW/LabintheWild RGB rows, Stanford human-speaker target HSL rows, NBS/ISCC dictionary rows,
+malformed numerics, duplicate rows, exact aliases, compound contamination, provenance quality/independence, stable
+ordering, and the 128-anchor per-source/term cap. The focused production tests require all five new terms to resolve
+multiple independent anchors where available, retain EN/RU names, keep explicit L/C/H edges and semantic priorities,
+preserve old sibling anchors, and leave all 104 lobes reachable with unique IDs and priorities.
+
+```powershell
+pwsh eng/color-taxonomy-audit/fetch-references.ps1 -CacheDirectory artifacts/r10e/references
+pwsh eng/color-taxonomy.ps1 -Deep -ReferenceDirectory artifacts/r10e/references `
+  -OutputDirectory artifacts/r10e/final -Png
+pwsh eng/color-taxonomy.ps1 -CompareBefore artifacts/r10e/baseline/taxonomy.json `
+  -CompareAfter artifacts/r10e/final/taxonomy.json -OutputDirectory artifacts/r10e/diff
+```
+
+The generated corpus and reports remain ignored. Hosted Windows/Linux/macOS proof follows only after an owner-approved
+push; local tests do not claim macOS visual acceptance.
+
 The R8-A-F12 Histogram regression does not assume that completing a test reader runs the coordinator continuation
 inline. Tests subscribe to an internal post-classification/post-cleanup completion signal keyed by image identity and
 outcome, then assert stale metrics and unchanged latest publication without sleeps or retries. The production

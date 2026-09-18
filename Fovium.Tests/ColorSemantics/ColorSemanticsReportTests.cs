@@ -12,8 +12,8 @@ public sealed class ColorSemanticsReportTests
 
         Assert.Equal("fovium-color-semantics-report/v2", report.Schema);
         Assert.Equal(45, report.Summary.BroadFamilyCount);
-        Assert.Equal(94, report.Summary.ProfessionalTermCount);
-        Assert.Equal(99, report.Summary.RegionCount);
+        Assert.Equal(99, report.Summary.ProfessionalTermCount);
+        Assert.Equal(104, report.Summary.RegionCount);
         Assert.Equal(5, report.Summary.MultiRegionTermCount);
         Assert.Equal(1800, report.Summary.CreativeAnchorCount);
         Assert.Equal(4096, report.Summary.GamutSampleCount);
@@ -55,10 +55,10 @@ public sealed class ColorSemanticsReportTests
             JsonSerializer.Serialize(first, JsonOptions),
             JsonSerializer.Serialize(repeated, JsonOptions));
         Assert.Equal(
-            "d343f63bcb34201c3f4eb479aef8fd3095582aa36a70feb798ac70b1ee0cc233",
+            "e3ca100f9661758db724d9ff1be6587e4f2804c49291ae808751a4512e844a19",
             first.ProductionSignature);
         Assert.Equal(
-            "93800b41ab52da69c55ad8adadcd13f91a0f10ea4c18e628329c16ad60ea2735",
+            "19e03c65c0f35a90d520758704429f13f9f3980ded5c6743443c5185a7d1bde4",
             first.Signatures.ClassificationOutcomes);
         _ = ColorSemanticsReportBuilder.ToCartesian(0.61, 0.17, 243.5);
         Assert.Equal(first.ProductionSignature, CanonicalSemanticIdentity.BuildDefinitionSignature());
@@ -111,7 +111,7 @@ public sealed class ColorSemanticsReportTests
 
             Assert.Equal(0, exitCode);
             Assert.Equal(
-                "463c213b7f8b981459773d509d439613df16b7e2511bbfbc8947b5f8454878d9",
+                "013c7885eb2b0a0b41aebd73a68757c0127adde8cd2fd5c4f377ad249369ab56",
                 File.ReadAllText(Path.Combine(directory, "deterministic-signature.sha256")).Trim());
         }
         finally
@@ -260,6 +260,7 @@ public sealed class ColorSemanticsReportTests
             Assert.Equal("Deferred", candidate.Disposition);
             Assert.NotNull(candidate.Representative);
             Assert.Single(deep.Research.Sources);
+            Assert.Equal("IndependentCuratedNumeric", deep.Research.Sources[0].SourceQuality);
             Assert.Equal(1, candidate.LexicalSourceCount);
             Assert.Equal(1, candidate.NumericSourceCount);
             Assert.Equal(1, candidate.IndependentNumericSourceGroupCount);
@@ -290,8 +291,8 @@ public sealed class ColorSemanticsReportTests
         Assert.Contains("visualization only", visualization.DenominatorMeaning);
         var reachability = Assert.Single(report.Sampling.Cohorts,
             cohort => cohort.Id == "region-reachability");
-        Assert.Equal(99, reachability.SampleCount);
-        Assert.Equal(99, reachability.ProfessionalHitCount);
+        Assert.Equal(104, reachability.SampleCount);
+        Assert.Equal(104, reachability.ProfessionalHitCount);
         Assert.True(reachability.IsCoverageAuthority);
         Assert.Contains(report.Regions, region =>
             report.Gamut.Samples.All(sample => sample.ProfessionalRegionId != region.Id) &&
@@ -407,6 +408,7 @@ public sealed class ColorSemanticsReportTests
                     Independence = "Independent",
                     IndependenceGroup = "museum",
                     CachePolicy = "IgnoredCacheOnly",
+                    SourceQuality = "IndependentCuratedNumeric",
                     LexicalOccurrenceCount = 2
                 }
             ],

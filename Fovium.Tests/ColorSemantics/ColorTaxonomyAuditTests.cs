@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using Fovium.ColorPicking;
 using Fovium.Tools.ColorTaxonomyAudit;
@@ -15,6 +16,21 @@ public sealed class ColorTaxonomyAuditTests
     public void NumericAnchorNormalizationRejectsKnownHomonymContamination(string name, string? expected)
     {
         Assert.Equal(expected, SpecificColorTermNormalizer.Normalize(name));
+    }
+
+    [Theory]
+    [InlineData("Burnt Orange", "BurntOrange")]
+    [InlineData("  payne’s   grey ", "PaynesGray")]
+    [InlineData("primrose", "Primrose")]
+    [InlineData("cinnabar", "Cinnabar")]
+    [InlineData("light burnt orange", null)]
+    [InlineData("primrose pink", null)]
+    [InlineData("cinnabar green", null)]
+    public void ExactSurveyNormalizationKeepsStandaloneTermsAndRejectsCompoundContamination(
+        string name,
+        string? expected)
+    {
+        Assert.Equal(expected, SpecificColorTermNormalizer.NormalizeExact(name));
     }
 
     [Fact]
@@ -318,6 +334,132 @@ public sealed class ColorTaxonomyAuditTests
     }
 
     [Fact]
+    public void IndependentNumericAdaptersAreBoundedDeterministicAndPreserveSourceQuality()
+    {
+        var directory = CreateTemporaryDirectory();
+        try
+        {
+            File.WriteAllText(
+                Path.Combine(directory, "uw-color-names.csv"),
+                """
+                participantId,lang,name,colorSpace,r,g,b,trialNum,tileNum,rgbSet,background,instructionsLocale,browserLocale,studyVersion
+                1,English (English),Burnt Orange,rgb,210,80,20,1,0,full,white,en,en,2.0
+                1,English (English),Burnt Orange,rgb,210,80,20,1,0,full,white,en,en,2.0
+                2,English (English),primrose,rgb,248,220,62,1,1,full,white,en,en,2.0
+                3,English (English),primrose pink,rgb,240,120,150,1,2,full,white,en,en,2.0
+                4,English (English),cinnabar,rgb,not-a-byte,70,45,1,3,full,white,en,en,2.0
+                5,French (Français),cinnabar,rgb,220,70,45,1,4,full,white,fr,fr,2.0
+                6,English (English),cinnabar,p3,0.8,0.2,0.1,1,5,full,white,en,en,2.0
+                """);
+            File.WriteAllText(
+                Path.Combine(directory, "stanford-color-reference.csv"),
+                """
+                gameid,roundNum,clickStatus,clickColH,clickColS,clickColL,alt1Status,alt1ColH,alt1ColS,alt1ColL,alt2Status,alt2ColH,alt2ColS,alt2ColL,msgTime,role,contents,source
+                g1,1,target,20,68,50,distr1,200,50,50,distr2,300,50,50,100,speaker,burnt orange,human
+                g1,1,target,20,68,50,distr1,200,50,50,distr2,300,50,50,100,speaker,burnt orange,human
+                g2,2,distr1,20,68,50,target,5,72,48,distr2,300,50,50,200,speaker,cinnabar,human
+                g3,3,target,not-a-hue,68,50,distr1,200,50,50,distr2,300,50,50,300,speaker,raspberry,human
+                g4,4,target,330,50,50,distr1,200,50,50,distr2,300,50,50,400,speaker,primrose pink,human
+                g5,5,target,42,50,50,distr1,200,50,50,distr2,300,50,50,500,listener,straw,human
+                """);
+            var nbsDirectory = Directory.CreateDirectory(Path.Combine(directory, "nbs-iscc-dictionaries"));
+            File.WriteAllText(
+                Path.Combine(nbsDirectory.FullName, "P.pm"),
+                """
+                    burnt orange                 burntorange                #cb6d51
+                    primrose yellow              primroseyellow             #fada5e
+                    malformed                    malformed                  #xyzxyz
+                """);
+            File.WriteAllText(
+                Path.Combine(nbsDirectory.FullName, "TC.pm"),
+                """
+                    burnt orange                 burntorange                #cb6d51
+                    cinnabar green               cinnabargreen              #317873
+                """);
+            File.WriteAllText(
+                Path.Combine(directory, "provenance.json"),
+                """
+                [
+                  {"id":"uw-labinthewild","source":"https://github.com/uwdata/color-naming-in-different-languages","license":"research cache only","sha256":"uw","independence":"Independent","independenceGroup":"uw-labinthewild","cachePolicy":"IgnoredCacheOnly","sourceQuality":"PrimaryHumanNumeric"},
+                  {"id":"stanford-color-reference","source":"https://cocolab.stanford.edu/datasets/colors","license":"research cache only","sha256":"stanford","independence":"Independent","independenceGroup":"stanford-color-reference","cachePolicy":"IgnoredCacheOnly","sourceQuality":"PrimaryHumanNumeric"},
+                  {"id":"iscc-nbs-dictionary","source":"https://metacpan.org/dist/Color-Library/","license":"Perl 5","sha256":"nbs","independence":"Independent","independenceGroup":"iscc-nbs","cachePolicy":"IgnoredCacheOnly","sourceQuality":"AuthoritativeDerivedNumeric"}
+                ]
+                """);
+
+            var first = ReferenceCatalogLoader.Load(directory);
+            var repeated = ReferenceCatalogLoader.Load(directory);
+
+            Assert.Equal(first.Anchors, repeated.Anchors);
+            Assert.Equal(6, first.Anchors.Count);
+            Assert.Equal(2, first.Anchors.Count(anchor => anchor.Dataset == "uw-labinthewild"));
+            Assert.Equal(2, first.Anchors.Count(anchor => anchor.Dataset == "stanford-color-reference"));
+            Assert.Equal(2, first.Anchors.Count(anchor => anchor.Dataset == "iscc-nbs-dictionary"));
+            Assert.Contains(first.Anchors, anchor =>
+                anchor.Dataset == "uw-labinthewild" && anchor.SpecificTerm == "Primrose");
+            Assert.Contains(first.Anchors, anchor =>
+                anchor.Dataset == "stanford-color-reference" &&
+                anchor.SpecificTerm == "Cinnabar" &&
+                anchor.Rgb.Red > anchor.Rgb.Green);
+            Assert.Contains(first.Anchors, anchor =>
+                anchor.Dataset == "stanford-color-reference" &&
+                anchor.SpecificTerm == "BurntOrange" &&
+                anchor.Rgb == new AuditRgb(214, 99, 41));
+            Assert.DoesNotContain(first.Anchors, anchor =>
+                anchor.Name.Contains("primrose pink", StringComparison.OrdinalIgnoreCase) ||
+                anchor.Name.Contains("cinnabar green", StringComparison.OrdinalIgnoreCase));
+            Assert.All(first.Summaries, summary => Assert.False(string.IsNullOrWhiteSpace(summary.SourceQuality)));
+            Assert.Equal(
+                "PrimaryHumanNumeric",
+                Assert.Single(first.Summaries, summary => summary.Id == "uw-labinthewild").SourceQuality);
+            Assert.Equal(
+                "iscc-nbs",
+                Assert.Single(first.Summaries, summary => summary.Id == "iscc-nbs-dictionary").IndependenceGroup);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void HumanSurveyAdapterCapsEachTermWithoutChangingDeterministicCoverage()
+    {
+        var directory = CreateTemporaryDirectory();
+        try
+        {
+            var csv = new StringBuilder(
+                "participantId,lang,name,colorSpace,r,g,b,trialNum,tileNum,rgbSet,background,instructionsLocale,browserLocale,studyVersion\n");
+            for (var index = 0; index < 160; index++)
+            {
+                csv.Append(index).Append(",English (English),Burnt Orange,rgb,")
+                    .Append(96 + index).Append(",80,20,1,").Append(index)
+                    .Append(",full,white,en,en,2.0\n");
+            }
+
+            File.WriteAllText(Path.Combine(directory, "uw-color-names.csv"), csv.ToString());
+            File.WriteAllText(
+                Path.Combine(directory, "provenance.json"),
+                """
+                [{"id":"uw-labinthewild","source":"test","license":"test","sha256":"test","independence":"Independent","independenceGroup":"uw-labinthewild","cachePolicy":"IgnoredCacheOnly","sourceQuality":"PrimaryHumanNumeric"}]
+                """);
+
+            var first = ReferenceCatalogLoader.Load(directory);
+            var repeated = ReferenceCatalogLoader.Load(directory);
+
+            Assert.Equal(128, first.Anchors.Count);
+            Assert.Equal(first.Anchors, repeated.Anchors);
+            Assert.Equal(128, first.Summaries.Single().AnchorCount);
+            Assert.Equal(128, first.Anchors.Select(anchor => anchor.Rgb).Distinct().Count());
+            Assert.Equal(96, first.Anchors.Min(anchor => anchor.Rgb.Red));
+            Assert.Equal(254, first.Anchors.Max(anchor => anchor.Rgb.Red));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void MasterLexiconCountsIndependentProvenanceGroupsInsteadOfMirrors()
     {
         var anchors = new[]
@@ -364,7 +506,7 @@ public sealed class ColorTaxonomyAuditTests
     [InlineData("RoyalPurple", CandidateResearchStatus.Synonym)]
     [InlineData("Sapphire", CandidateResearchStatus.Rejected)]
     [InlineData("Parchment", CandidateResearchStatus.Deferred)]
-    [InlineData("BurntOrange", CandidateResearchStatus.Deferred)]
+    [InlineData("BurntOrange", CandidateResearchStatus.Accepted)]
     [InlineData("Gainsboro", CandidateResearchStatus.Deferred)]
     [InlineData("Cinnabar", CandidateResearchStatus.Deferred)]
     [InlineData("Primrose", CandidateResearchStatus.Deferred)]
@@ -732,8 +874,8 @@ public sealed class ColorTaxonomyAuditTests
             Assert.Equal("fovium-color-taxonomy-audit/v8", json.RootElement.GetProperty("schema").GetString());
             Assert.True(json.RootElement.GetProperty("balancedCohort").GetArrayLength() > 300);
             Assert.True(json.RootElement.GetProperty("specificity").GetProperty("genericFamilyOnly").GetInt32() > 0);
-            Assert.Equal(94, json.RootElement.GetProperty("professionalTermSamples").GetArrayLength());
-            Assert.Equal(94, json.RootElement.GetProperty("professionalTermSamples")
+            Assert.Equal(99, json.RootElement.GetProperty("professionalTermSamples").GetArrayLength());
+            Assert.Equal(99, json.RootElement.GetProperty("professionalTermSamples")
                 .EnumerateArray()
                 .Select(item => item.GetProperty("region").GetString())
                 .Distinct(StringComparer.Ordinal)
@@ -746,7 +888,7 @@ public sealed class ColorTaxonomyAuditTests
             Assert.True(json.RootElement.GetProperty("professionalOverlaps").GetProperty("sampleCount").GetInt32() > 0);
             Assert.Equal(JsonValueKind.String, json.RootElement.GetProperty("professionalOverlaps")
                 .GetProperty("pairs")[0].GetProperty("severity").ValueKind);
-            Assert.Equal(94, json.RootElement.GetProperty("professionalTermCores").GetArrayLength());
+            Assert.Equal(99, json.RootElement.GetProperty("professionalTermCores").GetArrayLength());
         }
         finally
         {

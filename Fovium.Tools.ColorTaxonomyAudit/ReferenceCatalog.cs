@@ -32,6 +32,8 @@ internal sealed record ReferenceLexicalOccurrence(
 
 internal static partial class ReferenceCatalogLoader
 {
+    private const int MaximumSurveyAnchorsPerTerm = 128;
+
     private static readonly Regex WiktionaryTitlePattern = new(
         "<a href=\"/wiki/[^\"#]+(?:#English)?\" title=\"(?<name>[^\"]+)\">",
         RegexOptions.CultureInvariant);
@@ -57,6 +59,9 @@ internal static partial class ReferenceCatalogLoader
         LoadMeodai(Path.Combine(directory, "meodai-colornames.csv"), anchors);
         LoadIsccNbs(Path.Combine(directory, "nbs-iscc.txt"), anchors);
         LoadWikidata(Path.Combine(directory, "wikidata-colors.csv"), anchors);
+        LoadUwColorNames(Path.Combine(directory, "uw-color-names.csv"), anchors);
+        LoadStanfordColorReference(Path.Combine(directory, "stanford-color-reference.csv"), anchors);
+        LoadIsccNbsDictionaries(Path.Combine(directory, "nbs-iscc-dictionaries"), anchors);
 
         var lexicalOccurrences = new List<ReferenceLexicalOccurrence>();
         LoadWiktionary(Path.Combine(directory, "wiktionary-colors.html"), lexicalOccurrences);
@@ -79,6 +84,7 @@ internal static partial class ReferenceCatalogLoader
                     Independence = item.Independence,
                     IndependenceGroup = item.IndependenceGroup,
                     CachePolicy = item.CachePolicy,
+                    SourceQuality = item.SourceQuality,
                     LexicalOccurrenceCount = lexicalOccurrences.Count(occurrence => occurrence.Dataset == item.Id)
                 };
             })
@@ -188,6 +194,263 @@ internal static partial class ReferenceCatalogLoader
         }
     }
 
+    private static void LoadUwColorNames(string path, ICollection<ReferenceAnchor> anchors)
+    {
+        if (!File.Exists(path))
+        {
+            return;
+        }
+
+        using var lines = File.ReadLines(path).GetEnumerator();
+        if (!lines.MoveNext())
+        {
+            return;
+        }
+
+        var columns = CreateColumnMap(ParseCsv(lines.Current));
+        if (!HasColumns(columns, "participantId", "lang", "name", "colorSpace", "r", "g", "b",
+                "trialNum", "tileNum", "studyVersion"))
+        {
+            return;
+        }
+
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var pending = new List<PendingAnchor>();
+        while (lines.MoveNext())
+        {
+            var fields = ParseCsv(lines.Current);
+            if (!TryField(fields, columns, "lang", out var language) ||
+                language != "English (English)" ||
+                !TryField(fields, columns, "colorSpace", out var colorSpace) ||
+                colorSpace != "rgb" ||
+                !TryField(fields, columns, "name", out var name) ||
+                SpecificColorTermNormalizer.NormalizeExact(name) is not { } term ||
+                !TryByte(fields, columns, "r", out var red) ||
+                !TryByte(fields, columns, "g", out var green) ||
+                !TryByte(fields, columns, "b", out var blue))
+            {
+                continue;
+            }
+
+            var rowIdentity = string.Join('\u001f', fields);
+            if (!seen.Add(rowIdentity))
+            {
+                continue;
+            }
+
+            pending.Add(new PendingAnchor(name.Trim(), term, new AuditRgb(red, green, blue), rowIdentity));
+        }
+
+        AddBounded("uw-labinthewild", pending, MaximumSurveyAnchorsPerTerm, anchors);
+    }
+
+    private static void LoadStanfordColorReference(string path, ICollection<ReferenceAnchor> anchors)
+    {
+        if (!File.Exists(path))
+        {
+            return;
+        }
+
+        using var lines = File.ReadLines(path).GetEnumerator();
+        if (!lines.MoveNext())
+        {
+            return;
+        }
+
+        var columns = CreateColumnMap(ParseCsv(lines.Current));
+        if (!HasColumns(columns, "gameid", "roundNum", "msgTime", "role", "contents", "source",
+                "clickStatus", "clickColH", "clickColS", "clickColL",
+                "alt1Status", "alt1ColH", "alt1ColS", "alt1ColL",
+                "alt2Status", "alt2ColH", "alt2ColS", "alt2ColL"))
+        {
+            return;
+        }
+
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var pending = new List<PendingAnchor>();
+        while (lines.MoveNext())
+        {
+            var fields = ParseCsv(lines.Current);
+            if (!TryField(fields, columns, "role", out var role) || role != "speaker" ||
+                !TryField(fields, columns, "source", out var source) || source != "human" ||
+                !TryField(fields, columns, "contents", out var name) ||
+                SpecificColorTermNormalizer.NormalizeExact(name) is not { } term ||
+                !TryTargetHsl(fields, columns, out var hue, out var saturation, out var lightness))
+            {
+                continue;
+            }
+
+            var rowIdentity = string.Join('\u001f', fields);
+            if (!seen.Add(rowIdentity))
+            {
+                continue;
+            }
+
+            pending.Add(new PendingAnchor(
+                name.Trim(),
+                term,
+                HslToSrgb(hue, saturation, lightness),
+                rowIdentity));
+        }
+
+        AddBounded("stanford-color-reference", pending, MaximumSurveyAnchorsPerTerm, anchors);
+    }
+
+    private static void LoadIsccNbsDictionaries(string directory, ICollection<ReferenceAnchor> anchors)
+    {
+        if (!Directory.Exists(directory))
+        {
+            return;
+        }
+
+        var seen = new HashSet<(string Term, string Name, int Packed)>();
+        foreach (var path in Directory.EnumerateFiles(directory, "*.pm", SearchOption.TopDirectoryOnly)
+                     .Order(StringComparer.Ordinal))
+        {
+            foreach (var line in File.ReadLines(path))
+            {
+                var match = IsccNbsDictionaryColorRegex().Match(line);
+                if (!match.Success ||
+                    !TryParseHex(match.Groups["hex"].Value, out var rgb))
+                {
+                    continue;
+                }
+
+                var name = match.Groups["name"].Value.Trim();
+                if (SpecificColorTermNormalizer.NormalizeExact(name) is not { } term ||
+                    !seen.Add((term, name.ToLowerInvariant(), rgb.Packed)))
+                {
+                    continue;
+                }
+
+                AddSpecific("iscc-nbs-dictionary", name, rgb, term, anchors);
+            }
+        }
+    }
+
+    private static void AddBounded(
+        string dataset,
+        IReadOnlyList<PendingAnchor> pending,
+        int maximumPerTerm,
+        ICollection<ReferenceAnchor> anchors)
+    {
+        foreach (var group in pending.GroupBy(item => item.Term, StringComparer.Ordinal)
+                     .OrderBy(group => group.Key, StringComparer.Ordinal))
+        {
+            var ordered = group.OrderBy(item => item.Rgb.Packed)
+                .ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(item => item.RowIdentity, StringComparer.Ordinal)
+                .ToArray();
+            var selected = ordered.Length <= maximumPerTerm
+                ? ordered
+                : Enumerable.Range(0, maximumPerTerm)
+                    .Select(index => ordered[(int)((long)index * ordered.Length / maximumPerTerm)])
+                    .ToArray();
+            foreach (var item in selected)
+            {
+                AddSpecific(dataset, item.Name, item.Rgb, item.Term, anchors);
+            }
+        }
+    }
+
+    private static Dictionary<string, int> CreateColumnMap(IReadOnlyList<string> header) =>
+        header.Select((name, index) => (Name: name.Trim(), Index: index))
+            .GroupBy(item => item.Name, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.First().Index, StringComparer.Ordinal);
+
+    private static bool HasColumns(IReadOnlyDictionary<string, int> columns, params string[] names) =>
+        names.All(columns.ContainsKey);
+
+    private static bool TryField(
+        IReadOnlyList<string> fields,
+        IReadOnlyDictionary<string, int> columns,
+        string name,
+        out string value)
+    {
+        if (columns.TryGetValue(name, out var index) && index < fields.Count)
+        {
+            value = fields[index];
+            return true;
+        }
+
+        value = string.Empty;
+        return false;
+    }
+
+    private static bool TryByte(
+        IReadOnlyList<string> fields,
+        IReadOnlyDictionary<string, int> columns,
+        string name,
+        out byte value)
+    {
+        value = 0;
+        return TryField(fields, columns, name, out var text) &&
+               byte.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+    }
+
+    private static bool TryTargetHsl(
+        IReadOnlyList<string> fields,
+        IReadOnlyDictionary<string, int> columns,
+        out double hue,
+        out double saturation,
+        out double lightness)
+    {
+        foreach (var prefix in new[] { "click", "alt1", "alt2" })
+        {
+            if (TryField(fields, columns, prefix + "Status", out var status) &&
+                status == "target" &&
+                TryDouble(fields, columns, prefix + "ColH", out hue) &&
+                TryDouble(fields, columns, prefix + "ColS", out saturation) &&
+                TryDouble(fields, columns, prefix + "ColL", out lightness) &&
+                hue is >= 0 and <= 360 &&
+                saturation is >= 0 and <= 100 &&
+                lightness is >= 0 and <= 100)
+            {
+                return true;
+            }
+        }
+
+        hue = 0;
+        saturation = 0;
+        lightness = 0;
+        return false;
+    }
+
+    private static bool TryDouble(
+        IReadOnlyList<string> fields,
+        IReadOnlyDictionary<string, int> columns,
+        string name,
+        out double value)
+    {
+        value = 0;
+        return TryField(fields, columns, name, out var text) &&
+               double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value) &&
+               double.IsFinite(value);
+    }
+
+    private static AuditRgb HslToSrgb(double hue, double saturation, double lightness)
+    {
+        var normalizedHue = hue % 360 / 60;
+        var normalizedSaturation = saturation / 100;
+        var normalizedLightness = lightness / 100;
+        var chroma = (1 - Math.Abs(2 * normalizedLightness - 1)) * normalizedSaturation;
+        var secondary = chroma * (1 - Math.Abs(normalizedHue % 2 - 1));
+        var (red, green, blue) = normalizedHue switch
+        {
+            < 1 => (chroma, secondary, 0d),
+            < 2 => (secondary, chroma, 0d),
+            < 3 => (0d, chroma, secondary),
+            < 4 => (0d, secondary, chroma),
+            < 5 => (secondary, 0d, chroma),
+            _ => (chroma, 0d, secondary)
+        };
+        var offset = normalizedLightness - chroma / 2;
+        return new AuditRgb(ToByte(red + offset), ToByte(green + offset), ToByte(blue + offset));
+    }
+
+    private static byte ToByte(double value) =>
+        (byte)Math.Clamp((int)Math.Round(value * 255, MidpointRounding.AwayFromZero), 0, 255);
+
     private static void LoadWiktionary(
         string path,
         ICollection<ReferenceLexicalOccurrence> occurrences)
@@ -242,6 +505,27 @@ internal static partial class ReferenceCatalogLoader
             lab.B)
         {
             SpecificTerm = SpecificColorTermNormalizer.Normalize(name)
+        });
+    }
+
+    private static void AddSpecific(
+        string dataset,
+        string name,
+        AuditRgb rgb,
+        string specificTerm,
+        ICollection<ReferenceAnchor> anchors)
+    {
+        var lab = Fovium.ColorSemantics.OklabColor.FromSrgb(rgb.Red, rgb.Green, rgb.Blue);
+        anchors.Add(new ReferenceAnchor(
+            dataset,
+            name,
+            rgb,
+            SemanticNameNormalizer.Normalize(name),
+            lab.L,
+            lab.A,
+            lab.B)
+        {
+            SpecificTerm = specificTerm
         });
     }
 
@@ -316,7 +600,10 @@ internal static partial class ReferenceCatalogLoader
         string Sha256,
         string Independence = "Uncertain",
         string IndependenceGroup = "",
-        string CachePolicy = "IgnoredCacheOnly");
+        string CachePolicy = "IgnoredCacheOnly",
+        string SourceQuality = "UncertainProvenance");
+
+    private sealed record PendingAnchor(string Name, string Term, AuditRgb Rgb, string RowIdentity);
 
     [GeneratedRegex(@"(?<hex>#[0-9a-fA-F]{6})\s*$", RegexOptions.CultureInvariant)]
     private static partial Regex HexAtEndRegex();
@@ -330,6 +617,11 @@ internal static partial class ReferenceCatalogLoader
         @"\x22(?<name>[^\x22]+)\x22\s+sRGB:(?<hex>[0-9a-fA-F]{6})",
         RegexOptions.CultureInvariant)]
     private static partial Regex IsccNbsColorRegex();
+
+    [GeneratedRegex(
+        @"^\s*(?<name>.+?)\s{2,}\S+\s+#(?<hex>[0-9a-fA-F]{6})\s*$",
+        RegexOptions.CultureInvariant)]
+    private static partial Regex IsccNbsDictionaryColorRegex();
 }
 
 internal static class SpecificColorTermNormalizer
@@ -599,6 +891,10 @@ internal static class SpecificColorTermNormalizer
         .ThenBy(rule => rule.Term, StringComparer.Ordinal)
         .ToArray();
 
+    private static readonly IReadOnlyDictionary<string, string> ExactAliases = Rules
+        .SelectMany(rule => rule.Aliases.Select(alias => (rule.Term, Alias: NormalizeExactText(alias))))
+        .ToDictionary(rule => rule.Alias, rule => rule.Term, StringComparer.Ordinal);
+
     internal static IReadOnlyList<(string Term, string[] Aliases)> Vocabulary => Rules;
 
     public static string? Normalize(string name)
@@ -628,6 +924,17 @@ internal static class SpecificColorTermNormalizer
 
         return null;
     }
+
+    public static string? NormalizeExact(string name) =>
+        ExactAliases.GetValueOrDefault(NormalizeExactText(name));
+
+    private static string NormalizeExactText(string value) => string.Join(
+        ' ',
+        value.Trim()
+            .ToLowerInvariant()
+            .Replace('’', '\'')
+            .Replace('_', ' ')
+            .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 
     internal static IReadOnlyList<(string Term, string Alias)> FindOccurrences(string text)
     {

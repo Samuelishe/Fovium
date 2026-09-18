@@ -352,6 +352,11 @@ internal static class UiStrings
     public const string ColorPickerProfessionalGoldenrod = "colorPicker.professional.goldenrod";
     public const string ColorPickerProfessionalRusset = "colorPicker.professional.russet";
     public const string ColorPickerProfessionalHeather = "colorPicker.professional.heather";
+    public const string ColorPickerProfessionalAppleGreen = "colorPicker.professional.appleGreen";
+    public const string ColorPickerProfessionalPeaGreen = "colorPicker.professional.peaGreen";
+    public const string ColorPickerProfessionalBurntOrange = "colorPicker.professional.burntOrange";
+    public const string ColorPickerProfessionalStraw = "colorPicker.professional.straw";
+    public const string ColorPickerProfessionalPaynesGray = "colorPicker.professional.paynesGray";
     public const string ColorPickerNameRedBlack = "colorPicker.name.redBlack";
     public const string ColorPickerNameBrownBlack = "colorPicker.name.brownBlack";
     public const string ColorPickerNameOliveBlack = "colorPicker.name.oliveBlack";

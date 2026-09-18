@@ -11,7 +11,7 @@ Not authoritative for: Pixel acquisition, Color Inspector interaction/history, m
 
 `Fovium.ColorSemantics` is a logical subsystem inside the existing single production assembly. A separate assembly is
 not justified: there is no independent deployment or package boundary. It owns locale-independent OKLab/OKLCH values,
-perceptual roles/undertones/lightness/chroma classes, 45 broad families, 94 accepted Professional term IDs, 99 bounded
+perceptual roles/undertones/lightness/chroma classes, 45 broad families, 99 accepted Professional term IDs, 104 bounded
 regions/lobes, deterministic specificity/precedence, EN/RU-facing stable identities, and the separate 1,800-anchor
 creative nearest-name catalog.
 
@@ -112,7 +112,7 @@ strong chromatic hue without changing RGB or OKLCH math.
 On the R10-D implementation machine, core generation is about `0.5 s`; the v2 deep model/report is about `1.1 s` after
 the deep audit and its canonical JSON is about `5.8 MiB`. `analysis-summary.json` is about `0.2 MiB` and intentionally
 omits gamut geometry and creative anchors. The interactive scene uses
-4,096 gamut points, 94 term cores, 99 lobe identities, and optional 1,800 creative anchors rather than DOM nodes per
+4,096 gamut points, 99 term cores, 104 lobe identities, and optional 1,800 creative anchors rather than DOM nodes per
 sample. Viewer runtime and classifier hot paths are unchanged.
 
 The overview, relations sheet, Blue domain sheet, and initial 3D Explorer scene were rendered through isolated local
@@ -124,3 +124,10 @@ belong in Git or deterministic signatures. Ordinary CI tests report structure an
 coverage a quality percentage or gate. Deep evidence exports authoritative overlap/Dice/directional containment,
 shadowing/reachability, core, boundary competitors, component provenance, and separate lexical, numeric, and
 independent-numeric support. Vocabulary density is only the count of accepted terms in a domain.
+
+R10-E adds three ignored-cache numeric source adapters. Human-survey rows are exact-alias only, malformed and duplicate
+rows are rejected, and each source/candidate pair is deterministically capped at 128 anchors before clustering. This
+keeps source size from becoming evidence weight. NBS/ISCC dictionary values share the existing `iscc-nbs` independence
+group; mirrors never multiply support. Source-quality class, license/cache policy, and independence group are exported
+separately rather than collapsed into a score. The accepted R10-E cores are authored production regions, not generated
+centroids; rejected or deferred research components remain tooling evidence.

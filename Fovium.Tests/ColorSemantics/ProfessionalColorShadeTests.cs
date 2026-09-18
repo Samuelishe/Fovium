@@ -117,6 +117,46 @@ public sealed class ProfessionalColorShadeTests
     }
 
     [Theory]
+    [InlineData("#CB632B", "BurntOrange")]
+    [InlineData("#C04E01", "BurntOrange")]
+    [InlineData("#BE6516", "BurntOrange")]
+    [InlineData("#90A73C", "PeaGreen")]
+    [InlineData("#8EAB12", "PeaGreen")]
+    [InlineData("#BDDA57", "PeaGreen")]
+    [InlineData("#65C23D", "AppleGreen")]
+    [InlineData("#76CD26", "AppleGreen")]
+    [InlineData("#E7D48C", "Straw")]
+    [InlineData("#536878", "PaynesGray")]
+    [InlineData("#465B74", "PaynesGray")]
+    public void IndependentEvidenceWaveAnchorsResolveDistinctConventionalTerms(
+        string hex,
+        string expectedTerm)
+    {
+        Assert.Equal(expectedTerm, Describe(hex).ProfessionalTerm?.ToString());
+    }
+
+    [Theory]
+    [InlineData("#CB632B", "Burnt orange", "Жжёный оранжевый")]
+    [InlineData("#90A73C", "Pea green", "Гороховый зелёный")]
+    [InlineData("#65C23D", "Apple green", "Яблочно-зелёный")]
+    [InlineData("#E7D48C", "Straw", "Соломенный")]
+    [InlineData("#536878", "Payne's gray", "Серая Пейна")]
+    public void IndependentEvidenceWaveNamesAreReviewedInEnglishAndRussian(
+        string hex,
+        string englishName,
+        string russianName)
+    {
+        var description = Describe(hex);
+        var english = new PerceptualColorNameResolver(Localizer.Create(CultureInfo.GetCultureInfo("en-US")));
+        var russian = new PerceptualColorNameResolver(Localizer.Create(CultureInfo.GetCultureInfo("ru-RU")));
+
+        Assert.Equal(englishName, english.ResolveShort(description));
+        Assert.Equal(englishName, english.ResolveDetailed(description));
+        Assert.Equal(russianName, russian.ResolveShort(description));
+        Assert.Equal(russianName, russian.ResolveDetailed(description));
+    }
+
+    [Theory]
     [InlineData("#D94FF5", "Heliotrope", "Гелиотроповый")]
     [InlineData("#7B68EE", "Slate blue", "Сланцево-синий")]
     [InlineData("#00FF7F", "Spring green", "Весенний зелёный")]
@@ -173,10 +213,10 @@ public sealed class ProfessionalColorShadeTests
         var definitions = ProfessionalShadeCatalog.Definitions;
         var regions = definitions.SelectMany(definition => definition.Regions).ToArray();
 
-        Assert.Equal(94, definitions.Count);
+        Assert.Equal(99, definitions.Count);
         Assert.Equal(definitions.Count, definitions.Select(item => item.StableId).Distinct().Count());
         Assert.Equal(definitions.Count, definitions.Select(item => item.Term).Distinct().Count());
-        Assert.Equal(99, regions.Length);
+        Assert.Equal(104, regions.Length);
         Assert.Equal(regions.Length, regions.Select(item => item.StableId).Distinct().Count());
         Assert.Equal(regions.Length, regions.Select(item => item.Priority).Distinct().Count());
         Assert.All(definitions, definition =>
@@ -408,6 +448,60 @@ public sealed class ProfessionalColorShadeTests
                 new OklchColor(lightness, chroma, hue),
                 (PerceptualColorRole)role,
                 (PerceptualHueFamily)family));
+    }
+
+    [Theory]
+    [InlineData(0.62, 0.15, 46, PerceptualHueFamily.RedOrange, ProfessionalColorTerm.BurntOrange)]
+    [InlineData(0.69, 0.135, 120, PerceptualHueFamily.OliveGreen, ProfessionalColorTerm.PeaGreen)]
+    [InlineData(0.73, 0.19, 138, PerceptualHueFamily.Green, ProfessionalColorTerm.AppleGreen)]
+    [InlineData(0.87, 0.094, 95, PerceptualHueFamily.Yellow, ProfessionalColorTerm.Straw)]
+    [InlineData(0.506, 0.036, 241, PerceptualHueFamily.BlueGray, ProfessionalColorTerm.PaynesGray)]
+    public void IndependentEvidenceWaveRegionsWinAtTheirComponentCores(
+        double lightness,
+        double chroma,
+        double hue,
+        object family,
+        object expected)
+    {
+        Assert.Equal(
+            (ProfessionalColorTerm)expected,
+            ProfessionalShadeClassifier.Classify(
+                new OklchColor(lightness, chroma, hue),
+                PerceptualColorRole.Chromatic,
+                (PerceptualHueFamily)family));
+    }
+
+    [Fact]
+    public void IndependentEvidenceWaveRegionsKeepExplicitEdgesAndSemanticPriorities()
+    {
+        var cases = new[]
+        {
+            (ProfessionalColorTerm.AppleGreen, PerceptualHueFamily.Green, 419),
+            (ProfessionalColorTerm.PeaGreen, PerceptualHueFamily.OliveGreen, 417),
+            (ProfessionalColorTerm.BurntOrange, PerceptualHueFamily.Terracotta, 414),
+            (ProfessionalColorTerm.Straw, PerceptualHueFamily.Yellow, 404),
+            (ProfessionalColorTerm.PaynesGray, PerceptualHueFamily.BlueGray, 399)
+        };
+
+        foreach (var (term, family, priority) in cases)
+        {
+            var region = Assert.Single(ProfessionalShadeCatalog.Get(term).Regions);
+            var core = new OklchColor(
+                (region.MinimumLightness + region.MaximumLightness) / 2,
+                (region.MinimumChroma + region.MaximumChroma) / 2,
+                (region.MinimumHue + region.MaximumHue) / 2);
+
+            Assert.Equal(priority, region.Priority);
+            Assert.True(region.Matches(core, PerceptualColorRole.Chromatic, family));
+            Assert.False(region.Matches(
+                core with { L = region.MinimumLightness - 0.000001 },
+                PerceptualColorRole.Chromatic,
+                family));
+            Assert.False(region.Matches(
+                core with { C = region.MaximumChroma },
+                PerceptualColorRole.Chromatic,
+                family));
+        }
     }
 
     [Theory]

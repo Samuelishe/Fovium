@@ -820,3 +820,18 @@ component-specific support are distinct; broad lexical familiarity alone cannot 
 Reachability witnesses prove that a lobe can win; human representatives are separately selected for interior margin.
 Local RGB retention/margin and hue meaningfulness are diagnostic interpretations, not probabilities and not inputs to
 rendering, Color Management, or the Picker sampling truth.
+
+## D-074 — Independent numeric sources are bounded by provenance, not row volume
+
+Status: Implemented in local R10-E; hosted verification pending.
+
+Color-name evidence distinguishes primary human numeric studies, standards/authoritative derived values, correlated
+derived lists, lexical-only sources, and uncertain provenance without reducing those classes to one score. Numeric
+independence is counted by origin group: the NBS/ISCC dictionaries and existing NBS-derived material share one group,
+while two mirrors or adapters cannot manufacture corroboration.
+
+Human-survey ingestion accepts only exact normalized candidate aliases, validates the declared color space and channel
+bounds, removes complete-row duplicates, and deterministically retains at most 128 anchors per term and source. This
+cap bounds clustering and prevents a large study from outweighing several independent sources. Production regions are
+still authored from compact components and must retain old anchors, reachability, fallback, overlap, and local-stability
+evidence; a parser never generates runtime geometry automatically.

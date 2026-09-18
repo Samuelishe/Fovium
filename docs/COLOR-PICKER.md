@@ -158,6 +158,12 @@ indistinguishable from a shipped Teal control. Core-confidence reports retain on
 boundary
 evidence for every shipped term. This research layer remains absent from production runtime and localization data.
 
+R10-E expands independent numeric evidence with bounded human-survey and NBS/ISCC dictionary adapters, then reruns the
+same 250-entry master lexicon. Five compact components pass the existing reachability, overlap, old-anchor, stability,
+and localization gates: Apple Green, Pea Green, Burnt Orange, Straw, and Payne's Gray. The production result is 99 terms
+and 104 regions; broad-family fallback, the 45-family topology, and the separate creative matcher remain unchanged.
+Burnt Umber remains Deferred because its candidate region displaced accepted Russet semantics.
+
 Developer changes to this taxonomy use `pwsh eng/color-taxonomy.ps1` for the core report/Explorer and the reproducible
 deep-audit route documented in [`../eng/color-taxonomy-audit/README.md`](../eng/color-taxonomy-audit/README.md).
 Its structured in-gamut grid, fixed-seed RGB sampling, boundary refinement,

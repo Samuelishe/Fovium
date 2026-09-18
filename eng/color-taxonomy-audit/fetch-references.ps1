@@ -14,6 +14,7 @@ $sources = @(
         Url = 'https://xkcd.com/color/rgb.txt'
         Version = 'official color-survey export; retrieved snapshot'
         License = 'No explicit dataset license stated; ignored local audit cache only'
+        SourceQuality = 'PrimaryHumanNumeric'
     },
     @{
         Id = 'css'
@@ -21,6 +22,7 @@ $sources = @(
         Url = 'https://www.w3.org/TR/2026/CRD-css-color-4-20260825/'
         Version = 'CSS Color Module Level 4 CR Draft 2026-08-25'
         License = 'W3C Document License; ignored local audit cache only'
+        SourceQuality = 'StandardNumeric'
     },
     @{
         Id = 'meodai'
@@ -28,6 +30,7 @@ $sources = @(
         Url = 'https://raw.githubusercontent.com/meodai/color-names/cc5fc08de437ea2522d32f751cecb4aa1e96f8e3/src/colornames.csv'
         Version = 'commit cc5fc08de437ea2522d32f751cecb4aa1e96f8e3'
         License = 'MIT; correlated secondary reference, ignored local audit cache only'
+        SourceQuality = 'DerivedNumeric'
     },
     @{
         Id = 'iscc-nbs'
@@ -35,6 +38,7 @@ $sources = @(
         Url = 'https://nvlpubs.nist.gov/nistpubs/Legacy/circ/nbscircular553.pdf'
         Version = 'NBS Circular 553 (1955), NIST-hosted scan'
         License = 'U.S. Government publication; evaluated as methodology, not parsed as sRGB anchors'
+        SourceQuality = 'AuthoritativeMethodology'
     },
     @{
         Id = 'iscc-nbs-centroids'
@@ -45,6 +49,7 @@ $sources = @(
         Independence = 'Independent'
         IndependenceGroup = 'iscc-nbs'
         CachePolicy = 'IgnoredCacheOnly'
+        SourceQuality = 'AuthoritativeDerivedNumeric'
     },
     @{
         Id = 'ridgway-1912'
@@ -55,6 +60,7 @@ $sources = @(
         Independence = 'Independent'
         IndependenceGroup = 'ridgway'
         CachePolicy = 'IgnoredCacheOnly'
+        SourceQuality = 'LexicalOnlyHistorical'
     },
     @{
         Id = 'werner-1821'
@@ -65,6 +71,40 @@ $sources = @(
         Independence = 'Independent'
         IndependenceGroup = 'werner'
         CachePolicy = 'IgnoredCacheOnly'
+        SourceQuality = 'LexicalOnlyHistorical'
+    },
+    @{
+        Id = 'uw-labinthewild'
+        File = 'uw-color-names.csv'
+        Url = 'https://raw.githubusercontent.com/uwdata/color-naming-in-different-languages/f9a0ebedf3de729a755e0454195b13bbb5681909/raw/color_names.csv'
+        Version = 'uwdata/color-naming-in-different-languages commit f9a0ebedf3de729a755e0454195b13bbb5681909'
+        License = 'No explicit repository license; authors publish the dataset for download; ignored research cache only and redistribution is not asserted'
+        Independence = 'Independent'
+        IndependenceGroup = 'uw-labinthewild'
+        CachePolicy = 'IgnoredCacheOnly'
+        SourceQuality = 'PrimaryHumanNumeric'
+    },
+    @{
+        Id = 'stanford-color-reference'
+        File = 'stanford-color-reference.csv'
+        Url = 'https://raw.githubusercontent.com/futurulus/coop-nets/01b1710b71358b224494d3329cc31b3cff9e10f6/behavioralAnalysis/humanOutput/filteredCorpus.csv'
+        Version = 'futurulus/coop-nets commit 01b1710b71358b224494d3329cc31b3cff9e10f6; filtered native-English human corpus'
+        License = 'No explicit repository license; public academic corpus; ignored research cache only and redistribution is not asserted'
+        Independence = 'Independent'
+        IndependenceGroup = 'stanford-color-reference'
+        CachePolicy = 'IgnoredCacheOnly'
+        SourceQuality = 'PrimaryHumanNumeric'
+    },
+    @{
+        Id = 'iscc-nbs-dictionary'
+        File = 'Color-Library-0.021.tar.gz'
+        Url = 'https://cpan.metacpan.org/authors/id/R/RO/ROKR/Color-Library-0.021.tar.gz'
+        Version = 'Color-Library 0.021 (2011-12-07); NBS/ISCC source dictionaries'
+        License = 'Perl 5 license (Artistic 1.0 or GPL-1.0-or-later); dictionary content derives from U.S. Government NBS SP 440'
+        Independence = 'Independent'
+        IndependenceGroup = 'iscc-nbs'
+        CachePolicy = 'IgnoredCacheOnly'
+        SourceQuality = 'AuthoritativeDerivedNumeric'
     }
 )
 
@@ -82,6 +122,10 @@ foreach ($source in $sources) {
             default { $source.Id }
         }
         $source.CachePolicy = 'IgnoredCacheOnly'
+    }
+
+    if (-not $source.ContainsKey('SourceQuality')) {
+        $source.SourceQuality = 'UncertainProvenance'
     }
 }
 
@@ -113,6 +157,40 @@ Invoke-WebRequest `
 $provenance = foreach ($source in $sources) {
     $destination = Join-Path $resolvedCache $source.File
     Invoke-WebRequest -Uri $source.Url -OutFile $destination -UseBasicParsing
+    if ($source.Id -eq 'iscc-nbs-dictionary') {
+        $temporaryRoot = [System.IO.Path]::GetFullPath((Join-Path $resolvedCache '.nbs-iscc-extract'))
+        $dictionaryRoot = [System.IO.Path]::GetFullPath((Join-Path $resolvedCache 'nbs-iscc-dictionaries'))
+        if (-not $temporaryRoot.StartsWith($resolvedCache, [StringComparison]::OrdinalIgnoreCase) -or
+            -not $dictionaryRoot.StartsWith($resolvedCache, [StringComparison]::OrdinalIgnoreCase)) {
+            throw 'Resolved NBS/ISCC extraction paths escaped the reference cache.'
+        }
+
+        if (Test-Path -LiteralPath $temporaryRoot) {
+            Remove-Item -LiteralPath $temporaryRoot -Recurse -Force
+        }
+        New-Item -ItemType Directory -Force -Path $temporaryRoot, $dictionaryRoot | Out-Null
+        tar -xzf $destination -C $temporaryRoot
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to extract $destination"
+        }
+
+        $sourceDirectory = Get-ChildItem -LiteralPath $temporaryRoot -Directory -Recurse |
+            Where-Object {
+                $_.Name -eq 'NBS_ISCC' -and
+                $_.Parent.Name -eq 'Dictionary'
+            } |
+            Select-Object -First 1
+        if ($null -eq $sourceDirectory) {
+            throw 'Color-Library archive did not contain the expected NBS_ISCC dictionary directory.'
+        }
+
+        $dictionaryNames = @('A.pm', 'B.pm', 'F.pm', 'H.pm', 'M.pm', 'P.pm', 'R.pm', 'RC.pm', 'S.pm', 'SC.pm', 'TC.pm')
+        foreach ($name in $dictionaryNames) {
+            Copy-Item -LiteralPath (Join-Path $sourceDirectory.FullName $name) `
+                -Destination (Join-Path $dictionaryRoot $name) -Force
+        }
+        Remove-Item -LiteralPath $temporaryRoot -Recurse -Force
+    }
     $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $destination).Hash.ToLowerInvariant()
     [pscustomobject][ordered]@{
         id = $source.Id
@@ -125,6 +203,7 @@ $provenance = foreach ($source in $sources) {
         independence = $source.Independence
         independenceGroup = $source.IndependenceGroup
         cachePolicy = $source.CachePolicy
+        sourceQuality = $source.SourceQuality
     }
 }
 
@@ -139,6 +218,7 @@ $provenance += [pscustomobject][ordered]@{
     independence = 'Uncertain'
     independenceGroup = 'wikimedia-structured'
     cachePolicy = 'IgnoredCacheOnly'
+    sourceQuality = 'UncertainProvenanceNumeric'
 }
 
 $provenance += [pscustomobject][ordered]@{
@@ -152,6 +232,7 @@ $provenance += [pscustomobject][ordered]@{
     independence = 'Independent'
     independenceGroup = 'wiktionary'
     cachePolicy = 'IgnoredCacheOnly'
+    sourceQuality = 'LexicalOnly'
 }
 
 $provenance |

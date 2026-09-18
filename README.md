@@ -52,11 +52,10 @@ and [imaging direction](docs/IMAGING-PIPELINE.md) for details.
 
 ## Current status
 
-The product remains **`0.1.3.0000`**. Accepted R10-B commit `1beaa64` adds two bounded offline photo-derived Stage
-modes:
-directional Color Gradient and restrained Soft Glow; ordinary and native hosted matrices are green. The locally complete
-R10-C developer stage changes no viewer behavior: it makes the existing taxonomy a shared in-assembly Color Semantics
-model and adds a deterministic offline report/3D Explorer.
+The current local product version is **`0.1.3.0001`**. Accepted R10-B commit `1beaa64` adds directional Color Gradient
+and restrained Soft Glow; pushed R10-D commit `50f1a49` establishes cross-platform deterministic Color Semantics
+evidence. Locally complete R10-E uses new independent numeric sources to add five bounded Professional names without
+changing broad-family topology; hosted verification awaits an owner-approved push.
 
 This is an alpha milestone, not a feature-complete or stable release claim. Textured Matte/background materials,
 inner shadows, broad material presets, slideshow transitions/shuffle/music/countdown UI, animated formats, RAW, Advanced

@@ -165,6 +165,7 @@ never reuse an earlier version. No automatic rollover after BUILD `9999` is defi
 | `0.1.2.0013` | R8-A-F11                              | Fourth professional-shade campaign and semantic overlap/vocabulary-frontier audit                                               |
 | `0.1.2.0014` | R8-A-F12                              | Expanded independent color research corpus, master lexicon, mass mining, and Histogram CI regression                            |
 | `0.1.3.0000` | R10-B                                 | Expressive photo-derived Color Gradient and Soft Glow Stage backgrounds                                                         |
+| `0.1.3.0001` | R10-E                                 | Independently evidenced Professional color vocabulary refinement: five terms and five bounded regions                           |
 
 The `0.0.0.xxxx` line records the completed foundation and early product-construction checkpoints. The explicit
 owner-controlled `0.1.0.0000` transition marks the first substantial usable Fovium alpha; it does not claim feature
@@ -181,6 +182,9 @@ contents, or shipped capability. Tooling/refactor work does not increment BUILD 
 R10-D likewise retains `0.1.3.0000`: cross-platform signature correction, schema-v2 evidence/export, Explorer
 explainability, and a vocabulary campaign that accepts no new production terms do not change observable viewer
 semantics.
+R10-E increments BUILD to `0.1.3.0001`: five new Professional terms change the human-readable semantic result for
+bounded reference-sRGB regions while refining the existing Color Semantics capability rather than adding a new product
+surface or changing the broad-family topology.
 
 ## Future code and packaging source
 
@@ -188,9 +192,9 @@ The root `Directory.Build.props` is the canonical source for the current compone
 supplies the production `Fovium` assembly with:
 
 ```text
-InformationalVersion = 0.1.3.0000
-AssemblyVersion      = 0.1.3.0
-FileVersion          = 0.1.3.0
+InformationalVersion = 0.1.3.0001
+AssemblyVersion      = 0.1.3.1
+FileVersion          = 0.1.3.1
 ```
 
 From that source:

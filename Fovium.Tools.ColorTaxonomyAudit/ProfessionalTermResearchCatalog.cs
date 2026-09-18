@@ -186,7 +186,8 @@ internal static class ProfessionalTermResearchCatalog
             "BurntOrange" or "Gainsboro" or "Almond" or "Straw" or "Cinnabar" or "Primrose" or
                 "Cherry" or "Raspberry" or "Ecru" or "Parchment" or "RawUmber" or "BurntUmber" or
                 "PaynesGray" or "Coffee" or "Stone" or "Pearl" or "Champagne" or "Pewter" or
-                "Graphite" or "Auburn" => CandidateResearchStatus.Deferred,
+                "Graphite" or "Auburn" or "Dandelion" or "Fawn" or "Putty" or "Strawberry" or
+                "BloodRed" or "Cocoa" => CandidateResearchStatus.Deferred,
             _ => CandidateResearchStatus.Unreviewed
         };
     }
@@ -208,26 +209,42 @@ internal static class ProfessionalTermResearchCatalog
             "Sapphire" => "F11 evidence displaced accepted Cobalt controls without a distinct robust core.",
             "BottleGreen" => "F11 evidence displaced accepted Forest Green controls without a distinct robust core.",
             "BurntOrange" =>
-                "One compact three-anchor component, but only XKCD is an independent numeric source group; deferred pending a second independent numeric core.",
+                "Four independent numeric groups now support a compact terracotta core distinct from Pumpkin and Burnt Sienna.",
             "Gainsboro" =>
                 "CSS/meodai/Wikidata agree exactly at #DCDCDC, but CSS is the only independent numeric group and the core sits near shipped Linen; deferred rather than promoting a standard alias-like neutral.",
             "Almond" =>
-                "Five numeric components, 18% noise, no independent numeric source group, and a nearest core close to shipped Ecru; lexical support does not establish a standalone region.",
+                "Two independent numeric groups still split several cream and tan components; the nearest core remains too close to shipped Buff.",
             "Straw" =>
-                "Five components split pale sand and bright yellow meanings; only one independent numeric group and no single cross-source component defines the conventional lexical core.",
+                "Three independent numeric groups now support a compact muted-yellow component distinct from Naples Yellow and Khaki.",
             "Cinnabar" =>
-                "Cinnabar Green homonym contamination was removed; remaining two correlated red anchors do not form a supported compact component, so the historical name remains deferred.",
+                "Cinnabar Green homonym contamination remains excluded; the surviving red cores still lack two independent numeric groups within one compact component.",
             "Primrose" =>
-                "Rose-like product compounds were excluded from numeric evidence; the surviving Primrose Yellow anchor is directionally correct but single-source and noise-only.",
+                "Rose-like compounds remain excluded; yellow evidence now spans two groups but is 46% noise and lacks a sufficiently supported compact component.",
             "Cherry" =>
-                "Twelve components and 10% noise span crimson, pink, brown, and neutral product names; the best core has only one independent numeric group.",
+                "Expanded human-survey evidence fragments into sixteen red, crimson, pink, and brown components rather than one stable core.",
             "Raspberry" =>
-                "Eight components and 22% noise span crimson, rose, pink, and neutral product names; the best core has only one independent numeric group.",
+                "Expanded human-survey evidence fragments into fifteen crimson, rose, and pink components rather than one stable core.",
             "Ecru" or "Parchment" or "Stone" or "Pearl" or "Champagne" or "Pewter" or "Graphite" =>
                 "Material-origin neutral requires a compact RGB core distinct from shipped neighbors.",
-            "RawUmber" or "BurntUmber" or "PaynesGray" =>
+            "RawUmber" =>
                 "Historical pigment name requires stable screen-color semantics rather than chemical identity.",
+            "BurntUmber" =>
+                "Three-group brown evidence is compact, but its leading core consumes the accepted Russet anchor and remains same-core with existing earth terms.",
+            "PaynesGray" =>
+                "Two independent numeric groups support a compact blue-gray subtype inside Slate without claiming pigment identity.",
             "Coffee" => "Food-origin brown remains ambiguous across lightness and product usage.",
+            "Dandelion" =>
+                "Three-group yellow evidence is compact, but the dominant component remains too close to shipped Canary and Naples Yellow cores.",
+            "Fawn" =>
+                "The leading tan component has only two independent groups and the combined evidence retains 20% noise across light and dark meanings.",
+            "Putty" =>
+                "Three independent groups support a warm beige component, but it is not yet distinct enough from shipped Ecru and Mushroom.",
+            "Strawberry" =>
+                "Four-group evidence is conventional but splits saturated crimson, rose, and pink components; no single bounded core is yet justified.",
+            "BloodRed" =>
+                "Four-group evidence spans several dark-to-bright red components that would consume Brick Red, Carmine, and Scarlet semantics.",
+            "Cocoa" =>
+                "Three-group evidence supports several lightness-separated browns; the strongest component is too small to select one runtime meaning.",
             _ => "Unreviewed conventional candidate retained for ranked whole-corpus research."
         };
     }

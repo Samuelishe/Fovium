@@ -311,5 +311,7 @@ internal sealed record ReferenceDatasetSummary(
 
     public string CachePolicy { get; init; } = "IgnoredCacheOnly";
 
+    public string SourceQuality { get; init; } = "UncertainProvenance";
+
     public int LexicalOccurrenceCount { get; init; }
 }

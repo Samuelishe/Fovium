@@ -66,6 +66,24 @@ invokes
 an already-installed owner Chrome executable as an external local tool and leaves no production/project dependency.
 The existing ignored research datasets retain their recorded provenance and are never bundled into the core report.
 
+R10-E adds no shipped dependency, but its ignored research cache can acquire three pinned numeric references:
+
+- UW/LabintheWild `color-naming-in-different-languages` commit
+  `f9a0ebedf3de729a755e0454195b13bbb5681909` (`uw-color-names.csv`, observed SHA-256
+  `60a224f06587479b2765c1407a8594f187dca7c33f2269285bc362511e896d1d`). The authors publish the academic dataset for
+  download, but the repository declares no explicit license; Fovium does not redistribute it;
+- Stanford CoCoLab color-reference data from `futurulus/coop-nets` commit
+  `01b1710b71358b224494d3329cc31b3cff9e10f6` (`filteredCorpus.csv`, observed SHA-256
+  `5bd3567703b9b8e954112710a53688bd4020dc3413b2149fb067bd8f6b87a508`). The public academic repository declares no
+  explicit license, so it is ignored-cache only and not redistributed;
+- CPAN Color-Library `0.021` (archive observed SHA-256
+  `58cbf7e333d3a4a40297abc43412b321da449c6816020e4fa6625ab079fc90a5`) under the Perl 5 license (Artistic 1.0 or
+  GPL-1.0-or-later). Only its NBS/ISCC dictionaries are parsed; because they derive from NBS SP 440 they remain in the
+  existing `iscc-nbs` independence group.
+
+The tracked fetcher records a fresh retrieval timestamp and SHA-256 in ignored `provenance.json`; the values above
+document the R10-E research snapshot, not bundled assets or runtime/CI prerequisites.
+
 ## Planned / under evaluation
 
 The following are evaluated candidates, not installed dependencies or promises. Stable versions were checked from

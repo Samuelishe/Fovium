@@ -7,16 +7,16 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R10-D is locally complete on pushed R10-C baseline `a7a1ffdbfb63d97e84795a980bb85b00c9af0d91` and intentionally
-retains product version `0.1.3.0000`. It changes no viewer-visible classification or rendering behavior: the structural
-taxonomy remains 45 broad families, 94 Professional terms, 99 regions, and 1,800 creative anchors.
+R10-E is locally complete on pushed R10-D baseline `50f1a4922bb84bdfd89b40ad7abcb2546c50c302`. Product version is
+`0.1.3.0001`: the 45 broad families and 1,800 creative anchors are unchanged, while five independently evidenced
+Professional terms add five bounded lobes for a total of 99 terms / 104 regions. The accepted terms are Apple Green,
+Pea Green, Burnt Orange, Straw, and Payne's Gray; every lobe is reachable and no lobe is shadowed.
 
-Report schema v2 separates declarative definition, fixed-RGB classification-outcome, and normalized full-report
-signatures. Windows and WSL reproduce all three; the old hosted Linux/macOS failures were report-only floating/libm
-tails plus nearly tied medoid selection, not semantic classification drift. Explicit visualization, whole-spectrum,
-near-neutral, reachability, boundary, and creative cohorts replace ambiguous global coverage wording. Deep reports now
-retain overlap, containment/Dice, shadowing, core, boundary, competitor, component, and source evidence. Compact
-analysis summaries and report-to-report diff output are generated beside the full Explorer.
+The ignored research corpus now includes pinned UW/LabintheWild and Stanford CoCoLab human-survey numeric evidence plus
+NBS/ISCC source dictionaries from Color-Library. Exact-name ingestion rejects compound homonyms, deduplicates rows, and
+caps each survey source at 128 deterministic anchors per candidate. Raw numeric evidence grew from 34,330 to 46,571
+anchors and normalized candidate evidence from 13,434 to 22,168 while source quality and independence groups remain
+explicit. Report schema remains v2.
 
 The retained R0 probe remains experimental evidence under `experiments/Fovium.RenderProbe`. Production code is the
 single `Fovium` assembly and does not depend on the experiment. The accepted R7-B hosted matrix restored, built, and
@@ -26,12 +26,12 @@ Windows at `RenderScaling = 1.00`.
 
 ## Current focus
 
-R10-D's evidence gate is complete locally. The whole 250-entry frontier was rerun with lexical support separated from
-numeric and independent-numeric groups. Burnt Orange, Gainsboro, Almond, Straw, Cherry, Raspberry, Cinnabar, and
-Primrose remain Deferred for documented insufficient, multimodal, or contaminated numeric evidence; Cinnabar Green
-and rose-like Primrose compounds are excluded from numeric aggregation. No new production term passed the gate, so
-taxonomy counts and version remain unchanged. A future push must prove ordinary and native-workflow shared .NET tests
-on hosted Windows/Linux/macOS; native libheif itself is not implicated.
+R10-E's whole 250-entry frontier rerun leaves 99 Accepted, 21 Deferred, 4 Synonym, 2 Rejected, and 124 Unreviewed.
+Burnt Umber was removed from the acceptance batch when its core consumed the existing Russet anchor; Cherry,
+Raspberry, Primrose, Cinnabar, Dandelion, Putty, and other highlighted candidates remain Deferred for fragmentation,
+weak component independence, or same-core risk. Cinnabar Green and rose-like Primrose compounds remain excluded.
+Antique White/Linen remains the sole same-core warning rather than being forced apart without new evidence. A future
+push must prove ordinary and native-workflow shared .NET tests on hosted Windows/Linux/macOS.
 
 The current Codex/Rider ACP session negotiates no true in-app browser backend. Browser-plugin discovery returns an empty
 backend list, and the Rider Playwright MCP entry has no command or URL and is absent from the session tool registry.

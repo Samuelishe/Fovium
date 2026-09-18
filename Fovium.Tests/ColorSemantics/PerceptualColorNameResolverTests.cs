@@ -60,7 +60,7 @@ public sealed class PerceptualColorNameResolverTests
     [InlineData("#344F67", "Slate", "Сланцевый")]
     [InlineData("#190B0B", "Red-black", "Красновато-чёрный")]
     [InlineData("#F8E2CD", "Cream white", "Кремово-белый")]
-    [InlineData("#80A53E", "Olive-green", "Оливково-зелёный")]
+    [InlineData("#80A53E", "Pea green", "Гороховый зелёный")]
     [InlineData("#59A3A6", "Teal", "Сине-зелёный")]
     [InlineData("#828FC4", "Periwinkle", "Барвинковый")]
     [InlineData("#A4256C", "Saturated crimson", "Насыщенный малиновый")]

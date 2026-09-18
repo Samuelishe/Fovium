@@ -132,8 +132,27 @@ The script records source, retrieval UTC time, usage/license note, pinned versio
 - Wiktionary Appendix:Colors under CC BY-SA/GFDL, retained as lexical-only evidence.
 
 Every provenance entry records `independence`, `independenceGroup`, and `cachePolicy`; correlated mirrors sharing a
-group count once. Names are normalized into broad audit-only semantic groups before k-nearest OKLab voting. Unknown
-names do not vote.
+group count once. R10-E also records `sourceQuality` without converting it into a synthetic trust score:
+`PrimaryHumanNumeric`, `StandardNumeric`, `AuthoritativeDerivedNumeric`, `DerivedNumeric`, lexical-only classes, and
+uncertain provenance remain inspectable reasons. Names are normalized into broad audit-only semantic groups before
+k-nearest OKLab voting. Unknown names do not vote.
+
+R10-E adds three numeric inputs:
+
+- UW's LabintheWild multilingual color-naming study at commit
+  `f9a0ebedf3de729a755e0454195b13bbb5681909`; only English `rgb` rows are eligible. The repository declares no explicit
+  dataset license, so the public academic download is ignored-cache research evidence and redistribution is not
+  asserted;
+- Stanford CoCoLab's human color-reference corpus from `futurulus/coop-nets` commit
+  `01b1710b71358b224494d3329cc31b3cff9e10f6`; only human speaker rows and their recorded target HSL values are eligible.
+  It likewise has no explicit repository license and remains ignored-cache research evidence;
+- Color-Library `0.021` NBS/ISCC dictionaries under the Perl 5 terms. They are derived views of U.S. Government NBS
+  SP 440 source dictionaries and therefore share the existing `iscc-nbs` independence group instead of counting as a
+  new independent source.
+
+Survey adapters use exact normalized aliases, reject compound names such as `Cinnabar Green` and `Primrose Pink`,
+deduplicate complete rows, validate numeric bounds, and retain at most 128 deterministically selected anchors per
+candidate/source. The cap bounds clustering and prevents a large survey from becoming multiple-source evidence.
 Dataset agreement is independent evidence, never ground truth: source vocabularies are uneven, CSS is intentionally
 small, and nearest named anchors do not define an objective boundary. No downloaded dataset or generated report belongs
 in Git or ordinary CI.

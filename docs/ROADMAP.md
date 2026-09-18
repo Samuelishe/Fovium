@@ -265,6 +265,17 @@ confirmed as Deferred with numeric-evidence reasons; known Cinnabar/Primrose com
 candidate demonstrated enough independent compact numeric support for a new production region, so 45/94/99 remains
 the evidence-driven result rather than a count target.
 
+## R10-E — Independent color evidence and Professional vocabulary wave
+
+Locally complete at `0.1.3.0001`: expand the ignored numeric corpus with two independent human color-naming studies and
+an NBS/ISCC dictionary view, then rerun all 250 master candidates through the existing R10-D evidence gate. Exact-name,
+bounded ingestion prevents compound contamination and survey-volume dominance.
+
+Five compact cores pass production acceptance: Apple Green, Pea Green, Burnt Orange, Straw, and Payne's Gray. The
+broad topology and creative matcher remain unchanged; 99 Professional terms now own 104 reachable, unshadowed lobes.
+Burnt Umber fails anchor retention against Russet, while fragmented or same-core candidates remain explicitly Deferred.
+Antique White/Linen remains the sole documented same-core warning.
+
 ## Later / separate platform milestones
 
 - file association and Open With integration;

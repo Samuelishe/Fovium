@@ -171,6 +171,8 @@ internal sealed record ReportResearchSource(
     string CachePolicy)
 {
     public int LexicalOccurrenceCount { get; init; }
+
+    public string SourceQuality { get; init; } = "UncertainProvenance";
 }
 
 internal sealed record ReportResearchCandidate(
