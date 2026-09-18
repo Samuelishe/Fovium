@@ -24,6 +24,7 @@ public sealed class PhotoStyleAnalyzerTests
         Assert.Equal(expected, analysis.BoundaryColor);
         Assert.Single(analysis.Palette);
         Assert.Equal(1, analysis.Palette[0].Weight, 10);
+        Assert.Empty(analysis.NotableColors);
         Assert.All(analysis.SpatialField.Colors, actual => Assert.Equal(expected, actual));
         Assert.Equal(800, analysis.VisibleSampleCount);
     }
@@ -249,6 +250,134 @@ public sealed class PhotoStyleAnalyzerTests
     }
 
     [Fact]
+    public void CoherentWarmMinoritySurfacesAsNotableWithoutBecomingFrequent()
+    {
+        using var decoded = CreateDecoded(
+            96,
+            64,
+            (x, y) => x is >= 34 and < 62 && y is >= 18 and < 46
+                ? WarmTone((x + y) % 6)
+                : GreenTone(((x / 8) + (y / 8)) % 6));
+
+        var analysis = new PhotoStyleAnalyzer().Analyze(decoded, CancellationToken.None);
+
+        Assert.All(analysis.Palette, entry => Assert.True(entry.Color.Green > entry.Color.Red));
+        var warm = Assert.Single(analysis.NotableColors.Where(entry =>
+            entry.Color.Red > entry.Color.Green + 35 && entry.Color.Green > entry.Color.Blue));
+        Assert.InRange(warm.SupportFraction, 0.09, 0.16);
+        Assert.True(warm.LargestComponentFraction > 0.08);
+    }
+
+    [Fact]
+    public void AdjacentWarmBinsConsolidateIntoOneNotableColor()
+    {
+        using var decoded = CreateDecoded(
+            96,
+            64,
+            (x, y) => x is >= 30 and < 66 && y is >= 20 and < 44
+                ? WideWarmShadeTone((x + y) % 2)
+                : GreenTone(((x / 8) + (y / 8)) % 6));
+
+        var analysis = new PhotoStyleAnalyzer().Analyze(decoded, CancellationToken.None);
+
+        Assert.Single(analysis.NotableColors.Where(entry =>
+            entry.Color.Red > entry.Color.Green + 35 && entry.Color.Green > entry.Color.Blue));
+    }
+
+    [Fact]
+    public void MutedWarmRegionRemainsDistinctFromNearbyNeutralCandidate()
+    {
+        using var decoded = CreateDecoded(
+            96,
+            64,
+            (x, y) => x switch
+            {
+                < 48 => GreenTone((x / 8 + y / 8) % 6),
+                < 65 => new SKColor(160, 167, 177),
+                < 79 => WarmMutedTone((x + y) % 4),
+                _ => new SKColor(151, 174, 75)
+            });
+
+        var analysis = new PhotoStyleAnalyzer().Analyze(decoded, CancellationToken.None);
+
+        Assert.Contains(analysis.NotableColors, entry =>
+            entry.Color.Red > entry.Color.Green + 20 &&
+            entry.Color.Green > entry.Color.Blue + 15);
+    }
+
+    [Fact]
+    public void AchromaticCandidatesDoNotCrowdOutCoherentChromaticAccent()
+    {
+        using var decoded = CreateDecoded(
+            96,
+            64,
+            (x, y) => x switch
+            {
+                < 35 => new SKColor(55, 125, 185),
+                < 55 => new SKColor(18, 21, 24),
+                < 75 => new SKColor(90, 94, 98),
+                < 90 => new SKColor(175, 177, 180),
+                _ => WarmTone((x + y) % 6)
+            });
+
+        var analysis = new PhotoStyleAnalyzer().Analyze(decoded, CancellationToken.None);
+
+        Assert.Contains(analysis.NotableColors, entry =>
+            entry.Color.Red > entry.Color.Green + 35 &&
+            entry.Color.Green > entry.Color.Blue);
+        Assert.InRange(
+            analysis.NotableColors.Count(entry =>
+                PhotoStylingOklab.FromSrgb(entry.Color).Chroma <= 0.04),
+            0,
+            1);
+    }
+
+    [Fact]
+    public void RepeatedSmallFlowersCanSurfaceAsOneNotableColor()
+    {
+        using var decoded = CreateDecoded(
+            96,
+            64,
+            (x, y) => x % 16 is >= 2 and <= 4 && y % 16 is >= 2 and <= 4
+                ? new SKColor(245, 205, 42)
+                : GreenTone(((x / 8) + (y / 8)) % 6));
+
+        var analysis = new PhotoStyleAnalyzer().Analyze(decoded, CancellationToken.None);
+
+        var flower = Assert.Single(analysis.NotableColors.Where(entry =>
+            entry.Color.Red > 200 && entry.Color.Green > 160 && entry.Color.Blue < 90));
+        Assert.InRange(flower.SupportFraction, 0.025, 0.045);
+        Assert.True(flower.CoherentSupportFraction >= 0.02);
+    }
+
+    [Fact]
+    public void SinglePixelNoiseDoesNotSurfaceAsNotable()
+    {
+        using var decoded = CreateDecoded(
+            64,
+            64,
+            (x, y) => x == 31 && y == 31
+                ? new SKColor(255, 15, 25)
+                : new SKColor(118, 120, 121));
+
+        var analysis = new PhotoStyleAnalyzer().Analyze(decoded, CancellationToken.None);
+
+        Assert.Empty(analysis.NotableColors);
+        Assert.Equal(new StageColor(118, 120, 121), analysis.Palette[0].Color);
+    }
+
+    [Fact]
+    public void UniformImageHasNoInventedNotableColor()
+    {
+        using var decoded = CreateSolidDecoded(96, 64, new SKColor(225, 92, 28));
+
+        var analysis = new PhotoStyleAnalyzer().Analyze(decoded, CancellationToken.None);
+
+        Assert.Empty(analysis.NotableColors);
+        Assert.Single(analysis.Palette);
+    }
+
+    [Fact]
     public void FullyTransparentImageProducesDeterministicNeutralGradientFallbacks()
     {
         using var decoded = CreateSolidDecoded(32, 24, SKColors.Transparent);
@@ -260,6 +389,7 @@ public sealed class PhotoStyleAnalyzerTests
         Assert.Equal(0, first.VisibleSampleCount);
         Assert.Equal(StageDefaults.NeutralColor, first.AverageColor);
         Assert.Equal(StageDefaults.NeutralColor, first.DominantColor);
+        Assert.Empty(first.NotableColors);
         Assert.Equal(
             PhotoDerivedStylePolicy.ResolveLinearGradient(first),
             PhotoDerivedStylePolicy.ResolveLinearGradient(second));
@@ -345,4 +475,36 @@ public sealed class PhotoStyleAnalyzerTests
             bitmap,
             image);
     }
+
+    private static SKColor WarmTone(int index) => index switch
+    {
+        0 => new SKColor(205, 92, 34),
+        1 => new SKColor(218, 105, 39),
+        2 => new SKColor(232, 116, 42),
+        3 => new SKColor(194, 78, 28),
+        4 => new SKColor(225, 128, 52),
+        _ => new SKColor(208, 112, 45),
+    };
+
+    private static SKColor GreenTone(int index) => index switch
+    {
+        0 => new SKColor(38, 104, 31),
+        1 => new SKColor(48, 122, 36),
+        2 => new SKColor(57, 136, 42),
+        3 => new SKColor(44, 112, 54),
+        4 => new SKColor(68, 128, 48),
+        _ => new SKColor(52, 118, 29),
+    };
+
+    private static SKColor WarmMutedTone(int index) => index switch
+    {
+        0 => new SKColor(181, 143, 115),
+        1 => new SKColor(194, 151, 113),
+        2 => new SKColor(173, 128, 96),
+        _ => new SKColor(188, 139, 102)
+    };
+
+    private static SKColor WideWarmShadeTone(int index) => index == 0
+        ? new SKColor(185, 75, 25)
+        : new SKColor(225, 125, 45);
 }

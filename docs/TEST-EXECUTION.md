@@ -490,3 +490,28 @@ dotnet test Fovium.Tests/Fovium.Tests.csproj -c Release --filter "FullyQualified
 
 The final local R11-A run passes 2,200/2,200 Release tests on Windows; the focused 84-test semantic/profile filter also
 passes under WSL2 Ubuntu 24.04. This is automated portability evidence, not Linux or macOS visual acceptance.
+
+## R11-B notable Photo Colors
+
+Run the bounded selector, semantic projection, exact-image lifecycle, cache accounting, localization, and source-domain
+checks through the VSTest route:
+
+```powershell
+dotnet test Fovium.Tests/Fovium.Tests.csproj -c Release --filter "FullyQualifiedName~PhotoStyleAnalyzerTests|FullyQualifiedName~PhotoColorProfile|FullyQualifiedName~PhotoInfoCoordinatorTests|FullyQualifiedName~ImageDecoderPhotoStyleTests|FullyQualifiedName~PhotoStyleCacheTests|FullyQualifiedName~ViewerInspectionCoordinatorTests|FullyQualifiedName~ColorDomainIndependenceTests|FullyQualifiedName~LocalizationTests"
+```
+
+The selector tests keep raw top-five frequency order independent from Notable output, consolidate neighboring warm
+shades, admit coherent minority and repeated flower-like regions, reject a single-pixel contaminant, and produce no
+Notable output for uniform or fully transparent input. Integration tests carry distinct Notable values through the
+single off-UI analysis/profile attachment, retained-byte accounting, hide/show and geometry reuse, A→B→C publication,
+cached Blink hold/release, and Peek's unchanged canonical identity. Semantic tests keep structural descriptions primary
+and creative nearest names secondary; EN/RU keys and labels have exact parity.
+
+The real-photo evidence route is the existing opt-in smoke with a local path-separated corpus. R11-B's 14-photo review
+set includes cat/greenery, orange transport, pallet/industrial neutrals, several flower scales, brick/rust, blue-sky
+industry, wet reflections, a red tram control, and a saturated sign. The ignored review bundle contains the pre-R11-B
+and final contact sheets; it must never be committed or copied into tracked resources.
+
+The final local Windows verification passes the 105-test focused filter above and 2,210/2,210 tests for
+`dotnet test Fovium.sln -c Release --no-build`; the preceding Release build completes with zero warnings and errors.
+Hosted CI and non-Windows runtime/visual acceptance remain pending.

@@ -1,8 +1,10 @@
 # Imaging pipeline
 
 Role: Contract for turning an image source into safe, semantically complete image data.
-Read when: Working on format detection, probing, orientation, decoding, metadata extraction, large-image safety, or codec extensibility.
-Authoritative for: Header probe, decode planning, decoder registry direction, source representation, metadata boundary, resource safety, and format-support philosophy.
+Read when: Working on format detection, probing, orientation, decoding, metadata extraction, large-image safety, or
+codec extensibility.
+Authoritative for: Header probe, decode planning, decoder registry direction, source representation, metadata boundary,
+resource safety, and format-support philosophy.
 Not authoritative for: Final codec libraries, viewport behavior, display sampling, cache scheduling, or metadata UI.
 
 ## Pipeline direction
@@ -17,7 +19,13 @@ The intended flow is:
 6. Extract optional metadata without coupling it to correct display.
 7. Prepare a display representation through the rendering/color path.
 
-R0 accepted controlled Skia `SKCodec` probing/decoding as the initial JPEG/PNG foundation. R7-A extends that backend to static WebP behind a project-owned capability. R7-B adds a high-level dispatcher with one shared decode gate and a second focused managed backend for bounded TIFF. R7-C adds a focused native backend for bounded static 8-bit SDR HEIF/HEIC and AVIF using only Fovium's app-local runtime. The production source representation owns encoded bytes, Fovium-detected format identity, encoded/oriented dimensions, orientation, frame/page count semantics, normalized color state, pixel format, reduced-decode capability, cost estimates, timings, and deterministic native-image ownership. It does not expose backend types or depend on RenderProbe types.
+R0 accepted controlled Skia `SKCodec` probing/decoding as the initial JPEG/PNG foundation. R7-A extends that backend to
+static WebP behind a project-owned capability. R7-B adds a high-level dispatcher with one shared decode gate and a
+second focused managed backend for bounded TIFF. R7-C adds a focused native backend for bounded static 8-bit SDR
+HEIF/HEIC and AVIF using only Fovium's app-local runtime. The production source representation owns encoded bytes,
+Fovium-detected format identity, encoded/oriented dimensions, orientation, frame/page count semantics, normalized color
+state, pixel format, reduced-decode capability, cost estimates, timings, and deterministic native-image ownership. It
+does not expose backend types or depend on RenderProbe types.
 
 ## Header probe and decode plan
 
@@ -32,48 +40,116 @@ When available, the probe reports:
 - an approximate decoded memory cost;
 - enough backend capability information to form a decode plan.
 
-Probe failures and incomplete metadata must be represented explicitly. File size alone is never a sufficient safety signal.
+Probe failures and incomplete metadata must be represented explicitly. File size alone is never a sufficient safety
+signal.
 
-Approximate cost should include dimensions, bytes per pixel or channel layout, frames needed, working surfaces, color-conversion buffers, mip/resample preparations, and backend overhead where known. For example, `30000 × 20000 × 4` bytes is about 2.24 GiB before additional working memory and may be refused even if its encoded file is small.
+Approximate cost should include dimensions, bytes per pixel or channel layout, frames needed, working surfaces,
+color-conversion buffers, mip/resample preparations, and backend overhead where known. For example, `30000 × 20000 × 4`
+bytes is about 2.24 GiB before additional working memory and may be refused even if its encoded file is small.
 
 ## Orientation and metadata boundary
 
-Orientation is part of baseline display correctness. Downstream dimensions, viewport math, and 100% semantics refer to the **oriented** source image. The pipeline must apply or carry the orientation exactly once and make that choice unambiguous. R1 maps all eight SKCodec encoded origins to an explicit orientation transform, retains encoded dimensions separately, and renders through oriented coordinates; pure tests cover every orientation.
+Orientation is part of baseline display correctness. Downstream dimensions, viewport math, and 100% semantics refer to
+the **oriented** source image. The pipeline must apply or carry the orientation exactly once and make that choice
+unambiguous. R1 maps all eight SKCodec encoded origins to an explicit orientation transform, retains encoded dimensions
+separately, and renders through oriented coordinates; pure tests cover every orientation.
 
-JPEG orientation continues through that path. A controlled WebP EXIF-orientation fixture showed SkiaSharp 3.119.4 returning the normal origin, so WebP orientation metadata is not currently applied to presentation. The lazy metadata adapter can read useful WebP EXIF fields, but it is deliberately not pulled into foreground decode as a second orientation parser. This is a documented correctness limitation, not a claim that WebP orientation is supported.
+JPEG orientation continues through that path. A controlled WebP EXIF-orientation fixture showed SkiaSharp 3.119.4
+returning the normal origin, so WebP orientation metadata is not currently applied to presentation. The lazy metadata
+adapter can read useful WebP EXIF fields, but it is deliberately not pulled into foreground decode as a second
+orientation parser. This is a documented correctness limitation, not a claim that WebP orientation is supported.
 
-For HEIF/AVIF, libheif applies accepted container rotation, mirror, and crop transforms during decode. The backend publishes those presentation-oriented dimensions with `Normal` orientation, preventing a downstream second transform. Container presentation transforms therefore take precedence in this backend; descriptive EXIF is not blindly reused as a JPEG orientation instruction. Asymmetric tracked rotation and mirror fixtures verify final pixels and geometry rather than only transform flags.
+For HEIF/AVIF, libheif applies accepted container rotation, mirror, and crop transforms during decode. The backend
+publishes those presentation-oriented dimensions with `Normal` orientation, preventing a downstream second transform.
+Container presentation transforms therefore take precedence in this backend; descriptive EXIF is not blindly reused as a
+JPEG orientation instruction. Asymmetric tracked rotation and mirror fixtures verify final pixels and geometry rather
+than only transform flags.
 
-EXIF, XMP, IPTC, and other descriptive metadata are useful but optional to ordinary display. Their extraction may be lazy and independently fallible. Metadata parsing must not block navigation unnecessarily. Source ICC/profile data is not optional UI metadata: it must survive to the color boundary even before the full color pipeline exists.
+EXIF, XMP, IPTC, and other descriptive metadata are useful but optional to ordinary display. Their extraction may be
+lazy and independently fallible. Metadata parsing must not block navigation unnecessarily. Source ICC/profile data is
+not optional UI metadata: it must survive to the color boundary even before the full color pipeline exists.
 
-R6-A implements the optional descriptive path through a focused managed `MetadataExtractor` adapter. It reads the exact encoded byte array already retained by `DecodedImage` through a non-copying memory stream and maps camera/lens identity, focal length, aperture, shutter, ISO, capture time, exposure compensation/mode, metering, white balance, and flash state into immutable Fovium types. Malformed/no-metadata results remain contained without changing decode success; external directory, tag, and rational types do not cross the adapter. Parsing is lazy while Photo Info is visible, background-run, cancellable at publication authority, and count-cached for the current sequence. ICC discoveries remain informational and do not alter rendering.
+R6-A implements the optional descriptive path through a focused managed `MetadataExtractor` adapter. It reads the exact
+encoded byte array already retained by `DecodedImage` through a non-copying memory stream and maps camera/lens identity,
+focal length, aperture, shutter, ISO, capture time, exposure compensation/mode, metering, white balance, and flash state
+into immutable Fovium types. Malformed/no-metadata results remain contained without changing decode success; external
+directory, tag, and rational types do not cross the adapter. Parsing is lazy while Photo Info is visible,
+background-run, cancellable at publication authority, and count-cached for the current sequence. ICC discoveries remain
+informational and do not alter rendering.
 
-R6-B adds a separate read-only pixel-analysis path. A retained pixel lease shares `DecodedImage` native ownership for the duration of sequential BGRA8888/Premul access; no source reopen, re-decode, or full-image copy occurs. Transparent pixels are excluded and partial-alpha channels are unpremultiplied before binning. EXIF orientation does not require another oriented copy because rotation does not change channel counts.
+R6-B adds a separate read-only pixel-analysis path. A retained pixel lease shares `DecodedImage` native ownership for
+the duration of sequential BGRA8888/Premul access; no source reopen, re-decode, or full-image copy occurs. Transparent
+pixels are excluded and partial-alpha channels are unpremultiplied before binning. EXIF orientation does not require
+another oriented copy because rotation does not change channel counts.
 
-R10 adds a small reusable styling analysis at the successful canonical decode boundary. The existing off-UI decode work renders one oriented reference-sRGB thumbnail with at most a 96-pixel long edge, computes average/dominant/palette/spatial/boundary summaries, and attaches the immutable result to the exact `DecodedImage`. R10-B additionally prepares two `32×32` expressive gradient rasters from that same summary before publication. Analysis and all three style rasters are byte-accounted by the existing decoded cache and require no file reopen, second full decode, monitor-managed presentation, or geometry-triggered work. Cancellation disposes an unpublished decoded candidate; a contained analysis failure leaves decode usable and activates truthful Stage fallback.
+R10 adds a small reusable styling analysis at the successful canonical decode boundary. The existing off-UI decode work
+renders one oriented reference-sRGB thumbnail with at most a 96-pixel long edge, computes
+average/dominant/palette/spatial/boundary summaries, and attaches the immutable result to the exact `DecodedImage`.
+R10-B additionally prepares two `32×32` expressive gradient rasters from that same summary before publication. Analysis
+and all three style rasters are byte-accounted by the existing decoded cache and require no file reopen, second full
+decode, monitor-managed presentation, or geometry-triggered work. Cancellation disposes an unpublished decoded
+candidate; a contained analysis failure leaves decode usable and activates truthful Stage fallback.
 
 ## Decoder registry direction
 
-A project-owned registry routes probes and decodes among focused libraries or native/specialized codecs. R7-A establishes the first small capability table for JPEG, PNG, and WebP plus a narrow Skia detected-format mapping. R7-B adds TIFF identity while keeping backend implementation out of the capability record. Extensions remain discovery/picker hints. Actual content yields Fovium identity before descriptor publication: the cheap TIFF signature distinguishes classic TIFF, BigTIFF, and `NotMyFormat`; otherwise Skia performs its own content detection. The backend contract distinguishes success, not-my-format, unsupported variant, corrupt data, resource limit, and decode failure. One high-level two-slot gate bounds all expensive backends.
+A project-owned registry routes probes and decodes among focused libraries or native/specialized codecs. R7-A
+establishes the first small capability table for JPEG, PNG, and WebP plus a narrow Skia detected-format mapping. R7-B
+adds TIFF identity while keeping backend implementation out of the capability record. Extensions remain discovery/picker
+hints. Actual content yields Fovium identity before descriptor publication: the cheap TIFF signature distinguishes
+classic TIFF, BigTIFF, and `NotMyFormat`; otherwise Skia performs its own content detection. The backend contract
+distinguishes success, not-my-format, unsupported variant, corrupt data, resource limit, and decode failure. One
+high-level two-slot gate bounds all expensive backends.
 
-The initial TIFF backend uses BitMiracle.LibTiff.NET only behind imaging. It accepts one classic directory/page, unsigned 8-bit contiguous grayscale/RGB and explicitly declared alpha, and the compression/storage subset proven in [`FORMAT-SUPPORT.md`](FORMAT-SUPPORT.md). It reads decompressed scanlines or tiles directly into the final BGRA8888/Premul bitmap, so no backend-specific full raster survives construction. Orientation remains a descriptor transform and is applied exactly once downstream. BigTIFF, multipage, high-bit-depth, floating-point, planar-separated, unspecified-extra-sample, and specialist-photometric input is rejected recoverably. The library's process-global default stderr error handler is replaced once with a thread-safe Fovium Debug-only diagnostic handler; it is never swapped per decode.
+The initial TIFF backend uses BitMiracle.LibTiff.NET only behind imaging. It accepts one classic directory/page,
+unsigned 8-bit contiguous grayscale/RGB and explicitly declared alpha, and the compression/storage subset proven in [
+`FORMAT-SUPPORT.md`](FORMAT-SUPPORT.md). It reads decompressed scanlines or tiles directly into the final
+BGRA8888/Premul bitmap, so no backend-specific full raster survives construction. Orientation remains a descriptor
+transform and is applied exactly once downstream. BigTIFF, multipage, high-bit-depth, floating-point, planar-separated,
+unspecified-extra-sample, and specialist-photometric input is rejected recoverably. The library's process-global default
+stderr error handler is replaced once with a thread-safe Fovium Debug-only diagnostic handler; it is never swapped per
+decode.
 
-The HEIF/AVIF backend first uses a bounded hostile-length-aware `ftyp` family probe only to decide whether libheif should inspect the bytes; libheif remains authoritative for container structure and primary codec. It consumes the already owned encoded bytes in memory, requires one top-level still primary, follows only bounded derived-image references needed to identify HEVC versus AV1, and rejects sequences before frame decode. Source luma/chroma precision above 8 bits and explicit PQ/HLG transfer are `Unsupported`. Dimensions are checked and admitted through the common estimator before requesting pixels. Native context, primary handle, decoded image, and temporary profile data are deterministically released; cancellation cannot interrupt the synchronous native call, but stale publication remains latest-wins and cleanup occurs immediately when it returns.
+The HEIF/AVIF backend first uses a bounded hostile-length-aware `ftyp` family probe only to decide whether libheif
+should inspect the bytes; libheif remains authoritative for container structure and primary codec. It consumes the
+already owned encoded bytes in memory, requires one top-level still primary, follows only bounded derived-image
+references needed to identify HEVC versus AV1, and rejects sequences before frame decode. Source luma/chroma precision
+above 8 bits and explicit PQ/HLG transfer are `Unsupported`. Dimensions are checked and admitted through the common
+estimator before requesting pixels. Native context, primary handle, decoded image, and temporary profile data are
+deterministically released; cancellation cannot interrupt the synchronous native call, but stale publication remains
+latest-wins and cleanup occurs immediately when it returns.
 
 This registry is internal composition, not a plugin system or third-party extension API.
 
 ## Failure and large-image policy
 
-During directory navigation, unsupported, corrupt, truncated, policy-rejected, or oversized candidates may be skipped while navigation continues to the next viable image. Failures must not crash the process or publish stale content.
+During directory navigation, unsupported, corrupt, truncated, policy-rejected, or oversized candidates may be skipped
+while navigation continues to the next viable image. Failures must not crash the process or publish stale content.
 
-For direct open, R1 retains the Black Stage and shows a short localized in-viewport error instead of an out-of-memory crash or modal sequence. During navigation, missing, corrupt, unsupported, and policy-rejected candidates are skipped while the previous decoded photograph remains visible. Tiled or region decoding may extend the safe envelope later; it is not part of R1.
+For direct open, R1 retains the Black Stage and shows a short localized in-viewport error instead of an out-of-memory
+crash or modal sequence. During navigation, missing, corrupt, unsupported, and policy-rejected candidates are skipped
+while the previous decoded photograph remains visible. Tiled or region decoding may extend the safe envelope later; it
+is not part of R1.
 
-Limits come from current available resources, actual representations, concurrent work, and product caps. R0 used a 512 MiB two-BGRA-copy safety guard only to protect the experiment; it is not a permanent limit. Scheduling and cache policy belong to [`PERFORMANCE.md`](PERFORMANCE.md).
+Limits come from current available resources, actual representations, concurrent work, and product caps. R0 used a 512
+MiB two-BGRA-copy safety guard only to protect the experiment; it is not a permanent limit. Scheduling and cache policy
+belong to [`PERFORMANCE.md`](PERFORMANCE.md).
 
 ## Format-support philosophy
 
-Current per-format truth is owned by [`FORMAT-SUPPORT.md`](FORMAT-SUPPORT.md). Future areas include broader TIFF/HEIF/AVIF variants, JPEG XL, JPEG 2000, PSD previews, OpenEXR, and embedded RAW previews. This is a research set, not a support promise.
+Current per-format truth is owned by [`FORMAT-SUPPORT.md`](FORMAT-SUPPORT.md). Future areas include broader
+TIFF/HEIF/AVIF variants, JPEG XL, JPEG 2000, PSD previews, OpenEXR, and embedded RAW previews. This is a research set,
+not a support promise.
 
-R8-A samples the retained decoded photograph rather than reopening or decoding its encoded source. The exact rendered destination maps the pointer to the containing oriented source cell by floor with exclusive right/bottom bounds; descriptor orientation then maps that cell back to encoded BGRA storage exactly once. This applies uniformly to every supported format. Blink supplies its currently presented comparison lease, Peek retains canonical identity with temporary geometry, and already presentation-normalized HEIF/AVIF remains `Normal`. Alpha is unpremultiplied once before reference-sRGB reporting and name matching. The complete contract is [`COLOR-PICKER.md`](COLOR-PICKER.md).
+R8-A samples the retained decoded photograph rather than reopening or decoding its encoded source. The exact rendered
+destination maps the pointer to the containing oriented source cell by floor with exclusive right/bottom bounds;
+descriptor orientation then maps that cell back to encoded BGRA storage exactly once. This applies uniformly to every
+supported format. Blink supplies its currently presented comparison lease, Peek retains canonical identity with
+temporary geometry, and already presentation-normalized HEIF/AVIF remains `Normal`. Alpha is unpremultiplied once before
+reference-sRGB reporting and name matching. The complete contract is [`COLOR-PICKER.md`](COLOR-PICKER.md).
 
-R7-C advertises JPEG/JPG/PNG/WebP/TIF/TIFF/HEIC/HEIF/HIF/AVIF candidates and validates actual content through the backend dispatcher. A directly supplied unusual extension is attempted rather than trusted or rejected solely by name. The current pipeline is one-static-image-only: supported Skia payloads reporting multiple frames, TIFFs reporting multiple directories/pages, and HEIF/AVIF sequences or ambiguous top-level collections are rejected recoverably. Broader codecs can arrive incrementally without changing core viewer semantics. Candidate technologies are tracked as evaluations in [`THIRD-PARTY.md`](THIRD-PARTY.md).
+R7-C advertises JPEG/JPG/PNG/WebP/TIF/TIFF/HEIC/HEIF/HIF/AVIF candidates and validates actual content through the
+backend dispatcher. A directly supplied unusual extension is attempted rather than trusted or rejected solely by name.
+The current pipeline is one-static-image-only: supported Skia payloads reporting multiple frames, TIFFs reporting
+multiple directories/pages, and HEIF/AVIF sequences or ambiguous top-level collections are rejected recoverably. Broader
+codecs can arrive incrementally without changing core viewer semantics. Candidate technologies are tracked as
+evaluations in [`THIRD-PARTY.md`](THIRD-PARTY.md).

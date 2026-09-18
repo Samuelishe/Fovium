@@ -169,13 +169,16 @@ still cannot fit is discarded and the visible Stage uses a matching same-image p
 
 R10 photo-derived analysis keeps one oriented reference-sRGB raster capped at `96 px` long edge (`≤9,216` samples), an
 unchanged five-entry raw palette, fixed 12 chromatic plus eight neutral representative candidate families, and a `6×6`
-field. Ranking is bounded `O(20 × occupiedBins)` work and runs once inside existing canceled/limited decode work. A full
-five-entry result retains 396 estimated managed bytes under the same byte-accounted `DecodedImage`; Color Wash adds
-`64×64×4 = 16,384` bytes, while R10-B Color Gradient and Soft Glow add `2 × 32×32×4 = 8,192` bytes. Total retained
-styling state is 24,972 bytes per decoded image. Draw operations acquire leases rather than regenerate it, so zoom, pan,
-resize, fullscreen, scaling changes, and settings reuse existing work. There is no full-resolution or viewport-sized
-styling cache. Exact image identity plus existing latest-wins selection forbids stale publication, and failed/missing
-analysis or raster uses cheap fallback.
+field. R11-B retains a quantized-bin `ushort` plus alpha byte per bounded sample during that same scan, then performs
+bounded OKLab family consolidation and one 8-neighbor component traversal; it owns no second decode, full-image pass,
+or raster. The sample maps add at most 27,648 transient bytes, and selector maps/visited/queue remain bounded by the
+same 9,216 samples and 4,096 quantized bins. A five-entry result with three Notable values retains 548 estimated
+managed bytes under the same byte-accounted `DecodedImage`; Color Wash adds `64×64×4 = 16,384` bytes, while R10-B Color
+Gradient and Soft Glow add `2 × 32×32×4 = 8,192` bytes. Maximum retained styling state is therefore 25,124 bytes per
+decoded image. Draw operations acquire leases rather than regenerate it, so zoom, pan, resize, fullscreen, scaling
+changes, and settings reuse existing work. There is no full-resolution or viewport-sized styling cache. Exact image
+identity plus existing latest-wins selection forbids stale publication, and failed/missing analysis or raster uses
+cheap fallback.
 
 R11-A adds no image processing pass or bitmap. One semantic projection of Dominant, Average, and up to five palette
 values runs off-UI immediately after the existing analysis and retains an estimated 1,296 bytes for a full profile in
@@ -183,6 +186,19 @@ the same decoded-cache entry. Local 12-photo Windows Release evidence measured a
 roughly `15–289 ms` for decode plus analysis. Photo Info hide/show, drag, zoom, pan, resize, fullscreen, Photo
 Presentation, Slideshow, and Blink restoration read the attached immutable value and perform no classification, CMM, or
 source scan. These are local comparative measurements, not cross-platform latency guarantees.
+
+R11-B extends the same projection to at most three Notable values, raising the maximum profile estimate to 1,784 bytes
+and maximum analysis estimate from 396 to 548 bytes. The opt-in 14-photo Windows Release corpus records exact bounded
+analysis time, decode-plus-analysis-plus-profile time, projection time, retained bytes, sample count, and Notable count
+while producing ignored before/after contact sheets. This remains engineering evidence on one machine; hosted and
+cross-platform latency evidence is still pending.
+
+The final 14-photo run analyzed 6,144 samples per image. After the first cold/JIT observation at `31.30 ms`, bounded
+analysis measured `5.53–18.40 ms`; decode plus analysis plus profile measured `105.34–270.45 ms`. Semantic projection
+settled to `14.66–17.39 µs` on the final six rows, with earlier process warm-up observations of `94.33–148.86 µs`.
+Zero to three Notable values retained 404–548 analysis bytes and 1,304–1,784 profile bytes. The warm analysis range
+remains inside the previously observed R10/R10-B performance class; these are local comparative observations, not a
+cross-platform guarantee.
 
 The final local Windows Release run measured analysis at `8.37 ms` for a 1.16 MP near-monochrome input, `16.73 ms` at
 6.32 MP, `12.10 ms` at 12 MP, `17.73 ms` at 15 MP, and `20.03 ms` at 24 MP. The prior accepted R10-A five-image range

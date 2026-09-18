@@ -39,19 +39,27 @@ public sealed class PhotoInfoCoordinatorTests
         source.Set(imageA);
         coordinator.SetVisible(true);
         Assert.Equal(new StageColor(203, 99, 43), coordinator.CurrentState!.ColorProfile!.Dominant.Color);
+        Assert.Equal(new StageColor(52, 156, 212), Assert.Single(
+            coordinator.CurrentState.ColorProfile.NotableColors).Color);
 
         source.Set(imageB);
         Assert.Equal("B.jpg", coordinator.CurrentState!.Base.SourcePath);
         Assert.Equal(new StageColor(83, 104, 120), coordinator.CurrentState.ColorProfile!.Dominant.Color);
+        Assert.Equal(new StageColor(172, 151, 135), Assert.Single(
+            coordinator.CurrentState.ColorProfile.NotableColors).Color);
 
         source.Set(imageC);
         Assert.Equal("C.jpg", coordinator.CurrentState!.Base.SourcePath);
         Assert.Equal(new StageColor(0, 212, 255), coordinator.CurrentState.ColorProfile!.Dominant.Color);
+        Assert.Equal(new StageColor(255, 43, 0), Assert.Single(
+            coordinator.CurrentState.ColorProfile.NotableColors).Color);
 
         var canonicalRestore = CreateImageWithProfile(4, "A.jpg", new StageColor(203, 99, 43));
         source.Set(canonicalRestore);
         Assert.Equal("A.jpg", coordinator.CurrentState!.Base.SourcePath);
         Assert.Equal(new StageColor(203, 99, 43), coordinator.CurrentState.ColorProfile!.Dominant.Color);
+        Assert.Equal(new StageColor(52, 156, 212), Assert.Single(
+            coordinator.CurrentState.ColorProfile.NotableColors).Color);
     }
 
     [Fact]
@@ -65,12 +73,16 @@ public sealed class PhotoInfoCoordinatorTests
 
         coordinator.SetVisible(true);
         Assert.Same(expected, coordinator.CurrentState!.ColorProfile);
+        Assert.Equal(new StageColor(52, 156, 212), Assert.Single(
+            coordinator.CurrentState.ColorProfile!.NotableColors).Color);
 
         coordinator.SetVisible(false);
         Assert.Null(coordinator.CurrentState);
         coordinator.SetVisible(true);
 
         Assert.Same(expected, coordinator.CurrentState!.ColorProfile);
+        Assert.Equal(new StageColor(52, 156, 212), Assert.Single(
+            coordinator.CurrentState.ColorProfile!.NotableColors).Color);
     }
 
     [Fact]
@@ -254,7 +266,11 @@ public sealed class PhotoInfoCoordinatorTests
     private static DecodedImage CreateImageWithProfile(byte marker, string path, StageColor color)
     {
         var image = CreateImage(marker, path);
-        var analysis = PhotoDerivedStylePolicyTests.CreateAnalysis(color, color, color);
+        var notable = new StageColor(
+            (byte)(byte.MaxValue - color.Red),
+            (byte)(byte.MaxValue - color.Green),
+            (byte)(byte.MaxValue - color.Blue));
+        var analysis = PhotoDerivedStylePolicyTests.CreateAnalysis(color, color, color, notable);
         Assert.True(image.TryAttachPhotoStyleAnalysis(analysis));
         var profile = Assert.IsType<PhotoColorProfile>(new PhotoColorProfileProjector().Create(analysis));
         Assert.True(image.TryAttachPhotoColorProfile(profile));

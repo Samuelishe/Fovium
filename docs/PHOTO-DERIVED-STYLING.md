@@ -14,7 +14,8 @@ Every successful canonical decode produces one deterministic analysis from the o
 the existing off-UI decode work. The analyzer resamples once to at most `96 px` on the long edge and reads no more than
 `9,216` visible samples. It records a linear-light alpha-weighted average, raw deterministic 4-bit/channel population
 clusters, up to five unchanged population-ranked palette entries, a representative Dominant derived from those raw
-clusters, a `6×6` spatial color field, and an outer-boundary tone. Fully transparent samples do not contribute.
+clusters, up to three separately ranked Notable colors, a `6×6` spatial color field, and an outer-boundary tone. Fully
+transparent samples do not contribute.
 
 Representative Dominant aggregates the raw clusters into a fixed bounded set of 12 OKLab hue families and eight
 neutral-lightness families. Smooth membership begins above chroma `0.015` and reaches full chromatic membership at
@@ -26,6 +27,17 @@ support, then fixed family index provide stable tie order. Thus population remai
 gray/black/white softly, tiny saturated accents cannot win by saturation alone, and genuinely neutral, dark, or high-key
 photographs may remain neutral, dark, or light. The raw palette is never reordered or discarded by this presentation
 selection.
+
+Notable selection does not replace or reorder that raw palette. During the same bounded scan the analyzer records one
+quantized-bin identity and alpha byte per sample. Occupied bins are consolidated deterministically in OKLab: close
+colors merge directly, while chromatic shades may also merge across bounded lightness when their hue and chroma remain
+close. Each resulting family is measured for aggregate support, largest 8-neighbor component, and repeated coherent
+support on the same sample grid. Admission requires at least `1.2%` total support and either a `0.6%` component or
+`2%` repeated coherent support; ranking combines distance from the representative color, chroma, average-lightness
+contrast, population, and coherence. Representative-distance and near-duplicate suppression keep the result distinct,
+and at most one achromatic candidate prevents several dark/light neutral masses from crowding out a coherent chromatic
+accent. Isolated pixels, uniform inputs, and fully transparent inputs produce no invented Notable color. The output is
+a bounded explainable salience projection, not object recognition or semantic segmentation.
 
 The immutable managed result is attached to its exact `DecodedImage` and charged to the same session-local byte-bounded
 decoded cache entry. There is no second file decode, independent styling cache, full-resolution analysis loop, or
@@ -57,7 +69,8 @@ average and representative Dominant, whose middle remains average-led, and whose
 lightness separation. Both descriptions become opaque `32×32` OKLab-interpolated rasters, 4,096 bytes each.
 
 All three rasters are prepared once with the analysis, byte-accounted under the same `DecodedImage`, and shared with
-draw operations through retained leases. The combined production styling state is 24,972 bytes: 396 managed analysis,
+draw operations through retained leases. The maximum combined production styling state is 25,124 bytes: 548 managed
+analysis with three Notable values,
 16,384 Color Wash, and two 4,096-byte gradient rasters. Geometry only stretches the selected artifact and never rebuilds
 it. A missing raster never triggers UI-thread gradient synthesis; it uses the same truthful Black fallback.
 
@@ -72,16 +85,20 @@ canonical photograph and therefore reuses its analysis without recomputation.
 ## Semantic Color Profile
 
 R11-A derives one immutable `PhotoColorProfile` from this already-computed analysis immediately after successful
-attachment. It classifies Dominant, Average, and each raw palette value through shared `Fovium.ColorSemantics`; it does
-not read pixels, decode again, invoke CMM, or create a raster. A five-entry profile retains an estimated 1,296 bytes and
-is charged to the same exact `DecodedImage`. Projection is measured locally at about `11–116 µs` after catalog warm-up,
-versus roughly `15–289 ms` for decode plus analysis across the 12-image evidence set.
+attachment. R11-B extends that same projection with up to three Notable colors. It classifies representative, Average,
+raw palette, and Notable values through shared `Fovium.ColorSemantics`; it does not read pixels, decode again, invoke
+CMM, or create a raster. A five-entry profile with three Notable values retains an estimated 1,784 bytes and is charged
+to the same exact `DecodedImage`. The final 14-photo Windows Release evidence measured warm bounded analysis at
+`5.53–18.40 ms` after one `31.30 ms` cold/JIT observation and warm semantic projection at `14.66–17.39 µs` on the final
+six rows; these are local engineering observations rather than latency guarantees.
 
-Photo Info visibly presents Dominant and up to five raw population palette entries. Average remains in the reusable
-data model but is omitted from the compact initial UI. Entries are not merged merely because structural names repeat:
-the raw clusters may encode visibly distinct lightness/chroma masses within one human category. Professional terms win
-over broad fallback, while creative names, HEX, and OKLCH are secondary tooltip detail. A fully transparent analysis
-publishes no profile rather than naming an internal styling fallback.
+Photo Info labels representative Dominant as Characteristic, labels the unchanged population palette Frequent shades,
+and shows Notable colors as a separate optional swatch row. Average remains in the reusable data model but is omitted
+from the compact UI. Raw entries are not merged merely because structural names repeat: they may encode visibly
+distinct lightness/chroma masses within one human category. Notable swatches omit percentages because family support is
+an admission/ranking measure, not an object-area claim. Professional terms win over broad fallback, while creative
+names, HEX, and OKLCH are secondary tooltip detail. A fully transparent analysis publishes no profile rather than
+naming an internal styling fallback.
 
 The presented-image lease controls publication exactly as for other Photo Info facts. Blink uses the comparison image's
 attached profile; release restores canonical data; Peek emits no identity change. Hide/show, drag, zoom, pan, resize,

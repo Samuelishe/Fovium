@@ -7,11 +7,13 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R11-A is locally complete on pushed R10-E baseline `fbdd668be83e4b5afb93c6557ecf1f2130236f9b`. Product version is
-`0.1.4.0000`: the on-demand Photo Info panel now includes a compact semantic Color Profile for the exact photograph
-being presented. It reuses the immutable R10 analysis owned by `DecodedImage`, preserves its raw five-entry palette,
-and adds structural Color Semantics names with creative names available only as secondary tooltip detail. The existing
-45 broad families, 99 Professional terms / 104 reachable lobes, and 1,800 creative anchors are unchanged.
+R11-B is locally complete on R11-A baseline `318ab14cdbe48c1b0462f4a204f5e6152dfe617c`. Product version is
+`0.1.4.0001`: Photo Info now distinguishes Characteristic color, unchanged population-ranked Frequent shades, and up
+to three separately selected Notable colors for the exact photograph being presented. The new deterministic salience
+projection reuses the existing bounded R10 analysis scan and exact `DecodedImage` ownership; it adds no second decode,
+full-image analyzer, CMM pass, raster, model, network path, or recomputation on UI geometry. Structural Color Semantics
+remain primary and creative names remain secondary tooltip detail. The existing 45 broad families, 99 Professional
+terms / 104 reachable lobes, and 1,800 creative anchors are unchanged.
 
 The ignored research corpus now includes pinned UW/LabintheWild and Stanford CoCoLab human-survey numeric evidence plus
 NBS/ISCC source dictionaries from Color-Library. Exact-name ingestion rejects compound homonyms, deduplicates rows, and
@@ -27,11 +29,12 @@ Windows at `RenderScaling = 1.00`.
 
 ## Current focus
 
-R11-A is ready for owner review/commit and hosted CI. Its ignored Windows evidence covers 12 diverse photographs plus
-runtime hidden/open, navigation, Blink hold/release, fullscreen, Photo Presentation, and Slideshow at
-`RenderScaling = 1.00`. Linux/macOS and real fractional-DPI human visual acceptance remain future evidence; pure
-identity, lifecycle, localization, and cache contracts pass locally on Windows and WSL2 Ubuntu. R10-E's whole
-250-entry research frontier and Antique White/Linen warning remain unchanged.
+R11-B is ready for owner review/commit and hosted CI. Its ignored Windows evidence covers 14 real photographs, including
+ginger cat/greenery, orange trucks, flowers, industrial red/blue, brick/rust, wet asphalt, and controls where raw
+frequency was already useful. The 105-test focused selector/profile/lifecycle/localization filter and full 2,210-test
+local Windows Release suite pass; hosted CI, Linux/macOS, runtime fractional-DPI visual acceptance, and broader
+photographic validation remain
+future evidence. R10-E's whole 250-entry research frontier and Antique White/Linen warning remain unchanged.
 
 The current Codex/Rider ACP session negotiates no true in-app browser backend. Browser-plugin discovery returns an empty
 backend list, and the Rider Playwright MCP entry has no command or URL and is absent from the session tool registry.
@@ -73,8 +76,9 @@ capable host/session or a separately valid MCP registration plus Rider restart o
   presentation-safe Average, or presentation-safe Dominant source and may add Hairline Auto separation.
 - One deterministic oriented reference-sRGB analysis per decoded photograph, bounded to a 96-pixel long edge and
   attached to the existing byte-accounted decoded cache entry; exact-source publication exposes mathematical average,
-  representative dominant, unchanged five-entry population palette, `6×6` spatial field, and boundary tone without
-  source re-decode or geometry recomputation. Color Gradient and Soft Glow add two `32×32` retained rasters prepared
+  representative dominant, unchanged five-entry population palette, up to three perceptually grouped Notable colors,
+  `6×6` spatial field, and boundary tone without source re-decode or geometry recomputation. Color Gradient and Soft
+  Glow add two `32×32` retained rasters prepared
   once from that same result; zoom, pan, resize, DPI, Matte, and slideshow cadence only stretch the existing artifact.
 - Persisted Matte physical width and Solid, Rounded, Soft, and Angular outer presentation styles; all styles retain an
   opaque rectangular backing beneath alpha photographs without changing photo geometry.
@@ -134,9 +138,10 @@ capable host/session or a separately valid MCP registration plus Rider restart o
   encoded bytes lazily off the UI thread with bounded session cache and latest-wins presented-image authority.
 - Session-local Photo Info toggle on configurable `I`, checked Overlays menu entry, compact sparse localized label/value
   rows with explanatory tooltips, immediate oriented dimensions/MP/filename/format/encoded-size data, photographic
-  metadata details, and normalized persisted bottom-left floating placement. Its Color Profile section shows the
-  representative Dominant and up to five unchanged raw-palette swatches with population share; structural Professional
-  names or broad-family fallback are primary, while HEX/OKLCH and creative names remain tooltip detail.
+  metadata details, and normalized persisted bottom-left floating placement. Its Color Profile section separates
+  Characteristic, up to five unchanged Frequent shades with population share, and optional Notable color swatches;
+  structural Professional names or broad-family fallback are primary, while HEX/OKLCH and creative names remain
+  tooltip detail.
 - Session-local Histogram toggle on configurable `G`, checked Overlays menu entry, normalized persisted bottom-right
   placement, and a lightweight 256-bin RGB plot using one shared channel scale.
 - Session-local Color Inspector toggle on configurable `K`, checked Overlays menu entry, normalized persisted top-right

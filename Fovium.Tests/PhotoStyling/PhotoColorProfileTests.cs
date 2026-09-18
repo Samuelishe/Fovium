@@ -67,6 +67,7 @@ public sealed class PhotoColorProfileTests
         Assert.Equal(5, actual.Palette.Length);
         Assert.Equal(1, actual.Palette.Sum(entry => entry.Weight), 12);
         Assert.Equal(colors[4], actual.Average.Color);
+        Assert.Empty(actual.NotableColors);
     }
 
     [Fact]
@@ -105,6 +106,52 @@ public sealed class PhotoColorProfileTests
             visibleSampleCount: 0));
 
         Assert.Null(profile);
+    }
+
+    [Fact]
+    public void NotableColorsUseStructuralTruthWithCreativeNamesSecondary()
+    {
+        var green = new StageColor(52, 118, 42);
+        var orange = new StageColor(218, 105, 39);
+        var projector = CreateProjector([green, orange], "Creative accent");
+
+        var profile = projector.Create(CreateAnalysis(
+            green,
+            green,
+            [new PhotoPaletteEntry(green, 1)],
+            notableColors: [new PhotoNotableColor(orange, 0.12, 0.10, 0.12, 0.8)]));
+
+        var actual = Assert.IsType<PhotoColorProfile>(profile);
+        var notable = Assert.Single(actual.NotableColors);
+        Assert.Equal(orange, notable.Color);
+        Assert.NotNull(notable.Description.HueFamily);
+        Assert.Equal("creative-test-1", notable.CreativeName.StableId);
+        Assert.NotEqual(notable.CreativeName.CanonicalName, notable.Description.HueFamily.ToString());
+        Assert.Equal(green, Assert.Single(actual.Palette).Color.Color);
+        Assert.Equal(1, actual.Palette[0].Weight, 12);
+    }
+
+    [Fact]
+    public void MaximumNotableProfileIsByteAccountedWithoutChangingRawPaletteCapacity()
+    {
+        var colors = Enumerable.Range(0, 8)
+            .Select(index => new StageColor(
+                (byte)(30 + index * 20),
+                (byte)(50 + index * 12),
+                (byte)(70 + index * 8)))
+            .ToArray();
+        var palette = colors.Take(5)
+            .Select((color, index) => new PhotoPaletteEntry(color, (5 - index) / 15d))
+            .ToImmutableArray();
+        var notable = colors.Skip(5)
+            .Select(color => new PhotoNotableColor(color, 0.08, 0.04, 0.06, 0.5))
+            .ToImmutableArray();
+        var profile = Assert.IsType<PhotoColorProfile>(CreateProjector(colors).Create(
+            CreateAnalysis(colors[0], colors[0], palette, notableColors: notable)));
+
+        Assert.Equal(5, profile.Palette.Length);
+        Assert.Equal(3, profile.NotableColors.Length);
+        Assert.Equal(1784, profile.RetainedBytes);
     }
 
     [Theory]
@@ -180,7 +227,8 @@ public sealed class PhotoColorProfileTests
         StageColor average,
         StageColor dominant,
         ImmutableArray<PhotoPaletteEntry> palette,
-        int visibleSampleCount = 96)
+        int visibleSampleCount = 96,
+        ImmutableArray<PhotoNotableColor> notableColors = default)
     {
         var field = Enumerable.Repeat(
                 average,
@@ -197,6 +245,7 @@ public sealed class PhotoColorProfileTests
                 field),
             new PixelSize(12, 8),
             visibleSampleCount,
-            TimeSpan.Zero);
+            TimeSpan.Zero,
+            notableColors);
     }
 }

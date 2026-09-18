@@ -83,10 +83,12 @@ object-editing tools, or exportable content; hiding the dock preserves marks.
 
 **Photo Info** is an on-demand zero-layout aid: configurable `I` shows a restrained movable panel for the photograph
 actually being presented, then hides it without changing the photograph. It summarizes useful photographic facts rather
-than dumping raw tags. A compact Color Profile describes the whole photograph through its existing representative
-Dominant and bounded raw palette: explainable Professional names or broad-family fallbacks are primary, while creative
-nearest names are secondary detail. This is deterministic interpretation of reference-sRGB analysis, not mood, harmony,
-editing, tagging, or rendering input. Metadata is read-only, partial, session-local, and independently fallible; Photo
+than dumping raw tags. A compact Color Profile keeps three meanings separate: Characteristic is representative,
+Frequent shades are the unchanged bounded population evidence, and optional Notable colors surface coherent or repeated
+perceptually distinct regions. Explainable Professional names or broad-family fallbacks are primary, while creative
+nearest names are secondary detail. This is deterministic interpretation of reference-sRGB analysis, not object
+recognition, mood, harmony, editing, tagging, or rendering input. Metadata is read-only, partial, session-local, and
+independently fallible; Photo
 Info is not a catalog, editor, sidecar, rating, or tagging system.
 
 **Histogram** is an on-demand zero-layout aid: configurable `G` shows a movable 256-bin RGB distribution for the whole

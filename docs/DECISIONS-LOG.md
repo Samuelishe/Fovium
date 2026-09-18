@@ -852,3 +852,23 @@ reusable model but is omitted from the compact presentation. Professional identi
 creative nearest name is secondary tooltip detail, and a fully transparent analysis has no invented profile. The
 existing presented-image lease makes Blink select comparison data and release restore canonical data while Peek
 remains unchanged.
+
+## D-076 — Frequent, representative, and notable photograph colors are separate signals
+
+Status: Implemented in local R11-B; hosted verification pending.
+
+The population-ranked raw palette remains unchanged because it truthfully answers which quantized shades occur most
+often. Representative color remains a separate substantial-family selection and is presented as Characteristic in
+Photo Info. Neither signal is overloaded to claim visual importance.
+
+R11-B derives at most three Notable colors during the same bounded `PhotoStyleAnalysis`. It retains one quantized bin
+and alpha value for each existing `≤9,216` thumbnail sample, consolidates occupied bins into deterministic OKLab shade
+families, and combines aggregate mass, distance from Characteristic, chroma, lightness contrast, connected support,
+and repeated coherent support. Fixed minimum support/coherence thresholds, representative/duplicate suppression, and
+stable ordering reject isolated colorful pixels and near-duplicates; at most one achromatic result prevents several
+neutral masses from consuming the compact three-slot signal. The operation owns no second decode, full-image scan, CMM
+pass, retained raster, classifier cache, machine-learning model, or network input.
+
+The resulting immutable values are attached through the existing exact `DecodedImage` analysis/profile path. Photo
+Info shows swatches and semantic tooltip detail but no misleading Notable percentage; structural names remain primary
+and creative nearest names remain secondary. Uniform and transparent inputs produce no invented Notable row.

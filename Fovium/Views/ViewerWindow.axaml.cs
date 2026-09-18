@@ -1699,7 +1699,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
             Opacity = 0.94,
         });
         AddPhotoInfoControlRow(
-            UiStrings.PhotoInfoDominant,
+            UiStrings.PhotoInfoCharacteristic,
             dominantContent,
             FormatPhotoColorTooltip(presentation.Dominant));
 
@@ -1728,9 +1728,29 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         }
 
         AddPhotoInfoControlRow(
-            UiStrings.PhotoInfoPalette,
+            UiStrings.PhotoInfoFrequentShades,
             paletteContent,
             _localizer[UiStrings.PhotoInfoColorsTip]);
+        if (!presentation.NotableColors.IsEmpty)
+        {
+            var notableContent = new StackPanel
+            {
+                Orientation = Avalonia.Layout.Orientation.Horizontal,
+                Spacing = 7,
+            };
+            foreach (var color in presentation.NotableColors)
+            {
+                var swatch = CreatePhotoColorSwatch(color.Color, 46, 26);
+                ToolTip.SetTip(swatch, FormatPhotoColorTooltip(color));
+                notableContent.Children.Add(swatch);
+            }
+
+            AddPhotoInfoControlRow(
+                UiStrings.PhotoInfoNotableColors,
+                notableContent,
+                _localizer[UiStrings.PhotoInfoColorsTip]);
+        }
+
         PhotoInfoRows.Children.Add(new Separator { Margin = new Thickness(0, 2, 0, 1) });
     }
 

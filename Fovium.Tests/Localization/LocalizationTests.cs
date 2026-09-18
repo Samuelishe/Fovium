@@ -294,30 +294,34 @@ public sealed class LocalizationTests
     [InlineData(
         "en-US",
         "Colors",
-        "Dominant",
-        "Palette",
+        "Characteristic",
+        "Frequent shades",
+        "Notable colors",
         "Share",
-        "Whole-photo colors from the existing bounded reference-sRGB analysis.")]
+        "Characteristic, frequent, and visually notable colors from one bounded reference-sRGB analysis.")]
     [InlineData(
         "ru-RU",
         "Цвета",
-        "Доминирующий",
-        "Палитра",
+        "Характерный",
+        "Частые оттенки",
+        "Заметные цвета",
         "Доля",
-        "Цвета всей фотографии из существующего ограниченного анализа в эталонном sRGB.")]
+        "Характерный, частые и визуально заметные цвета из одного ограниченного анализа в эталонном sRGB.")]
     public void PhotoInfoColorProfileHasExactLocalizedVocabulary(
         string cultureName,
         string colors,
-        string dominant,
-        string palette,
+        string characteristic,
+        string frequentShades,
+        string notableColors,
         string share,
         string tip)
     {
         var localizer = Localizer.Create(CultureInfo.GetCultureInfo(cultureName));
 
         Assert.Equal(colors, localizer[UiStrings.PhotoInfoColors]);
-        Assert.Equal(dominant, localizer[UiStrings.PhotoInfoDominant]);
-        Assert.Equal(palette, localizer[UiStrings.PhotoInfoPalette]);
+        Assert.Equal(characteristic, localizer[UiStrings.PhotoInfoCharacteristic]);
+        Assert.Equal(frequentShades, localizer[UiStrings.PhotoInfoFrequentShades]);
+        Assert.Equal(notableColors, localizer[UiStrings.PhotoInfoNotableColors]);
         Assert.Equal(share, localizer[UiStrings.PhotoInfoShare]);
         Assert.Equal(tip, localizer[UiStrings.PhotoInfoColorsTip]);
     }
@@ -351,8 +355,9 @@ public sealed class LocalizationTests
             UiStrings.PhotoInfoDimensions,
             UiStrings.PhotoInfoFile,
             UiStrings.PhotoInfoColors,
-            UiStrings.PhotoInfoDominant,
-            UiStrings.PhotoInfoPalette,
+            UiStrings.PhotoInfoCharacteristic,
+            UiStrings.PhotoInfoFrequentShades,
+            UiStrings.PhotoInfoNotableColors,
             UiStrings.PhotoInfoShare,
             UiStrings.PhotoInfoColorsTip,
             UiStrings.PhotoInfoCameraTip,

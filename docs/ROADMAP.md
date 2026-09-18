@@ -289,6 +289,18 @@ tooltips. Fully transparent analysis publishes no invented profile. Navigation a
 identity, Peek retains canonical authority, and no semantic result feeds Stage, Color Management, Picker, Histogram,
 or source pixels.
 
+## R11-B — Notable Photo Colors
+
+Locally complete at `0.1.4.0001`: preserve R11-A's representative color and unchanged population-ranked raw palette,
+then derive up to three separate Notable colors from the same bounded `96 px` analysis. Perceptual shade-family
+consolidation combines aggregate support with representative contrast, chroma, lightness contrast, connected-area
+support, and repeated coherent presence; minimum support and duplicate suppression reject isolated noise and avoid
+claiming accents for uniform or transparent inputs.
+
+Photo Info now labels the existing signals Characteristic and Frequent shades and presents Notable colors as swatches
+without population percentages. The exact-image attachment, Blink/Peek/latest-wins behavior, one-decode ownership,
+source-domain Color Picker/Histogram truth, and raw top-five palette order remain unchanged.
+
 ## Later / separate platform milestones
 
 - file association and Open With integration;

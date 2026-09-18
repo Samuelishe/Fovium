@@ -90,7 +90,7 @@ internal sealed class PhotoStyleAnalyzer : IPhotoStyleAnalyzer
             }
         }
 
-        return accumulator.Create(stopwatch.Elapsed);
+        return accumulator.Create(stopwatch);
     }
 
     private static byte Unpremultiply(byte value, byte alpha) =>
@@ -105,8 +105,12 @@ internal sealed class PhotoStyleAnalyzer : IPhotoStyleAnalyzer
         private readonly double[] _binRed = new double[QuantizationBinCount];
         private readonly double[] _binGreen = new double[QuantizationBinCount];
         private readonly double[] _binBlue = new double[QuantizationBinCount];
+        private readonly ushort[] _sampleBins;
+        private readonly byte[] _sampleAlpha;
+
         private readonly LinearAccumulator[] _field = new LinearAccumulator[
             StageDefaults.PhotoStyleFieldColumns * StageDefaults.PhotoStyleFieldRows];
+
         private LinearAccumulator _average;
         private LinearAccumulator _boundary;
         private int _visibleSamples;
@@ -114,6 +118,9 @@ internal sealed class PhotoStyleAnalyzer : IPhotoStyleAnalyzer
         public AnalysisAccumulator(PixelSize size)
         {
             _size = size;
+            _sampleBins = new ushort[checked(size.Width * size.Height)];
+            Array.Fill(_sampleBins, ushort.MaxValue);
+            _sampleAlpha = new byte[_sampleBins.Length];
         }
 
         public void Add(int x, int y, byte red, byte green, byte blue, byte alpha)
@@ -135,6 +142,9 @@ internal sealed class PhotoStyleAnalyzer : IPhotoStyleAnalyzer
                 .Add(red, green, blue, weight);
 
             var bin = ((red >> 4) << 8) | ((green >> 4) << 4) | (blue >> 4);
+            var sampleIndex = (y * _size.Width) + x;
+            _sampleBins[sampleIndex] = (ushort)bin;
+            _sampleAlpha[sampleIndex] = alpha;
             _binWeights[bin] += weight;
             _binRed[bin] += red * weight;
             _binGreen[bin] += green * weight;
@@ -142,7 +152,7 @@ internal sealed class PhotoStyleAnalyzer : IPhotoStyleAnalyzer
             _visibleSamples++;
         }
 
-        public PhotoStyleAnalysisResult Create(TimeSpan duration)
+        public PhotoStyleAnalysisResult Create(Stopwatch stopwatch)
         {
             var average = _average.ToColor(StageDefaults.NeutralColor);
             var boundary = _boundary.ToColor(average);
@@ -172,6 +182,13 @@ internal sealed class PhotoStyleAnalyzer : IPhotoStyleAnalyzer
                 .Select(cell => cell.ToColor(average))
                 .ToImmutableArray();
             var representative = RepresentativeColorSelector.Select(rankedClusters, average);
+            var notableColors = NotableColorSelector.Select(
+                _size,
+                _sampleBins,
+                _sampleAlpha,
+                rankedClusters,
+                representative.Color,
+                average);
             var analysis = new PhotoStyleAnalysis(
                 average,
                 representative.Color,
@@ -183,7 +200,8 @@ internal sealed class PhotoStyleAnalyzer : IPhotoStyleAnalyzer
                     field),
                 _size,
                 _visibleSamples,
-                duration);
+                stopwatch.Elapsed,
+                notableColors);
             var rawLargest = rankedClusters.FirstOrDefault();
             var diagnostics = rankedClusters.Length > 0
                 ? new PhotoStyleAnalysisDiagnostics(
@@ -212,7 +230,7 @@ internal sealed class PhotoStyleAnalyzer : IPhotoStyleAnalyzer
             var insetX = Math.Max(1, (int)Math.Ceiling(_size.Width * BoundaryFraction));
             var insetY = Math.Max(1, (int)Math.Ceiling(_size.Height * BoundaryFraction));
             return x < insetX || x >= _size.Width - insetX ||
-                y < insetY || y >= _size.Height - insetY;
+                   y < insetY || y >= _size.Height - insetY;
         }
 
         private static byte ToByte(double value) =>

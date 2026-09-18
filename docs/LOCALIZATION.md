@@ -122,6 +122,10 @@ bounded explanatory tooltip. Structural names reuse the shared broad/Professiona
 separate stable-ID display catalog and remain secondary. HEX, OKLCH, raw RGB, weights, semantic identities, and palette
 order remain locale-independent; percentage and visible names are formatted only at the presentation boundary.
 
+R11-B replaces only the Photo Info signal labels with Characteristic/Характерный and Frequent shades/Частые оттенки,
+then adds Notable colors/Заметные цвета. Stage's persisted/user-visible Dominant identity remains unchanged. Notable
+selection, order, RGB, and semantic identities are locale-independent; localization cannot alter admission or ranking.
+
 ## Locale resolution
 
 Before an explicit user choice:

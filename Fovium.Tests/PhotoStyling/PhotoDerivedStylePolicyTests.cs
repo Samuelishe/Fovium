@@ -366,7 +366,8 @@ public sealed class PhotoDerivedStylePolicyTests
     internal static PhotoStyleAnalysis CreateAnalysis(
         StageColor average,
         StageColor dominant,
-        StageColor boundary)
+        StageColor boundary,
+        StageColor? notable = null)
     {
         var colors = Enumerable.Repeat(
                 average,
@@ -383,7 +384,10 @@ public sealed class PhotoDerivedStylePolicyTests
                 colors),
             new PixelSize(4, 4),
             16,
-            TimeSpan.FromMilliseconds(1));
+            TimeSpan.FromMilliseconds(1),
+            notable is { } color
+                ? [new PhotoNotableColor(color, 0.12, 0.10, 0.11, 0.75)]
+                : []);
     }
 
     private static ImmutableArray<StageColor> CreateField(

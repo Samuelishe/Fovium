@@ -64,8 +64,9 @@ custom control or focused code-behind while domain-independent math remains test
   without a full-neighbor barrier. The renderer receives one identity-coherent snapshot and rejects mismatched Ambient;
   it materializes backend paths without reading settings, scheduling background work, or modifying viewport state.
 - R10 analysis runs once inside the existing off-UI decode boundary after canonical reference-sRGB pixels are
-  available. `PhotoStyleAnalyzer` produces a small immutable average/representative-dominant/raw-palette/boundary/`6×6`
-  field attached to `DecodedImage`; the existing byte-bounded cache, shared image leases, cancellation, adjacent
+  available. `PhotoStyleAnalyzer` produces a small immutable average/representative-dominant/raw-palette/notable/
+  boundary/`6×6` field attached to `DecodedImage`; Notable selection reuses the same bounded sample grid and adds no
+  decode or raster. The existing byte-bounded cache, shared image leases, cancellation, adjacent
   preload, and selection generation therefore remain its only ownership/publication authorities. The Stage renderer
   receives analysis only from the actually rendered image and enforces numeric identity again. It resolves derived
   paints and Hairline without viewport state or CMM input; one byte-accounted `64×64` Color Wash plus R10-B's two
@@ -142,10 +143,11 @@ localization-facing resolver, and separate creative catalog/matcher into the log
 inside the same assembly. Picker-only alpha/Transparent adaptation remains in `ColorPicking`. The common model has no
 service, database, network, rendering, or Color Management input, and no new production project/package is introduced.
 
-R11-A adds a second product client without changing that authority. `PhotoColorProfileProjector` interprets only the
-small immutable `PhotoStyleAnalysis` created during decode, and its immutable value result is attached once to the same
-exact `DecodedImage`. `PhotoInfoCoordinator` reads that result through the existing presented-image lease; it does not
-own a scanner, semantic cache, bitmap, or classifier copy. This preserves the direction source pixels → bounded photo
+R11-A adds a second product client without changing that authority. R11-B adds bounded Notable selection inside the
+same analysis and extends the same projection. `PhotoColorProfileProjector` interprets only the small immutable
+`PhotoStyleAnalysis` created during decode, and its immutable value result is attached once to the same exact
+`DecodedImage`. `PhotoInfoCoordinator` reads that result through the existing presented-image lease; it does not own a
+scanner, semantic cache, bitmap, or classifier copy. This preserves the direction source pixels → bounded photo
 analysis → Color Semantics → localized Photo Info and prevents names from feeding rendering or Color Management.
 
 R8-B-W1 adds a separate photograph-color boundary. `WindowsDisplayColorProfileProvider` resolves ordinary-SDR monitor

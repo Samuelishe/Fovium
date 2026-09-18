@@ -47,6 +47,7 @@ public sealed class PhotoColorProfilePresentationTests
         Assert.Equal("#CB632B", actual.Dominant.Hex);
         Assert.StartsWith("L ", actual.Dominant.Oklch, StringComparison.Ordinal);
         Assert.Equal(expectedShare, actual.Palette[0].Share);
+        Assert.Empty(actual.NotableColors);
     }
 
     [Fact]
@@ -99,9 +100,35 @@ public sealed class PhotoColorProfilePresentationTests
         Assert.Equal(expected, actual.Palette[0].Share);
     }
 
+    [Fact]
+    public void NotablePresentationHasNoFrequencyShareAndKeepsExactColorDetail()
+    {
+        var green = new StageColor(52, 118, 42);
+        var orange = new StageColor(218, 105, 39);
+        var profile = Assert.IsType<PhotoColorProfile>(new PhotoColorProfileProjector().Create(
+            CreateAnalysis(
+                green,
+                [new PhotoPaletteEntry(green, 1)],
+                [new PhotoNotableColor(orange, 0.12, 0.10, 0.12, 0.8)])));
+        var culture = CultureInfo.GetCultureInfo("en-US");
+        var localizer = Localizer.Create(culture);
+
+        var actual = PhotoColorProfilePresenter.Format(
+            profile,
+            culture,
+            new PerceptualColorNameResolver(localizer),
+            ColorNameDisplayCatalog.CreateForTests());
+
+        var notable = Assert.Single(actual.NotableColors);
+        Assert.Equal(orange, notable.Color);
+        Assert.Equal("#DA6927", notable.Hex);
+        Assert.False(string.IsNullOrWhiteSpace(notable.StructuralName));
+    }
+
     private static PhotoStyleAnalysis CreateAnalysis(
         StageColor color,
-        ImmutableArray<PhotoPaletteEntry> palette)
+        ImmutableArray<PhotoPaletteEntry> palette,
+        ImmutableArray<PhotoNotableColor> notableColors = default)
     {
         var field = Enumerable.Repeat(color, 36).ToImmutableArray();
         return new PhotoStyleAnalysis(
@@ -112,6 +139,7 @@ public sealed class PhotoColorProfilePresentationTests
             new PhotoColorField(6, 6, field),
             new PixelSize(8, 8),
             64,
-            TimeSpan.Zero);
+            TimeSpan.Zero,
+            notableColors);
     }
 }

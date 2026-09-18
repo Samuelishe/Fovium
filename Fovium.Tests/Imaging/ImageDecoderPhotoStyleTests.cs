@@ -36,7 +36,8 @@ public sealed class ImageDecoderPhotoStyleTests
             Assert.Same(analyzer.Result, image!.GetPhotoStyleAnalysis());
             Assert.Equal(1, profileProjector.CallCount);
             Assert.Same(analyzer.Result, profileProjector.Analysis);
-            Assert.NotNull(image.GetPhotoColorProfile());
+            var profile = Assert.IsType<PhotoColorProfile>(image.GetPhotoColorProfile());
+            Assert.Equal(new StageColor(210, 95, 35), Assert.Single(profile.NotableColors).Color);
         }
         finally
         {
@@ -162,7 +163,8 @@ public sealed class ImageDecoderPhotoStyleTests
         public PhotoStyleAnalysis Result { get; } = PhotoDerivedStylePolicyTests.CreateAnalysis(
             new StageColor(10, 20, 30),
             new StageColor(40, 50, 60),
-            new StageColor(70, 80, 90));
+            new StageColor(70, 80, 90),
+            new StageColor(210, 95, 35));
 
         public int CallCount { get; private set; }
 

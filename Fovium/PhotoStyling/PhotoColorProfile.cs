@@ -21,11 +21,12 @@ internal readonly record struct PhotoColorProfilePaletteEntry(
 internal sealed record PhotoColorProfile(
     PhotoColorProfileColor Dominant,
     PhotoColorProfileColor Average,
-    ImmutableArray<PhotoColorProfilePaletteEntry> Palette)
+    ImmutableArray<PhotoColorProfilePaletteEntry> Palette,
+    ImmutableArray<PhotoColorProfileColor> NotableColors)
 {
     public long RetainedBytes => checked(
-        96L +
-        ((2L + Palette.Length) * PhotoColorProfileColor.EstimatedRetainedBytes) +
+        104L +
+        ((2L + Palette.Length + NotableColors.Length) * PhotoColorProfileColor.EstimatedRetainedBytes) +
         (Palette.Length * 16L));
 }
 
@@ -67,7 +68,10 @@ internal sealed class PhotoColorProfileProjector : IPhotoColorProfileProjector
         return new PhotoColorProfile(
             Describe(analysis.DominantColor),
             Describe(analysis.AverageColor),
-            palette);
+            palette,
+            analysis.NotableColors
+                .Select(entry => Describe(entry.Color))
+                .ToImmutableArray());
     }
 
     private PhotoColorProfileColor Describe(StageColor color)

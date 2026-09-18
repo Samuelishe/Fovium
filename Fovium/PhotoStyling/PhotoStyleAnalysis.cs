@@ -6,6 +6,13 @@ namespace Fovium.PhotoStyling;
 
 internal readonly record struct PhotoPaletteEntry(StageColor Color, double Weight);
 
+internal readonly record struct PhotoNotableColor(
+    StageColor Color,
+    double SupportFraction,
+    double LargestComponentFraction,
+    double CoherentSupportFraction,
+    double Score);
+
 internal sealed record PhotoColorField(
     int Columns,
     int Rows,
@@ -26,7 +33,8 @@ internal sealed class PhotoStyleAnalysis
         PhotoColorField spatialField,
         PixelSize analyzedSize,
         int visibleSampleCount,
-        TimeSpan analysisDuration)
+        TimeSpan analysisDuration,
+        ImmutableArray<PhotoNotableColor> notableColors = default)
     {
         AverageColor = averageColor;
         DominantColor = dominantColor;
@@ -36,6 +44,7 @@ internal sealed class PhotoStyleAnalysis
         AnalyzedSize = analyzedSize;
         VisibleSampleCount = visibleSampleCount;
         AnalysisDuration = analysisDuration;
+        NotableColors = notableColors.IsDefault ? [] : notableColors;
     }
 
     public StageColor AverageColor { get; }
@@ -54,9 +63,11 @@ internal sealed class PhotoStyleAnalysis
 
     public TimeSpan AnalysisDuration { get; }
 
-    public long RetainedBytes => checked(
-        96L +
-        (Palette.Length * 32L) +
-        SpatialField.RetainedBytes);
+    public ImmutableArray<PhotoNotableColor> NotableColors { get; }
 
+    public long RetainedBytes => checked(
+        104L +
+        (Palette.Length * 32L) +
+        (NotableColors.Length * 48L) +
+        SpatialField.RetainedBytes);
 }

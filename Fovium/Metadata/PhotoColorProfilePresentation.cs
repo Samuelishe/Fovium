@@ -20,7 +20,8 @@ internal sealed record PhotoColorProfileDisplayEntry(
 internal sealed record PhotoColorProfilePresentation(
     PhotoColorProfileDisplayColor Dominant,
     PhotoColorProfileDisplayColor Average,
-    ImmutableArray<PhotoColorProfileDisplayEntry> Palette);
+    ImmutableArray<PhotoColorProfileDisplayEntry> Palette,
+    ImmutableArray<PhotoColorProfileDisplayColor> NotableColors);
 
 internal static class PhotoColorProfilePresenter
 {
@@ -41,6 +42,9 @@ internal static class PhotoColorProfilePresenter
             profile.Palette.Select(entry => new PhotoColorProfileDisplayEntry(
                     FormatColor(entry.Color, structuralNames, creativeNames),
                     FormatShare(entry.Weight, culture)))
+                .ToImmutableArray(),
+            profile.NotableColors
+                .Select(color => FormatColor(color, structuralNames, creativeNames))
                 .ToImmutableArray());
     }
 

@@ -54,13 +54,18 @@ public sealed class PhotoColorProfilePerformanceSmokeTests(ITestOutputHelper out
                 var profile = Assert.IsType<PhotoColorProfile>(image.GetPhotoColorProfile());
                 var projectionMicroseconds = MeasureProjection(analysis);
                 output.WriteLine(
-                    "Photo {0:D2}: decode+analysis+profile={1:F2} ms, profileProjection={2:F2} us, " +
-                    "profileRetained={3:N0} B, palette={4}, visibleSamples={5:N0}.",
+                    "Photo {0:D2} ({1}): decode+analysis+profile={2:F2} ms, analysis={3:F2} ms, " +
+                    "profileProjection={4:F2} us, analysisRetained={5:N0} B, " +
+                    "profileRetained={6:N0} B, palette={7}, notable={8}, visibleSamples={9:N0}.",
                     evidence.Count + 1,
+                    Path.GetFileName(path),
                     decodeClock.Elapsed.TotalMilliseconds,
+                    analysis.AnalysisDuration.TotalMilliseconds,
                     projectionMicroseconds,
+                    analysis.RetainedBytes,
                     profile.RetainedBytes,
                     profile.Palette.Length,
+                    profile.NotableColors.Length,
                     analysis.VisibleSampleCount);
                 evidence.Add(new EvidenceRow(image, profile));
             }
@@ -104,8 +109,8 @@ public sealed class PhotoColorProfilePerformanceSmokeTests(ITestOutputHelper out
 
     private static void WriteContactSheet(IReadOnlyList<EvidenceRow> rows, string destination)
     {
-        const int width = 1400;
-        const int rowHeight = 190;
+        const int width = 1600;
+        const int rowHeight = 210;
         using var surface = SKSurface.Create(new SKImageInfo(
                                 width,
                                 Math.Max(rowHeight, rows.Count * rowHeight),
@@ -150,19 +155,31 @@ public sealed class PhotoColorProfilePerformanceSmokeTests(ITestOutputHelper out
                 culture,
                 nameResolver,
                 creativeNames);
-            canvas.DrawText($"Photo {index + 1:D2}", 320, top + 38, headingFont, textPaint);
-            canvas.DrawText("Dominant", 320, top + 68, smallFont, mutedPaint);
-            DrawSwatch(canvas, presentation.Dominant.Color, 320, top + 80, 52, 52);
-            canvas.DrawText(presentation.Dominant.StructuralName, 384, top + 104, labelFont, textPaint);
-            canvas.DrawText(presentation.Dominant.Hex, 384, top + 126, smallFont, mutedPaint);
+            canvas.DrawText(Path.GetFileName(row.Image.Descriptor.SourcePath), 320, top + 34, headingFont, textPaint);
+            canvas.DrawText("Characteristic", 320, top + 62, smallFont, mutedPaint);
+            DrawSwatch(canvas, presentation.Dominant.Color, 320, top + 74, 52, 52);
+            canvas.DrawText(presentation.Dominant.StructuralName, 384, top + 98, labelFont, textPaint);
+            canvas.DrawText(presentation.Dominant.Hex, 384, top + 120, smallFont, mutedPaint);
+
+            canvas.DrawText("Frequent shades", 620, top + 34, smallFont, mutedPaint);
 
             for (var paletteIndex = 0; paletteIndex < presentation.Palette.Length; paletteIndex++)
             {
                 var entry = presentation.Palette[paletteIndex];
-                var left = 660 + (paletteIndex * 142);
-                DrawSwatch(canvas, entry.Color.Color, left, top + 40, 112, 72);
-                canvas.DrawText(entry.Share, left, top + 132, smallFont, mutedPaint);
-                canvas.DrawText(Truncate(entry.Color.StructuralName, 18), left, top + 154, smallFont, textPaint);
+                var left = 620 + (paletteIndex * 112);
+                DrawSwatch(canvas, entry.Color.Color, left, top + 44, 98, 62);
+                canvas.DrawText(entry.Share, left, top + 126, smallFont, mutedPaint);
+                canvas.DrawText(Truncate(entry.Color.StructuralName, 15), left, top + 148, smallFont, textPaint);
+            }
+
+            canvas.DrawText("Notable colors", 1190, top + 34, smallFont, mutedPaint);
+            for (var notableIndex = 0; notableIndex < presentation.NotableColors.Length; notableIndex++)
+            {
+                var color = presentation.NotableColors[notableIndex];
+                var left = 1190 + (notableIndex * 130);
+                DrawSwatch(canvas, color.Color, left, top + 44, 116, 62);
+                canvas.DrawText(Truncate(color.StructuralName, 17), left, top + 128, smallFont, textPaint);
+                canvas.DrawText(color.Hex, left, top + 148, smallFont, mutedPaint);
             }
 
             canvas.DrawLine(16, top + rowHeight - 1, width - 16, top + rowHeight - 1, separatorPaint);

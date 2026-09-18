@@ -131,8 +131,9 @@ internal static class UiStrings
     public const string PhotoInfoTitle = "photoInfo.title";
     public const string PhotoInfoClose = "photoInfo.close";
     public const string PhotoInfoColors = "photoInfo.colors";
-    public const string PhotoInfoDominant = "photoInfo.colors.dominant";
-    public const string PhotoInfoPalette = "photoInfo.colors.palette";
+    public const string PhotoInfoCharacteristic = "photoInfo.colors.characteristic";
+    public const string PhotoInfoFrequentShades = "photoInfo.colors.frequentShades";
+    public const string PhotoInfoNotableColors = "photoInfo.colors.notable";
     public const string PhotoInfoShare = "photoInfo.colors.share";
     public const string PhotoInfoColorsTip = "photoInfo.colors.tip";
     public const string PhotoInfoCamera = "photoInfo.camera";

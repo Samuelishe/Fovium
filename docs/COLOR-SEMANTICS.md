@@ -31,11 +31,13 @@ opaque sampled RGB value into the common model and handles the Picker-only Trans
 candidate dispositions, provenance, source independence, clustering, overlap campaigns, and frontier metrics remain
 developer-only in `Fovium.Tools.ColorTaxonomyAudit`.
 
-R11-A's Photo Color Profile is a separate whole-photograph client. It maps the existing reference-sRGB Dominant,
-Average, and raw palette values to the same structural and creative results once per decoded image. Structural
+R11-A's Photo Color Profile is a separate whole-photograph client. R11-B maps the existing reference-sRGB
+representative, Average, unchanged raw palette, and separately selected Notable values to the same structural and
+creative results once per decoded image. Structural
 Professional identity or broad fallback is user-facing authority; the creative nearest name is secondary tooltip data.
-The profile retains exact source RGB values and never changes taxonomy definitions, rendering, CMM, Picker, Histogram,
-or the underlying R10 analysis.
+The profile retains exact analyzed RGB values and never changes taxonomy definitions, rendering, CMM, Picker,
+Histogram, or raw frequency order. Creative names remain secondary for every signal and never participate in Notable
+selection.
 
 ## Two naming systems
 

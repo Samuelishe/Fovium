@@ -39,6 +39,8 @@ public sealed class ViewerInspectionCoordinatorTests(Xunit.Abstractions.ITestOut
         photoInfo.SetVisible(true);
         Assert.Equal(canonicalIdentity, photoInfo.CurrentState!.Base.ImageIdentity);
         Assert.Equal(new StageColor(20, 80, 180), photoInfo.CurrentState.ColorProfile!.Dominant.Color);
+        Assert.Equal(new StageColor(235, 175, 75), Assert.Single(
+            photoInfo.CurrentState.ColorProfile.NotableColors).Color);
         viewport.SetPhotographic100AtCenter();
         var before = viewport.CaptureViewTransfer();
         await session.WaitForAdjacentPreloadAsync(CancellationToken.None);
@@ -54,6 +56,8 @@ public sealed class ViewerInspectionCoordinatorTests(Xunit.Abstractions.ITestOut
         Assert.Equal(previousPath, viewport.PresentedImageIdentity);
         Assert.Equal(previousPath, photoInfo.CurrentState!.Base.SourcePath);
         Assert.Equal(new StageColor(180, 60, 20), photoInfo.CurrentState.ColorProfile!.Dominant.Color);
+        Assert.Equal(new StageColor(75, 195, 235), Assert.Single(
+            photoInfo.CurrentState.ColorProfile.NotableColors).Color);
         var comparisonMarkup = viewport.CapturePresentedMarkup().Operations;
         Assert.Equal(2, comparisonMarkup.Count);
         Assert.Equal(
@@ -70,6 +74,8 @@ public sealed class ViewerInspectionCoordinatorTests(Xunit.Abstractions.ITestOut
         Assert.Equal(opened.Path, viewport.PresentedImageIdentity);
         Assert.Equal(opened.Path, photoInfo.CurrentState!.Base.SourcePath);
         Assert.Equal(new StageColor(20, 80, 180), photoInfo.CurrentState.ColorProfile!.Dominant.Color);
+        Assert.Equal(new StageColor(235, 175, 75), Assert.Single(
+            photoInfo.CurrentState.ColorProfile.NotableColors).Color);
         Assert.Equal(2, metadataReader.CallCount);
         Assert.Equal(
             new PresentationColor(0x11, 0x22, 0x33),
@@ -111,6 +117,8 @@ public sealed class ViewerInspectionCoordinatorTests(Xunit.Abstractions.ITestOut
 
         Assert.Equal(opened.Path, viewport.PresentedImageIdentity);
         Assert.Same(canonicalProfile, photoInfo.CurrentState!.ColorProfile);
+        Assert.Equal(new StageColor(75, 195, 235), Assert.Single(
+            photoInfo.CurrentState.ColorProfile.NotableColors).Color);
         var peekMarkup = viewport.CapturePresentedMarkup().Operations;
         Assert.Equal(2, peekMarkup.Count);
         Assert.IsType<EraseMarkupOperation>(peekMarkup[1]);
@@ -243,7 +251,11 @@ public sealed class ViewerInspectionCoordinatorTests(Xunit.Abstractions.ITestOut
             "B.png" => new StageColor(20, 80, 180),
             _ => new StageColor(40, 150, 80),
         };
-        var analysis = PhotoDerivedStylePolicyTests.CreateAnalysis(color, color, color);
+        var notable = new StageColor(
+            (byte)(byte.MaxValue - color.Red),
+            (byte)(byte.MaxValue - color.Green),
+            (byte)(byte.MaxValue - color.Blue));
+        var analysis = PhotoDerivedStylePolicyTests.CreateAnalysis(color, color, color, notable);
         Assert.True(image.TryAttachPhotoStyleAnalysis(analysis));
         var profile = Assert.IsType<PhotoColorProfile>(new PhotoColorProfileProjector().Create(analysis));
         Assert.True(image.TryAttachPhotoColorProfile(profile));

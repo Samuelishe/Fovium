@@ -186,13 +186,16 @@ geometry or Matte before its matching photograph.
 
 Rare features live behind right click. `I` or Overlays → Photo Info toggles a compact movable label/value card for the
 currently presented image. Its sparse photographic rows cover available camera, lens, exposure, capture, dimensions, and
-file facts. A leading Colors section shows one representative Dominant swatch/name and up to five raw palette swatches
-with population shares. Structural Professional name or broad-family fallback is primary; hover exposes the exact HEX,
-OKLCH, share, and secondary creative name. Average is retained in the model but not shown in the compact first UI.
+file facts. A leading Colors section distinguishes one representative Characteristic swatch/name, up to five unchanged
+population-ranked Frequent shades with shares, and an optional row of at most three Notable colors. Notable swatches
+reflect bounded perceptual distinctness plus coherent/repeated presence and deliberately omit percentages; they are not
+object-area estimates. Structural Professional name or broad-family fallback is primary; hover exposes exact HEX,
+OKLCH, raw-palette share where applicable, and secondary creative name. Average is retained in the model but not shown.
 Light and dark swatches use contrast outlines without altering their fill. Each localized label/row offers a short
 explanatory tooltip. The panel starts hidden each application launch, preserves only normalized client-relative
-placement, follows Blink comparison identity, and leaves Peek unchanged. Missing metadata rows and an unavailable
-Color Profile collapse rather than producing stale placeholders. GPS/location fields are not shown. A future Advanced
+placement, follows Blink comparison identity, and leaves Peek unchanged. Missing Notable candidates collapse their row;
+missing metadata and an unavailable Color Profile collapse rather than producing stale placeholders. GPS/location
+fields are not shown. A future Advanced
 Metadata view remains separate; a persistent EXIF sidebar or palette editor is not acceptable.
 
 `G` or Overlays → Histogram toggles a separate compact movable panel. It describes whole-image decoded RGB values, not
