@@ -53,17 +53,36 @@ public sealed class ProfessionalColorShadeTests
     }
 
     [Theory]
+    [InlineData("#FFD700", ProfessionalColorTerm.Gold)]
+    [InlineData("#DBB40C", ProfessionalColorTerm.Gold)]
+    [InlineData("#F0E68C", ProfessionalColorTerm.Khaki)]
+    [InlineData("#C3B091", ProfessionalColorTerm.Khaki)]
+    [InlineData("#B87333", ProfessionalColorTerm.Copper)]
+    [InlineData("#4A0100", ProfessionalColorTerm.Mahogany)]
+    [InlineData("#AF6F09", ProfessionalColorTerm.Caramel)]
+    [InlineData("#FFF700", ProfessionalColorTerm.Lemon)]
+    [InlineData("#00A86B", ProfessionalColorTerm.Jade)]
+    [InlineData("#4169E1", ProfessionalColorTerm.RoyalBlue)]
+    public void ThirdWaveIndependentReferenceAnchorsResolveConventionalTerms(
+        string hex,
+        object expectedTerm)
+    {
+        Assert.Equal((ProfessionalColorTerm)expectedTerm, Describe(hex).ProfessionalTerm);
+    }
+
+    [Theory]
     [InlineData("#341D6D")]
     [InlineData("#FF0000")]
     [InlineData("#FF00FF")]
     [InlineData("#C95E3A")]
-    [InlineData("#FFD000")]
     [InlineData("#FFFFFF")]
     [InlineData("#000000")]
     [InlineData("#0080FF")]
     [InlineData("#77C081")]
     [InlineData("#D2D3D8")]
     [InlineData("#ADF0D1")]
+    [InlineData("#378050")]
+    [InlineData("#6BC59A")]
     public void SpecificTermsDoNotConsumeAcceptedGenericOrAdjacentControls(string hex)
     {
         Assert.Null(Describe(hex).ProfessionalTerm);
@@ -75,10 +94,10 @@ public sealed class ProfessionalColorShadeTests
         var definitions = ProfessionalShadeCatalog.Definitions;
         var regions = definitions.SelectMany(definition => definition.Regions).ToArray();
 
-        Assert.Equal(33, definitions.Count);
+        Assert.Equal(41, definitions.Count);
         Assert.Equal(definitions.Count, definitions.Select(item => item.StableId).Distinct().Count());
         Assert.Equal(definitions.Count, definitions.Select(item => item.Term).Distinct().Count());
-        Assert.Equal(34, regions.Length);
+        Assert.Equal(44, regions.Length);
         Assert.Equal(regions.Length, regions.Select(item => item.StableId).Distinct().Count());
         Assert.Equal(regions.Length, regions.Select(item => item.Priority).Distinct().Count());
         Assert.All(definitions, definition =>
@@ -116,6 +135,40 @@ public sealed class ProfessionalColorShadeTests
         Assert.Equal(
             ["professional-powder-blue-blue", "professional-powder-blue-cyan"],
             powderBlue.Regions.Select(region => region.StableId).Order().ToArray());
+    }
+
+    [Theory]
+    [InlineData(ProfessionalColorTerm.Gold, "professional-gold", 2)]
+    [InlineData(ProfessionalColorTerm.Khaki, "professional-khaki", 2)]
+    public void ThirdWaveCompositeTermsKeepOneIdentityAcrossEvidenceLobes(
+        object term,
+        string stableId,
+        int expectedRegions)
+    {
+        var definition = ProfessionalShadeCatalog.Get((ProfessionalColorTerm)term);
+
+        Assert.Equal(stableId, definition.StableId);
+        Assert.Equal(expectedRegions, definition.Regions.Count);
+        Assert.All(
+            definition.Regions,
+            region => Assert.StartsWith(stableId, region.StableId, StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("#C1F80A", ProfessionalColorTerm.Chartreuse)]
+    [InlineData("#6B8E23", ProfessionalColorTerm.OliveDrab)]
+    [InlineData("#E17701", ProfessionalColorTerm.Pumpkin)]
+    [InlineData("#A83C09", ProfessionalColorTerm.Rust)]
+    [InlineData("#87AE73", ProfessionalColorTerm.Sage)]
+    [InlineData("#4682B4", ProfessionalColorTerm.SteelBlue)]
+    [InlineData("#0047AB", ProfessionalColorTerm.Cobalt)]
+    [InlineData("#C79FEF", ProfessionalColorTerm.Lavender)]
+    [InlineData("#5363D9", ProfessionalColorTerm.Periwinkle)]
+    [InlineData("#A47333", ProfessionalColorTerm.Pumpkin)]
+    [InlineData("#AE7845", ProfessionalColorTerm.Pumpkin)]
+    public void ThirdWaveRegionsPreserveAcceptedNeighboringTerms(string hex, object expectedTerm)
+    {
+        Assert.Equal((ProfessionalColorTerm)expectedTerm, Describe(hex).ProfessionalTerm);
     }
 
     [Fact]
@@ -201,6 +254,56 @@ public sealed class ProfessionalColorShadeTests
                 new OklchColor(lightness, chroma, hue),
                 PerceptualColorRole.Chromatic,
                 (PerceptualHueFamily)family));
+    }
+
+    [Theory]
+    [InlineData(0.90, 0.15, 99.999, PerceptualHueFamily.Yellow, ProfessionalColorTerm.Gold)]
+    [InlineData(0.90, 0.15, 100.000, PerceptualHueFamily.Yellow, ProfessionalColorTerm.Lemon)]
+    [InlineData(0.70, 0.13, 69.999, PerceptualHueFamily.Ochre, ProfessionalColorTerm.Caramel)]
+    [InlineData(0.70, 0.12, 78.000, PerceptualHueFamily.Ochre, ProfessionalColorTerm.Gold)]
+    [InlineData(0.60, 0.121999, 64, PerceptualHueFamily.Ochre, ProfessionalColorTerm.Copper)]
+    [InlineData(0.60, 0.122000, 64, PerceptualHueFamily.Ochre, ProfessionalColorTerm.Caramel)]
+    [InlineData(0.60, 0.14, 154.999, PerceptualHueFamily.Green, ProfessionalColorTerm.Emerald)]
+    [InlineData(0.60, 0.14, 155.000, PerceptualHueFamily.Green, ProfessionalColorTerm.Jade)]
+    [InlineData(0.519999, 0.19, 266, PerceptualHueFamily.Blue, ProfessionalColorTerm.Cobalt)]
+    [InlineData(0.520000, 0.19, 266, PerceptualHueFamily.Blue, ProfessionalColorTerm.RoyalBlue)]
+    public void ThirdWaveBoundariesHaveExplicitSiblingBehavior(
+        double lightness,
+        double chroma,
+        double hue,
+        object family,
+        object expected)
+    {
+        Assert.Equal(
+            (ProfessionalColorTerm)expected,
+            ProfessionalShadeClassifier.Classify(
+                new OklchColor(lightness, chroma, hue),
+                PerceptualColorRole.Chromatic,
+                (PerceptualHueFamily)family));
+    }
+
+    [Theory]
+    [InlineData("#FFD700", "Gold", "Золотистый")]
+    [InlineData("#C3B091", "Khaki", "Хаки")]
+    [InlineData("#B87333", "Copper", "Медный")]
+    [InlineData("#4A0100", "Mahogany", "Махагоновый")]
+    [InlineData("#AF6F09", "Caramel", "Карамельный")]
+    [InlineData("#FFF700", "Lemon", "Лимонный")]
+    [InlineData("#00A86B", "Jade", "Нефритовый")]
+    [InlineData("#4169E1", "Royal blue", "Королевский синий")]
+    public void ThirdWavePrimaryNamesAreConciseReviewedEnglishAndRussian(
+        string hex,
+        string englishName,
+        string russianName)
+    {
+        var description = Describe(hex);
+        var english = new PerceptualColorNameResolver(Localizer.Create(CultureInfo.GetCultureInfo("en-US")));
+        var russian = new PerceptualColorNameResolver(Localizer.Create(CultureInfo.GetCultureInfo("ru-RU")));
+
+        Assert.Equal(englishName, english.ResolveShort(description));
+        Assert.Equal(englishName, english.ResolveDetailed(description));
+        Assert.Equal(russianName, russian.ResolveShort(description));
+        Assert.Equal(russianName, russian.ResolveDetailed(description));
     }
 
     [Theory]

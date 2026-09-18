@@ -289,6 +289,14 @@ internal static class UiStrings
     public const string ColorPickerProfessionalPistachio = "colorPicker.professional.pistachio";
     public const string ColorPickerProfessionalLinen = "colorPicker.professional.linen";
     public const string ColorPickerProfessionalSilver = "colorPicker.professional.silver";
+    public const string ColorPickerProfessionalGold = "colorPicker.professional.gold";
+    public const string ColorPickerProfessionalKhaki = "colorPicker.professional.khaki";
+    public const string ColorPickerProfessionalCopper = "colorPicker.professional.copper";
+    public const string ColorPickerProfessionalMahogany = "colorPicker.professional.mahogany";
+    public const string ColorPickerProfessionalCaramel = "colorPicker.professional.caramel";
+    public const string ColorPickerProfessionalLemon = "colorPicker.professional.lemon";
+    public const string ColorPickerProfessionalJade = "colorPicker.professional.jade";
+    public const string ColorPickerProfessionalRoyalBlue = "colorPicker.professional.royalBlue";
     public const string ColorPickerNameRedBlack = "colorPicker.name.redBlack";
     public const string ColorPickerNameBrownBlack = "colorPicker.name.brownBlack";
     public const string ColorPickerNameOliveBlack = "colorPicker.name.oliveBlack";

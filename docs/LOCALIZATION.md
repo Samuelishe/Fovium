@@ -71,6 +71,11 @@ share one stable term and localization key, so geometry can evolve without dupli
 term ships with English and reviewed Russian together; audit-only aliases and external candidate vocabulary never enter
 runtime localization or the creative catalog.
 
+R8-A-F9 expands the domain to 41 professional terms with paired English/Russian names for Gold/Золотистый, Khaki/Хаки,
+Copper/Медный, Mahogany/Махагоновый, Caramel/Карамельный, Lemon/Лимонный, Jade/Нефритовый, and Royal
+Blue/Королевский синий. Component and alias data used to evaluate those terms remains developer-only; locale-independent
+term identity and region geometry still resolve through one ordinary UI key at presentation time.
+
 R9-A localizes Photo Presentation command/context-menu copy, its Viewing subsection, Edge margin label, and the
 explanation that the photograph stays inside the presentation margin while Matte does not change its scale. The stable
 `viewer.togglePhotoPresentation` identity, serialized property names, percentage value, and active session state are

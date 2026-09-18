@@ -50,7 +50,8 @@ internal static class TaxonomyAnalyzer
         "#A83C09", "#BE0119", "#FF9408", "#FFFFCB", "#343837", "#516572",
         "#4B0082", "#B0E0E6", "#4682B4", "#6B8E23", "#00FF00", "#C1F80A",
         "#80F9AD", "#0047AB", "#007BA7", "#FE4B03", "#E17701", "#F29E8E",
-        "#C0FA8B", "#FAF0E6", "#C0C0C0"
+        "#C0FA8B", "#FAF0E6", "#C0C0C0", "#FFD700", "#DBB40C", "#F0E68C",
+        "#C3B091", "#B87333", "#4A0100", "#AF6F09", "#FFF700", "#00A86B", "#4169E1"
     ];
 
     public static AuditReport Analyze(
@@ -143,7 +144,7 @@ internal static class TaxonomyAnalyzer
             runtimeSeconds);
 
         var report = new AuditReport(
-            "fovium-color-taxonomy-audit/v4",
+            "fovium-color-taxonomy-audit/v5",
             options.Mode.ToString(),
             options.Seed,
             options.Configuration,
@@ -180,6 +181,7 @@ internal static class TaxonomyAnalyzer
                     ProfessionalExplanation = adapter.ExplainProfessional(sample.Rgb)
                 })
                 .ToArray(),
+            ProfessionalBoundarySamples = ProfessionalShadeBoundaryAudit.Analyze(adapter),
             ProfessionalTermCoverage = CountBy(
                 all.Where(sample => sample.ProfessionalTerm is not null),
                 sample => sample.ProfessionalTerm!)

@@ -45,11 +45,13 @@ dotnet run --project Fovium.Tools.ColorTaxonomyAudit -c Release -- --mode deep `
 ```
 
 Each run writes `summary.json`, `summary.md`, `summary.html`, `anomalies.csv`, `contact-sheet.svg`, balanced-spectrum,
-family-profile, owner-candidate, holdout, changed-region, reference-disagreement, vocabulary-gap, and accepted
-professional-term views, plus a reference-driven vocabulary-candidate view and a deterministic SHA-256 signature.
+family-profile, owner-candidate, holdout, changed-region, reference-disagreement, vocabulary-gap, accepted
+professional-term, and professional-boundary views, plus reference-driven vocabulary-candidate and compact-component
+views and a deterministic SHA-256 signature.
 Runtime and the isolated indexed-classifier benchmark are retained in the reports but excluded from the signature.
-Schema v4 reports generic/existing-specific/professional/neutral coverage, per-term sampled coverage, candidate source
-support/dispersion, and the winning/competing region explanation for accepted anchors. Reports rank abrupt semantic
+Schema v5 reports generic/existing-specific/professional/neutral coverage, per-term sampled coverage, candidate source
+support/dispersion/components/noise, the winning/competing region explanation for accepted anchors, and deterministic
+center plus inside/outside L/C/h probes for every professional region. Reports rank abrupt semantic
 neighbors, role/modifier reversals, lightness A→B→A paths, small connected components, thin slivers, broad family
 coverage, distance-gated k-nearest reference disagreements, and per-family semantic profiles. These signals locate
 regions for engineering review; a high score or a distant named anchor is not an automatic product verdict. Inspect the
@@ -59,9 +61,10 @@ term for a coordinate-driven generic sample; it is a research queue, not an auto
 
 Candidate discovery uses an audit-only vocabulary normalizer that is intentionally broader than the shipped term enum.
 This prevents current product vocabulary from defining its own research questions. Candidate profiles group recurring
-names across datasets, report medoid/dispersion and production-family coverage, and remain evidence for review rather
-than generated runtime definitions. Region explanations identify the winning stable term/region and why competitors
-failed (`parent-family`, `role`, `lightness`, `chroma`, or `hue`).
+names across datasets, report medoid/dispersion and production-family coverage, and deterministically extract compact
+fixed-radius OKLab components before marking remote anchors as noise. They remain evidence for review rather than
+generated runtime definitions. Region explanations identify the winning stable term/region and why competitors failed
+(`parent-family`, `role`, `lightness`, `chroma`, or `hue`).
 
 ## Optional reference cache
 

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Fovium.ColorPicking;
 using Fovium.Tools.ColorTaxonomyAudit;
 
 namespace Fovium.Tests.ColorPicking;
@@ -237,6 +238,39 @@ public sealed class ColorTaxonomyAuditTests
     }
 
     [Fact]
+    public void VocabularyCandidateProfilesSeparateCompactComponentsFromRemoteNoiseDeterministically()
+    {
+        var anchors = new[]
+        {
+            CreateSpecificReference("xkcd", "gold", new AuditRgb(238, 190, 44), "Gold"),
+            CreateSpecificReference("meodai", "golden yellow", new AuditRgb(244, 193, 38), "Gold"),
+            CreateSpecificReference("xkcd", "dark gold", new AuditRgb(164, 126, 23), "Gold"),
+            CreateSpecificReference("meodai", "antique gold", new AuditRgb(170, 132, 29), "Gold"),
+            CreateSpecificReference("meodai", "green gold noise", new AuditRgb(85, 142, 53), "Gold")
+        };
+        var catalog = new ReferenceCatalog(anchors, []);
+
+        var profile = Assert.Single(VocabularyCandidateAudit.Analyze(catalog));
+
+        Assert.Equal(2, profile.Components.Count);
+        Assert.Equal(1, profile.NoiseAnchorCount);
+        Assert.All(profile.Components, component =>
+        {
+            Assert.Equal(2, component.AnchorCount);
+            Assert.Equal(2, component.DatasetSupport);
+            Assert.Equal(["meodai", "xkcd"], component.SupportingDatasets);
+            Assert.Contains(component.Representative.Rgb, anchors.Select(anchor => anchor.Rgb));
+        });
+        Assert.Equal(
+            profile.Components.OrderByDescending(component => component.DatasetSupport)
+                .ThenByDescending(component => component.AnchorCount)
+                .ThenBy(component => component.Representative.Rgb.Packed)
+                .Select(component => component.Representative.Rgb)
+                .ToArray(),
+            profile.Components.Select(component => component.Representative.Rgb).ToArray());
+    }
+
+    [Fact]
     public void ProfessionalExplanationReportsWinningCompositeRegionAndRejectedCompetitor()
     {
         var explanation = new ProductionColorAdapter().ExplainProfessional(new AuditRgb(176, 224, 230));
@@ -248,6 +282,41 @@ public sealed class ColorTaxonomyAuditTests
             item.RegionStableId == "professional-powder-blue-blue" &&
             !item.Matched &&
             item.FailureReason == "parent-family");
+    }
+
+    [Fact]
+    public void ProfessionalBoundaryProbesCoverEveryRegionAndRemainDeterministic()
+    {
+        var first = ProfessionalShadeBoundaryAudit.Analyze(new ProductionColorAdapter());
+        var repeated = ProfessionalShadeBoundaryAudit.Analyze(new ProductionColorAdapter());
+        var regionIds = ProfessionalShadeCatalog.Definitions
+            .SelectMany(definition => definition.Regions)
+            .Select(region => region.StableId)
+            .ToArray();
+
+        Assert.Equal(
+            first.Select(item => (item.Region, item.Sample.Rgb.Packed)),
+            repeated.Select(item => (item.Region, item.Sample.Rgb.Packed)));
+        Assert.Equal(first.Count, first.Select(item => item.Region).Distinct().Count());
+        Assert.All(regionIds, regionId => Assert.Contains(first, item => item.Region.StartsWith(regionId + ":")));
+        Assert.Contains(first, item => item.Region == "professional-gold-yellow:hue-low-inside");
+        Assert.Contains(
+            first,
+            item => item.Region.StartsWith("professional-gold-yellow:hue-") &&
+                    item.Region.EndsWith("-outside"));
+        Assert.Contains(first, item =>
+            item is { Region: "professional-copper-core:center", Sample.ProfessionalTerm: "Copper" });
+        Assert.Contains(first, item =>
+            item is { Region: "professional-caramel-core:center", Sample.ProfessionalTerm: "Caramel" });
+        Assert.All(
+            first.Where(item => item.Sample.ProfessionalTerm is not null),
+            item => Assert.NotNull(item.ProfessionalExplanation));
+        Assert.Contains(first, item =>
+            item is
+            {
+                Region: "professional-caramel-core:center",
+                ProfessionalExplanation.WinnerRegionStableId: "professional-caramel-core"
+            });
     }
 
     [Theory]
@@ -333,7 +402,9 @@ public sealed class ColorTaxonomyAuditTests
             Assert.True(File.Exists(Path.Combine(firstDirectory, "reference-disagreements.html")));
             Assert.True(File.Exists(Path.Combine(firstDirectory, "vocabulary-gaps.html")));
             Assert.True(File.Exists(Path.Combine(firstDirectory, "vocabulary-candidates.html")));
+            Assert.True(File.Exists(Path.Combine(firstDirectory, "vocabulary-candidate-components.html")));
             Assert.True(File.Exists(Path.Combine(firstDirectory, "professional-terms.html")));
+            Assert.True(File.Exists(Path.Combine(firstDirectory, "professional-boundary-probes.html")));
             Assert.True(File.Exists(Path.Combine(firstDirectory, "holdout-samples.svg")));
             Assert.True(File.Exists(Path.Combine(firstDirectory, "changed-regions.html")));
         }
@@ -372,11 +443,11 @@ public sealed class ColorTaxonomyAuditTests
             Assert.Contains("Mode: Fast", output.ToString());
             Assert.True(File.Exists(Path.Combine(directory, "summary.json")));
             using var json = JsonDocument.Parse(File.ReadAllText(Path.Combine(directory, "summary.json")));
-            Assert.Equal("fovium-color-taxonomy-audit/v4", json.RootElement.GetProperty("schema").GetString());
+            Assert.Equal("fovium-color-taxonomy-audit/v5", json.RootElement.GetProperty("schema").GetString());
             Assert.True(json.RootElement.GetProperty("balancedCohort").GetArrayLength() > 300);
             Assert.True(json.RootElement.GetProperty("specificity").GetProperty("genericFamilyOnly").GetInt32() > 0);
-            Assert.Equal(33, json.RootElement.GetProperty("professionalTermSamples").GetArrayLength());
-            Assert.Equal(33, json.RootElement.GetProperty("professionalTermCoverage").EnumerateObject().Count());
+            Assert.Equal(43, json.RootElement.GetProperty("professionalTermSamples").GetArrayLength());
+            Assert.Equal(41, json.RootElement.GetProperty("professionalTermCoverage").EnumerateObject().Count());
         }
         finally
         {

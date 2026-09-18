@@ -85,6 +85,15 @@ internal static class AuditReportWriter
                 $"{item.DatasetSupport} datasets · {item.AnchorCount} anchors · p90 ΔE {item.P90DeltaE:0.000}")));
         WriteSampleSheet(
             directory,
+            "vocabulary-candidate-components",
+            "Compact components inside recurring vocabulary candidates",
+            report.VocabularyCandidates.SelectMany(item => item.Components.Select(component => new SheetItem(
+                $"{item.SpecificTerm} · component {component.ComponentIndex}",
+                component.Representative,
+                null,
+                $"{component.DatasetSupport} datasets · {component.AnchorCount} anchors · p90 ΔE {component.P90DeltaE:0.000} · noise {item.NoiseAnchorCount}"))));
+        WriteSampleSheet(
+            directory,
             "professional-terms",
             "Accepted professional-term reference anchors",
             report.ProfessionalTermSamples.Select(item => new SheetItem(
@@ -92,6 +101,15 @@ internal static class AuditReportWriter
                 item.Sample,
                 item.Reference,
                 $"Base family: {item.Sample.Family} · region: {item.ProfessionalExplanation?.WinnerRegionStableId}")));
+        WriteSampleSheet(
+            directory,
+            "professional-boundary-probes",
+            "Professional-term boundary and counterexample probes",
+            report.ProfessionalBoundarySamples.Select(item => new SheetItem(
+                item.Region,
+                item.Sample,
+                null,
+                $"Resolved: {item.Sample.ProfessionalTerm ?? item.Sample.Family} · winner: {item.ProfessionalExplanation?.WinnerRegionStableId ?? "fallback"}")));
         WriteSampleSheet(
             directory,
             "holdout-samples",
@@ -296,6 +314,21 @@ internal static class AuditReportWriter
         {
             builder.AppendLine(
                 $"| {candidate.SpecificTerm} | {candidate.IsShippedTerm} | {candidate.DatasetSupport} | {candidate.AnchorCount} | {candidate.Representative.Rgb.Hex} | {candidate.MedianDeltaE:0.000} | {candidate.P90DeltaE:0.000} | {EscapeMarkdown(string.Join(", ", candidate.ProductionFamilyCoverage.Select(pair => $"{pair.Key}={pair.Value}")))} |");
+        }
+
+        builder.AppendLine();
+        builder.AppendLine("### Compact candidate components");
+        builder.AppendLine();
+        builder.AppendLine(
+            "| Candidate | Component | Datasets | Anchors | Medoid | P90 ΔE | Noise | Production families |");
+        builder.AppendLine("| --- | ---: | ---: | ---: | --- | ---: | ---: | --- |");
+        foreach (var candidate in report.VocabularyCandidates)
+        {
+            foreach (var component in candidate.Components)
+            {
+                builder.AppendLine(
+                    $"| {candidate.SpecificTerm} | {component.ComponentIndex} | {component.DatasetSupport} | {component.AnchorCount} | {component.Representative.Rgb.Hex} | {component.P90DeltaE:0.000} | {candidate.NoiseAnchorCount} | {EscapeMarkdown(string.Join(", ", component.ProductionFamilyCoverage.Select(pair => $"{pair.Key}={pair.Value}")))} |");
+            }
         }
 
         builder.AppendLine();

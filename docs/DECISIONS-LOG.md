@@ -677,7 +677,7 @@ evidence only; no downloaded name list enters runtime, and ambiguous colors inte
 
 ## D-065 — Professional terms may own multiple bounded, explainable regions
 
-Status: Implemented in the local R8-A-F8 candidate; owner acceptance pending.
+Status: Implemented and accepted in pushed R8-A-F8.
 
 A conventional professional term may occupy more than one related OKLCH lobe. The stable term owns its localization
 and one or more independently identified bounded regions; each region owns parent families, eligible roles, bounds, and
@@ -690,3 +690,17 @@ and measures indexed classification separately from report generation. Candidate
 than limited to the current production enum. New terms still require independent evidence, rendered review, reachable
 regions, non-conflicting priorities, adjacent controls, and canonical plus unseen-holdout audits; external vocabularies
 remain non-runtime evidence rather than product truth.
+
+## D-066 — Multimodal reference names are evaluated as compact evidence components
+
+Status: Implemented in the local R8-A-F9 candidate; owner acceptance pending.
+
+Developer-side vocabulary discovery may split one recurring external name into deterministic compact OKLab components.
+Each component reports independent-dataset support, dispersion, a representative swatch, production-family coverage,
+and discarded remote noise. This prevents a broad or material-derived word such as Gold, Khaki, Mauve, or Celadon from
+being treated as one authoritative rectangular color region.
+
+Components remain research evidence, not generated runtime definitions. Production accepts only project-owned bounded
+cores after dictionary/web triangulation, visual contact-sheet inspection, sibling counterexample checks, canonical
+audit comparison, and two post-tuning holdouts. The runtime remains deterministic, offline, indexed by broad family,
+and independent of all downloaded reference data.

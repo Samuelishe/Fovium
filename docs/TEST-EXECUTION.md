@@ -227,6 +227,14 @@ for accepted anchors, renders a vocabulary-candidate contact sheet, and benchmar
 excluding timing from the deterministic signature. Focused tests additionally require every declared region to win at
 an interior point, exercise both lobes of composite definitions, and pin both sides of meaningful hue/chroma edges.
 
+R8-A-F9 advances the report to schema v5. Candidate profiles deterministically split recurring names into compact
+fixed-radius OKLab components, report independent-dataset support and discarded noise, and render a separate component
+contact sheet so multimodal names do not force one oversized production region. Every declared professional region also
+gets deterministic center and inside/outside L/C/h probes in a machine-readable and rendered counterexample sheet.
+Focused tests cover component determinism, remote-noise rejection, all-region probe coverage, sibling preservation,
+new composite identities, exact supported anchors, EN/RU display strings, and boundary transitions. External caches
+remain optional and ordinary CI remains offline.
+
 R8-B-P1 adds deterministic in-memory tests for bounded ICC display-profile validation, content identity, active-monitor
 largest-intersection/tie behavior, typed fallback precedence, complete transform-key equality, Skia destination/alpha
 behavior, and source-versus-destination ownership. The final domain-independence test proves that two destination

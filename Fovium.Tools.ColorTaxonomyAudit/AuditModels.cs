@@ -61,6 +61,21 @@ internal sealed record VocabularyCandidateProfile(
     double P90DeltaE,
     bool IsShippedTerm,
     AuditClassification Representative,
+    IReadOnlyDictionary<string, int> ProductionFamilyCoverage)
+{
+    public IReadOnlyList<VocabularyCandidateComponentProfile> Components { get; init; } = [];
+
+    public int NoiseAnchorCount { get; init; }
+}
+
+internal sealed record VocabularyCandidateComponentProfile(
+    int ComponentIndex,
+    int AnchorCount,
+    int DatasetSupport,
+    IReadOnlyList<string> SupportingDatasets,
+    double MedianDeltaE,
+    double P90DeltaE,
+    AuditClassification Representative,
     IReadOnlyDictionary<string, int> ProductionFamilyCoverage);
 
 internal sealed record AuditReferenceAssessment(
@@ -183,6 +198,8 @@ internal sealed record AuditReport(
     public IReadOnlyList<VocabularyCandidateProfile> VocabularyCandidates { get; init; } = [];
 
     public IReadOnlyList<OwnerCandidateSample> ProfessionalTermSamples { get; init; } = [];
+
+    public IReadOnlyList<OwnerCandidateSample> ProfessionalBoundarySamples { get; init; } = [];
 
     public IReadOnlyDictionary<string, int> ProfessionalTermCoverage { get; init; } =
         new Dictionary<string, int>(StringComparer.Ordinal);

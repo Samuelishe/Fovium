@@ -123,13 +123,20 @@ matches, its concise human term becomes the primary inspector/history name; the 
 and fallback outside well-supported regions. Definitions remain pre-indexed by parent family, so selecting history or
 rendering the UI does not scan external data, resample the image, or rerun creative matching.
 
+R8-A-F9 expands the same layer from 33 to 41 terms and from 34 to 44 regions with Gold, Khaki, Copper, Mahogany,
+Caramel, Lemon, Jade, and Royal Blue. Gold and Khaki use two independently bounded evidence lobes; the other additions
+use conservative conventional cores. Overlapping sibling regions retain explicit priorities and boundary controls, and
+unsupported colors continue to fall back to an existing professional term or broad family rather than receiving false
+specificity.
+
 Developer changes to this taxonomy use the reproducible audit route documented in
 [`../eng/color-taxonomy-audit/README.md`](../eng/color-taxonomy-audit/README.md).
 Its structured in-gamut grid, fixed-seed RGB sampling, boundary refinement,
 topology checks, coordinate-driven balanced hue/lightness/chroma cohort,
-family profiles, reference-driven vocabulary-candidate discovery, specificity/vocabulary-gap reporting, region
-explanations, accepted-term coverage, measured classification cost, and optional named-color neighbors exercise the
-production classifier. Independent holdout seeds validate corrections after tuning.
+family profiles, component-aware reference-driven vocabulary-candidate discovery, specificity/vocabulary-gap reporting,
+region explanations, accepted-term coverage, automatic region-boundary/counterexample probes, measured classification
+cost, and optional named-color neighbors exercise the production classifier. Independent holdout seeds validate
+corrections after tuning.
 External names rank suspicious regions only; they do not override
 the project-owned taxonomy or become runtime data.
 
