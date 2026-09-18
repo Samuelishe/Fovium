@@ -235,6 +235,13 @@ Focused tests cover component determinism, remote-noise rejection, all-region pr
 new composite identities, exact supported anchors, EN/RU display strings, and boundary transitions. External caches
 remain optional and ordinary CI remains offline.
 
+R8-A-F10 advances the report to schema v6. Every deep sample records all matching professional terms, producing a
+deterministic ranked winner/competitor overlap report plus per-region matched, winning, and shadowed counts. The report
+also renders a campaign sheet for the newest accepted anchors. Focused tests require complete region accounting,
+deterministic pair ranking, unique priorities, reachable composite lobes, independently justified anchors, EN/RU output,
+and preserved sibling controls. Canonical and two post-tuning holdouts must retain topology metrics and report zero
+shadowed regions; ordinary CI remains offline and does not consume generated reports or external caches.
+
 R8-B-P1 adds deterministic in-memory tests for bounded ICC display-profile validation, content identity, active-monitor
 largest-intersection/tie behavior, typed fallback precedence, complete transform-key equality, Skia destination/alpha
 behavior, and source-versus-destination ownership. The final domain-independence test proves that two destination

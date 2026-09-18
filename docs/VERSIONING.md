@@ -161,6 +161,7 @@ never reuse an earlier version. No automatic rollover after BUILD `9999` is defi
 | `0.1.2.0009` | R8-A-F7                               | Declarative professional Color Inspector shade taxonomy and specificity/vocabulary-gap audit                                    |
 | `0.1.2.0010` | R8-A-F8                               | Second professional-shade vocabulary wave, composite regions, and explainable candidate audit                                   |
 | `0.1.2.0011` | R8-A-F9                               | Third professional-shade vocabulary wave and component-aware counterexample audit                                               |
+| `0.1.2.0012` | R8-A-F10                              | Multi-domain professional-shade expansion and global overlap audit                                                              |
 
 The `0.0.0.xxxx` line records the completed foundation and early product-construction checkpoints. The explicit
 owner-controlled `0.1.0.0000` transition marks the first substantial usable Fovium alpha; it does not claim feature
@@ -169,7 +170,7 @@ completeness, a stable API, production release status, or `1.0` quality. Current
 
 ## Current checkpoint
 
-R8-A-F9 is the locally complete Color Inspector professional-vocabulary refinement at `0.1.2.0011`. It increments
+R8-A-F10 is the locally complete Color Inspector professional-vocabulary refinement at `0.1.2.0012`. It increments
 BUILD within PATCH `0.1.2` because it expands and validates the accepted Color Inspector naming capability without
 introducing a separate standalone viewer feature.
 
@@ -179,9 +180,9 @@ The root `Directory.Build.props` is the canonical source for the current compone
 supplies the production `Fovium` assembly with:
 
 ```text
-InformationalVersion = 0.1.2.0011
-AssemblyVersion      = 0.1.2.11
-FileVersion          = 0.1.2.11
+InformationalVersion = 0.1.2.0012
+AssemblyVersion      = 0.1.2.12
+FileVersion          = 0.1.2.12
 ```
 
 From that source:

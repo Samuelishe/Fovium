@@ -203,6 +203,9 @@ internal sealed record AuditReport(
 
     public IReadOnlyDictionary<string, int> ProfessionalTermCoverage { get; init; } =
         new Dictionary<string, int>(StringComparer.Ordinal);
+
+    public ProfessionalOverlapReport ProfessionalOverlaps { get; init; } =
+        new(0, 0, [], []);
 }
 
 internal sealed record AuditComparison(

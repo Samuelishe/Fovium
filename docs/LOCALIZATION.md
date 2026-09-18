@@ -76,6 +76,12 @@ Copper/Медный, Mahogany/Махагоновый, Caramel/Карамельн
 Blue/Королевский синий. Component and alias data used to evaluate those terms remains developer-only; locale-independent
 term identity and region geometry still resolve through one ordinary UI key at presentation time.
 
+R8-A-F10 expands the same paired domain to 72 terms. New English/Russian keys cover six semantic groups, including
+Lilac/Лиловый, Mauve/Розовато-лиловый, Cornflower Blue/Васильковый, Prussian Blue/Берлинская лазурь, Moss
+Green/Моховой зелёный, Saffron/Шафрановый, Burnt Sienna/Жжёная сиена, Vermilion/Киноварь, Eggshell/Яичная
+скорлупа, and Gunmetal Gray/Оружейно-серый. Every runtime identity still resolves through exactly one ordinary UI key;
+audit aliases, dictionary variants, and external source names remain developer-only.
+
 R9-A localizes Photo Presentation command/context-menu copy, its Viewing subsection, Edge margin label, and the
 explanation that the photograph stays inside the presentation margin while Matte does not change its scale. The stable
 `viewer.togglePhotoPresentation` identity, serialized property names, percentage value, and active session state are

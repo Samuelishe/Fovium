@@ -693,7 +693,7 @@ remain non-runtime evidence rather than product truth.
 
 ## D-066 — Multimodal reference names are evaluated as compact evidence components
 
-Status: Implemented in the local R8-A-F9 candidate; owner acceptance pending.
+Status: Implemented and accepted in pushed R8-A-F9.
 
 Developer-side vocabulary discovery may split one recurring external name into deterministic compact OKLab components.
 Each component reports independent-dataset support, dispersion, a representative swatch, production-family coverage,
@@ -704,3 +704,18 @@ Components remain research evidence, not generated runtime definitions. Producti
 cores after dictionary/web triangulation, visual contact-sheet inspection, sibling counterexample checks, canonical
 audit comparison, and two post-tuning holdouts. The runtime remains deterministic, offline, indexed by broad family,
 and independent of all downloaded reference data.
+
+## D-067 — Professional vocabulary grows by semantic-domain campaigns with global overlap evidence
+
+Status: Implemented in the local R8-A-F10 candidate; owner acceptance pending.
+
+Professional-vocabulary work is organized by semantic domain rather than by a target coverage percentage. Each domain
+uses recurring reference components, conventional-language research, rendered swatches, sibling controls, and bounded
+production regions; ambiguous, duplicate, material-dependent, or visually incoherent candidates retain the broad-family
+fallback. EN and RU names ship together, while aliases and source evidence remain audit-only.
+
+As the catalog grows, overlap is expected between useful sibling terms and is no longer evaluated only through selected
+anchors. The deep audit records all matching terms for every sample, ranks winner/competitor pairs, and reports each
+region's matched and winning volume. A region must be reachable, priorities must be unique, and a shadowed region is a
+catalog defect. This evidence preserves deterministic parent-family-indexed runtime classification without requiring a
+new geometry engine or importing external datasets into the viewer.

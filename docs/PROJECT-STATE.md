@@ -7,12 +7,12 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R8-A-F9 is the locally complete third Color Inspector professional-vocabulary checkpoint at `0.1.2.0011`, following
-pushed and hosted-green R8-A-F8 `0.1.2.0010`. It preserves the stable broad OKLCH geometry while expanding the
-declarative, locale-independent professional-shade layer from 33 to 41 bounded EN/RU terms and from 34 to 44
-independently explainable regions. The audit now separates multimodal reference vocabulary into compact deterministic
-components and probes every production region at its center and L/C/h boundaries. Sampling, history/session behavior,
-creative matching, and the 1,800 anchors remain unchanged.
+R8-A-F10 is the locally complete multi-domain Color Inspector professional-vocabulary checkpoint at `0.1.2.0012`,
+following pushed R8-A-F9 `0.1.2.0011`. It preserves the stable 45-family OKLCH geometry while expanding the declarative,
+locale-independent professional-shade layer from 41 to 72 bounded EN/RU terms and from 44 to 76 independently
+explainable regions. The audit now ranks global sibling-region overlap, proves every region remains reachable, and
+renders the current campaign as a dedicated review sheet. Sampling, history/session behavior, creative matching, and
+the 1,800 anchors remain unchanged.
 
 The retained R0 probe remains experimental evidence under `experiments/Fovium.RenderProbe`. Production code is the
 single `Fovium` assembly and does not depend on the experiment. The accepted R7-B hosted matrix restored, built, and
@@ -22,12 +22,10 @@ Windows at `RenderScaling = 1.00`.
 
 ## Current focus
 
-R8-A-F8 is pushed at commit `6ce9b7a46e41ac6521c43f7b98c8535e972b2344`. GitHub CI run `35295496622` and Native
-libheif run `35295496588` passed all required Windows, Ubuntu, macOS, and RID jobs. Native Little CMS did not run
-because the F8 commit did not touch its filtered paths; its last applicable run `35278079374` remains green. R8-A-F9 is
-locally ready for owner review with reproducible same-seed before/after and two independent holdout audits. No
-hosted-green
-claim applies to `0.1.2.0011` until a future push and GitHub rerun.
+R8-A-F9 is pushed at commit `5e021104476d1545af6d07c16c75581ce813039d`. Hosted workflows were intentionally not
+polled for this local campaign. R8-A-F10 is locally ready for owner review with reproducible same-seed before/after,
+two independent holdout audits, global overlap evidence, and a complete local Release verification. No hosted-green
+claim applies to `0.1.2.0012` until a future push and GitHub rerun.
 
 ## Implemented application functionality
 

@@ -129,13 +129,22 @@ use conservative conventional cores. Overlapping sibling regions retain explicit
 unsupported colors continue to fall back to an existing professional term or broad family rather than receiving false
 specificity.
 
+R8-A-F10 performs a complete semantic-domain campaign rather than optimizing a coverage target. The same declarative
+layer now contains 72 terms and 76 regions, adding conventional purple/pink, blue, green, earth/brown, red/orange, and
+neutral vocabulary such as Lilac, Mauve, Plum, Cornflower Blue, Prussian Blue, Moss Green, Saffron, Sienna, Vermilion,
+Eggshell, Mushroom, and Gunmetal Gray. Mauve uses two related lobes; all other additions use bounded cores. A global
+sampled-volume overlap report ranks intentional sibling competition, verifies unique priority winners, and rejects any
+region that never wins. Generic broad-family fallback remains preferable to a weak, material-dependent, or ambiguous
+term.
+
 Developer changes to this taxonomy use the reproducible audit route documented in
 [`../eng/color-taxonomy-audit/README.md`](../eng/color-taxonomy-audit/README.md).
 Its structured in-gamut grid, fixed-seed RGB sampling, boundary refinement,
 topology checks, coordinate-driven balanced hue/lightness/chroma cohort,
 family profiles, component-aware reference-driven vocabulary-candidate discovery, specificity/vocabulary-gap reporting,
-region explanations, accepted-term coverage, automatic region-boundary/counterexample probes, measured classification
-cost, and optional named-color neighbors exercise the production classifier. Independent holdout seeds validate
+region explanations, accepted-term coverage, automatic region-boundary/counterexample probes, global professional-term
+overlap/reachability analysis, measured classification cost, and optional named-color neighbors exercise the production
+classifier. Independent holdout seeds validate
 corrections after tuning.
 External names rank suspicious regions only; they do not override
 the project-owned taxonomy or become runtime data.

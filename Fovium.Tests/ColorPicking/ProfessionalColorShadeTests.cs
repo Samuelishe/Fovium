@@ -71,6 +71,44 @@ public sealed class ProfessionalColorShadeTests
     }
 
     [Theory]
+    [InlineData("#C8A2C8", "Lilac")]
+    [InlineData("#6C5472", "Mauve")]
+    [InlineData("#A98691", "Mauve")]
+    [InlineData("#612246", "Plum")]
+    [InlineData("#DA70D6", "Orchid")]
+    [InlineData("#9966CC", "Amethyst")]
+    [InlineData("#3D0734", "Aubergine")]
+    [InlineData("#6495ED", "CornflowerBlue")]
+    [InlineData("#191970", "MidnightBlue")]
+    [InlineData("#003153", "PrussianBlue")]
+    [InlineData("#120A8F", "Ultramarine")]
+    [InlineData("#89CFF0", "BabyBlue")]
+    [InlineData("#005F6A", "PetrolBlue")]
+    [InlineData("#8A9A5B", "Moss")]
+    [InlineData("#355E3B", "HunterGreen")]
+    [InlineData("#4F7942", "Fern")]
+    [InlineData("#568203", "Avocado")]
+    [InlineData("#2E8B57", "SeaGreen")]
+    [InlineData("#F4C430", "Saffron")]
+    [InlineData("#EAA221", "Marigold")]
+    [InlineData("#7B3F00", "Chocolate")]
+    [InlineData("#A85624", "Cinnamon")]
+    [InlineData("#A0522D", "Sienna")]
+    [InlineData("#E97451", "BurntSienna")]
+    [InlineData("#704214", "Sepia")]
+    [InlineData("#954535", "Chestnut")]
+    [InlineData("#E34234", "Vermilion")]
+    [InlineData("#960018", "Carmine")]
+    [InlineData("#FF6347", "Tomato")]
+    [InlineData("#F0EAD6", "Eggshell")]
+    [InlineData("#BDACA3", "Mushroom")]
+    [InlineData("#2A3439", "Gunmetal")]
+    public void MultiWaveIndependentReferenceAnchorsResolveConventionalTerms(string hex, string expectedTerm)
+    {
+        Assert.Equal(expectedTerm, Describe(hex).ProfessionalTerm?.ToString());
+    }
+
+    [Theory]
     [InlineData("#341D6D")]
     [InlineData("#FF0000")]
     [InlineData("#FF00FF")]
@@ -83,6 +121,7 @@ public sealed class ProfessionalColorShadeTests
     [InlineData("#ADF0D1")]
     [InlineData("#378050")]
     [InlineData("#6BC59A")]
+    [InlineData("#B09E8A")]
     public void SpecificTermsDoNotConsumeAcceptedGenericOrAdjacentControls(string hex)
     {
         Assert.Null(Describe(hex).ProfessionalTerm);
@@ -94,10 +133,10 @@ public sealed class ProfessionalColorShadeTests
         var definitions = ProfessionalShadeCatalog.Definitions;
         var regions = definitions.SelectMany(definition => definition.Regions).ToArray();
 
-        Assert.Equal(41, definitions.Count);
+        Assert.Equal(72, definitions.Count);
         Assert.Equal(definitions.Count, definitions.Select(item => item.StableId).Distinct().Count());
         Assert.Equal(definitions.Count, definitions.Select(item => item.Term).Distinct().Count());
-        Assert.Equal(44, regions.Length);
+        Assert.Equal(76, regions.Length);
         Assert.Equal(regions.Length, regions.Select(item => item.StableId).Distinct().Count());
         Assert.Equal(regions.Length, regions.Select(item => item.Priority).Distinct().Count());
         Assert.All(definitions, definition =>
@@ -140,6 +179,7 @@ public sealed class ProfessionalColorShadeTests
     [Theory]
     [InlineData(ProfessionalColorTerm.Gold, "professional-gold", 2)]
     [InlineData(ProfessionalColorTerm.Khaki, "professional-khaki", 2)]
+    [InlineData(ProfessionalColorTerm.Mauve, "professional-mauve", 2)]
     public void ThirdWaveCompositeTermsKeepOneIdentityAcrossEvidenceLobes(
         object term,
         string stableId,
@@ -292,6 +332,30 @@ public sealed class ProfessionalColorShadeTests
     [InlineData("#00A86B", "Jade", "Нефритовый")]
     [InlineData("#4169E1", "Royal blue", "Королевский синий")]
     public void ThirdWavePrimaryNamesAreConciseReviewedEnglishAndRussian(
+        string hex,
+        string englishName,
+        string russianName)
+    {
+        var description = Describe(hex);
+        var english = new PerceptualColorNameResolver(Localizer.Create(CultureInfo.GetCultureInfo("en-US")));
+        var russian = new PerceptualColorNameResolver(Localizer.Create(CultureInfo.GetCultureInfo("ru-RU")));
+
+        Assert.Equal(englishName, english.ResolveShort(description));
+        Assert.Equal(englishName, english.ResolveDetailed(description));
+        Assert.Equal(russianName, russian.ResolveShort(description));
+        Assert.Equal(russianName, russian.ResolveDetailed(description));
+    }
+
+    [Theory]
+    [InlineData("#C8A2C8", "Lilac", "Лиловый")]
+    [InlineData("#6C5472", "Mauve", "Розовато-лиловый")]
+    [InlineData("#6495ED", "Cornflower blue", "Васильковый")]
+    [InlineData("#4F7942", "Fern green", "Папоротниковый")]
+    [InlineData("#F4C430", "Saffron", "Шафрановый")]
+    [InlineData("#E34234", "Vermilion", "Киноварь")]
+    [InlineData("#F0EAD6", "Eggshell", "Яичная скорлупа")]
+    [InlineData("#2A3439", "Gunmetal gray", "Оружейно-серый")]
+    public void MultiWavePrimaryNamesAreConciseReviewedEnglishAndRussian(
         string hex,
         string englishName,
         string russianName)

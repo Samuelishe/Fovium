@@ -51,7 +51,15 @@ internal static class TaxonomyAnalyzer
         "#4B0082", "#B0E0E6", "#4682B4", "#6B8E23", "#00FF00", "#C1F80A",
         "#80F9AD", "#0047AB", "#007BA7", "#FE4B03", "#E17701", "#F29E8E",
         "#C0FA8B", "#FAF0E6", "#C0C0C0", "#FFD700", "#DBB40C", "#F0E68C",
-        "#C3B091", "#B87333", "#4A0100", "#AF6F09", "#FFF700", "#00A86B", "#4169E1"
+        "#C3B091", "#B87333", "#4A0100", "#AF6F09", "#FFF700", "#00A86B", "#4169E1",
+        "#C8A2C8", "#6C5472", "#A98691", "#612246", "#8E4585", "#DA70D6", "#E30B5D", "#9966CC",
+        "#3D0734", "#C9A0DC",
+        "#0F52BA", "#1560BD", "#6495ED", "#191970", "#003153", "#120A8F", "#89CFF0", "#005F6A",
+        "#8A9A5B", "#355E3B", "#4F7942", "#568203", "#01796F", "#2E8B57",
+        "#F4C430", "#EAA221", "#7B3F00", "#A85624", "#D2691E", "#A0522D", "#E97451", "#704214", "#954535",
+        "#CD7F32",
+        "#E34234", "#960018", "#D2042D", "#E0115F", "#FF6347", "#CB4154",
+        "#F0EAD6", "#F1E9D2", "#BDACA3", "#A6A397", "#2A3439"
     ];
 
     public static AuditReport Analyze(
@@ -144,7 +152,7 @@ internal static class TaxonomyAnalyzer
             runtimeSeconds);
 
         var report = new AuditReport(
-            "fovium-color-taxonomy-audit/v5",
+            "fovium-color-taxonomy-audit/v6",
             options.Mode.ToString(),
             options.Seed,
             options.Configuration,
@@ -182,6 +190,9 @@ internal static class TaxonomyAnalyzer
                 })
                 .ToArray(),
             ProfessionalBoundarySamples = ProfessionalShadeBoundaryAudit.Analyze(adapter),
+            ProfessionalOverlaps = ProfessionalShadeOverlapAudit.Analyze(
+                adapter,
+                all.Select(sample => sample.Rgb).ToArray()),
             ProfessionalTermCoverage = CountBy(
                 all.Where(sample => sample.ProfessionalTerm is not null),
                 sample => sample.ProfessionalTerm!)

@@ -103,6 +103,19 @@ internal static class AuditReportWriter
                 $"Base family: {item.Sample.Family} · region: {item.ProfessionalExplanation?.WinnerRegionStableId}")));
         WriteSampleSheet(
             directory,
+            "campaign-terms",
+            "Current campaign professional-term anchors",
+            report.ProfessionalTermSamples
+                .Where(item => item.ProfessionalExplanation?.Candidates.Any(candidate =>
+                    candidate.RegionStableId == item.ProfessionalExplanation.WinnerRegionStableId &&
+                    candidate.Priority >= 298) == true)
+                .Select(item => new SheetItem(
+                    item.Region,
+                    item.Sample,
+                    item.Reference,
+                    $"Base family: {item.Sample.Family} · region: {item.ProfessionalExplanation?.WinnerRegionStableId}")));
+        WriteSampleSheet(
+            directory,
             "professional-boundary-probes",
             "Professional-term boundary and counterexample probes",
             report.ProfessionalBoundarySamples.Select(item => new SheetItem(
@@ -132,6 +145,10 @@ internal static class AuditReportWriter
         File.WriteAllText(
             Path.Combine(directory, "family-profiles.html"),
             CreateFamilyProfilesHtml(report.FamilyProfiles),
+            new UTF8Encoding(false));
+        File.WriteAllText(
+            Path.Combine(directory, "professional-overlaps.html"),
+            CreateProfessionalOverlapsHtml(report.ProfessionalOverlaps),
             new UTF8Encoding(false));
 
         var deterministic = report with
@@ -204,6 +221,8 @@ internal static class AuditReportWriter
         AppendMetric(builder, "Medium-severity anomalies", report.Metrics.MediumSeverityAnomalies);
         builder.AppendLine(
             $"| Professional classifier benchmark | {report.Metrics.ProfessionalClassificationNanosecondsPerSample:0.0} ns/sample |");
+        AppendMetric(builder, "Samples matching multiple professional terms",
+            report.ProfessionalOverlaps.SamplesWithMultipleTerms);
 
         if (report.References.Count > 0)
         {
@@ -260,6 +279,17 @@ internal static class AuditReportWriter
                      .ThenBy(pair => pair.Key, StringComparer.Ordinal))
         {
             builder.AppendLine($"| {term} | {count} | {(double)count / report.Metrics.TotalUniqueSamples:P2} |");
+        }
+
+        builder.AppendLine();
+        builder.AppendLine("## Professional-term overlaps");
+        builder.AppendLine();
+        builder.AppendLine("| Winner | Competing term | Samples | Representative |");
+        builder.AppendLine("| --- | --- | ---: | --- |");
+        foreach (var pair in report.ProfessionalOverlaps.Pairs.Take(100))
+        {
+            builder.AppendLine(
+                $"| {pair.WinnerTerm} | {pair.CompetingTerm} | {pair.SampleCount} | {pair.RepresentativeHex} |");
         }
 
         builder.AppendLine();
@@ -558,6 +588,28 @@ internal static class AuditReportWriter
                  <!doctype html><meta charset="utf-8"><title>Family semantic profiles</title>
                  <style>body{font:13px system-ui;margin:24px;background:#161616;color:#eee}table{border-collapse:collapse;width:100%}th,td{border-bottom:1px solid #444;padding:6px;text-align:left}</style>
                  <h1>Family semantic profiles</h1><table><thead><tr><th>Family</th><th>Samples</th><th>Incompatible rate</th><th>Competitor</th><th>Center</th><th>Edge</th><th>Dark/light</th><th>Low/high C</th></tr></thead><tbody>{{rows}}</tbody></table>
+                 """;
+    }
+
+    private static string CreateProfessionalOverlapsHtml(ProfessionalOverlapReport report)
+    {
+        var rows = string.Join(
+            Environment.NewLine,
+            report.Pairs.Select(pair =>
+                $"<tr><td><span class=\"swatch\" style=\"background:{pair.RepresentativeHex}\"></span></td>" +
+                $"<td>{Html(pair.WinnerTerm)}</td><td>{Html(pair.CompetingTerm)}</td>" +
+                $"<td>{pair.SampleCount}</td><td>{pair.RepresentativeHex}</td></tr>"));
+        var shadowed = string.Join(
+            ", ",
+            report.Regions.Where(region => region.IsShadowed).Select(region => region.RegionStableId));
+        return $$"""
+                 <!doctype html><meta charset="utf-8"><title>Professional shade overlaps</title>
+                 <style>body{font:13px system-ui;margin:24px;background:#161616;color:#eee}table{border-collapse:collapse;width:100%}
+                 th,td{border-bottom:1px solid #444;padding:6px;text-align:left}.swatch{display:block;width:54px;height:32px;border:1px solid #888}</style>
+                 <h1>Professional shade overlaps</h1>
+                 <p>{{report.SamplesWithMultipleTerms}} / {{report.SampleCount}} audited samples matched more than one term.</p>
+                 <p>Matched but never winning regions: {{Html(shadowed.Length == 0 ? "none" : shadowed)}}.</p>
+                 <table><thead><tr><th>Swatch</th><th>Winner</th><th>Competitor</th><th>Samples</th><th>Representative</th></tr></thead><tbody>{{rows}}</tbody></table>
                  """;
     }
 

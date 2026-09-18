@@ -47,11 +47,13 @@ dotnet run --project Fovium.Tools.ColorTaxonomyAudit -c Release -- --mode deep `
 Each run writes `summary.json`, `summary.md`, `summary.html`, `anomalies.csv`, `contact-sheet.svg`, balanced-spectrum,
 family-profile, owner-candidate, holdout, changed-region, reference-disagreement, vocabulary-gap, accepted
 professional-term, and professional-boundary views, plus reference-driven vocabulary-candidate and compact-component
-views and a deterministic SHA-256 signature.
+views, a current-campaign term sheet, a global professional-overlap report, and a deterministic SHA-256 signature.
 Runtime and the isolated indexed-classifier benchmark are retained in the reports but excluded from the signature.
-Schema v5 reports generic/existing-specific/professional/neutral coverage, per-term sampled coverage, candidate source
+Schema v6 reports generic/existing-specific/professional/neutral coverage, per-term sampled coverage, candidate source
 support/dispersion/components/noise, the winning/competing region explanation for accepted anchors, and deterministic
-center plus inside/outside L/C/h probes for every professional region. Reports rank abrupt semantic
+center plus inside/outside L/C/h probes for every professional region. It additionally counts every deep sample matching
+multiple professional terms, ranks winner/competitor pairs, and reports matched/winning/shadowed volume per region.
+Reports rank abrupt semantic
 neighbors, role/modifier reversals, lightness A→B→A paths, small connected components, thin slivers, broad family
 coverage, distance-gated k-nearest reference disagreements, and per-family semantic profiles. These signals locate
 regions for engineering review; a high score or a distant named anchor is not an automatic product verdict. Inspect the
@@ -65,6 +67,11 @@ names across datasets, report medoid/dispersion and production-family coverage, 
 fixed-radius OKLab components before marking remote anchors as noise. They remain evidence for review rather than
 generated runtime definitions. Region explanations identify the winning stable term/region and why competitors failed
 (`parent-family`, `role`, `lightness`, `chroma`, or `hue`).
+
+The overlap report is a conflict diagnostic rather than a prohibition on related regions. Intentional sibling overlap is
+valid when priority is unique, the winner is explainable, both regions remain reachable, and just-inside/outside
+controls
+remain coherent. Any shadowed region or equal-priority collision is a release-blocking catalog defect.
 
 ## Optional reference cache
 
