@@ -82,7 +82,21 @@ internal static class AuditReportWriter
                 item.SpecificTerm,
                 item.Representative,
                 null,
-                $"{item.DatasetSupport} datasets · {item.AnchorCount} anchors · p90 ΔE {item.P90DeltaE:0.000}")));
+                $"{item.DatasetSupport} datasets · {item.AnchorCount} anchors · p90 ΔE {item.P90DeltaE:0.000}",
+                "Aggregate reference cluster")));
+        WriteSampleSheet(
+            directory,
+            "vocabulary-frontier",
+            "Whole-catalog unshipped vocabulary frontier",
+            report.VocabularyCandidates
+                .Where(item => !item.IsShippedTerm)
+                .Take(50)
+                .Select(item => new SheetItem(
+                    item.SpecificTerm,
+                    item.Representative,
+                    null,
+                    $"{item.ResearchDomain} · {item.DatasetSupport} datasets · {item.AnchorCount} anchors · p90 ΔE {item.P90DeltaE:0.000}",
+                    "Aggregate reference cluster")));
         WriteSampleSheet(
             directory,
             "vocabulary-candidate-components",
@@ -91,7 +105,8 @@ internal static class AuditReportWriter
                 $"{item.SpecificTerm} · component {component.ComponentIndex}",
                 component.Representative,
                 null,
-                $"{component.DatasetSupport} datasets · {component.AnchorCount} anchors · p90 ΔE {component.P90DeltaE:0.000} · noise {item.NoiseAnchorCount}"))));
+                $"{component.DatasetSupport} datasets · {component.AnchorCount} anchors · p90 ΔE {component.P90DeltaE:0.000} · noise {item.NoiseAnchorCount}",
+                "Compact reference component"))));
         WriteSampleSheet(
             directory,
             "professional-terms",
@@ -284,12 +299,12 @@ internal static class AuditReportWriter
         builder.AppendLine();
         builder.AppendLine("## Professional-term overlaps");
         builder.AppendLine();
-        builder.AppendLine("| Winner | Competing term | Samples | Representative |");
-        builder.AppendLine("| --- | --- | ---: | --- |");
+        builder.AppendLine("| Severity | Winner | Competing term | Samples | Share | Representative |");
+        builder.AppendLine("| --- | --- | --- | ---: | ---: | --- |");
         foreach (var pair in report.ProfessionalOverlaps.Pairs.Take(100))
         {
             builder.AppendLine(
-                $"| {pair.WinnerTerm} | {pair.CompetingTerm} | {pair.SampleCount} | {pair.RepresentativeHex} |");
+                $"| {pair.Severity} | {pair.WinnerTerm} | {pair.CompetingTerm} | {pair.SampleCount} | {pair.SampleShare:P2} | {pair.RepresentativeHex} |");
         }
 
         builder.AppendLine();
@@ -338,12 +353,12 @@ internal static class AuditReportWriter
         builder.AppendLine("## Reference-driven vocabulary candidate clusters");
         builder.AppendLine();
         builder.AppendLine(
-            "| Candidate | Shipped | Datasets | Anchors | Medoid | Median ΔE | P90 ΔE | Production families |");
-        builder.AppendLine("| --- | --- | ---: | ---: | --- | ---: | ---: | --- |");
+            "| Candidate | Domain | Shipped | Datasets | Anchors | Medoid | Median ΔE | P90 ΔE | Production families |");
+        builder.AppendLine("| --- | --- | --- | ---: | ---: | --- | ---: | ---: | --- |");
         foreach (var candidate in report.VocabularyCandidates)
         {
             builder.AppendLine(
-                $"| {candidate.SpecificTerm} | {candidate.IsShippedTerm} | {candidate.DatasetSupport} | {candidate.AnchorCount} | {candidate.Representative.Rgb.Hex} | {candidate.MedianDeltaE:0.000} | {candidate.P90DeltaE:0.000} | {EscapeMarkdown(string.Join(", ", candidate.ProductionFamilyCoverage.Select(pair => $"{pair.Key}={pair.Value}")))} |");
+                $"| {candidate.SpecificTerm} | {candidate.ResearchDomain} | {candidate.IsShippedTerm} | {candidate.DatasetSupport} | {candidate.AnchorCount} | {candidate.Representative.Rgb.Hex} | {candidate.MedianDeltaE:0.000} | {candidate.P90DeltaE:0.000} | {EscapeMarkdown(string.Join(", ", candidate.ProductionFamilyCoverage.Select(pair => $"{pair.Key}={pair.Value}")))} |");
         }
 
         builder.AppendLine();
@@ -527,7 +542,7 @@ internal static class AuditReportWriter
                 $"<td>{Html(item.Label)}</td><td>{item.Sample.Rgb.Hex}</td>" +
                 $"<td>L {item.Sample.OklchL:P1} · C {item.Sample.OklchC:0.000} · h {item.Sample.OklchHue:0.0}°</td>" +
                 $"<td>{Html(item.Sample.Role)}</td><td>{Html(item.Sample.Family)}</td><td>{Html(item.Sample.Specificity)}</td>" +
-                $"<td>{Html(item.Sample.DetailedName)}</td><td>{Html(ReferenceSummary(item.Reference))}</td>" +
+                $"<td>{Html(item.Sample.DetailedName)}</td><td>{Html(EvidenceSummary(item))}</td>" +
                 $"<td>{Html(item.Note)}</td></tr>"));
         return $$"""
                  <!doctype html><meta charset="utf-8"><title>{{Html(title)}}</title>
@@ -567,7 +582,7 @@ internal static class AuditReportWriter
             builder.AppendLine(
                 $"<text class=\"small\" x=\"{x + 80}\" y=\"{y + 70}\">L {item.Sample.OklchL:P1} C {item.Sample.OklchC:0.000} h {item.Sample.OklchHue:0}°</text>");
             builder.AppendLine(
-                $"<text class=\"small\" x=\"{x + 8}\" y=\"{y + 91}\">{Xml(Trim(ReferenceSummary(item.Reference), 47))}</text>");
+                $"<text class=\"small\" x=\"{x + 8}\" y=\"{y + 91}\">{Xml(Trim(EvidenceSummary(item), 47))}</text>");
             builder.AppendLine(
                 $"<text class=\"small\" x=\"{x + 8}\" y=\"{y + 108}\">{Xml(Trim(item.Note, 47))}</text>");
         }
@@ -597,8 +612,8 @@ internal static class AuditReportWriter
             Environment.NewLine,
             report.Pairs.Select(pair =>
                 $"<tr><td><span class=\"swatch\" style=\"background:{pair.RepresentativeHex}\"></span></td>" +
-                $"<td>{Html(pair.WinnerTerm)}</td><td>{Html(pair.CompetingTerm)}</td>" +
-                $"<td>{pair.SampleCount}</td><td>{pair.RepresentativeHex}</td></tr>"));
+                $"<td>{Html(pair.Severity.ToString())}</td><td>{Html(pair.WinnerTerm)}</td><td>{Html(pair.CompetingTerm)}</td>" +
+                $"<td>{pair.SampleCount}</td><td>{pair.SampleShare:P2}</td><td>{pair.RepresentativeHex}</td></tr>"));
         var shadowed = string.Join(
             ", ",
             report.Regions.Where(region => region.IsShadowed).Select(region => region.RegionStableId));
@@ -609,7 +624,7 @@ internal static class AuditReportWriter
                  <h1>Professional shade overlaps</h1>
                  <p>{{report.SamplesWithMultipleTerms}} / {{report.SampleCount}} audited samples matched more than one term.</p>
                  <p>Matched but never winning regions: {{Html(shadowed.Length == 0 ? "none" : shadowed)}}.</p>
-                 <table><thead><tr><th>Swatch</th><th>Winner</th><th>Competitor</th><th>Samples</th><th>Representative</th></tr></thead><tbody>{{rows}}</tbody></table>
+                 <table><thead><tr><th>Swatch</th><th>Severity</th><th>Winner</th><th>Competitor</th><th>Samples</th><th>Share</th><th>Representative</th></tr></thead><tbody>{{rows}}</tbody></table>
                  """;
     }
 
@@ -622,11 +637,15 @@ internal static class AuditReportWriter
         ? string.Empty
         : string.Join(", ", reference.DatasetVotes.Select(pair => $"{pair.Key}:{pair.Value}"));
 
+    private static string EvidenceSummary(SheetItem item) =>
+        item.EvidenceSummary ?? ReferenceSummary(item.Reference);
+
     private sealed record SheetItem(
         string Label,
         AuditClassification Sample,
         AuditReferenceAssessment? Reference,
-        string Note);
+        string Note,
+        string? EvidenceSummary = null);
 
     private static string Csv(string value) => $"\"{value.Replace("\"", "\"\"")}\"";
 

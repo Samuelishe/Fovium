@@ -82,6 +82,11 @@ Green/Моховой зелёный, Saffron/Шафрановый, Burnt Sienna/
 скорлупа, and Gunmetal Gray/Оружейно-серый. Every runtime identity still resolves through exactly one ordinary UI key;
 audit aliases, dictionary variants, and external source names remain developer-only.
 
+R8-A-F11 expands the paired domain to 80 terms with Ruby/Рубиновый, Cranberry/Клюквенный,
+Viridian/Виридиановый, Celadon/Селадоновый, Antique White/Античный белый, Vanilla/Ванильный,
+Naples Yellow/Неаполитанский жёлтый, and Espresso/Эспрессо. Developer-only aliases and research-domain categories do
+not add UI keys or change the one-key-per-runtime-term contract.
+
 R9-A localizes Photo Presentation command/context-menu copy, its Viewing subsection, Edge margin label, and the
 explanation that the photograph stays inside the presentation margin while Matte does not change its scale. The stable
 `viewer.togglePhotoPresentation` identity, serialized property names, percentage value, and active session state are

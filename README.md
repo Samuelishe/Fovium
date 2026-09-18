@@ -51,10 +51,10 @@ and [imaging direction](docs/IMAGING-PIPELINE.md) for details.
 
 ## Current status
 
-The current locally complete checkpoint is **`0.1.2.0012`**. R8-A-F10 expands the declarative EN/RU Color Inspector
-professional-shade layer to 72 terms/76 regions across six semantic domains and adds a deterministic global overlap
-and reachability audit. R8-A-F9 is pushed at `5e02110`; hosted workflows were intentionally not polled for this local
-campaign. The local `0.1.2.0012` candidate is not yet pushed or hosted-verified. Owner-accepted
+The current locally complete checkpoint is **`0.1.2.0013`**. R8-A-F11 expands the declarative EN/RU Color Inspector
+professional-shade layer to 80 terms/84 regions and adds semantic-domain overlap severity plus a whole-catalog
+vocabulary-frontier report. R8-A-F10 is pushed at `5fce387`; hosted workflows were intentionally not polled for this
+campaign. The local `0.1.2.0013` candidate is not yet pushed or hosted-verified. Owner-accepted
 R6-A-F1 Photo
 Info/floating-drag behavior, R10-A-F1 photo-derived styling, R9-A-F2 Matte-independent Photo Presentation scale, R9-B-F1
 Slideshow layout independence, and R8-B-W1 ordinary-Windows-SDR Monitor Color Management remain unchanged; hosted and

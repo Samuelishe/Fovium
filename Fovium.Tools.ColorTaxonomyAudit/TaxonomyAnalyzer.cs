@@ -59,7 +59,8 @@ internal static class TaxonomyAnalyzer
         "#F4C430", "#EAA221", "#7B3F00", "#A85624", "#D2691E", "#A0522D", "#E97451", "#704214", "#954535",
         "#CD7F32",
         "#E34234", "#960018", "#D2042D", "#E0115F", "#FF6347", "#CB4154",
-        "#F0EAD6", "#F1E9D2", "#BDACA3", "#A6A397", "#2A3439"
+        "#F0EAD6", "#F1E9D2", "#BDACA3", "#A6A397", "#2A3439",
+        "#9E003A", "#40826D", "#ACE1AF", "#FAEBD7", "#F3E5AB", "#FADA5F", "#4E312D"
     ];
 
     public static AuditReport Analyze(
@@ -152,7 +153,7 @@ internal static class TaxonomyAnalyzer
             runtimeSeconds);
 
         var report = new AuditReport(
-            "fovium-color-taxonomy-audit/v6",
+            "fovium-color-taxonomy-audit/v7",
             options.Mode.ToString(),
             options.Seed,
             options.Configuration,

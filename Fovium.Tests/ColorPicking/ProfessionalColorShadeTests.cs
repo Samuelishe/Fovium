@@ -103,6 +103,14 @@ public sealed class ProfessionalColorShadeTests
     [InlineData("#F0EAD6", "Eggshell")]
     [InlineData("#BDACA3", "Mushroom")]
     [InlineData("#2A3439", "Gunmetal")]
+    [InlineData("#E0115F", "Ruby")]
+    [InlineData("#9E003A", "Cranberry")]
+    [InlineData("#40826D", "Viridian")]
+    [InlineData("#ACE1AF", "Celadon")]
+    [InlineData("#FAEBD7", "AntiqueWhite")]
+    [InlineData("#F3E5AB", "Vanilla")]
+    [InlineData("#FADA5F", "NaplesYellow")]
+    [InlineData("#4E312D", "Espresso")]
     public void MultiWaveIndependentReferenceAnchorsResolveConventionalTerms(string hex, string expectedTerm)
     {
         Assert.Equal(expectedTerm, Describe(hex).ProfessionalTerm?.ToString());
@@ -133,10 +141,10 @@ public sealed class ProfessionalColorShadeTests
         var definitions = ProfessionalShadeCatalog.Definitions;
         var regions = definitions.SelectMany(definition => definition.Regions).ToArray();
 
-        Assert.Equal(72, definitions.Count);
+        Assert.Equal(80, definitions.Count);
         Assert.Equal(definitions.Count, definitions.Select(item => item.StableId).Distinct().Count());
         Assert.Equal(definitions.Count, definitions.Select(item => item.Term).Distinct().Count());
-        Assert.Equal(76, regions.Length);
+        Assert.Equal(84, regions.Length);
         Assert.Equal(regions.Length, regions.Select(item => item.StableId).Distinct().Count());
         Assert.Equal(regions.Length, regions.Select(item => item.Priority).Distinct().Count());
         Assert.All(definitions, definition =>
@@ -323,6 +331,53 @@ public sealed class ProfessionalColorShadeTests
     }
 
     [Theory]
+    [InlineData(0.58, 0.22, 4.999, PerceptualHueFamily.Crimson, PerceptualColorRole.Chromatic, null)]
+    [InlineData(0.58, 0.22, 5.000, PerceptualHueFamily.Crimson, PerceptualColorRole.Chromatic,
+        ProfessionalColorTerm.Ruby)]
+    [InlineData(0.419999, 0.18, 12, PerceptualHueFamily.Crimson, PerceptualColorRole.Chromatic,
+        ProfessionalColorTerm.Wine)]
+    [InlineData(0.420000, 0.18, 12, PerceptualHueFamily.Crimson, PerceptualColorRole.Chromatic,
+        ProfessionalColorTerm.Cranberry)]
+    [InlineData(0.449999, 0.10, 166, PerceptualHueFamily.Turquoise, PerceptualColorRole.Chromatic, null)]
+    [InlineData(0.450000, 0.10, 166, PerceptualHueFamily.Turquoise, PerceptualColorRole.Chromatic,
+        ProfessionalColorTerm.Viridian)]
+    [InlineData(0.799999, 0.08, 146, PerceptualHueFamily.Green, PerceptualColorRole.Chromatic,
+        ProfessionalColorTerm.Sage)]
+    [InlineData(0.800000, 0.08, 146, PerceptualHueFamily.Green, PerceptualColorRole.Chromatic,
+        ProfessionalColorTerm.Celadon)]
+    [InlineData(0.934999, 0.03, 75, PerceptualHueFamily.Cream, PerceptualColorRole.NearWhite,
+        ProfessionalColorTerm.Eggshell)]
+    [InlineData(0.935000, 0.03, 75, PerceptualHueFamily.Cream, PerceptualColorRole.NearWhite,
+        ProfessionalColorTerm.AntiqueWhite)]
+    [InlineData(0.879999, 0.08, 96, PerceptualHueFamily.Yellow, PerceptualColorRole.Chromatic,
+        ProfessionalColorTerm.Khaki)]
+    [InlineData(0.880000, 0.08, 96, PerceptualHueFamily.Yellow, PerceptualColorRole.Chromatic,
+        ProfessionalColorTerm.Vanilla)]
+    [InlineData(0.90, 0.15, 97.999, PerceptualHueFamily.Yellow, PerceptualColorRole.Chromatic,
+        ProfessionalColorTerm.NaplesYellow)]
+    [InlineData(0.90, 0.15, 98.000, PerceptualHueFamily.Yellow, PerceptualColorRole.Chromatic,
+        ProfessionalColorTerm.Gold)]
+    [InlineData(0.399999, 0.05, 40, PerceptualHueFamily.Brown, PerceptualColorRole.Chromatic,
+        ProfessionalColorTerm.Espresso)]
+    [InlineData(0.400000, 0.05, 40, PerceptualHueFamily.Brown, PerceptualColorRole.Chromatic,
+        ProfessionalColorTerm.Chocolate)]
+    public void FourthWaveBoundariesPreserveExplicitSiblingFallbacks(
+        double lightness,
+        double chroma,
+        double hue,
+        object family,
+        object role,
+        object? expected)
+    {
+        Assert.Equal(
+            (ProfessionalColorTerm?)expected,
+            ProfessionalShadeClassifier.Classify(
+                new OklchColor(lightness, chroma, hue),
+                (PerceptualColorRole)role,
+                (PerceptualHueFamily)family));
+    }
+
+    [Theory]
     [InlineData("#FFD700", "Gold", "Золотистый")]
     [InlineData("#C3B091", "Khaki", "Хаки")]
     [InlineData("#B87333", "Copper", "Медный")]
@@ -355,6 +410,14 @@ public sealed class ProfessionalColorShadeTests
     [InlineData("#E34234", "Vermilion", "Киноварь")]
     [InlineData("#F0EAD6", "Eggshell", "Яичная скорлупа")]
     [InlineData("#2A3439", "Gunmetal gray", "Оружейно-серый")]
+    [InlineData("#E0115F", "Ruby", "Рубиновый")]
+    [InlineData("#9E003A", "Cranberry", "Клюквенный")]
+    [InlineData("#40826D", "Viridian", "Виридиановый")]
+    [InlineData("#ACE1AF", "Celadon", "Селадоновый")]
+    [InlineData("#FAEBD7", "Antique white", "Античный белый")]
+    [InlineData("#F3E5AB", "Vanilla", "Ванильный")]
+    [InlineData("#FADA5F", "Naples yellow", "Неаполитанский жёлтый")]
+    [InlineData("#4E312D", "Espresso", "Эспрессо")]
     public void MultiWavePrimaryNamesAreConciseReviewedEnglishAndRussian(
         string hex,
         string englishName,

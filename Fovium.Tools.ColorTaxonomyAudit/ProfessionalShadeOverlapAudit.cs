@@ -6,7 +6,9 @@ internal sealed record ProfessionalOverlapPair(
     string WinnerTerm,
     string CompetingTerm,
     int SampleCount,
-    string RepresentativeHex);
+    string RepresentativeHex,
+    double SampleShare,
+    ProfessionalOverlapSeverity Severity);
 
 internal sealed record ProfessionalRegionOverlapProfile(
     string RegionStableId,
@@ -83,12 +85,22 @@ internal static class ProfessionalShadeOverlapAudit
         return new ProfessionalOverlapReport(
             samples.Count,
             samplesWithMultipleTerms,
-            pairs.Select(item => new ProfessionalOverlapPair(
-                    item.Key.Winner,
-                    item.Key.Competitor,
-                    item.Value.Count,
-                    item.Value.Hex))
-                .OrderByDescending(item => item.SampleCount)
+            pairs.Select(item =>
+                {
+                    var share = (double)item.Value.Count / samples.Count;
+                    var semanticSeverity = ProfessionalTermResearchCatalog.ClassifyOverlap(
+                        item.Key.Winner,
+                        item.Key.Competitor);
+                    return new ProfessionalOverlapPair(
+                        item.Key.Winner,
+                        item.Key.Competitor,
+                        item.Value.Count,
+                        item.Value.Hex,
+                        share,
+                        share >= 0.01 ? ProfessionalOverlapSeverity.ExcessiveVolume : semanticSeverity);
+                })
+                .OrderByDescending(item => item.Severity)
+                .ThenByDescending(item => item.SampleCount)
                 .ThenBy(item => item.WinnerTerm, StringComparer.Ordinal)
                 .ThenBy(item => item.CompetingTerm, StringComparer.Ordinal)
                 .ToArray(),

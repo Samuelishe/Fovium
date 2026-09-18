@@ -66,6 +66,8 @@ internal sealed record VocabularyCandidateProfile(
     public IReadOnlyList<VocabularyCandidateComponentProfile> Components { get; init; } = [];
 
     public int NoiseAnchorCount { get; init; }
+
+    public string ResearchDomain { get; init; } = ProfessionalTermDomain.Other.ToString();
 }
 
 internal sealed record VocabularyCandidateComponentProfile(

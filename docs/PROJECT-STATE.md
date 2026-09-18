@@ -7,12 +7,12 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R8-A-F10 is the locally complete multi-domain Color Inspector professional-vocabulary checkpoint at `0.1.2.0012`,
-following pushed R8-A-F9 `0.1.2.0011`. It preserves the stable 45-family OKLCH geometry while expanding the declarative,
-locale-independent professional-shade layer from 41 to 72 bounded EN/RU terms and from 44 to 76 independently
-explainable regions. The audit now ranks global sibling-region overlap, proves every region remains reachable, and
-renders the current campaign as a dedicated review sheet. Sampling, history/session behavior, creative matching, and
-the 1,800 anchors remain unchanged.
+R8-A-F11 is the locally complete fourth Color Inspector professional-vocabulary campaign at `0.1.2.0013`, following
+pushed R8-A-F10 `0.1.2.0012` at `5fce387f0ae63a648e0a3d1d593f03a8716d98d0`. It preserves the stable 45-family OKLCH
+geometry while expanding the declarative, locale-independent professional-shade layer from 72 to 80 bounded EN/RU
+terms and from 76 to 84 independently explainable regions. The audit now groups developer-only aliases by semantic
+domain, ranks overlap severity, and renders the unshipped whole-catalog vocabulary frontier. Sampling, history/session
+behavior, creative matching, and the 1,800 anchors remain unchanged.
 
 The retained R0 probe remains experimental evidence under `experiments/Fovium.RenderProbe`. Production code is the
 single `Fovium` assembly and does not depend on the experiment. The accepted R7-B hosted matrix restored, built, and
@@ -22,10 +22,10 @@ Windows at `RenderScaling = 1.00`.
 
 ## Current focus
 
-R8-A-F9 is pushed at commit `5e021104476d1545af6d07c16c75581ce813039d`. Hosted workflows were intentionally not
-polled for this local campaign. R8-A-F10 is locally ready for owner review with reproducible same-seed before/after,
-two independent holdout audits, global overlap evidence, and a complete local Release verification. No hosted-green
-claim applies to `0.1.2.0012` until a future push and GitHub rerun.
+R8-A-F10 is pushed at commit `5fce387f0ae63a648e0a3d1d593f03a8716d98d0`. Hosted workflows were intentionally not
+polled for this campaign. R8-A-F11 is locally ready for owner review with reproducible same-seed before/after, two
+independent holdout audits, semantic overlap evidence, and a complete local Release verification. No hosted-green
+claim applies to `0.1.2.0013` until a future push and GitHub rerun.
 
 ## Implemented application functionality
 
@@ -135,11 +135,9 @@ claim applies to `0.1.2.0012` until a future push and GitHub rerun.
   perceptual roles and undertones, lightness-dependent neutral boundaries, bounded compound hue transitions, monotonic
   lightness/chroma classes, bounded warm-neutral/earth-tone, mint, and violet/lilac-gray families, a lightness-aware
   yellow-brown/ochre boundary that leaves greener olive controls intact, truthful Transparent
-  handling, and no proprietary physical-standard claims. A declarative professional-shade layer adds 41 bounded terms:
-  Lavender, Periwinkle, Navy, Azure, Sky Blue, Sage, Emerald, Forest Green, Aquamarine, Teal, Salmon, Wine, Rust,
-  Scarlet, Tangerine, Ivory, Charcoal, Slate, Indigo, Powder Blue, Steel Blue, Olive Drab, Lime, Chartreuse, Seafoam,
-  Cobalt Blue, Cerulean Blue, Blood Orange, Pumpkin, Blush, Pistachio, Linen, Silver, Gold, Khaki, Copper, Mahogany,
-  Caramel, Lemon, Jade, and Royal Blue. Composite regions may share
+  handling, and no proprietary physical-standard claims. A declarative professional-shade layer adds 80 bounded terms
+  across purple/pink, blue, green/cyan, yellow/earth, brown, red/orange, and neutral/off-white domains. R8-A-F11 adds
+  Ruby, Cranberry, Viridian, Celadon, Antique White, Vanilla, Naples Yellow, and Espresso. Composite regions may share
   one term identity without replacing broad-family identity or generic fallback; the embedded
   offline 1,800-entry creative catalog retains standard OKLab nearest matching, stable tie order, complete Russian
   stable-ID display names, and canonical-English fallback as secondary presentation data.
@@ -170,9 +168,10 @@ RAW, file associations/thumbnails, and monitor-aware output outside ordinary Win
   production-sampler evidence over bounded owner photographs, including 36 F4 points across 9 photographs, but final
   overlay balance,
   scroll/selection feel, semantic borderlines, real fractional-DPI, and Linux/macOS cursor/panel/input feel remain owner
-  visual-review territory. R8-A-F5/F6/F7/F8/F9 add systematic developer-side topology, balanced semantic-reference,
+  visual-review territory. R8-A-F5 through F11 add systematic developer-side topology, balanced semantic-reference,
   independent component-aware vocabulary-candidate, explainability, rendered contact-sheet, boundary-counterexample,
-  and holdout evidence, not cross-platform visual acceptance or an objective color-name ground truth.
+  overlap-severity, whole-catalog frontier, and holdout evidence, not cross-platform visual acceptance or an objective
+  color-name ground truth.
 - Codec support beyond JPEG/PNG/static WebP/bounded 8-bit TIFF/bounded HEIF/AVIF and a huge/region-rendered-image
   strategy remain unselected.
 - WebP EXIF orientation is not currently surfaced by SkiaSharp 3.119.4 `SKCodec.EncodedOrigin` in the controlled

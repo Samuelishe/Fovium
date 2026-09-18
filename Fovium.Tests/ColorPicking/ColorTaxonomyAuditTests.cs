@@ -214,7 +214,6 @@ public sealed class ColorTaxonomyAuditTests
     [InlineData("vermilion", "Vermilion")]
     [InlineData("carmine", "Carmine")]
     [InlineData("cherry red", "Cherry")]
-    [InlineData("ruby red", "Ruby")]
     [InlineData("tomato red", "Tomato")]
     [InlineData("ecru", "Ecru")]
     [InlineData("champagne", "Champagne")]
@@ -226,6 +225,19 @@ public sealed class ColorTaxonomyAuditTests
     [InlineData("dove gray", "DoveGray")]
     [InlineData("gunmetal", "Gunmetal")]
     [InlineData("espresso", "Espresso")]
+    [InlineData("ruby red", "Ruby")]
+    [InlineData("cranberry red", "Cranberry")]
+    [InlineData("viridian green", "Viridian")]
+    [InlineData("celadon green", "Celadon")]
+    [InlineData("bottle-green", "BottleGreen")]
+    [InlineData("antique white", "AntiqueWhite")]
+    [InlineData("vanilla cream", "Vanilla")]
+    [InlineData("naples yellow", "NaplesYellow")]
+    [InlineData("natural umber", "RawUmber")]
+    [InlineData("raw umber", "RawUmber")]
+    [InlineData("sapphire blue", "Sapphire")]
+    [InlineData("payne gray", "PaynesGray")]
+    [InlineData("payne's grey", "PaynesGray")]
     public void DiscoveryVocabularyRecognizesConventionalCrossWaveAliases(string name, string expected)
     {
         Assert.Equal(expected, SpecificColorTermNormalizer.Normalize(name));
@@ -286,6 +298,7 @@ public sealed class ColorTaxonomyAuditTests
         Assert.Equal(2, profile.DatasetSupport);
         Assert.Equal(["meodai", "xkcd"], profile.SupportingDatasets);
         Assert.True(profile.IsShippedTerm);
+        Assert.Equal("GreenCyan", profile.ResearchDomain);
         Assert.True(profile.P90DeltaE > 0);
         Assert.Equal(3, profile.ProductionFamilyCoverage.Values.Sum());
         Assert.Contains(profile.Representative.Rgb, catalog.Anchors.Select(anchor => anchor.Rgb));
@@ -401,12 +414,44 @@ public sealed class ColorTaxonomyAuditTests
             Assert.NotEqual(pair.WinnerTerm, pair.CompetingTerm);
             Assert.True(pair.SampleCount > 0);
             Assert.NotEmpty(pair.RepresentativeHex);
+            Assert.True(pair.SampleShare > 0);
+            Assert.NotEqual(ProfessionalOverlapSeverity.Unknown, pair.Severity);
         });
         Assert.Equal(
-            first.Pairs.OrderByDescending(item => item.SampleCount)
+            first.Pairs.OrderByDescending(item => item.Severity)
+                .ThenByDescending(item => item.SampleCount)
                 .ThenBy(item => item.WinnerTerm, StringComparer.Ordinal)
                 .ThenBy(item => item.CompetingTerm, StringComparer.Ordinal),
             first.Pairs);
+    }
+
+    [Theory]
+    [InlineData("Ruby", "Scarlet", ProfessionalOverlapSeverity.BenignSibling)]
+    [InlineData("Sapphire", "Cobalt", ProfessionalOverlapSeverity.BenignSibling)]
+    [InlineData("AntiqueWhite", "Linen", ProfessionalOverlapSeverity.BenignSibling)]
+    [InlineData("Ruby", "Sapphire", ProfessionalOverlapSeverity.DistantFamily)]
+    [InlineData("Celadon", "Ruby", ProfessionalOverlapSeverity.DistantFamily)]
+    public void ProfessionalOverlapSeverityUsesDeveloperSemanticDomains(
+        string winner,
+        string competitor,
+        object expected)
+    {
+        Assert.Equal((ProfessionalOverlapSeverity)expected,
+            ProfessionalTermResearchCatalog.ClassifyOverlap(winner, competitor));
+    }
+
+    [Fact]
+    public void ProfessionalResearchVocabularyHasUniqueAliasesAndCoversEveryShippedTerm()
+    {
+        var aliases = ProfessionalTermResearchCatalog.Terms.SelectMany(term => term.Aliases).ToArray();
+        var shipped = ProfessionalShadeCatalog.Definitions.Select(item => item.Term.ToString()).Order().ToArray();
+
+        Assert.Equal(aliases.Length, aliases.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+        Assert.Equal(shipped, ProfessionalTermResearchCatalog.Terms
+            .Where(term => term.IsShipped)
+            .Select(term => term.CanonicalTerm)
+            .Order()
+            .ToArray());
     }
 
     [Theory]
@@ -534,13 +579,18 @@ public sealed class ColorTaxonomyAuditTests
             Assert.Equal(string.Empty, error.ToString());
             Assert.Contains("Mode: Fast", output.ToString());
             Assert.True(File.Exists(Path.Combine(directory, "summary.json")));
+            Assert.True(File.Exists(Path.Combine(directory, "vocabulary-frontier.html")));
+            Assert.DoesNotContain("No reference cache",
+                File.ReadAllText(Path.Combine(directory, "vocabulary-frontier.html")));
             using var json = JsonDocument.Parse(File.ReadAllText(Path.Combine(directory, "summary.json")));
-            Assert.Equal("fovium-color-taxonomy-audit/v6", json.RootElement.GetProperty("schema").GetString());
+            Assert.Equal("fovium-color-taxonomy-audit/v7", json.RootElement.GetProperty("schema").GetString());
             Assert.True(json.RootElement.GetProperty("balancedCohort").GetArrayLength() > 300);
             Assert.True(json.RootElement.GetProperty("specificity").GetProperty("genericFamilyOnly").GetInt32() > 0);
-            Assert.Equal(88, json.RootElement.GetProperty("professionalTermSamples").GetArrayLength());
-            Assert.Equal(72, json.RootElement.GetProperty("professionalTermCoverage").EnumerateObject().Count());
+            Assert.Equal(95, json.RootElement.GetProperty("professionalTermSamples").GetArrayLength());
+            Assert.Equal(80, json.RootElement.GetProperty("professionalTermCoverage").EnumerateObject().Count());
             Assert.True(json.RootElement.GetProperty("professionalOverlaps").GetProperty("sampleCount").GetInt32() > 0);
+            Assert.Equal(JsonValueKind.String, json.RootElement.GetProperty("professionalOverlaps")
+                .GetProperty("pairs")[0].GetProperty("severity").ValueKind);
         }
         finally
         {

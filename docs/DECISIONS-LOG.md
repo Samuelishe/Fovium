@@ -707,7 +707,7 @@ and independent of all downloaded reference data.
 
 ## D-067 — Professional vocabulary grows by semantic-domain campaigns with global overlap evidence
 
-Status: Implemented in the local R8-A-F10 candidate; owner acceptance pending.
+Status: Implemented in pushed R8-A-F10.
 
 Professional-vocabulary work is organized by semantic domain rather than by a target coverage percentage. Each domain
 uses recurring reference components, conventional-language research, rendered swatches, sibling controls, and bounded
@@ -719,3 +719,18 @@ anchors. The deep audit records all matching terms for every sample, ranks winne
 region's matched and winning volume. A region must be reachable, priorities must be unique, and a shadowed region is a
 catalog defect. This evidence preserves deterministic parent-family-indexed runtime classification without requiring a
 new geometry engine or importing external datasets into the viewer.
+
+## D-068 — Vocabulary research metadata and overlap severity remain developer-only
+
+Status: Implemented in the local R8-A-F11 candidate; owner acceptance pending.
+
+As the professional catalog grows, audit-only aliases group spelling and conventional-name variants under one candidate
+identity, while semantic domains organize whole-catalog discovery and classify sampled overlap as benign sibling,
+suspicious sibling, or distant-family conflict. The audit renders the highest-ranked unshipped candidates rather than
+letting current product terms define their own research frontier. Alias, category, source, confidence, and overlap
+severity metadata never participates in runtime classification or localization.
+
+Production continues to use the existing deterministic parent-family-indexed, multi-region OKLCH model. A candidate is
+accepted only as a project-owned bounded core after independent terminology evidence, rendered-swatch review, sibling
+counterexamples, canonical comparison, and untuned holdouts. Broad historical aggregates, material appearance, and
+pigment composition do not become product claims, and an ambiguous candidate retains the broad-family fallback.

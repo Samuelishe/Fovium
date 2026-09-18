@@ -137,6 +137,13 @@ sampled-volume overlap report ranks intentional sibling competition, verifies un
 region that never wins. Generic broad-family fallback remains preferable to a weak, material-dependent, or ambiguous
 term.
 
+R8-A-F11 expands the layer to 80 terms and 84 regions with bounded conventional cores for Ruby, Cranberry, Viridian,
+Celadon, Antique White, Vanilla, Naples Yellow, and Espresso. These regions remain boxes in the existing multi-region
+model because counterexample and holdout evidence did not justify a more expressive runtime shape. Sapphire and Bottle
+Green were rejected after they displaced accepted Cobalt and Forest Green controls. Developer reports now group
+candidate aliases by semantic domain, classify overlap pairs as benign siblings, suspicious siblings, or distant-family
+conflicts, and render the unshipped vocabulary frontier; none of that research metadata enters the viewer runtime.
+
 Developer changes to this taxonomy use the reproducible audit route documented in
 [`../eng/color-taxonomy-audit/README.md`](../eng/color-taxonomy-audit/README.md).
 Its structured in-gamut grid, fixed-seed RGB sampling, boundary refinement,

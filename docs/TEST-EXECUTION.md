@@ -242,6 +242,13 @@ deterministic pair ranking, unique priorities, reachable composite lobes, indepe
 and preserved sibling controls. Canonical and two post-tuning holdouts must retain topology metrics and report zero
 shadowed regions; ordinary CI remains offline and does not consume generated reports or external caches.
 
+R8-A-F11 advances the report to schema v7. Candidate vocabulary receives audit-only semantic-domain and alias
+metadata, overlap pairs include sampled share plus semantic severity, and `vocabulary-frontier.html`/`.svg` render the
+top unshipped candidates independently of current production coverage. Focused tests preserve unique/reachable regions,
+EN/RU completeness, exact supported anchors, both sides of meaningful new boundaries, sibling fallbacks, alias
+normalization, overlap severity, and report determinism. Canonical plus two holdout seeds must retain topology metrics;
+external caches and generated reports remain optional, ignored, and absent from ordinary CI.
+
 R8-B-P1 adds deterministic in-memory tests for bounded ICC display-profile validation, content identity, active-monitor
 largest-intersection/tie behavior, typed fallback precedence, complete transform-key equality, Skia destination/alpha
 behavior, and source-versus-destination ownership. The final domain-independence test proves that two destination

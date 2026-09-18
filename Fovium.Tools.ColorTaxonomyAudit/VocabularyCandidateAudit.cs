@@ -65,7 +65,8 @@ internal static class VocabularyCandidateAudit
                 StringComparer.Ordinal))
         {
             Components = components,
-            NoiseAnchorCount = anchors.Length - components.Sum(component => component.AnchorCount)
+            NoiseAnchorCount = anchors.Length - components.Sum(component => component.AnchorCount),
+            ResearchDomain = ProfessionalTermResearchCatalog.DescribeDomain(term).ToString()
         };
     }
 

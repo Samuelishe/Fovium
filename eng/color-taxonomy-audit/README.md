@@ -47,12 +47,15 @@ dotnet run --project Fovium.Tools.ColorTaxonomyAudit -c Release -- --mode deep `
 Each run writes `summary.json`, `summary.md`, `summary.html`, `anomalies.csv`, `contact-sheet.svg`, balanced-spectrum,
 family-profile, owner-candidate, holdout, changed-region, reference-disagreement, vocabulary-gap, accepted
 professional-term, and professional-boundary views, plus reference-driven vocabulary-candidate and compact-component
-views, a current-campaign term sheet, a global professional-overlap report, and a deterministic SHA-256 signature.
+views, a whole-catalog unshipped vocabulary-frontier view, a current-campaign term sheet, a global professional-overlap
+report, and a deterministic SHA-256 signature.
 Runtime and the isolated indexed-classifier benchmark are retained in the reports but excluded from the signature.
-Schema v6 reports generic/existing-specific/professional/neutral coverage, per-term sampled coverage, candidate source
+Schema v7 reports generic/existing-specific/professional/neutral coverage, per-term sampled coverage, candidate source
 support/dispersion/components/noise, the winning/competing region explanation for accepted anchors, and deterministic
 center plus inside/outside L/C/h probes for every professional region. It additionally counts every deep sample matching
-multiple professional terms, ranks winner/competitor pairs, and reports matched/winning/shadowed volume per region.
+multiple professional terms, ranks winner/competitor pairs with sampled share and semantic-domain severity, and reports
+matched/winning/shadowed volume per region. Audit-only aliases and semantic domains organize discovery and conflict
+triage; they do not affect production classification.
 Reports rank abrupt semantic
 neighbors, role/modifier reversals, lightness A→B→A paths, small connected components, thin slivers, broad family
 coverage, distance-gated k-nearest reference disagreements, and per-family semantic profiles. These signals locate
