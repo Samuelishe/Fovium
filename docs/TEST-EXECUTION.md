@@ -466,3 +466,27 @@ focused policy/cache/renderer/invariance filter passes 236 tests from the same R
 its
 event loop, but the current host cannot capture the RDP/GPU surface for visual inspection; this is automated portability
 and launch evidence, not Linux human visual acceptance.
+
+## R11-A semantic Photo Color Profile
+
+Run the focused semantic projection, lifecycle, Photo Info, inspection, cache, localization, and source-domain checks:
+
+```powershell
+dotnet test Fovium.Tests/Fovium.Tests.csproj -c Release --filter "FullyQualifiedName~PhotoColorProfile|FullyQualifiedName~PhotoInfoCoordinatorTests|FullyQualifiedName~ImageDecoderPhotoStyleTests|FullyQualifiedName~PhotoStyleCacheTests|FullyQualifiedName~ViewerInspectionCoordinatorTests|FullyQualifiedName~ColorDomainIndependenceTests|FullyQualifiedName~LocalizationTests"
+```
+
+The tests cover Professional-first/broad-fallback naming, creative-name separation, exact RGB and raw palette order,
+weights including sub-percent display, transparent and low-information outcomes, one analysis/projection, decoded-cache
+accounting, hide/show and geometry reuse, A→B→C latest-wins, actual Blink comparison and canonical restoration, Peek,
+projection failure fallback, EN/RU parity, and unchanged Picker/Histogram source truth.
+
+Real-photo timing and the ignored profile contact sheet are opt-in:
+
+```powershell
+$env:FOVIUM_PHOTO_COLOR_PROFILE_IMAGES = 'C:\path\high-key.jpg;C:\path\low-key.jpg;C:\path\portrait.jpg'
+$env:FOVIUM_PHOTO_COLOR_PROFILE_OUTPUT = 'artifacts/reports/photo-color-profile-r11a'
+dotnet test Fovium.Tests/Fovium.Tests.csproj -c Release --filter "FullyQualifiedName~PhotoColorProfilePerformanceSmokeTests" --logger "console;verbosity=detailed"
+```
+
+The final local R11-A run passes 2,200/2,200 Release tests on Windows; the focused 84-test semantic/profile filter also
+passes under WSL2 Ubuntu 24.04. This is automated portability evidence, not Linux or macOS visual acceptance.

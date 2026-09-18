@@ -10,11 +10,13 @@ internal sealed class ImageDecoder : IImageLoader<DecodedImage>, IDisposable
     private readonly IReadOnlyList<IImageDecodeBackend> _backends;
     private readonly SemaphoreSlim _decodeSlots;
     private readonly IPhotoStyleAnalyzer _photoStyleAnalyzer;
+    private readonly IPhotoColorProfileProjector _photoColorProfileProjector;
 
     internal ImageDecoder(
         IEnumerable<IImageDecodeBackend> backends,
         int maximumConcurrentDecodes = DefaultMaximumConcurrentDecodes,
-        IPhotoStyleAnalyzer? photoStyleAnalyzer = null)
+        IPhotoStyleAnalyzer? photoStyleAnalyzer = null,
+        IPhotoColorProfileProjector? photoColorProfileProjector = null)
     {
         ArgumentNullException.ThrowIfNull(backends);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maximumConcurrentDecodes);
@@ -26,6 +28,7 @@ internal sealed class ImageDecoder : IImageLoader<DecodedImage>, IDisposable
 
         _decodeSlots = new SemaphoreSlim(maximumConcurrentDecodes, maximumConcurrentDecodes);
         _photoStyleAnalyzer = photoStyleAnalyzer ?? new PhotoStyleAnalyzer();
+        _photoColorProfileProjector = photoColorProfileProjector ?? new PhotoColorProfileProjector();
     }
 
     public static ImageDecoder CreateDefault() =>
@@ -84,11 +87,14 @@ internal sealed class ImageDecoder : IImageLoader<DecodedImage>, IDisposable
                 if (result.Kind == ImageDecodeBackendResultKind.Success)
                 {
                     var image = result.Image
-                        ?? throw new InvalidOperationException("A successful backend returned no image.");
+                                ?? throw new InvalidOperationException("A successful backend returned no image.");
                     try
                     {
                         var analysis = _photoStyleAnalyzer.Analyze(image, cancellationToken);
-                        _ = image.TryAttachPhotoStyleAnalysis(analysis);
+                        if (image.TryAttachPhotoStyleAnalysis(analysis))
+                        {
+                            TryAttachPhotoColorProfile(image, analysis);
+                        }
                     }
                     catch (OperationCanceledException)
                     {
@@ -104,7 +110,8 @@ internal sealed class ImageDecoder : IImageLoader<DecodedImage>, IDisposable
                         image);
                 }
 
-                return Failure(MapError(result.Kind), result.TechnicalDetail ?? "Image decode failed.", result.Exception);
+                return Failure(MapError(result.Kind), result.TechnicalDetail ?? "Image decode failed.",
+                    result.Exception);
             }
 
             return Failure(ImageLoadErrorKind.Unsupported, "Fovium does not support the detected image content.");
@@ -136,6 +143,22 @@ internal sealed class ImageDecoder : IImageLoader<DecodedImage>, IDisposable
         catch (InvalidOperationException exception)
         {
             return Failure(ImageLoadErrorKind.DecodeFailed, exception.Message, exception);
+        }
+    }
+
+    private void TryAttachPhotoColorProfile(DecodedImage image, PhotoStyleAnalysis analysis)
+    {
+        try
+        {
+            var profile = _photoColorProfileProjector.Create(analysis);
+            if (profile is not null)
+            {
+                _ = image.TryAttachPhotoColorProfile(profile);
+            }
+        }
+        catch (Exception exception)
+        {
+            Debug.WriteLine($"Fovium photo color profile projection failed: {exception}");
         }
     }
 

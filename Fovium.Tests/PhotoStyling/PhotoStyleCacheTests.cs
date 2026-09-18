@@ -21,8 +21,12 @@ public sealed class PhotoStyleCacheTests
             new StageColor(160, 170, 180));
 
         Assert.True(decoded.TryAttachPhotoStyleAnalysis(first));
+        var profile = Assert.IsType<PhotoColorProfile>(new PhotoColorProfileProjector().Create(first));
+        Assert.True(decoded.TryAttachPhotoColorProfile(profile));
+        Assert.False(decoded.TryAttachPhotoColorProfile(profile));
         Assert.False(decoded.TryAttachPhotoStyleAnalysis(rejected));
         Assert.Same(first, decoded.GetPhotoStyleAnalysis());
+        Assert.Same(profile, decoded.GetPhotoColorProfile());
         using var wash = Assert.IsType<Fovium.Imaging.DecodedImage.PhotoStyleRasterLease>(
             decoded.TryAcquirePhotoStyleRaster(StageBackgroundMode.ColorWash));
         using var gradient = Assert.IsType<Fovium.Imaging.DecodedImage.PhotoStyleRasterLease>(
@@ -30,7 +34,8 @@ public sealed class PhotoStyleCacheTests
         using var glow = Assert.IsType<Fovium.Imaging.DecodedImage.PhotoStyleRasterLease>(
             decoded.TryAcquirePhotoStyleRaster(StageBackgroundMode.SoftGlow));
         Assert.Equal(
-            1024 + first.RetainedBytes + wash.RetainedBytes + gradient.RetainedBytes + glow.RetainedBytes,
+            1024 + first.RetainedBytes + profile.RetainedBytes + wash.RetainedBytes + gradient.RetainedBytes +
+            glow.RetainedBytes,
             decoded.RetainedBytes);
         Assert.Equal(
             StageDefaults.PhotoStyleWashRasterPixels * StageDefaults.PhotoStyleWashRasterPixels * 4,
@@ -50,6 +55,9 @@ public sealed class PhotoStyleCacheTests
             new StageColor(80, 100, 120),
             new StageColor(140, 160, 180));
         Assert.True(decoded.TryAttachPhotoStyleAnalysis(analysis));
+        var profile = Assert.IsType<PhotoColorProfile>(new PhotoColorProfileProjector().Create(analysis));
+        Assert.True(decoded.TryAttachPhotoColorProfile(profile));
+        var retainedBytes = decoded.RetainedBytes;
 
         for (var index = 0; index < 50; index++)
         {
@@ -67,6 +75,8 @@ public sealed class PhotoStyleCacheTests
                 new Fovium.Rendering.LogicalSize(800 + index, 600 + index),
                 1.25);
             Assert.Same(analysis, decoded.GetPhotoStyleAnalysis());
+            Assert.Same(profile, decoded.GetPhotoColorProfile());
+            Assert.Equal(retainedBytes, decoded.RetainedBytes);
             using var wash = Assert.IsType<Fovium.Imaging.DecodedImage.PhotoStyleRasterLease>(
                 decoded.TryAcquirePhotoStyleRaster(StageBackgroundMode.ColorWash));
             using var secondWash = Assert.IsType<Fovium.Imaging.DecodedImage.PhotoStyleRasterLease>(

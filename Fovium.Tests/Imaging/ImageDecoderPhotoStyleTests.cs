@@ -12,9 +12,11 @@ public sealed class ImageDecoderPhotoStyleTests
     public async Task SuccessfulDecodeAttachesAnalysisInsideOffUiDecodeWork()
     {
         var analyzer = new RecordingAnalyzer();
+        var profileProjector = new RecordingProfileProjector();
         using var decoder = new ImageDecoder(
             [new SuccessfulBackend()],
-            photoStyleAnalyzer: analyzer);
+            photoStyleAnalyzer: analyzer,
+            photoColorProfileProjector: profileProjector);
         var directory = Directory.CreateTempSubdirectory("Fovium.PhotoStyle.Tests.");
         try
         {
@@ -32,6 +34,40 @@ public sealed class ImageDecoderPhotoStyleTests
             Assert.Equal(1, analyzer.CallCount);
             Assert.Null(analyzer.AnalysisSynchronizationContext);
             Assert.Same(analyzer.Result, image!.GetPhotoStyleAnalysis());
+            Assert.Equal(1, profileProjector.CallCount);
+            Assert.Same(analyzer.Result, profileProjector.Analysis);
+            Assert.NotNull(image.GetPhotoColorProfile());
+        }
+        finally
+        {
+            directory.Delete(true);
+        }
+    }
+
+    [Fact]
+    public async Task ProfileProjectionFailureKeepsAnalysisAndDecodedPhotoUsable()
+    {
+        var analyzer = new RecordingAnalyzer();
+        using var decoder = new ImageDecoder(
+            [new SuccessfulBackend()],
+            photoStyleAnalyzer: analyzer,
+            photoColorProfileProjector: new ThrowingProfileProjector());
+        var directory = Directory.CreateTempSubdirectory("Fovium.PhotoStyle.Tests.");
+        try
+        {
+            var path = Path.Combine(directory.FullName, "photo.test");
+            await File.WriteAllBytesAsync(path, [1]);
+
+            var result = await decoder.LoadAsync(
+                path,
+                new ImageLoadAllowance(long.MaxValue, long.MaxValue, false),
+                CancellationToken.None);
+            using var image = result.Image;
+
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(image);
+            Assert.Same(analyzer.Result, image!.GetPhotoStyleAnalysis());
+            Assert.Null(image.GetPhotoColorProfile());
         }
         finally
         {
@@ -158,5 +194,27 @@ public sealed class ImageDecoderPhotoStyleTests
             cancellationToken.ThrowIfCancellationRequested();
             throw new InvalidOperationException("Cancellation was not observed.");
         }
+    }
+
+    private sealed class RecordingProfileProjector : IPhotoColorProfileProjector
+    {
+        private readonly PhotoColorProfileProjector _inner = new();
+
+        public int CallCount { get; private set; }
+
+        public PhotoStyleAnalysis? Analysis { get; private set; }
+
+        public PhotoColorProfile? Create(PhotoStyleAnalysis analysis)
+        {
+            CallCount++;
+            Analysis = analysis;
+            return _inner.Create(analysis);
+        }
+    }
+
+    private sealed class ThrowingProfileProjector : IPhotoColorProfileProjector
+    {
+        public PhotoColorProfile? Create(PhotoStyleAnalysis analysis) =>
+            throw new InvalidOperationException("Controlled profile projection failure.");
     }
 }

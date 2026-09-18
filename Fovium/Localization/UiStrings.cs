@@ -130,6 +130,11 @@ internal static class UiStrings
     public const string PresentationCloseMarkup = "presentation.closeMarkup";
     public const string PhotoInfoTitle = "photoInfo.title";
     public const string PhotoInfoClose = "photoInfo.close";
+    public const string PhotoInfoColors = "photoInfo.colors";
+    public const string PhotoInfoDominant = "photoInfo.colors.dominant";
+    public const string PhotoInfoPalette = "photoInfo.colors.palette";
+    public const string PhotoInfoShare = "photoInfo.colors.share";
+    public const string PhotoInfoColorsTip = "photoInfo.colors.tip";
     public const string PhotoInfoCamera = "photoInfo.camera";
     public const string PhotoInfoLens = "photoInfo.lens";
     public const string PhotoInfoFocalLength = "photoInfo.focalLength";

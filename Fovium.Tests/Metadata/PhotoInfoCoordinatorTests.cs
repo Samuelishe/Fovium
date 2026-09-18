@@ -1,7 +1,10 @@
 using Fovium.Imaging;
 using Fovium.Loading;
 using Fovium.Metadata;
+using Fovium.PhotoStyling;
 using Fovium.Rendering;
+using Fovium.Stage;
+using Fovium.Tests.PhotoStyling;
 using Fovium.Viewer;
 
 namespace Fovium.Tests.Metadata;
@@ -22,6 +25,67 @@ public sealed class PhotoInfoCoordinatorTests
         Assert.Equal(0, reader.CallCount);
         Assert.False(coordinator.IsVisible);
         Assert.Null(coordinator.CurrentState);
+    }
+
+    [Fact]
+    public void ColorProfileFollowsLatestPresentedImageAcrossNavigationAndBlinkStyleRestore()
+    {
+        using var source = new TestPresentedImageSource();
+        using var coordinator = new PhotoInfoCoordinator(source, new ImmediateReader());
+        var imageA = CreateImageWithProfile(1, "A.jpg", new StageColor(203, 99, 43));
+        var imageB = CreateImageWithProfile(2, "B.jpg", new StageColor(83, 104, 120));
+        var imageC = CreateImageWithProfile(3, "C.jpg", new StageColor(0, 212, 255));
+
+        source.Set(imageA);
+        coordinator.SetVisible(true);
+        Assert.Equal(new StageColor(203, 99, 43), coordinator.CurrentState!.ColorProfile!.Dominant.Color);
+
+        source.Set(imageB);
+        Assert.Equal("B.jpg", coordinator.CurrentState!.Base.SourcePath);
+        Assert.Equal(new StageColor(83, 104, 120), coordinator.CurrentState.ColorProfile!.Dominant.Color);
+
+        source.Set(imageC);
+        Assert.Equal("C.jpg", coordinator.CurrentState!.Base.SourcePath);
+        Assert.Equal(new StageColor(0, 212, 255), coordinator.CurrentState.ColorProfile!.Dominant.Color);
+
+        var canonicalRestore = CreateImageWithProfile(4, "A.jpg", new StageColor(203, 99, 43));
+        source.Set(canonicalRestore);
+        Assert.Equal("A.jpg", coordinator.CurrentState!.Base.SourcePath);
+        Assert.Equal(new StageColor(203, 99, 43), coordinator.CurrentState.ColorProfile!.Dominant.Color);
+    }
+
+    [Fact]
+    public void HideShowReusesProfileOwnedByExactDecodedImageWithoutProjectionOrScan()
+    {
+        using var source = new TestPresentedImageSource();
+        var image = CreateImageWithProfile(7, "profile.jpg", new StageColor(203, 99, 43));
+        var expected = Assert.IsType<PhotoColorProfile>(image.GetPhotoColorProfile());
+        source.Set(image);
+        using var coordinator = new PhotoInfoCoordinator(source, new ImmediateReader());
+
+        coordinator.SetVisible(true);
+        Assert.Same(expected, coordinator.CurrentState!.ColorProfile);
+
+        coordinator.SetVisible(false);
+        Assert.Null(coordinator.CurrentState);
+        coordinator.SetVisible(true);
+
+        Assert.Same(expected, coordinator.CurrentState!.ColorProfile);
+    }
+
+    [Fact]
+    public void MissingOrTransparentAnalysisPublishesNoStaleColorProfile()
+    {
+        using var source = new TestPresentedImageSource();
+        source.Set(CreateImageWithProfile(1, "visible.jpg", new StageColor(203, 99, 43)));
+        using var coordinator = new PhotoInfoCoordinator(source, new ImmediateReader());
+        coordinator.SetVisible(true);
+        Assert.NotNull(coordinator.CurrentState!.ColorProfile);
+
+        source.Set(CreateImage(2, "missing.jpg"));
+
+        Assert.Equal("missing.jpg", coordinator.CurrentState!.Base.SourcePath);
+        Assert.Null(coordinator.CurrentState.ColorProfile);
     }
 
     [Fact]
@@ -187,6 +251,16 @@ public sealed class PhotoInfoCoordinatorTests
     private static DecodedImage CreateImage(byte marker, string path, PixelSize? size = null) =>
         MetadataTestImages.CreateDecoded([marker], path, size);
 
+    private static DecodedImage CreateImageWithProfile(byte marker, string path, StageColor color)
+    {
+        var image = CreateImage(marker, path);
+        var analysis = PhotoDerivedStylePolicyTests.CreateAnalysis(color, color, color);
+        Assert.True(image.TryAttachPhotoStyleAnalysis(analysis));
+        var profile = Assert.IsType<PhotoColorProfile>(new PhotoColorProfileProjector().Create(analysis));
+        Assert.True(image.TryAttachPhotoColorProfile(profile));
+        return image;
+    }
+
     private static Task NextStateChange(PhotoInfoCoordinator coordinator)
     {
         var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -246,6 +320,14 @@ public sealed class PhotoInfoCoordinatorTests
             _pending.Remove(marker);
             completion.SetResult(PhotoMetadataReadResult.FromSummary(summary));
         }
+    }
+
+    private sealed class ImmediateReader : IPhotoMetadataReader
+    {
+        public Task<PhotoMetadataReadResult> ReadAsync(
+            ReadOnlyMemory<byte> encodedSource,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(PhotoMetadataReadResult.FromSummary(PhotoMetadataSummary.Empty));
     }
 
     private sealed class TestPresentedImageSource : IPresentedImageSource, IDisposable

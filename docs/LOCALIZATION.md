@@ -117,6 +117,11 @@ both localized names from the same production catalogs and its Explorer switches
 input to classification, geometry, signatures, or creative matching. Research-only RU candidates remain explicitly
 separate from shipped localization.
 
+R11-A adds paired Photo Info vocabulary for Colors/Цвета, Dominant/Доминирующий, Palette/Палитра, Share/Доля, and one
+bounded explanatory tooltip. Structural names reuse the shared broad/Professional resolver; creative names reuse the
+separate stable-ID display catalog and remain secondary. HEX, OKLCH, raw RGB, weights, semantic identities, and palette
+order remain locale-independent; percentage and visible names are formatted only at the presentation boundary.
+
 ## Locale resolution
 
 Before an explicit user choice:

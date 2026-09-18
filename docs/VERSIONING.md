@@ -166,6 +166,7 @@ never reuse an earlier version. No automatic rollover after BUILD `9999` is defi
 | `0.1.2.0014` | R8-A-F12                              | Expanded independent color research corpus, master lexicon, mass mining, and Histogram CI regression                            |
 | `0.1.3.0000` | R10-B                                 | Expressive photo-derived Color Gradient and Soft Glow Stage backgrounds                                                         |
 | `0.1.3.0001` | R10-E                                 | Independently evidenced Professional color vocabulary refinement: five terms and five bounded regions                           |
+| `0.1.4.0000` | R11-A                                 | On-demand semantic Photo Color Profile derived from the existing exact-image photo analysis                                     |
 
 The `0.0.0.xxxx` line records the completed foundation and early product-construction checkpoints. The explicit
 owner-controlled `0.1.0.0000` transition marks the first substantial usable Fovium alpha; it does not claim feature
@@ -185,6 +186,8 @@ semantics.
 R10-E increments BUILD to `0.1.3.0001`: five new Professional terms change the human-readable semantic result for
 bounded reference-sRGB regions while refining the existing Color Semantics capability rather than adding a new product
 surface or changing the broad-family topology.
+R11-A increments PATCH and resets BUILD to `0.1.4.0000`: the semantic Photo Color Profile is a new independently useful
+user-visible inspection capability inside Photo Info, not a correction to the R10-E vocabulary or the R10-B Stage.
 
 ## Future code and packaging source
 
@@ -192,9 +195,9 @@ The root `Directory.Build.props` is the canonical source for the current compone
 supplies the production `Fovium` assembly with:
 
 ```text
-InformationalVersion = 0.1.3.0001
-AssemblyVersion      = 0.1.3.1
-FileVersion          = 0.1.3.1
+InformationalVersion = 0.1.4.0000
+AssemblyVersion      = 0.1.4.0
+FileVersion          = 0.1.4.0
 ```
 
 From that source:

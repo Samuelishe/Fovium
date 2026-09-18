@@ -1,116 +1,353 @@
 # Performance
 
 Role: Responsiveness, scheduling, cache, and resource-policy contract.
-Read when: Working on startup, loading, navigation, preload, cache, concurrency, large images, performance settings, or diagnostics.
-Authoritative for: Latest-wins semantics, cancellation/generation ownership, decode concurrency, memory budgeting, runtime automatic policy, and acceptance measurement principles.
-Not authoritative for: Exact image viability fields, viewport math, permanent numeric limits, or selected performance libraries.
+Read when: Working on startup, loading, navigation, preload, cache, concurrency, large images, performance settings, or
+diagnostics.
+Authoritative for: Latest-wins semantics, cancellation/generation ownership, decode concurrency, memory budgeting,
+runtime automatic policy, and acceptance measurement principles.
+Not authoritative for: Exact image viability fields, viewport math, permanent numeric limits, or selected performance
+libraries.
 
 ## Experience targets
 
-Fovium should feel immediate at startup, first image open, previous/next navigation, zoom, pan, fullscreen, resize, DPI transitions, Peek 100%, Blink Compare, and Ambient generation. These paths must be measured separately because an average throughput number can hide visible stalls.
+Fovium should feel immediate at startup, first image open, previous/next navigation, zoom, pan, fullscreen, resize, DPI
+transitions, Peek 100%, Blink Compare, and Ambient generation. These paths must be measured separately because an
+average throughput number can hide visible stalls.
 
-The UI thread must not perform disk I/O, expensive header parsing, full decode, ICC conversion, expensive display preparation, Ambient generation, or photo-derived palette analysis. UI work is limited to input, lightweight state coordination, and publication/render integration that the chosen framework requires.
+The UI thread must not perform disk I/O, expensive header parsing, full decode, ICC conversion, expensive display
+preparation, Ambient generation, or photo-derived palette analysis. UI work is limited to input, lightweight state
+coordination, and publication/render integration that the chosen framework requires.
 
 ## Loading and latest-wins ownership
 
-Each navigation selection receives a monotonic generation or equivalent owned request identity. Results may publish only if they still belong to the current selection. Cancellation reduces wasted work, but correctness never depends on a backend observing cancellation promptly.
+Each navigation selection receives a monotonic generation or equivalent owned request identity. Results may publish only
+if they still belong to the current selection. Cancellation reduces wasted work, but correctness never depends on a
+backend observing cancellation promptly.
 
-Rapid `Right Arrow` input must not allow an older decode to replace the newest selected image later. Avoid unrelated boolean flags; model request ownership, lifecycle, and publication conditions directly.
+Rapid `Right Arrow` input must not allow an older decode to replace the newest selected image later. Avoid unrelated
+boolean flags; model request ownership, lifecycle, and publication conditions directly.
 
-Decode concurrency is bounded. Foreground work for the selected image outranks speculative neighbors. Concurrency limits should reflect memory pressure as well as CPU availability, since several simultaneous decodes may allocate large native and managed buffers.
+Decode concurrency is bounded. Foreground work for the selected image outranks speculative neighbors. Concurrency limits
+should reflect memory pressure as well as CPU availability, since several simultaneous decodes may allocate large native
+and managed buffers.
 
 ## Navigation preload
 
-Navigation is a core subsystem. After opening an image, discover viable neighbors in the same directory and prepare at least the most useful adjacent candidates under a bounded policy. Preload is cancellable/speculative, must yield to current-image work, and must not make opening the current image slower.
+Navigation is a core subsystem. After opening an image, discover viable neighbors in the same directory and prepare at
+least the most useful adjacent candidates under a bounded policy. Preload is cancellable/speculative, must yield to
+current-image work, and must not make opening the current image slower.
 
-Unsupported, corrupt, or resource-policy-rejected candidates are skipped so navigation can continue. Probe/decode eligibility is owned by [`IMAGING-PIPELINE.md`](IMAGING-PIPELINE.md).
+Unsupported, corrupt, or resource-policy-rejected candidates are skipped so navigation can continue. Probe/decode
+eligibility is owned by [`IMAGING-PIPELINE.md`](IMAGING-PIPELINE.md).
 
-R2 retains one sequential speculative preload worker. After a publication it searches for one viable previous and one viable next neighbor, with current foreground selection/cancellation taking priority. R5-P3 keeps this depth and concurrency but makes admission sustainable at a full cache: an unprotected candidate may use capacity reclaimable from old non-protected LRU entries, while the protected current cost remains unavailable. Local stress still did not establish enough benefit to justify next+1 preload or more than the existing two decode slots.
+R2 retains one sequential speculative preload worker. After a publication it searches for one viable previous and one
+viable next neighbor, with current foreground selection/cancellation taking priority. R5-P3 keeps this depth and
+concurrency but makes admission sustainable at a full cache: an unprotected candidate may use capacity reclaimable from
+old non-protected LRU entries, while the protected current cost remains unavailable. Local stress still did not
+establish enough benefit to justify next+1 preload or more than the existing two decode slots.
 
-The Stage coordinator retains photo/decode priority while distinguishing user-visible current presentation from speculation. When Ambient is selected, selection synchronously resolves a cached matching derivative and the viewport installs it atomically with the photograph; a genuine miss publishes the photograph with safe Black and starts current preparation immediately. Current work never waits for adjacent preload. Each neighbor-ready signal may prepare currently useful cached adjacent derivatives progressively, with the last navigation direction tried first and a small gate preventing duplicate speculative preparation. Black, Neutral, and Custom schedule no Ambient work, regardless of Matte. Source identity, blur identity, and Stage generation prevent late preparation from publishing for another photograph, obsolete blur, or inactive mode; cancellation only reduces waste. Brightness, saturation, Matte, and solid-color changes are render-time/solid-fill work and schedule no preparation. Blur changes use a `150 ms` debounce plus latest-wins authority, but new-image current Ambient does not.
+The Stage coordinator retains photo/decode priority while distinguishing user-visible current presentation from
+speculation. When Ambient is selected, selection synchronously resolves a cached matching derivative and the viewport
+installs it atomically with the photograph; a genuine miss publishes the photograph with safe Black and starts current
+preparation immediately. Current work never waits for adjacent preload. Each neighbor-ready signal may prepare currently
+useful cached adjacent derivatives progressively, with the last navigation direction tried first and a small gate
+preventing duplicate speculative preparation. Black, Neutral, and Custom schedule no Ambient work, regardless of Matte.
+Source identity, blur identity, and Stage generation prevent late preparation from publishing for another photograph,
+obsolete blur, or inactive mode; cancellation only reduces waste. Brightness, saturation, Matte, and solid-color changes
+are render-time/solid-fill work and schedule no preparation. Blur changes use a `150 ms` debounce plus latest-wins
+authority, but new-image current Ambient does not.
 
-Combined current priorities are canonical photograph navigation/load, immediate matching current Ambient work, explicit Blink acquisition, speculative photo preload, then neighbor Ambient preparation. A stable Blink first retains a cached previous viable neighbor. On cache miss it may cancel/yield only speculative preload, uses the existing bounded foreground admission/decoder slots, and inserts an unprotected entry into the same byte-accounted cache; it never sacrifices or unprotects the canonical current image. Sequence/selection identity plus hold authority prevent a late result from publishing. Peek is only viewport math over the retained current decode. Blink never schedules Ambient: it uses an already prepared matching comparison derivative or Black fallback.
+Combined current priorities are canonical photograph navigation/load, immediate matching current Ambient work, explicit
+Blink acquisition, speculative photo preload, then neighbor Ambient preparation. A stable Blink first retains a cached
+previous viable neighbor. On cache miss it may cancel/yield only speculative preload, uses the existing bounded
+foreground admission/decoder slots, and inserts an unprotected entry into the same byte-accounted cache; it never
+sacrifices or unprotects the canonical current image. Sequence/selection identity plus hold authority prevent a late
+result from publishing. Peek is only viewport math over the retained current decode. Blink never schedules Ambient: it
+uses an already prepared matching comparison derivative or Black fallback.
 
-R5-F1 presenter rendering adds no decode, file I/O, Ambient preparation, photo-cache budget, or permanent source-resolution overlay. Non-empty history uses one frame-local transparent layer bounded to the visible photograph intersection; an empty overlay skips it. Each image is capped at 2,048 retained history operations, 8,192 points per Brush/Eraser stroke, and 65,536 retained points; the session is capped at 262,144 committed points. Redo-tail truncation releases its point accounting. Draft strokes use shared immutable chunks so completed chunks are not recopied on every pointer move; only the current bounded tail is copied. R5-F2 opacity is one stored scalar and ordinary Skia alpha per draw; Ellipse is two source-space control points, and constrained Brush commits only its two snapped endpoints. R5-F3 extends physical size to 128 px without increasing history/cache bounds. R5-F3-P1 makes the photo, markup, pointer, and floating-UI update paths explicit. Avalonia retains one viewport-sized compositor bitmap for the low-frequency photo/Stage visual; this is display-sized rather than source-sized and is not charged to the decoded-image cache. Markup remains a bounded transparent replay layer. The pointer preview owns no retained offscreen surface and moves through a small control transform; dock drag likewise changes only a render transform and persists once on release.
+R5-F1 presenter rendering adds no decode, file I/O, Ambient preparation, photo-cache budget, or permanent
+source-resolution overlay. Non-empty history uses one frame-local transparent layer bounded to the visible photograph
+intersection; an empty overlay skips it. Each image is capped at 2,048 retained history operations, 8,192 points per
+Brush/Eraser stroke, and 65,536 retained points; the session is capped at 262,144 committed points. Redo-tail truncation
+releases its point accounting. Draft strokes use shared immutable chunks so completed chunks are not recopied on every
+pointer move; only the current bounded tail is copied. R5-F2 opacity is one stored scalar and ordinary Skia alpha per
+draw; Ellipse is two source-space control points, and constrained Brush commits only its two snapped endpoints. R5-F3
+extends physical size to 128 px without increasing history/cache bounds. R5-F3-P1 makes the photo, markup, pointer, and
+floating-UI update paths explicit. Avalonia retains one viewport-sized compositor bitmap for the low-frequency
+photo/Stage visual; this is display-sized rather than source-sized and is not charged to the decoded-image cache. Markup
+remains a bounded transparent replay layer. The pointer preview owns no retained offscreen surface and moves through a
+small control transform; dock drag likewise changes only a render transform and persists once on release.
 
-R6-A performs zero routine metadata parsing while Photo Info is hidden. When visible, immediate base facts come from the retained descriptor/encoded length and one background reader consumes the existing encoded bytes without another disk read or byte-array copy. A 192-entry count-bounded session LRU stores successful, empty, and contained failure results; new-sequence reset clears it. Latest-wins generation prevents slow old results from updating the panel. Photo Info drag uses the shared transform-only floating path and does not invalidate photograph or markup.
+R6-A performs zero routine metadata parsing while Photo Info is hidden. When visible, immediate base facts come from the
+retained descriptor/encoded length and one background reader consumes the existing encoded bytes without another disk
+read or byte-array copy. A 192-entry count-bounded session LRU stores successful, empty, and contained failure results;
+new-sequence reset clears it. Latest-wins generation prevents slow old results from updating the panel. Photo Info drag
+uses the shared transform-only floating path and does not invalidate photograph or markup.
 
-R6-B performs zero histogram work while its panel is hidden. One cancellable worker reads the already decoded native pixels; images above two million pixels use a deterministic whole-image grid capped at `2,000,000` locations, and a 128-entry session LRU avoids repeat scans for navigation/Blink returns. Local synthetic 6000×4000 evidence measured approximately `11.91 ms` for 1.5 million sampled locations versus `45.70 ms` for an exact 24 million-location scan after test-process startup. A real Release 24 MP cold request, including scheduling/JIT/publication, measured approximately `374 ms` in background; photograph publication and interaction remained responsive. These are local engineering observations, not universal latency promises.
+R6-B performs zero histogram work while its panel is hidden. One cancellable worker reads the already decoded native
+pixels; images above two million pixels use a deterministic whole-image grid capped at `2,000,000` locations, and a
+128-entry session LRU avoids repeat scans for navigation/Blink returns. Local synthetic 6000×4000 evidence measured
+approximately `11.91 ms` for 1.5 million sampled locations versus `45.70 ms` for an exact 24 million-location scan after
+test-process startup. A real Release 24 MP cold request, including scheduling/JIT/publication, measured approximately
+`374 ms` in background; photograph publication and interaction remained responsive. These are local engineering
+observations, not universal latency promises.
 
-R7-A changes no cache/decode concurrency or memory formula. Static WebP uses the same retained encoded bytes plus full BGRA estimate as JPEG/PNG, so high compression cannot bypass decoded-memory admission. Controlled Release fixtures measured a 1200×800 lossy WebP at approximately `11.44/13.38/0.87 ms` probe/decode/preparation and a 3936×2624 lossy WebP at approximately `1.86/137.69/5.60 ms`; encoding was outside the measurement. These are single-machine generated-pattern observations, not codec rankings or product thresholds.
+R7-A changes no cache/decode concurrency or memory formula. Static WebP uses the same retained encoded bytes plus full
+BGRA estimate as JPEG/PNG, so high compression cannot bypass decoded-memory admission. Controlled Release fixtures
+measured a 1200×800 lossy WebP at approximately `11.44/13.38/0.87 ms` probe/decode/preparation and a 3936×2624 lossy
+WebP at approximately `1.86/137.69/5.60 ms`; encoding was outside the measurement. These are single-machine
+generated-pattern observations, not codec rankings or product thresholds.
 
-R7-B moves the existing two decode slots to the high-level dispatcher so Skia and TIFF cannot create independent allocation concurrency. TIFF admission reads dimensions/layout first and retains the same encoded-plus-BGRA cost; conservative working cost continues to reserve two BGRA-sized representations even though the focused implementation uses only the final bitmap plus one bounded scanline or tile buffer. A highly compressed TIFF therefore cannot bypass decoded-memory admission. The backend does not retain a second TIFF raster after publication and does not introduce huge-image region rendering.
+R7-B moves the existing two decode slots to the high-level dispatcher so Skia and TIFF cannot create independent
+allocation concurrency. TIFF admission reads dimensions/layout first and retains the same encoded-plus-BGRA cost;
+conservative working cost continues to reserve two BGRA-sized representations even though the focused implementation
+uses only the final bitmap plus one bounded scanline or tile buffer. A highly compressed TIFF therefore cannot bypass
+decoded-memory admission. The backend does not retain a second TIFF raster after publication and does not introduce
+huge-image region rendering.
 
-A local Release generated-pattern probe measured a `3936×2624` LZW TIFF (17.3 MB encoded) at approximately `5.49/158.00/6.54 ms` probe/decode/preparation and a `6000×4000` LZW TIFF (41.2 MB encoded) at approximately `0.09/226.18/14.33 ms`. The observed process working/private deltas were about `103/101 MB` and `233/234 MB`, consistent with encoded bytes, the final BGRA raster, native preparation, and transient process effects rather than traversal-count growth. Fixture generation was excluded from those decoder timings. These are single-machine engineering observations, not product thresholds or cross-platform evidence.
+A local Release generated-pattern probe measured a `3936×2624` LZW TIFF (17.3 MB encoded) at approximately
+`5.49/158.00/6.54 ms` probe/decode/preparation and a `6000×4000` LZW TIFF (41.2 MB encoded) at approximately
+`0.09/226.18/14.33 ms`. The observed process working/private deltas were about `103/101 MB` and `233/234 MB`, consistent
+with encoded bytes, the final BGRA raster, native preparation, and transient process effects rather than traversal-count
+growth. Fixture generation was excluded from those decoder timings. These are single-machine engineering observations,
+not product thresholds or cross-platform evidence.
 
-R7-C retains the same global two-slot dispatcher for Skia, TIFF, HEIF, and AVIF. HEIF/AVIF dimensions, precision, and retained/working estimates are admitted before native pixel decode, so a highly compressed container cannot bypass the decoded-memory limit. Conceptual peak ownership is encoded bytes plus the temporary native RGBA raster plus the final Skia bitmap; rows are copied directly and the native raster is released before publication. A local Release probe measured a 512×512 alpha HEIF at approximately `31.71/7.62/2.50/19.44 ms` probe/native-decode/copy/preparation, a 32×24 alpha AVIF at `0.54/3.29/0.03/0.12 ms`, and a generated 5000×3000 AVIF at `0.45/107.26/66.81/8.80 ms`. A 200-decode HEIF/AVIF loop held Windows process handles at 218–219 after warm-up, and a nine-path mixed-format soak crossed cache pressure with four evictions and seven successful speculative additions. These are local engineering observations, not thresholds or cross-platform proof.
+R7-C retains the same global two-slot dispatcher for Skia, TIFF, HEIF, and AVIF. HEIF/AVIF dimensions, precision, and
+retained/working estimates are admitted before native pixel decode, so a highly compressed container cannot bypass the
+decoded-memory limit. Conceptual peak ownership is encoded bytes plus the temporary native RGBA raster plus the final
+Skia bitmap; rows are copied directly and the native raster is released before publication. A local Release probe
+measured a 512×512 alpha HEIF at approximately `31.71/7.62/2.50/19.44 ms` probe/native-decode/copy/preparation, a 32×24
+alpha AVIF at `0.54/3.29/0.03/0.12 ms`, and a generated 5000×3000 AVIF at `0.45/107.26/66.81/8.80 ms`. A 200-decode
+HEIF/AVIF loop held Windows process handles at 218–219 after warm-up, and a nine-path mixed-format soak crossed cache
+pressure with four evictions and seven successful speculative additions. These are local engineering observations, not
+thresholds or cross-platform proof.
 
-R8-A performs no pixel read, color conversion, or name lookup on pointer movement. Motion changes only the transform-backed pointer-feedback layer. A click retains the already decoded image, reads one pixel, optionally performs one 1×1 Skia source-to-sRGB conversion, and scans 1,800 precomputed OKLab anchors linearly. History remains fixed at ten objects and cannot grow with continued use. The embedded JSON resource is about 148 KiB; the catalog initializes lazily on first nontransparent sample and has no background worker or network latency.
+R8-A performs no pixel read, color conversion, or name lookup on pointer movement. Motion changes only the
+transform-backed pointer-feedback layer. A click retains the already decoded image, reads one pixel, optionally performs
+one 1×1 Skia source-to-sRGB conversion, and scans 1,800 precomputed OKLab anchors linearly. History remains fixed at ten
+objects and cannot grow with continued use. The embedded JSON resource is about 148 KiB; the catalog initializes lazily
+on first nontransparent sample and has no background worker or network latency.
 
 ## Cache and memory budget
 
-Use a bounded cache with explicit cost accounting and eviction. Costs should include all retained managed/native source and display representations, color-converted surfaces, and other significant prepared data rather than only encoded bytes.
+Use a bounded cache with explicit cost accounting and eviction. Costs should include all retained managed/native source
+and display representations, color-converted surfaces, and other significant prepared data rather than only encoded
+bytes.
 
-Automatic policy is computed at runtime from actually available resources, current pressure, concurrent work, and conservative product caps. It does not run a one-time CPU/GPU benchmark or maintain a hardware-model database. Planned choices may include Automatic, fixed budgets such as 256 MB through 2 GB, and Custom, but values remain product/UI directions rather than permanent limits.
+Automatic policy is computed at runtime from actually available resources, current pressure, concurrent work, and
+conservative product caps. It does not run a one-time CPU/GPU benchmark or maintain a hardware-model database. Planned
+choices may include Automatic, fixed budgets such as 256 MB through 2 GB, and Custom, but values remain product/UI
+directions rather than permanent limits.
 
-This document owns the policy; [`SETTINGS.md`](SETTINGS.md) owns where future user-facing Automatic/manual choices appear and how those preferences persist.
+This document owns the policy; [`SETTINGS.md`](SETTINGS.md) owns where future user-facing Automatic/manual choices
+appear and how those preferences persist.
 
-Large-image decode policy follows the same model: probe first, estimate peak working cost, include safety margin and concurrent allocations, then admit, defer, downsample, tile in the future, or reject. R0's checked 512 MiB guard estimates its two simultaneous BGRA copies and protects only the disposable probe; it is not a universal product cutoff.
+Large-image decode policy follows the same model: probe first, estimate peak working cost, include safety margin and
+concurrent allocations, then admit, defer, downsample, tile in the future, or reject. R0's checked 512 MiB guard
+estimates its two simultaneous BGRA copies and protects only the disposable probe; it is not a universal product cutoff.
 
-R1's provisional Automatic formula uses `GC.GetGCMemoryInfo().TotalAvailableMemoryBytes` as the cross-platform runtime allowance (with a 1 GiB fallback only if unavailable):
+R1's provisional Automatic formula uses `GC.GetGCMemoryInfo().TotalAvailableMemoryBytes` as the cross-platform runtime
+allowance (with a 1 GiB fallback only if unavailable):
 
 - cache budget = one eighth, clamped to 256 MiB–1 GiB;
 - foreground working allowance = one quarter, clamped to 256 MiB–2 GiB;
 - one speculative decode allowance = the smaller of the cache budget and half the foreground allowance.
 
-Admission checks both estimated peak working bytes and retained encoded-plus-BGRA bytes. Foreground retained allowance remains the whole cache budget. Speculative retained allowance is the cache budget minus the protected current entry, not merely the currently unused bytes; reclaimable neighbor entries may therefore be replaced by the final byte-accounted LRU `Add`. The speculative working allowance remains independently capped, `Add` rechecks actual capacity, and a resource too large to coexist with protected current is still rejected. This permits one bounded decoded candidate to exist transiently beside a full cache but does not change the cache budget or two-slot decode limit. These constants remain provisional evidence, not permanent product settings.
+Admission checks both estimated peak working bytes and retained encoded-plus-BGRA bytes. Foreground retained allowance
+remains the whole cache budget. Speculative retained allowance is the cache budget minus the protected current entry,
+not merely the currently unused bytes; reclaimable neighbor entries may therefore be replaced by the final
+byte-accounted LRU `Add`. The speculative working allowance remains independently capped, `Add` rechecks actual
+capacity, and a resource too large to coexist with protected current is still rejected. This permits one bounded decoded
+candidate to exist transiently beside a full cache but does not change the cache budget or two-slot decode limit. These
+constants remain provisional evidence, not permanent product settings.
 
-Stage customization does not increase those caps. A prepared Ambient is at most `384` pixels on its long edge in premultiplied BGRA (about `576 KiB` at a square worst case and typically less), is owned by its decoded image, and increases the same cache entry's retained-byte cost. Only one blur variant per decoded image is retained; replacement respects render leases. Optional/speculative entries are evicted before a protected current image; a derivative that still cannot fit is discarded and the visible Stage uses a matching same-image prior-blur derivative or Black fallback.
+Stage customization does not increase those caps. A prepared Ambient is at most `384` pixels on its long edge in
+premultiplied BGRA (about `576 KiB` at a square worst case and typically less), is owned by its decoded image, and
+increases the same cache entry's retained-byte cost. Only one blur variant per decoded image is retained; replacement
+respects render leases. Optional/speculative entries are evicted before a protected current image; a derivative that
+still cannot fit is discarded and the visible Stage uses a matching same-image prior-blur derivative or Black fallback.
 
-R10 photo-derived analysis keeps one oriented reference-sRGB raster capped at `96 px` long edge (`≤9,216` samples), an unchanged five-entry raw palette, fixed 12 chromatic plus eight neutral representative candidate families, and a `6×6` field. Ranking is bounded `O(20 × occupiedBins)` work and runs once inside existing canceled/limited decode work. A full five-entry result retains 396 estimated managed bytes under the same byte-accounted `DecodedImage`; Color Wash adds `64×64×4 = 16,384` bytes, while R10-B Color Gradient and Soft Glow add `2 × 32×32×4 = 8,192` bytes. Total retained styling state is 24,972 bytes per decoded image. Draw operations acquire leases rather than regenerate it, so zoom, pan, resize, fullscreen, scaling changes, and settings reuse existing work. There is no full-resolution or viewport-sized styling cache. Exact image identity plus existing latest-wins selection forbids stale publication, and failed/missing analysis or raster uses cheap fallback.
+R10 photo-derived analysis keeps one oriented reference-sRGB raster capped at `96 px` long edge (`≤9,216` samples), an
+unchanged five-entry raw palette, fixed 12 chromatic plus eight neutral representative candidate families, and a `6×6`
+field. Ranking is bounded `O(20 × occupiedBins)` work and runs once inside existing canceled/limited decode work. A full
+five-entry result retains 396 estimated managed bytes under the same byte-accounted `DecodedImage`; Color Wash adds
+`64×64×4 = 16,384` bytes, while R10-B Color Gradient and Soft Glow add `2 × 32×32×4 = 8,192` bytes. Total retained
+styling state is 24,972 bytes per decoded image. Draw operations acquire leases rather than regenerate it, so zoom, pan,
+resize, fullscreen, scaling changes, and settings reuse existing work. There is no full-resolution or viewport-sized
+styling cache. Exact image identity plus existing latest-wins selection forbids stale publication, and failed/missing
+analysis or raster uses cheap fallback.
 
-The final local Windows Release run measured analysis at `8.37 ms` for a 1.16 MP near-monochrome input, `16.73 ms` at 6.32 MP, `12.10 ms` at 12 MP, `17.73 ms` at 15 MP, and `20.03 ms` at 24 MP. The prior accepted R10-A five-image range was `3.40–17.49 ms`; the new large-image maximum is about 14.5% higher and remains below the stage's roughly 25% investigation threshold. These are single-machine engineering observations, not latency guarantees.
+R11-A adds no image processing pass or bitmap. One semantic projection of Dominant, Average, and up to five palette
+values runs off-UI immediately after the existing analysis and retains an estimated 1,296 bytes for a full profile in
+the same decoded-cache entry. Local 12-photo Windows Release evidence measured about `11–116 µs` after warm-up against
+roughly `15–289 ms` for decode plus analysis. Photo Info hide/show, drag, zoom, pan, resize, fullscreen, Photo
+Presentation, Slideshow, and Blink restoration read the attached immutable value and perform no classification, CMM, or
+source scan. These are local comparative measurements, not cross-platform latency guarantees.
 
-R10-B's eleven-image Windows Release evidence measured the unchanged analysis at `2.58–20.15 ms`, per-raster preparation medians at `1.21–2.83 ms`, and 1280×800 Stage-only raster-CPU medians at `1.64–3.45 ms` versus Color Wash at `1.70–4.02 ms` and Neutral at `0.08–0.14 ms`. The selected small-raster path replaced an explored direct per-pixel shader path that was consistently about twice as expensive. These numbers exclude photograph composition and are local comparative CPU evidence, not cross-platform GPU guarantees.
+The final local Windows Release run measured analysis at `8.37 ms` for a 1.16 MP near-monochrome input, `16.73 ms` at
+6.32 MP, `12.10 ms` at 12 MP, `17.73 ms` at 15 MP, and `20.03 ms` at 24 MP. The prior accepted R10-A five-image range
+was `3.40–17.49 ms`; the new large-image maximum is about 14.5% higher and remains below the stage's roughly 25%
+investigation threshold. These are single-machine engineering observations, not latency guarantees.
 
-Matte style, width, color, and enabled state remain synchronous draw-time presentation and never invalidate Ambient. Solid, Rounded, and Angular materialize bounded geometry; Soft uses one bounded mask blur on the Matte shape without a viewport-sized offscreen or retained cache. A local Windows raster observation at 1920×1080 over 300 draws measured approximately `338 µs`/draw for Solid and `383 µs`/draw for Soft; this is comparative engineering evidence, not a cross-platform frame-time benchmark.
+R10-B's eleven-image Windows Release evidence measured the unchanged analysis at `2.58–20.15 ms`, per-raster preparation
+medians at `1.21–2.83 ms`, and 1280×800 Stage-only raster-CPU medians at `1.64–3.45 ms` versus Color Wash at
+`1.70–4.02 ms` and Neutral at `0.08–0.14 ms`. The selected small-raster path replaced an explored direct per-pixel
+shader path that was consistently about twice as expensive. These numbers exclude photograph composition and are local
+comparative CPU evidence, not cross-platform GPU guarantees.
 
-R9-B Slideshow adds no decoded cache and no timer queue. While the current frame is fully visible it may hold exactly one neighbor inspection lease and use the existing managed-presentation coordinator for exactly one next source/destination result. Speculative managed-next admission is `<=128 MiB`; retained current plus prepared next is `<=256 MiB`. If rejected or slow, the valid image is still navigated through the normal path and the current complete frame stays visible until atomic publication. Each new delay begins only at that publication, so preparation extends cadence rather than shortening a slide or accumulating later requests.
+Matte style, width, color, and enabled state remain synchronous draw-time presentation and never invalidate Ambient.
+Solid, Rounded, and Angular materialize bounded geometry; Soft uses one bounded mask blur on the Matte shape without a
+viewport-sized offscreen or retained cache. A local Windows raster observation at 1920×1080 over 300 draws measured
+approximately `338 µs`/draw for Solid and `383 µs`/draw for Soft; this is comparative engineering evidence, not a
+cross-platform frame-time benchmark.
 
-Local Windows Release evidence with a 5-second interval measured small 0.96 MP decode/CMM preparation at `62.03/25.65 ms`, 15 MP at `39.63/291.40 ms`, and 24 MP at `62.64/463.64 ms`. Their managed current/next totals were `7,680,000`, `120,000,000`, and `192,000,000` bytes; all were admitted before expiry. The verified mixed-orientation Loop produced four prepared hits, zero misses/rejections/stale results, seven source-only CMM requests for six atomic publications including initial/current preparation, zero coalescing/stale/failures, `geometryRequests=0`, and prepared timer-expiry-to-visible waits around `0.24–0.32 ms`. A separate Stop-at-end run observed `3.37 ms`. A calculated 50 MP next (`200,000,000` bytes) is rejected by admission and covered by deterministic correctness tests; it was not materialized in the desktop smoke. These are local observations, not cadence SLAs.
+R9-B Slideshow adds no decoded cache and no timer queue. While the current frame is fully visible it may hold exactly
+one neighbor inspection lease and use the existing managed-presentation coordinator for exactly one next
+source/destination result. Speculative managed-next admission is `<=128 MiB`; retained current plus prepared next is
+`<=256 MiB`. If rejected or slow, the valid image is still navigated through the normal path and the current complete
+frame stays visible until atomic publication. Each new delay begins only at that publication, so preparation extends
+cadence rather than shortening a slide or accumulating later requests.
+
+Local Windows Release evidence with a 5-second interval measured small 0.96 MP decode/CMM preparation at
+`62.03/25.65 ms`, 15 MP at `39.63/291.40 ms`, and 24 MP at `62.64/463.64 ms`. Their managed current/next totals were
+`7,680,000`, `120,000,000`, and `192,000,000` bytes; all were admitted before expiry. The verified mixed-orientation
+Loop produced four prepared hits, zero misses/rejections/stale results, seven source-only CMM requests for six atomic
+publications including initial/current preparation, zero coalescing/stale/failures, `geometryRequests=0`, and prepared
+timer-expiry-to-visible waits around `0.24–0.32 ms`. A separate Stop-at-end run observed `3.37 ms`. A calculated 50 MP
+next (`200,000,000` bytes) is rejected by admission and covered by deterministic correctness tests; it was not
+materialized in the desktop smoke. These are local observations, not cadence SLAs.
 
 ## Diagnostics
 
-Opt-in sustained-session diagnostics may record anonymized sequence ordinals, dimensions, publication/cache state, cache plateau and evictions, explicit speculative outcomes, Ambient readiness, process memory, and deltas across viewport/custom-draw/Skia-lease/Stage-render boundaries. R5-F3-P1 adds a separate opt-in interaction counter for pointer events, photo/custom-Skia draws, markup draws, pointer-feedback draws, dock-drag updates, layout-size changes, and the longest interval within a continuous pointer sample. They are activated only by development environment variables, write outside the photo tree, and never become permanent viewport chrome. Future diagnostics may also show renderer/backend, display scaling, pending decodes, decode time, and color-transform time.
+Opt-in sustained-session diagnostics may record anonymized sequence ordinals, dimensions, publication/cache state, cache
+plateau and evictions, explicit speculative outcomes, Ambient readiness, process memory, and deltas across
+viewport/custom-draw/Skia-lease/Stage-render boundaries. R5-F3-P1 adds a separate opt-in interaction counter for pointer
+events, photo/custom-Skia draws, markup draws, pointer-feedback draws, dock-drag updates, layout-size changes, and the
+longest interval within a continuous pointer sample. They are activated only by development environment variables, write
+outside the photo tree, and never become permanent viewport chrome. Future diagnostics may also show renderer/backend,
+display scaling, pending decodes, decode time, and color-transform time.
 
 ## Acceptance measurement
 
-Define representative local test assets and record environment, format, dimensions, source profile, cold/warm state, renderer/backend, display scaling, and memory conditions. Measure distributions and worst visible stalls for critical interactions, not only averages. Track managed allocations, native allocations where observable, cache accounting, UI-thread blocking, stale-result rejection, and cleanup after cancellation.
+Define representative local test assets and record environment, format, dimensions, source profile, cold/warm state,
+renderer/backend, display scaling, and memory conditions. Measure distributions and worst visible stalls for critical
+interactions, not only averages. Track managed allocations, native allocations where observable, cache accounting,
+UI-thread blocking, stale-result rejection, and cleanup after cancellation.
 
-R1 Windows smoke at `RenderScaling = 1.00` used local runtime inputs: a 3840×2400 JPEG probed/decoded/prepared in 23.5/46.2/5.1 ms (81.9 ms decoder end-to-end), a 2400×3840 JPEG in 18.7/32.8/7.4 ms (65.5 ms end-to-end), and a 640×480 alpha PNG in 18.3/1.5/0.5 ms (26.6 ms end-to-end). A warm Release launch showed the window at 538 ms and the first photograph at 632 ms by screen polling. A prepared adjacent switch was observed at 29 ms; an immediate follow-on navigation/skip/load change at 105 ms. These are single-run engineering observations, not thresholds.
+R1 Windows smoke at `RenderScaling = 1.00` used local runtime inputs: a 3840×2400 JPEG probed/decoded/prepared in
+23.5/46.2/5.1 ms (81.9 ms decoder end-to-end), a 2400×3840 JPEG in 18.7/32.8/7.4 ms (65.5 ms end-to-end), and a 640×480
+alpha PNG in 18.3/1.5/0.5 ms (26.6 ms end-to-end). A warm Release launch showed the window at 538 ms and the first
+photograph at 632 ms by screen polling. A prepared adjacent switch was observed at 29 ms; an immediate follow-on
+navigation/skip/load change at 105 ms. These are single-run engineering observations, not thresholds.
 
-After an initial 360-key navigation burst, process working/private memory rose by about 13.5/14.2 MiB; a second 360-key burst rose by about 1.3/0.9 MiB and handle count decreased from 777 to 772. The process remained responsive. This is an observed bounded smoke, not a leak proof or a cross-platform benchmark. Numeric acceptance thresholds still require representative environments and assets.
+After an initial 360-key navigation burst, process working/private memory rose by about 13.5/14.2 MiB; a second 360-key
+burst rose by about 1.3/0.9 MiB and handle count decreased from 777 to 772. The process remained responsive. This is an
+observed bounded smoke, not a leak proof or a cross-platform benchmark. Numeric acceptance thresholds still require
+representative environments and assets.
 
-R2 Windows local-corpus stress used repeated mixed-direction bursts, failed-candidate skipping, explicit sequence replacement, and high-cost decoded images. Across six sampled cycles the process remained responsive; working set ranged about 1083–1199 MiB and private bytes about 1188–1309 MiB after warm-up rather than increasing by traversal count. A two-file explicit reopen reduced the working/private set to about 681/754 MiB. Native/shell handle observations were affected by the Windows file picker and are not a leak verdict. Settings autosave completed without a visible navigation stall, and graceful shutdown after in-flight-aware lifetime hardening completed in about 77 ms in one run.
+R2 Windows local-corpus stress used repeated mixed-direction bursts, failed-candidate skipping, explicit sequence
+replacement, and high-cost decoded images. Across six sampled cycles the process remained responsive; working set ranged
+about 1083–1199 MiB and private bytes about 1188–1309 MiB after warm-up rather than increasing by traversal count. A
+two-file explicit reopen reduced the working/private set to about 681/754 MiB. Native/shell handle observations were
+affected by the Windows file picker and are not a leak verdict. Settings autosave completed without a visible navigation
+stall, and graceful shutdown after in-flight-aware lifetime hardening completed in about 77 ms in one run.
 
-Three warm R2 launches with an existing tiny settings document showed the window at 505–546 ms and photograph at 513–560 ms by the same screen-polling style used for the R1 538/632 ms observation. This shows no material first-open regression in that local environment; it is not a general performance claim. All R2 numbers remain local observations, not thresholds or cross-platform proof.
+Three warm R2 launches with an existing tiny settings document showed the window at 505–546 ms and photograph at 513–560
+ms by the same screen-polling style used for the R1 538/632 ms observation. This shows no material first-open regression
+in that local environment; it is not a general performance claim. All R2 numbers remain local observations, not
+thresholds or cross-platform proof.
 
-R3 Windows local-corpus measurement used four already-decoded representative JPEG/PNG sources. The bounded Ambient step produced `384×384` or `256×384` BGRA resources of `589,824` or `393,216` bytes in `8.29–15.22 ms` in a Debug local measurement. Black and Neutral followed the no-preparation path. Rapid mixed-direction navigation under Ambient stayed responsive with stable handle observations (`797` to `791`); after traversing new material, a later repeated cycle settled near `331 MiB` working set / `328 MiB` private bytes rather than growing by traversal count. This is a bounded single-machine smoke, not a leak proof or Release benchmark.
+R3 Windows local-corpus measurement used four already-decoded representative JPEG/PNG sources. The bounded Ambient step
+produced `384×384` or `256×384` BGRA resources of `589,824` or `393,216` bytes in `8.29–15.22 ms` in a Debug local
+measurement. Black and Neutral followed the no-preparation path. Rapid mixed-direction navigation under Ambient stayed
+responsive with stable handle observations (`797` to `791`); after traversing new material, a later repeated cycle
+settled near `331 MiB` working set / `328 MiB` private bytes rather than growing by traversal count. This is a bounded
+single-machine smoke, not a leak proof or Release benchmark.
 
-R4 Windows Release smoke at `RenderScaling = 1.00` used the ignored local corpus and production viewer. Peek, cached Blink, and release were already visible by the first screenshot taken `120 ms` after input; this is an observation ceiling, not a precise latency threshold. Repeated C down/up, mixed navigation, Peek pan, fullscreen, `Esc`, and focus-loss cancellation stayed coherent. Local Debug coordinator observations measured cached acquisition-to-presentation queueing at `1.950 ms` with `0.258 ms` release restoration, and Peek's viewport-state transition at `0.557 ms`. A separate controlled non-cached fake-loader run measured `2.139 ms` plus `0.121 ms` restore and deliberately excludes real file I/O/decode. A controllably delayed non-cached path proved cancellation/stale-publication behavior, but no credible wall-clock cold-decode latency was recorded; that remains asset/machine dependent. These are instrumentation observations, not thresholds.
+R4 Windows Release smoke at `RenderScaling = 1.00` used the ignored local corpus and production viewer. Peek, cached
+Blink, and release were already visible by the first screenshot taken `120 ms` after input; this is an observation
+ceiling, not a precise latency threshold. Repeated C down/up, mixed navigation, Peek pan, fullscreen, `Esc`, and
+focus-loss cancellation stayed coherent. Local Debug coordinator observations measured cached
+acquisition-to-presentation queueing at `1.950 ms` with `0.258 ms` release restoration, and Peek's viewport-state
+transition at `0.557 ms`. A separate controlled non-cached fake-loader run measured `2.139 ms` plus `0.121 ms` restore
+and deliberately excludes real file I/O/decode. A controllably delayed non-cached path proved
+cancellation/stale-publication behavior, but no credible wall-clock cold-decode latency was recorded; that remains
+asset/machine dependent. These are instrumentation observations, not thresholds.
 
-R5 Windows Release smoke at `RenderScaling = 1.00` visually exercised four tools, highlight, panel hide/show, Clear, zoom/pan, fullscreen, Peek, image-specific Blink swapping, focus loss, Settings persistence, and restart cleanup. R5-F1 additionally exercised partial erasing of every existing primitive, Undo/Redo, undoable Clear, redo-tail invalidation, per-image history, and a long Brush plus repeated erase strokes. R5-F2 exercised 100%/45%/5% translucent drawing, Ellipse/Circle, all Shift constraints, full erasure of translucent strokes, 1,000 sampled Brush moves, 120 translucent Ellipses, 20 Erase gestures, zoom/pan/fullscreen/Peek/Blink, restart cleanup, and EN/RU physical bracket input. After the input burst the process remained responsive; a transient `493.9 MiB` working/`718.2 MiB` private observation settled after three seconds to `361.4 MiB`/`341.2 MiB` with 774 handles. A local Release replay observation over alternating 64%-opacity Line/Ellipse operations measured approximately `1.884 µs` per empty draw, `81.865 µs` for 8 operations, and `2,412.440 µs` for 512 operations. These single-machine diagnostics are not leak proofs or product thresholds; no precomposition cache was justified.
+R5 Windows Release smoke at `RenderScaling = 1.00` visually exercised four tools, highlight, panel hide/show, Clear,
+zoom/pan, fullscreen, Peek, image-specific Blink swapping, focus loss, Settings persistence, and restart cleanup. R5-F1
+additionally exercised partial erasing of every existing primitive, Undo/Redo, undoable Clear, redo-tail invalidation,
+per-image history, and a long Brush plus repeated erase strokes. R5-F2 exercised 100%/45%/5% translucent drawing,
+Ellipse/Circle, all Shift constraints, full erasure of translucent strokes, 1,000 sampled Brush moves, 120 translucent
+Ellipses, 20 Erase gestures, zoom/pan/fullscreen/Peek/Blink, restart cleanup, and EN/RU physical bracket input. After
+the input burst the process remained responsive; a transient `493.9 MiB` working/`718.2 MiB` private observation settled
+after three seconds to `361.4 MiB`/`341.2 MiB` with 774 handles. A local Release replay observation over alternating
+64%-opacity Line/Ellipse operations measured approximately `1.884 µs` per empty draw, `81.865 µs` for 8 operations, and
+`2,412.440 µs` for 512 operations. These single-machine diagnostics are not leak proofs or product thresholds; no
+precomposition cache was justified.
 
-R5-P1 Windows owner-corpus evidence reproduced an approximately `134 ms` exact-Black edge interval and reduced decoded current preparation/publication to roughly `8–15 ms`, but owner review still saw a compositor-visible Black transition; that result did not establish elimination. R5-P2 therefore moved evidence to the actual Stage draw boundary. A no-navigation 24 MP baseline rendered one initial fallback frame then one matching frame. Twenty natural 24 MP transitions rendered `1` fallback / `21` matching in total, so navigation added zero fallback frames; 40 rapid inputs rendered `1` / `13`; twenty 10 MP transitions rendered `1` / `21`. Independent corner sampling also found zero all-Black navigation samples. This single-machine evidence justified atomic cached handoff and progressive neighbor readiness but not a same-image placeholder; owner visual acceptance remains authoritative and pending.
+R5-P1 Windows owner-corpus evidence reproduced an approximately `134 ms` exact-Black edge interval and reduced decoded
+current preparation/publication to roughly `8–15 ms`, but owner review still saw a compositor-visible Black transition;
+that result did not establish elimination. R5-P2 therefore moved evidence to the actual Stage draw boundary. A
+no-navigation 24 MP baseline rendered one initial fallback frame then one matching frame. Twenty natural 24 MP
+transitions rendered `1` fallback / `21` matching in total, so navigation added zero fallback frames; 40 rapid inputs
+rendered `1` / `13`; twenty 10 MP transitions rendered `1` / `21`. Independent corner sampling also found zero all-Black
+navigation samples. This single-machine evidence justified atomic cached handoff and progressive neighbor readiness but
+not a same-image placeholder; owner visual acceptance remains authoritative and pending.
 
-R5-P3 used an owner-supplied local directory of 405 distinct `6000×4000` photographs and reproduced the delayed steady-state failure before changing admission. Ordinals 1–9 navigated from cache with matching Ambient; speculative `ResourceLimit` began at ordinal 10, and ordinal 11 was the first foreground miss, missing initial Ambient, and actual Black-fallback Stage frame. Across 60 forward transitions, only 9 targets were cache hits, 51 were foreground misses/fallback frames, speculative additions stopped at 9, and 19,214 speculative resource rejections accumulated while foreground insertion continued evicting LRU entries. This proved that using only current free bytes prevented speculative decode from reaching the cache's existing eviction path.
+R5-P3 used an owner-supplied local directory of 405 distinct `6000×4000` photographs and reproduced the delayed
+steady-state failure before changing admission. Ordinals 1–9 navigated from cache with matching Ambient; speculative
+`ResourceLimit` began at ordinal 10, and ordinal 11 was the first foreground miss, missing initial Ambient, and actual
+Black-fallback Stage frame. Across 60 forward transitions, only 9 targets were cache hits, 51 were foreground
+misses/fallback frames, speculative additions stopped at 9, and 19,214 speculative resource rejections accumulated while
+foreground insertion continued evicting LRU entries. This proved that using only current free bytes prevented
+speculative decode from reaching the cache's existing eviction path.
 
-With reclaim-aware admission, a Release soak over 100 distinct forward photographs plus 20 backward transitions at `400 ms` produced 120/120 target cache hits, 120/120 matching Ambients at selection, zero speculative resource rejections, and zero navigation fallback frames. After warm saturation, retained cache cost stayed between approximately `985.1` and `1017.6 MiB` with 10 items and 105 continuous LRU evictions. Separate `1000 ms`/60-transition and `200 ms`/100-transition runs also produced all target cache hits, all matching Ambients, zero fallback frames, and zero Skia-lease-unavailable observations. Warm working/private memory oscillated rather than growing monotonically; in the mixed run it ranged approximately `2240.8–2735.4 MiB` / `2294.7–2979.4 MiB`, reflecting the 1 GiB retained cache plus decoded/native/render working reality. Owner review accepts normal human browsing around 3–4 distinct 24 MP photographs per second. Deliberately reaching roughly 5–6+ per second can outrun speculative readiness and briefly expose the matching Black fallback; this known stress limitation is not a current milestone blocker, and stale/mismatched Ambient remains forbidden. The corpus file count, total bytes, and latest write timestamp were unchanged after every run. No same-image placeholder was justified.
+With reclaim-aware admission, a Release soak over 100 distinct forward photographs plus 20 backward transitions at
+`400 ms` produced 120/120 target cache hits, 120/120 matching Ambients at selection, zero speculative resource
+rejections, and zero navigation fallback frames. After warm saturation, retained cache cost stayed between approximately
+`985.1` and `1017.6 MiB` with 10 items and 105 continuous LRU evictions. Separate `1000 ms`/60-transition and `200 ms`
+/100-transition runs also produced all target cache hits, all matching Ambients, zero fallback frames, and zero
+Skia-lease-unavailable observations. Warm working/private memory oscillated rather than growing monotonically; in the
+mixed run it ranged approximately `2240.8–2735.4 MiB` / `2294.7–2979.4 MiB`, reflecting the 1 GiB retained cache plus
+decoded/native/render working reality. Owner review accepts normal human browsing around 3–4 distinct 24 MP photographs
+per second. Deliberately reaching roughly 5–6+ per second can outrun speculative readiness and briefly expose the
+matching Black fallback; this known stress limitation is not a current milestone blocker, and stale/mismatched Ambient
+remains forbidden. The corpus file count, total bytes, and latest write timestamp were unchanged after every run. No
+same-image placeholder was justified.
 
-R5-F3-P1 first measured the regression before changing architecture: 1,205 passive pointer events under software feedback caused 190 full viewport renders and 190 photo/markup custom draws after UI coalescing. A first sibling-Control split reduced `PhotoViewport.Render` calls but still re-entered the retained direct-Skia operation on compositor damage, so it was not accepted as isolation. With compositor-cached photo presentation plus independent markup and transform-positioned pointer layers, a 1,184-event Highlight sample produced 1,118 pointer-feedback draws while photo presentation/Skia remained at 7 initial/cache-establishment draws. A 422-event long Brush sample produced 423 markup draws while photo/Skia remained at 2, and a 231-update dock drag kept photo/Skia at 2 with zero markup/pointer draws. Release confirmation recorded 926 pointer events / 917 pointer-feedback draws / 2 initial photo draws for Highlight, and a combined Brush/Eraser/shape/dock sample recorded 612 pointer events, 778 markup draws, 162 dock updates, and only 2 initial photo draws. Local interaction felt materially more responsive, but these Windows observations prove routing rather than a universal frame-rate threshold; final owner perception and fractional-DPI/cross-platform evidence remain separate.
+R5-F3-P1 first measured the regression before changing architecture: 1,205 passive pointer events under software
+feedback caused 190 full viewport renders and 190 photo/markup custom draws after UI coalescing. A first sibling-Control
+split reduced `PhotoViewport.Render` calls but still re-entered the retained direct-Skia operation on compositor damage,
+so it was not accepted as isolation. With compositor-cached photo presentation plus independent markup and
+transform-positioned pointer layers, a 1,184-event Highlight sample produced 1,118 pointer-feedback draws while photo
+presentation/Skia remained at 7 initial/cache-establishment draws. A 422-event long Brush sample produced 423 markup
+draws while photo/Skia remained at 2, and a 231-update dock drag kept photo/Skia at 2 with zero markup/pointer draws.
+Release confirmation recorded 926 pointer events / 917 pointer-feedback draws / 2 initial photo draws for Highlight, and
+a combined Brush/Eraser/shape/dock sample recorded 612 pointer events, 778 markup draws, 162 dock updates, and only 2
+initial photo draws. Local interaction felt materially more responsive, but these Windows observations prove routing
+rather than a universal frame-rate threshold; final owner perception and fractional-DPI/cross-platform evidence remain
+separate.
 
 ## R8-B-W1 managed-presentation bounds
 
-Monitor-device pixels are current-viewer presentation state, not decoded-cache entries. One viewer owns one active synchronous full-source conversion, at most one latest pending source/destination request, one normally steady encoded-size managed BGRA source, and a four-entry transform cache keyed by profile-byte identity/output mode. During atomic source handoff, the previous managed source stays retained while the target managed source and its same-size temporary reference surface are prepared; the old source is released after the complete new frame publishes. Replaced pending work is disposed before execution; synchronous stale work may finish but cannot publish. Geometry is absent from the managed key, so zoom/pan/resize/Peek and pointer/highlight/markup/UI changes request no conversion and cannot swap source resolution. The steady additional pixel cost is `4 × encoded width × encoded height`; preparation temporarily owns one equally sized reference-sRGB surface plus the truthful previous frame needed for atomic navigation. Representative measured managed/temporary sizes are `60/60 MB` at 15 MP and `96/96 MB` at 24 MP; calculated 50 MP values are `200/200 MB`. Window movement is debounced for 150 ms; unchanged monitor identity reuses the last admitted profile, while activation and display-topology change force reread/hash.
+Monitor-device pixels are current-viewer presentation state, not decoded-cache entries. One viewer owns one active
+synchronous full-source conversion, at most one latest pending source/destination request, one normally steady
+encoded-size managed BGRA source, and a four-entry transform cache keyed by profile-byte identity/output mode. During
+atomic source handoff, the previous managed source stays retained while the target managed source and its same-size
+temporary reference surface are prepared; the old source is released after the complete new frame publishes. Replaced
+pending work is disposed before execution; synchronous stale work may finish but cannot publish. Geometry is absent from
+the managed key, so zoom/pan/resize/Peek and pointer/highlight/markup/UI changes request no conversion and cannot swap
+source resolution. The steady additional pixel cost is `4 × encoded width × encoded height`; preparation temporarily
+owns one equally sized reference-sRGB surface plus the truthful previous frame needed for atomic navigation.
+Representative measured managed/temporary sizes are `60/60 MB` at 15 MP and `96/96 MB` at 24 MP; calculated 50 MP values
+are `200/200 MB`. Window movement is debounced for 150 ms; unchanged monitor identity reuses the last admitted profile,
+while activation and display-topology change force reread/hash.
 
-The local 1920×1080 interaction run used a `1695×1017` visible photograph raster: `6,895,260` retained bytes. Source→reference render was `58.96 ms`, Little CMS was `21.69 ms`, and final premultiplication/image creation was `7.92 ms` on the current workstation. Eight resize/interaction requests coalesced three pending requests; three completed, two active results became stale, and zero failed. Structural peak conversion storage is approximately three raster buffers (reference native bitmap, transformed managed bytes, and final native bitmap), about `20.7 MiB` for that sample; no full 15/24 MP monitor-device copy is retained. These observations are engineering evidence, not a universal SLA.
+The local 1920×1080 interaction run used a `1695×1017` visible photograph raster: `6,895,260` retained bytes.
+Source→reference render was `58.96 ms`, Little CMS was `21.69 ms`, and final premultiplication/image creation was
+`7.92 ms` on the current workstation. Eight resize/interaction requests coalesced three pending requests; three
+completed, two active results became stale, and zero failed. Structural peak conversion storage is approximately three
+raster buffers (reference native bitmap, transformed managed bytes, and final native bitmap), about `20.7 MiB` for that
+sample; no full 15/24 MP monitor-device copy is retained. These observations are engineering evidence, not a universal
+SLA.

@@ -179,6 +179,7 @@ internal sealed class PhotoInfoCoordinator : IDisposable
             image.Descriptor.EncodedFormat,
             image.Descriptor.OrientedSize,
             image.EncodedSource.LongLength);
+        var colorProfile = image.GetPhotoColorProfile();
         PhotoMetadataReadResult? cached;
         CancellationTokenSource? cancellation = null;
         long generation;
@@ -195,13 +196,21 @@ internal sealed class PhotoInfoCoordinator : IDisposable
             if (_cache.TryGet(image.Identity, out cached))
             {
                 Interlocked.Increment(ref _cacheHits);
-                _state = new PhotoInfoState(info, cached!.Summary, IsMetadataLoading: false);
+                _state = new PhotoInfoState(
+                    info,
+                    cached!.Summary,
+                    IsMetadataLoading: false,
+                    colorProfile);
             }
             else
             {
                 cancellation = new CancellationTokenSource();
                 _requestCancellation = cancellation;
-                _state = new PhotoInfoState(info, PhotoMetadataSummary.Empty, IsMetadataLoading: true);
+                _state = new PhotoInfoState(
+                    info,
+                    PhotoMetadataSummary.Empty,
+                    IsMetadataLoading: true,
+                    colorProfile);
             }
         }
 

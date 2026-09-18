@@ -142,6 +142,12 @@ localization-facing resolver, and separate creative catalog/matcher into the log
 inside the same assembly. Picker-only alpha/Transparent adaptation remains in `ColorPicking`. The common model has no
 service, database, network, rendering, or Color Management input, and no new production project/package is introduced.
 
+R11-A adds a second product client without changing that authority. `PhotoColorProfileProjector` interprets only the
+small immutable `PhotoStyleAnalysis` created during decode, and its immutable value result is attached once to the same
+exact `DecodedImage`. `PhotoInfoCoordinator` reads that result through the existing presented-image lease; it does not
+own a scanner, semantic cache, bitmap, or classifier copy. This preserves the direction source pixels → bounded photo
+analysis → Color Semantics → localized Photo Info and prevents names from feeding rendering or Color Management.
+
 R8-B-W1 adds a separate photograph-color boundary. `WindowsDisplayColorProfileProvider` resolves ordinary-SDR monitor
 state and bounded profile bytes without leaking paths; `LittleCmsRuntimeLocator` and the small direct API load only the
 Fovium-owned runtime; and `SkiaLittleCmsPhotoRenderer` creates one encoded-size device-RGB source for the active

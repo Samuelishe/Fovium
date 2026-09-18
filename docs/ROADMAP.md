@@ -276,6 +276,19 @@ broad topology and creative matcher remain unchanged; 99 Professional terms now 
 Burnt Umber fails anchor retention against Russet, while fragmented or same-core candidates remain explicitly Deferred.
 Antique White/Linen remains the sole documented same-core warning.
 
+## R11-A — Semantic Photo Color Profile
+
+Locally complete at `0.1.4.0000`: connect the existing R10 photo analysis to shared Color Semantics through a compact
+Color Profile section in on-demand Photo Info. One small immutable projection is created off-UI from the exact
+`PhotoStyleAnalysis` and retained by the same `DecodedImage`; opening or moving Photo Info, zoom, pan, resize,
+fullscreen, Photo Presentation, and Slideshow never rescan or reclassify the photograph.
+
+The visible summary contains representative Dominant plus up to five unchanged population-ranked palette swatches.
+Professional structural identity wins with broad-family fallback; creative nearest names, HEX, and OKLCH are secondary
+tooltips. Fully transparent analysis publishes no invented profile. Navigation and Blink follow exact presented-image
+identity, Peek retains canonical authority, and no semantic result feeds Stage, Color Management, Picker, Histogram,
+or source pixels.
+
 ## Later / separate platform milestones
 
 - file association and Open With integration;

@@ -835,3 +835,20 @@ bounds, removes complete-row duplicates, and deterministically retains at most 1
 cap bounds clustering and prevents a large study from outweighing several independent sources. Production regions are
 still authored from compact components and must retain old anchors, reachability, fallback, overlap, and local-stability
 evidence; a parser never generates runtime geometry automatically.
+
+## D-075 — Photo Color Profile is an exact-image semantic projection, not another analyzer
+
+Status: Implemented in local R11-A; hosted verification pending.
+
+Photo Info is the existing hidden-by-default whole-photograph information surface, so R11-A extends it instead of
+adding another floating overlay or shortcut. After the single R10 `PhotoStyleAnalysis` is attached, one small off-UI
+`PhotoColorProfile` projection classifies Dominant, Average, and unchanged raw palette values through shared
+`Fovium.ColorSemantics` and attaches the result to the same exact `DecodedImage`. It owns no image scan, raster,
+viewport key, semantic cache, CMM operation, or rendering feedback.
+
+The visible initial UI shows representative Dominant and at most five population palette entries. Repeated structural
+names are not merged because distinct lightness/chroma clusters remain photographic evidence; Average stays in the
+reusable model but is omitted from the compact presentation. Professional identity or broad fallback is primary,
+creative nearest name is secondary tooltip detail, and a fully transparent analysis has no invented profile. The
+existing presented-image lease makes Blink select comparison data and release restore canonical data while Peek
+remains unchanged.

@@ -7,10 +7,11 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R10-E is locally complete on pushed R10-D baseline `50f1a4922bb84bdfd89b40ad7abcb2546c50c302`. Product version is
-`0.1.3.0001`: the 45 broad families and 1,800 creative anchors are unchanged, while five independently evidenced
-Professional terms add five bounded lobes for a total of 99 terms / 104 regions. The accepted terms are Apple Green,
-Pea Green, Burnt Orange, Straw, and Payne's Gray; every lobe is reachable and no lobe is shadowed.
+R11-A is locally complete on pushed R10-E baseline `fbdd668be83e4b5afb93c6557ecf1f2130236f9b`. Product version is
+`0.1.4.0000`: the on-demand Photo Info panel now includes a compact semantic Color Profile for the exact photograph
+being presented. It reuses the immutable R10 analysis owned by `DecodedImage`, preserves its raw five-entry palette,
+and adds structural Color Semantics names with creative names available only as secondary tooltip detail. The existing
+45 broad families, 99 Professional terms / 104 reachable lobes, and 1,800 creative anchors are unchanged.
 
 The ignored research corpus now includes pinned UW/LabintheWild and Stanford CoCoLab human-survey numeric evidence plus
 NBS/ISCC source dictionaries from Color-Library. Exact-name ingestion rejects compound homonyms, deduplicates rows, and
@@ -26,12 +27,11 @@ Windows at `RenderScaling = 1.00`.
 
 ## Current focus
 
-R10-E's whole 250-entry frontier rerun leaves 99 Accepted, 21 Deferred, 4 Synonym, 2 Rejected, and 124 Unreviewed.
-Burnt Umber was removed from the acceptance batch when its core consumed the existing Russet anchor; Cherry,
-Raspberry, Primrose, Cinnabar, Dandelion, Putty, and other highlighted candidates remain Deferred for fragmentation,
-weak component independence, or same-core risk. Cinnabar Green and rose-like Primrose compounds remain excluded.
-Antique White/Linen remains the sole same-core warning rather than being forced apart without new evidence. A future
-push must prove ordinary and native-workflow shared .NET tests on hosted Windows/Linux/macOS.
+R11-A is ready for owner review/commit and hosted CI. Its ignored Windows evidence covers 12 diverse photographs plus
+runtime hidden/open, navigation, Blink hold/release, fullscreen, Photo Presentation, and Slideshow at
+`RenderScaling = 1.00`. Linux/macOS and real fractional-DPI human visual acceptance remain future evidence; pure
+identity, lifecycle, localization, and cache contracts pass locally on Windows and WSL2 Ubuntu. R10-E's whole
+250-entry research frontier and Antique White/Linen warning remain unchanged.
 
 The current Codex/Rider ACP session negotiates no true in-app browser backend. Browser-plugin discovery returns an empty
 backend list, and the Rider Playwright MCP entry has no command or URL and is absent from the session tool registry.
@@ -134,7 +134,9 @@ capable host/session or a separately valid MCP registration plus Rider restart o
   encoded bytes lazily off the UI thread with bounded session cache and latest-wins presented-image authority.
 - Session-local Photo Info toggle on configurable `I`, checked Overlays menu entry, compact sparse localized label/value
   rows with explanatory tooltips, immediate oriented dimensions/MP/filename/format/encoded-size data, photographic
-  metadata details, and normalized persisted bottom-left floating placement.
+  metadata details, and normalized persisted bottom-left floating placement. Its Color Profile section shows the
+  representative Dominant and up to five unchanged raw-palette swatches with population share; structural Professional
+  names or broad-family fallback are primary, while HEX/OKLCH and creative names remain tooltip detail.
 - Session-local Histogram toggle on configurable `G`, checked Overlays menu entry, normalized persisted bottom-right
   placement, and a lightweight 256-bin RGB plot using one shared channel scale.
 - Session-local Color Inspector toggle on configurable `K`, checked Overlays menu entry, normalized persisted top-right
@@ -147,7 +149,7 @@ capable host/session or a separately valid MCP registration plus Rider restart o
   perceptual roles and undertones, lightness-dependent neutral boundaries, bounded compound hue transitions, monotonic
   lightness/chroma classes, bounded warm-neutral/earth-tone, mint, and violet/lilac-gray families, a lightness-aware
   yellow-brown/ochre boundary that leaves greener olive controls intact, truthful Transparent
-  handling, and no proprietary physical-standard claims. A declarative professional-shade layer adds 94 bounded terms
+  handling, and no proprietary physical-standard claims. A declarative professional-shade layer adds 99 bounded terms
   across purple/pink, blue, green/cyan, yellow/earth, brown, red/orange, and neutral/off-white domains. R8-A-F12 adds
   Heliotrope, Slate Blue, Spring Green, Pine Green, Brick Red, Raw Sienna, Raw Umber, Canary Yellow,
   Gamboge, Ecru, Buff, Goldenrod, Russet, and Heather. Composite regions may share

@@ -1,8 +1,8 @@
 # Photo-derived styling
 
 Role: Contract for R10 offline photograph analysis and the visual styles derived from it.
-Read when: Changing Average, Dominant, Color Wash, Color Gradient, Soft Glow, automatic Matte color, Hairline Auto, or
-the shared analysis artifact.
+Read when: Changing Average, Dominant, Color Wash, Color Gradient, Soft Glow, automatic Matte color, Hairline Auto,
+Photo Color Profile, or the shared analysis artifact.
 Authoritative for: Analysis domain and bounds, cache/identity behavior, fallback publication, tone normalization,
 Blink/Peek policy, and separation behavior.
 Not authoritative for: Decode-format support, viewport geometry, Color Management, general Stage composition, or
@@ -68,6 +68,25 @@ Hairline Auto is omitted. A previous photograph's style is never displayed as th
 Blink follows the photograph actually being shown: a decoded comparison uses its own attached analysis, otherwise the
 same truthful fallback applies. Blink does not borrow the canonical photograph's style or schedule work. Peek keeps the
 canonical photograph and therefore reuses its analysis without recomputation.
+
+## Semantic Color Profile
+
+R11-A derives one immutable `PhotoColorProfile` from this already-computed analysis immediately after successful
+attachment. It classifies Dominant, Average, and each raw palette value through shared `Fovium.ColorSemantics`; it does
+not read pixels, decode again, invoke CMM, or create a raster. A five-entry profile retains an estimated 1,296 bytes and
+is charged to the same exact `DecodedImage`. Projection is measured locally at about `11–116 µs` after catalog warm-up,
+versus roughly `15–289 ms` for decode plus analysis across the 12-image evidence set.
+
+Photo Info visibly presents Dominant and up to five raw population palette entries. Average remains in the reusable
+data model but is omitted from the compact initial UI. Entries are not merged merely because structural names repeat:
+the raw clusters may encode visibly distinct lightness/chroma masses within one human category. Professional terms win
+over broad fallback, while creative names, HEX, and OKLCH are secondary tooltip detail. A fully transparent analysis
+publishes no profile rather than naming an internal styling fallback.
+
+The presented-image lease controls publication exactly as for other Photo Info facts. Blink uses the comparison image's
+attached profile; release restores canonical data; Peek emits no identity change. Hide/show, drag, zoom, pan, resize,
+fullscreen, Photo Presentation, and Slideshow only reuse the retained value. No profile value is an input to Stage,
+Matte, Color Management, Picker, Histogram, or the photo analysis itself.
 
 ## Matte and separation
 

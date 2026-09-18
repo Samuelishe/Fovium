@@ -186,17 +186,22 @@ geometry or Matte before its matching photograph.
 
 Rare features live behind right click. `I` or Overlays → Photo Info toggles a compact movable label/value card for the
 currently presented image. Its sparse photographic rows cover available camera, lens, exposure, capture, dimensions, and
-file facts; each localized label/row offers a short explanatory tooltip. It starts hidden each application launch,
-preserves only normalized client-relative placement, follows Blink comparison identity, and leaves Peek unchanged.
-Missing fields collapse rather than producing placeholder rows. GPS/location fields are not shown. A future Advanced
-Metadata view remains separate; a persistent EXIF sidebar is not acceptable.
+file facts. A leading Colors section shows one representative Dominant swatch/name and up to five raw palette swatches
+with population shares. Structural Professional name or broad-family fallback is primary; hover exposes the exact HEX,
+OKLCH, share, and secondary creative name. Average is retained in the model but not shown in the compact first UI.
+Light and dark swatches use contrast outlines without altering their fill. Each localized label/row offers a short
+explanatory tooltip. The panel starts hidden each application launch, preserves only normalized client-relative
+placement, follows Blink comparison identity, and leaves Peek unchanged. Missing metadata rows and an unavailable
+Color Profile collapse rather than producing stale placeholders. GPS/location fields are not shown. A future Advanced
+Metadata view remains separate; a persistent EXIF sidebar or palette editor is not acceptable.
 
 `G` or Overlays → Histogram toggles a separate compact movable panel. It describes whole-image decoded RGB values, not
 the visible zoom crop, Stage, Matte, Ambient, markup, pointer UI, or future monitor output. It follows Blink comparison
 identity, remains unchanged for Peek/zoom/pan, starts hidden, and may coexist with Photo Info and markup tools.
 
 Stage background selection is available from both the context menu and Settings. Black remains default; Neutral, Custom,
-Ambient, Average, Dominant, Color Wash, Color Gradient, and Soft Glow apply immediately. Average/Dominant are solid photograph-derived colors;
+Ambient, Average, Dominant, Color Wash, Color Gradient, and Soft Glow apply immediately. Average/Dominant are solid
+photograph-derived colors;
 Color Wash is a soft abstract spatial field, Color Gradient is a calmer strongest-axis field, and Soft Glow is a fixed
 center/edge field; none is a readable duplicate of the photograph. Matte is an independent
 modifier over every background; Settings owns its physical width, outer style, Custom/Average/Dominant color source, and

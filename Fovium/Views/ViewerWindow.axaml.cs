@@ -20,6 +20,7 @@ using Fovium.Localization;
 using Fovium.Metadata;
 using Fovium.Navigation;
 using Fovium.Presentation;
+using Fovium.PhotoStyling;
 using Fovium.Rendering;
 using Fovium.Settings;
 using Fovium.Slideshow;
@@ -1628,6 +1629,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
             _localizer.Locale == "ru" ? "ru-RU" : "en-US");
         var text = PhotoInfoFormatter.Format(state, culture, _localizer.Get);
         PhotoInfoRows.Children.Clear();
+        AddPhotoColorProfile(state.ColorProfile, culture);
         AddPhotoInfoRow(UiStrings.PhotoInfoCamera, text.Camera, UiStrings.PhotoInfoCameraTip);
         AddPhotoInfoRow(UiStrings.PhotoInfoLens, text.Lens, UiStrings.PhotoInfoLensTip);
         AddPhotoInfoRow(UiStrings.PhotoInfoFocalLength, text.FocalLength, UiStrings.PhotoInfoFocalLengthTip);
@@ -1660,13 +1662,113 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         _photoInfoFloatingOverlay.ApplyPlacement();
     }
 
-    private void AddPhotoInfoRow(string labelKey, string? value, string tooltipKey)
+    private void AddPhotoColorProfile(PhotoColorProfile? profile, System.Globalization.CultureInfo culture)
     {
-        if (string.IsNullOrEmpty(value))
+        if (profile is null)
         {
             return;
         }
 
+        var presentation = PhotoColorProfilePresenter.Format(
+            profile,
+            culture,
+            _perceptualColorNameResolver,
+            ColorNameDisplayCatalog.ForLocale(_localizer.Locale));
+        var heading = new TextBlock
+        {
+            Text = _localizer[UiStrings.PhotoInfoColors],
+            FontWeight = FontWeight.SemiBold,
+            Opacity = 0.88,
+            Margin = new Thickness(0, 2, 0, 1),
+        };
+        ToolTip.SetTip(heading, _localizer[UiStrings.PhotoInfoColorsTip]);
+        PhotoInfoRows.Children.Add(heading);
+
+        var dominantContent = new StackPanel
+        {
+            Orientation = Avalonia.Layout.Orientation.Horizontal,
+            Spacing = 8,
+        };
+        dominantContent.Children.Add(CreatePhotoColorSwatch(presentation.Dominant.Color, 30, 22));
+        dominantContent.Children.Add(new TextBlock
+        {
+            Text = presentation.Dominant.StructuralName,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+            MaxWidth = 230,
+            Opacity = 0.94,
+        });
+        AddPhotoInfoControlRow(
+            UiStrings.PhotoInfoDominant,
+            dominantContent,
+            FormatPhotoColorTooltip(presentation.Dominant));
+
+        var paletteContent = new StackPanel
+        {
+            Orientation = Avalonia.Layout.Orientation.Horizontal,
+            Spacing = 7,
+        };
+        foreach (var entry in presentation.Palette)
+        {
+            var item = new StackPanel
+            {
+                Width = 43,
+                Spacing = 1,
+            };
+            item.Children.Add(CreatePhotoColorSwatch(entry.Color.Color, 38, 24));
+            item.Children.Add(new TextBlock
+            {
+                Text = entry.Share,
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+                FontSize = 11,
+                Opacity = 0.76,
+            });
+            ToolTip.SetTip(item, FormatPhotoColorTooltip(entry.Color, entry.Share));
+            paletteContent.Children.Add(item);
+        }
+
+        AddPhotoInfoControlRow(
+            UiStrings.PhotoInfoPalette,
+            paletteContent,
+            _localizer[UiStrings.PhotoInfoColorsTip]);
+        PhotoInfoRows.Children.Add(new Separator { Margin = new Thickness(0, 2, 0, 1) });
+    }
+
+    private Border CreatePhotoColorSwatch(StageColor color, double width, double height)
+    {
+        var relativeLuminance = ((0.2126 * color.Red) + (0.7152 * color.Green) + (0.0722 * color.Blue)) / 255;
+        var outline = relativeLuminance >= 0.58
+            ? Color.FromArgb(170, 0, 0, 0)
+            : Color.FromArgb(190, 255, 255, 255);
+        return new Border
+        {
+            Width = width,
+            Height = height,
+            CornerRadius = new CornerRadius(3),
+            BorderThickness = new Thickness(1),
+            BorderBrush = new SolidColorBrush(outline),
+            Background = new SolidColorBrush(Color.FromRgb(color.Red, color.Green, color.Blue)),
+        };
+    }
+
+    private string FormatPhotoColorTooltip(PhotoColorProfileDisplayColor color, string? share = null)
+    {
+        var lines = new List<string>
+        {
+            color.StructuralName,
+            $"{color.Hex} · {color.Oklch}",
+            $"{_localizer[UiStrings.ColorPickerDetailCreativeName]}: {color.CreativeName}",
+        };
+        if (share is not null)
+        {
+            lines.Insert(1, $"{_localizer[UiStrings.PhotoInfoShare]}: {share}");
+        }
+
+        return string.Join(Environment.NewLine, lines);
+    }
+
+    private void AddPhotoInfoControlRow(string labelKey, Control value, string tooltip)
+    {
         var row = new Grid
         {
             ColumnDefinitions = new ColumnDefinitions("128,*"),
@@ -1678,16 +1780,26 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
             Opacity = 0.68,
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Top,
         });
+        Grid.SetColumn(value, 1);
+        row.Children.Add(value);
+        ToolTip.SetTip(row, tooltip);
+        PhotoInfoRows.Children.Add(row);
+    }
+
+    private void AddPhotoInfoRow(string labelKey, string? value, string tooltipKey)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return;
+        }
+
         var valueText = new TextBlock
         {
             Text = value,
             TextWrapping = TextWrapping.Wrap,
             Opacity = 0.92,
         };
-        Grid.SetColumn(valueText, 1);
-        row.Children.Add(valueText);
-        ToolTip.SetTip(row, _localizer[tooltipKey]);
-        PhotoInfoRows.Children.Add(row);
+        AddPhotoInfoControlRow(labelKey, valueText, _localizer[tooltipKey]);
     }
 
     private void ConfigureHistogram()

@@ -1,6 +1,7 @@
 using System.Globalization;
 using Fovium.Imaging;
 using Fovium.Localization;
+using Fovium.PhotoStyling;
 using Fovium.Rendering;
 
 namespace Fovium.Metadata;
@@ -15,7 +16,8 @@ internal sealed record PhotoInfoBase(
 internal sealed record PhotoInfoState(
     PhotoInfoBase Base,
     PhotoMetadataSummary Metadata,
-    bool IsMetadataLoading);
+    bool IsMetadataLoading,
+    PhotoColorProfile? ColorProfile = null);
 
 internal sealed record PhotoInfoText(
     string? Camera,

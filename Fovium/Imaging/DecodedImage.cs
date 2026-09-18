@@ -63,6 +63,7 @@ internal sealed class DecodedImage : IRetainedResource
     private SharedResource<PreparedPhotoStyleRaster>? _colorGradient;
     private SharedResource<PreparedPhotoStyleRaster>? _softGlow;
     private PhotoStyleAnalysis? _photoStyleAnalysis;
+    private PhotoColorProfile? _photoColorProfile;
     private bool _disposed;
 
     public DecodedImage(
@@ -96,7 +97,8 @@ internal sealed class DecodedImage : IRetainedResource
                     Descriptor.EstimatedRetainedBytes +
                     ambientBytes +
                     GetPhotoStyleRasterRetainedBytes() +
-                    (_photoStyleAnalysis?.RetainedBytes ?? 0));
+                    (_photoStyleAnalysis?.RetainedBytes ?? 0) +
+                    (_photoColorProfile?.RetainedBytes ?? 0));
             }
         }
     }
@@ -164,6 +166,29 @@ internal sealed class DecodedImage : IRetainedResource
         lock (_ownershipSync)
         {
             return _disposed ? null : _photoStyleAnalysis;
+        }
+    }
+
+    public bool TryAttachPhotoColorProfile(PhotoColorProfile profile)
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+        lock (_ownershipSync)
+        {
+            if (_disposed || _photoStyleAnalysis is null || _photoColorProfile is not null)
+            {
+                return false;
+            }
+
+            _photoColorProfile = profile;
+            return true;
+        }
+    }
+
+    public PhotoColorProfile? GetPhotoColorProfile()
+    {
+        lock (_ownershipSync)
+        {
+            return _disposed ? null : _photoColorProfile;
         }
     }
 
@@ -309,6 +334,7 @@ internal sealed class DecodedImage : IRetainedResource
             softGlow = _softGlow;
             _softGlow = null;
             _photoStyleAnalysis = null;
+            _photoColorProfile = null;
         }
 
         ambient?.ReleaseOwner();

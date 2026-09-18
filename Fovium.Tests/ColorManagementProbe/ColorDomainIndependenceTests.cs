@@ -35,6 +35,8 @@ public sealed class ColorDomainIndependenceTests
         var adobeRgbPixel = SkiaColorTransformProbe.TransformPixel(sourcePixel, sourceSpace, adobeRgb);
         var analysis = new PhotoStyleAnalyzer().Analyze(image, CancellationToken.None);
         Assert.True(image.TryAttachPhotoStyleAnalysis(analysis));
+        var profile = Assert.IsType<PhotoColorProfile>(new PhotoColorProfileProjector().Create(analysis));
+        Assert.True(image.TryAttachPhotoColorProfile(profile));
         _ = PhotoDerivedStylePolicy.ResolveLinearGradient(analysis);
         _ = PhotoDerivedStylePolicy.ResolveRadialGlow(analysis);
 
@@ -44,6 +46,9 @@ public sealed class ColorDomainIndependenceTests
 
         Assert.NotEqual(displayP3Pixel, adobeRgbPixel);
         Assert.Equal(pickerBefore, pickerAfter);
+        Assert.Equal(sourcePixel.Red, pickerAfter.Red);
+        Assert.Equal(sourcePixel.Green, pickerAfter.Green);
+        Assert.Equal(sourcePixel.Blue, pickerAfter.Blue);
         Assert.Equal("#C45329", pickerAfter.Hex);
         Assert.Equal(histogramBefore.Red, histogramAfter.Red);
         Assert.Equal(histogramBefore.Green, histogramAfter.Green);

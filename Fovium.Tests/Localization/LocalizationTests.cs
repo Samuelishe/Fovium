@@ -291,6 +291,38 @@ public sealed class LocalizationTests
     }
 
     [Theory]
+    [InlineData(
+        "en-US",
+        "Colors",
+        "Dominant",
+        "Palette",
+        "Share",
+        "Whole-photo colors from the existing bounded reference-sRGB analysis.")]
+    [InlineData(
+        "ru-RU",
+        "Цвета",
+        "Доминирующий",
+        "Палитра",
+        "Доля",
+        "Цвета всей фотографии из существующего ограниченного анализа в эталонном sRGB.")]
+    public void PhotoInfoColorProfileHasExactLocalizedVocabulary(
+        string cultureName,
+        string colors,
+        string dominant,
+        string palette,
+        string share,
+        string tip)
+    {
+        var localizer = Localizer.Create(CultureInfo.GetCultureInfo(cultureName));
+
+        Assert.Equal(colors, localizer[UiStrings.PhotoInfoColors]);
+        Assert.Equal(dominant, localizer[UiStrings.PhotoInfoDominant]);
+        Assert.Equal(palette, localizer[UiStrings.PhotoInfoPalette]);
+        Assert.Equal(share, localizer[UiStrings.PhotoInfoShare]);
+        Assert.Equal(tip, localizer[UiStrings.PhotoInfoColorsTip]);
+    }
+
+    [Theory]
     [InlineData("en-US", "Camera", "Lens focal length at the moment of capture.", "Aperture priority", "Did not fire")]
     [InlineData("ru-RU", "Камера", "Фокусное расстояние объектива в момент съёмки.", "Приоритет диафрагмы",
         "Не сработала")]
@@ -318,6 +350,11 @@ public sealed class LocalizationTests
             UiStrings.PhotoInfoCaptured,
             UiStrings.PhotoInfoDimensions,
             UiStrings.PhotoInfoFile,
+            UiStrings.PhotoInfoColors,
+            UiStrings.PhotoInfoDominant,
+            UiStrings.PhotoInfoPalette,
+            UiStrings.PhotoInfoShare,
+            UiStrings.PhotoInfoColorsTip,
             UiStrings.PhotoInfoCameraTip,
             UiStrings.PhotoInfoLensTip,
             UiStrings.PhotoInfoFocalLengthTip,

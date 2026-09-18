@@ -39,8 +39,8 @@ Rendering quality and precise interaction take priority over feature count.
   while Matte decorates the resolved photo without changing its scale;
 - a session-local **Slideshow** on `F5`, with a persisted 1–60 second interval, stop-at-last or natural-order loop
   behavior, and one bounded prepared next frame;
-- on-demand movable Photo Info and decoded-RGB Histogram overlays that follow the actually presented photograph,
-  including Blink;
+- on-demand movable Photo Info with semantic whole-photo Color Profile, plus decoded-RGB Histogram; both follow the
+  actually presented photograph, including Blink;
 - an offline click-to-sample photographic Color Picker with reference-sRGB HEX/RGB (A), one local OKLab-nearest human
   name, and ten-click session history;
 - JPEG, PNG, static WebP, bounded static 8-bit TIFF, bounded static 8-bit SDR HEIF/HEIC, and bounded static 8-bit SDR
@@ -52,10 +52,11 @@ and [imaging direction](docs/IMAGING-PIPELINE.md) for details.
 
 ## Current status
 
-The current local product version is **`0.1.3.0001`**. Accepted R10-B commit `1beaa64` adds directional Color Gradient
+The current local product version is **`0.1.4.0000`**. Accepted R10-B commit `1beaa64` adds directional Color Gradient
 and restrained Soft Glow; pushed R10-D commit `50f1a49` establishes cross-platform deterministic Color Semantics
-evidence. Locally complete R10-E uses new independent numeric sources to add five bounded Professional names without
-changing broad-family topology; hosted verification awaits an owner-approved push.
+evidence; pushed R10-E commit `fbdd668` adds five independently evidenced Professional names. Locally complete R11-A
+uses the existing photo analysis to add a compact semantic Color Profile to Photo Info without another image pass;
+hosted verification awaits an owner-approved push.
 
 This is an alpha milestone, not a feature-complete or stable release claim. Textured Matte/background materials,
 inner shadows, broad material presets, slideshow transitions/shuffle/music/countdown UI, animated formats, RAW, Advanced

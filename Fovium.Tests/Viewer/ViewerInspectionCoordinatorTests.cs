@@ -3,9 +3,12 @@ using Fovium.Imaging;
 using Fovium.Loading;
 using Fovium.Metadata;
 using Fovium.Navigation;
+using Fovium.PhotoStyling;
 using Fovium.Presentation;
 using Fovium.Rendering;
 using Fovium.Settings;
+using Fovium.Stage;
+using Fovium.Tests.PhotoStyling;
 using Fovium.Tests.Stage;
 using Fovium.Viewer;
 
@@ -17,7 +20,7 @@ public sealed class ViewerInspectionCoordinatorTests(Xunit.Abstractions.ITestOut
     public async Task CachedBlinkShowsPreviousThenRestoresCanonicalViewWithoutNavigation()
     {
         var loader = new DecodedImageLoader((path, _) => Task.FromResult(
-            ImageLoadResult<DecodedImage>.Success(StageTestImages.CreateDecoded(path))));
+            ImageLoadResult<DecodedImage>.Success(CreateProfiledDecoded(path))));
         await using var session = CreateSession(loader);
         using var settings = new SettingsService(new DefaultSettingsStore());
         var viewport = new PhotoViewportControl();
@@ -35,6 +38,7 @@ public sealed class ViewerInspectionCoordinatorTests(Xunit.Abstractions.ITestOut
         using var photoInfo = new PhotoInfoCoordinator(viewport, metadataReader);
         photoInfo.SetVisible(true);
         Assert.Equal(canonicalIdentity, photoInfo.CurrentState!.Base.ImageIdentity);
+        Assert.Equal(new StageColor(20, 80, 180), photoInfo.CurrentState.ColorProfile!.Dominant.Color);
         viewport.SetPhotographic100AtCenter();
         var before = viewport.CaptureViewTransfer();
         await session.WaitForAdjacentPreloadAsync(CancellationToken.None);
@@ -49,6 +53,7 @@ public sealed class ViewerInspectionCoordinatorTests(Xunit.Abstractions.ITestOut
         Assert.Equal(before, viewport.CaptureViewTransfer());
         Assert.Equal(previousPath, viewport.PresentedImageIdentity);
         Assert.Equal(previousPath, photoInfo.CurrentState!.Base.SourcePath);
+        Assert.Equal(new StageColor(180, 60, 20), photoInfo.CurrentState.ColorProfile!.Dominant.Color);
         var comparisonMarkup = viewport.CapturePresentedMarkup().Operations;
         Assert.Equal(2, comparisonMarkup.Count);
         Assert.Equal(
@@ -64,6 +69,7 @@ public sealed class ViewerInspectionCoordinatorTests(Xunit.Abstractions.ITestOut
         Assert.Equal(1, session.CurrentIndex);
         Assert.Equal(opened.Path, viewport.PresentedImageIdentity);
         Assert.Equal(opened.Path, photoInfo.CurrentState!.Base.SourcePath);
+        Assert.Equal(new StageColor(20, 80, 180), photoInfo.CurrentState.ColorProfile!.Dominant.Color);
         Assert.Equal(2, metadataReader.CallCount);
         Assert.Equal(
             new PresentationColor(0x11, 0x22, 0x33),
@@ -83,7 +89,7 @@ public sealed class ViewerInspectionCoordinatorTests(Xunit.Abstractions.ITestOut
     public async Task PeekKeepsCanonicalOverlayIdentity()
     {
         var loader = new DecodedImageLoader((path, _) => Task.FromResult(
-            ImageLoadResult<DecodedImage>.Success(StageTestImages.CreateDecoded(path))));
+            ImageLoadResult<DecodedImage>.Success(CreateProfiledDecoded(path))));
         await using var session = CreateSession(loader);
         using var settings = new SettingsService(new DefaultSettingsStore());
         var viewport = new PhotoViewportControl();
@@ -94,6 +100,9 @@ public sealed class ViewerInspectionCoordinatorTests(Xunit.Abstractions.ITestOut
         DrawOverlay(overlays, opened.Path!, new PresentationColor(1, 2, 3));
         EraseOverlay(overlays, opened.Path!);
         viewport.SetImage(opened.Image!, ViewTransfer.Fit, opened.Path!);
+        using var photoInfo = new PhotoInfoCoordinator(viewport, new EmptyMetadataReader());
+        photoInfo.SetVisible(true);
+        var canonicalProfile = Assert.IsType<PhotoColorProfile>(photoInfo.CurrentState!.ColorProfile);
         var presentedChangeCount = 0;
         viewport.PresentedImageChanged += (_, _) => presentedChangeCount++;
         var coordinator = new ViewerInspectionCoordinator(viewport, session, settings);
@@ -101,11 +110,13 @@ public sealed class ViewerInspectionCoordinatorTests(Xunit.Abstractions.ITestOut
         await coordinator.BeginAsync(Fovium.Input.ViewerCommand.Peek100, CancellationToken.None);
 
         Assert.Equal(opened.Path, viewport.PresentedImageIdentity);
+        Assert.Same(canonicalProfile, photoInfo.CurrentState!.ColorProfile);
         var peekMarkup = viewport.CapturePresentedMarkup().Operations;
         Assert.Equal(2, peekMarkup.Count);
         Assert.IsType<EraseMarkupOperation>(peekMarkup[1]);
         coordinator.End();
         Assert.Equal(opened.Path, viewport.PresentedImageIdentity);
+        Assert.Same(canonicalProfile, photoInfo.CurrentState!.ColorProfile);
         Assert.Equal(0, presentedChangeCount);
         viewport.ClearImage();
     }
@@ -221,6 +232,22 @@ public sealed class ViewerInspectionCoordinatorTests(Xunit.Abstractions.ITestOut
         var policy = AutomaticMemoryPolicy.FromAvailableMemory(2L * 1024 * 1024 * 1024);
         var cache = new ByteBudgetCache<string, DecodedImage>(policy.CacheBudgetBytes, StringComparer.Ordinal);
         return new ViewerSession<DecodedImage>(loader, cache, policy);
+    }
+
+    private static DecodedImage CreateProfiledDecoded(string path)
+    {
+        var image = StageTestImages.CreateDecoded(path);
+        var color = Path.GetFileName(path) switch
+        {
+            "A.png" => new StageColor(180, 60, 20),
+            "B.png" => new StageColor(20, 80, 180),
+            _ => new StageColor(40, 150, 80),
+        };
+        var analysis = PhotoDerivedStylePolicyTests.CreateAnalysis(color, color, color);
+        Assert.True(image.TryAttachPhotoStyleAnalysis(analysis));
+        var profile = Assert.IsType<PhotoColorProfile>(new PhotoColorProfileProjector().Create(analysis));
+        Assert.True(image.TryAttachPhotoColorProfile(profile));
+        return image;
     }
 
     private sealed class DecodedImageLoader(
