@@ -248,6 +248,26 @@ public sealed class PhotoStyleAnalyzerTests
         Assert.InRange(analysis.DominantColor.Blue, (byte)225, byte.MaxValue);
     }
 
+    [Fact]
+    public void FullyTransparentImageProducesDeterministicNeutralGradientFallbacks()
+    {
+        using var decoded = CreateSolidDecoded(32, 24, SKColors.Transparent);
+        var analyzer = new PhotoStyleAnalyzer();
+
+        var first = analyzer.Analyze(decoded, CancellationToken.None);
+        var second = analyzer.Analyze(decoded, CancellationToken.None);
+
+        Assert.Equal(0, first.VisibleSampleCount);
+        Assert.Equal(StageDefaults.NeutralColor, first.AverageColor);
+        Assert.Equal(StageDefaults.NeutralColor, first.DominantColor);
+        Assert.Equal(
+            PhotoDerivedStylePolicy.ResolveLinearGradient(first),
+            PhotoDerivedStylePolicy.ResolveLinearGradient(second));
+        Assert.Equal(
+            PhotoDerivedStylePolicy.ResolveRadialGlow(first),
+            PhotoDerivedStylePolicy.ResolveRadialGlow(second));
+    }
+
     private static DecodedImage CreateDecoded(
         int width,
         int height,

@@ -4,11 +4,11 @@ using SkiaSharp;
 
 namespace Fovium.PhotoStyling;
 
-internal sealed class PreparedColorWash : IRetainedResource
+internal sealed class PreparedPhotoStyleRaster : IRetainedResource
 {
     private SKImage? _image;
 
-    public PreparedColorWash(SKImage image)
+    public PreparedPhotoStyleRaster(SKImage image)
     {
         _image = image ?? throw new ArgumentNullException(nameof(image));
         Size = new PixelSize(image.Width, image.Height);
@@ -16,7 +16,7 @@ internal sealed class PreparedColorWash : IRetainedResource
     }
 
     public SKImage Image =>
-        Volatile.Read(ref _image) ?? throw new ObjectDisposedException(nameof(PreparedColorWash));
+        Volatile.Read(ref _image) ?? throw new ObjectDisposedException(nameof(PreparedPhotoStyleRaster));
 
     public PixelSize Size { get; }
 

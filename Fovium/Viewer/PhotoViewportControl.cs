@@ -1126,7 +1126,7 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
 
         DecodedImage.RenderLease? renderLease = null;
         DecodedImage.AmbientLease? ambientLease = null;
-        DecodedImage.ColorWashLease? colorWashLease = null;
+        DecodedImage.PhotoStyleRasterLease? photoStyleRasterLease = null;
         ManagedPhotoSourceLease? managedSource = null;
         try
         {
@@ -1144,10 +1144,10 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
             var descriptor = cachedLease.Value.Descriptor;
             var photoStyleAnalysis = cachedLease.Value.GetPhotoStyleAnalysis();
             var presentationStage = _inspectionImage is not null ? _inspectionStage! : _stage;
-            if (photoStyleAnalysis is not null &&
-                presentationStage.BackgroundMode == StageBackgroundMode.ColorWash)
+            if (photoStyleAnalysis is not null)
             {
-                colorWashLease = cachedLease.Value.TryAcquireColorWash();
+                photoStyleRasterLease = cachedLease.Value.TryAcquirePhotoStyleRaster(
+                    presentationStage.BackgroundMode);
             }
             var destination = GetDestination();
             var suppressLegacyPhoto = false;
@@ -1203,21 +1203,21 @@ internal sealed class PhotoViewportControl : Control, IPresentedImageSource
                 _interactionDiagnostics,
                 photoStyleAnalysis,
                 photoStyleAnalysis is null ? null : presentedNumericIdentity,
-                colorWashLease,
+                photoStyleRasterLease,
                 managedSource,
                 suppressLegacyPhoto,
                 _managedPhotoCoordinator));
             SetPhotoPresentationVisible(photoPresentationVisible);
             renderLease = null;
             ambientLease = null;
-            colorWashLease = null;
+            photoStyleRasterLease = null;
             managedSource = null;
         }
         finally
         {
             renderLease?.Dispose();
             ambientLease?.Dispose();
-            colorWashLease?.Dispose();
+            photoStyleRasterLease?.Dispose();
             managedSource?.Dispose();
         }
     }

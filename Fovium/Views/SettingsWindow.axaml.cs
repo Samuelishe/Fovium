@@ -39,6 +39,8 @@ internal sealed partial class SettingsWindow : Window
     private readonly RadioButton _averageStageOption;
     private readonly RadioButton _dominantStageOption;
     private readonly RadioButton _colorWashStageOption;
+    private readonly RadioButton _colorGradientStageOption;
+    private readonly RadioButton _softGlowStageOption;
     private readonly CheckBox _matteEnabledOption;
     private readonly ComboBox _matteStyleOption;
     private readonly ComboBox _matteColorSourceOption;
@@ -118,6 +120,8 @@ internal sealed partial class SettingsWindow : Window
         _averageStageOption = FindRequired<RadioButton>("AverageStageOption");
         _dominantStageOption = FindRequired<RadioButton>("DominantStageOption");
         _colorWashStageOption = FindRequired<RadioButton>("ColorWashStageOption");
+        _colorGradientStageOption = FindRequired<RadioButton>("ColorGradientStageOption");
+        _softGlowStageOption = FindRequired<RadioButton>("SoftGlowStageOption");
         _matteEnabledOption = FindRequired<CheckBox>("MatteEnabledOption");
         _matteStyleOption = FindRequired<ComboBox>("MatteStyleOption");
         _matteColorSourceOption = FindRequired<ComboBox>("MatteColorSourceOption");
@@ -207,6 +211,8 @@ internal sealed partial class SettingsWindow : Window
         _averageStageOption.Content = localizer[UiStrings.StageAverage];
         _dominantStageOption.Content = localizer[UiStrings.StageDominant];
         _colorWashStageOption.Content = localizer[UiStrings.StageColorWash];
+        _colorGradientStageOption.Content = localizer[UiStrings.StageColorGradient];
+        _softGlowStageOption.Content = localizer[UiStrings.StageSoftGlow];
         _matteEnabledOption.Content = localizer[UiStrings.StageMatteEnabled];
         _ambientOptions.Header = localizer[UiStrings.StageAmbientOptions];
         _matteStyleOption.ItemsSource = Enum.GetValues<MatteStyle>()
@@ -300,6 +306,12 @@ internal sealed partial class SettingsWindow : Window
         _colorWashStageOption.IsCheckedChanged += (_, _) => SetBackgroundIfChecked(
             _colorWashStageOption,
             StageBackgroundMode.ColorWash);
+        _colorGradientStageOption.IsCheckedChanged += (_, _) => SetBackgroundIfChecked(
+            _colorGradientStageOption,
+            StageBackgroundMode.ColorGradient);
+        _softGlowStageOption.IsCheckedChanged += (_, _) => SetBackgroundIfChecked(
+            _softGlowStageOption,
+            StageBackgroundMode.SoftGlow);
         _matteEnabledOption.IsCheckedChanged += OnMatteEnabledChanged;
         _matteStyleOption.SelectionChanged += OnMatteStyleChanged;
         _matteColorSourceOption.SelectionChanged += OnMatteColorSourceChanged;
@@ -702,6 +714,9 @@ internal sealed partial class SettingsWindow : Window
         _averageStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.Average;
         _dominantStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.Dominant;
         _colorWashStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.ColorWash;
+        _colorGradientStageOption.IsChecked =
+            settings.Stage.BackgroundMode == StageBackgroundMode.ColorGradient;
+        _softGlowStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.SoftGlow;
         _matteEnabledOption.IsChecked = settings.Stage.MatteEnabled;
         _matteStyleOption.SelectedItem = _matteStyleOption.ItemsSource?
             .OfType<ComboBoxItem>()
@@ -709,11 +724,11 @@ internal sealed partial class SettingsWindow : Window
         _matteColorSourceOption.SelectedItem = _matteColorSourceOption.ItemsSource?
             .OfType<ComboBoxItem>()
             .Single(item => item.Tag is MatteColorSource source &&
-                source == settings.Stage.MatteColorSource);
+                            source == settings.Stage.MatteColorSource);
         _photoSeparationOption.SelectedItem = _photoSeparationOption.ItemsSource?
             .OfType<ComboBoxItem>()
             .Single(item => item.Tag is PhotoSeparationMode mode &&
-                mode == settings.Stage.PhotoSeparation);
+                            mode == settings.Stage.PhotoSeparation);
         _matteCustomColorPanel.IsEnabled =
             settings.Stage.MatteColorSource == MatteColorSource.Custom;
         _matteWidthSlider.Value = settings.Stage.MatteWidthPhysicalPixels;

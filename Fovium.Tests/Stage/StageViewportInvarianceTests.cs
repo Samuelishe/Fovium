@@ -83,6 +83,14 @@ public sealed class StageViewportInvarianceTests
         { (int)StageBackgroundMode.ColorWash, (int)MatteStyle.Rounded },
         { (int)StageBackgroundMode.ColorWash, (int)MatteStyle.Soft },
         { (int)StageBackgroundMode.ColorWash, (int)MatteStyle.Angular },
+        { (int)StageBackgroundMode.ColorGradient, (int)MatteStyle.Solid },
+        { (int)StageBackgroundMode.ColorGradient, (int)MatteStyle.Rounded },
+        { (int)StageBackgroundMode.ColorGradient, (int)MatteStyle.Soft },
+        { (int)StageBackgroundMode.ColorGradient, (int)MatteStyle.Angular },
+        { (int)StageBackgroundMode.SoftGlow, (int)MatteStyle.Solid },
+        { (int)StageBackgroundMode.SoftGlow, (int)MatteStyle.Rounded },
+        { (int)StageBackgroundMode.SoftGlow, (int)MatteStyle.Soft },
+        { (int)StageBackgroundMode.SoftGlow, (int)MatteStyle.Angular },
     };
 
     [Theory]

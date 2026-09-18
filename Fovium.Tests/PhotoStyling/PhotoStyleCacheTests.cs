@@ -1,5 +1,7 @@
+using Fovium.PhotoStyling;
 using Fovium.Stage;
 using Fovium.Tests.Stage;
+using SkiaSharp;
 
 namespace Fovium.Tests.PhotoStyling;
 
@@ -21,14 +23,22 @@ public sealed class PhotoStyleCacheTests
         Assert.True(decoded.TryAttachPhotoStyleAnalysis(first));
         Assert.False(decoded.TryAttachPhotoStyleAnalysis(rejected));
         Assert.Same(first, decoded.GetPhotoStyleAnalysis());
-        using var wash = Assert.IsType<Fovium.Imaging.DecodedImage.ColorWashLease>(
-            decoded.TryAcquireColorWash());
+        using var wash = Assert.IsType<Fovium.Imaging.DecodedImage.PhotoStyleRasterLease>(
+            decoded.TryAcquirePhotoStyleRaster(StageBackgroundMode.ColorWash));
+        using var gradient = Assert.IsType<Fovium.Imaging.DecodedImage.PhotoStyleRasterLease>(
+            decoded.TryAcquirePhotoStyleRaster(StageBackgroundMode.ColorGradient));
+        using var glow = Assert.IsType<Fovium.Imaging.DecodedImage.PhotoStyleRasterLease>(
+            decoded.TryAcquirePhotoStyleRaster(StageBackgroundMode.SoftGlow));
         Assert.Equal(
-            1024 + first.RetainedBytes + wash.RetainedBytes,
+            1024 + first.RetainedBytes + wash.RetainedBytes + gradient.RetainedBytes + glow.RetainedBytes,
             decoded.RetainedBytes);
         Assert.Equal(
             StageDefaults.PhotoStyleWashRasterPixels * StageDefaults.PhotoStyleWashRasterPixels * 4,
             wash.RetainedBytes);
+        Assert.Equal(
+            StageDefaults.PhotoStyleGradientRasterPixels * StageDefaults.PhotoStyleGradientRasterPixels * 4,
+            gradient.RetainedBytes);
+        Assert.Equal(gradient.RetainedBytes, glow.RetainedBytes);
     }
 
     [Fact]
@@ -43,9 +53,10 @@ public sealed class PhotoStyleCacheTests
 
         for (var index = 0; index < 50; index++)
         {
+            var modes = Enum.GetValues<StageBackgroundMode>();
             var stage = StageSettings.Default with
             {
-                BackgroundMode = (StageBackgroundMode)(index % 7),
+                BackgroundMode = modes[index % modes.Length],
                 MatteEnabled = index % 2 == 0,
                 MatteWidthPhysicalPixels = 4 + index,
             };
@@ -56,11 +67,70 @@ public sealed class PhotoStyleCacheTests
                 new Fovium.Rendering.LogicalSize(800 + index, 600 + index),
                 1.25);
             Assert.Same(analysis, decoded.GetPhotoStyleAnalysis());
-            using var wash = Assert.IsType<Fovium.Imaging.DecodedImage.ColorWashLease>(
-                decoded.TryAcquireColorWash());
-            using var secondWash = Assert.IsType<Fovium.Imaging.DecodedImage.ColorWashLease>(
-                decoded.TryAcquireColorWash());
+            using var wash = Assert.IsType<Fovium.Imaging.DecodedImage.PhotoStyleRasterLease>(
+                decoded.TryAcquirePhotoStyleRaster(StageBackgroundMode.ColorWash));
+            using var secondWash = Assert.IsType<Fovium.Imaging.DecodedImage.PhotoStyleRasterLease>(
+                decoded.TryAcquirePhotoStyleRaster(StageBackgroundMode.ColorWash));
             Assert.Same(wash.Image, secondWash.Image);
         }
+    }
+
+    [Theory]
+    [InlineData((int)StageBackgroundMode.ColorGradient)]
+    [InlineData((int)StageBackgroundMode.SoftGlow)]
+    public void ExpressiveGradientRastersAreBoundedAndByteAccounted(int modeValue)
+    {
+        using var decoded = StageTestImages.CreateDecoded(retainedBytes: 2048);
+        var analysis = PhotoDerivedStylePolicyTests.CreateAnalysis(
+            new StageColor(50, 80, 110),
+            new StageColor(150, 80, 60),
+            new StageColor(20, 30, 40));
+        Assert.True(decoded.TryAttachPhotoStyleAnalysis(analysis));
+        var retained = decoded.RetainedBytes;
+        using var raster = Assert.IsType<Fovium.Imaging.DecodedImage.PhotoStyleRasterLease>(
+            decoded.TryAcquirePhotoStyleRaster((StageBackgroundMode)modeValue));
+
+        for (var index = 0; index < 50; index++)
+        {
+            var stage = StageSettings.Default with
+            {
+                BackgroundMode = (StageBackgroundMode)modeValue,
+            };
+            _ = PhotoDerivedStylePolicy.ResolveLinearGradient(analysis);
+            _ = PhotoDerivedStylePolicy.ResolveRadialGlow(analysis);
+            Assert.True(stage.RequiresPhotoStyleAnalysis());
+            Assert.Same(analysis, decoded.GetPhotoStyleAnalysis());
+            Assert.Equal(retained, decoded.RetainedBytes);
+            Assert.Equal(
+                StageDefaults.PhotoStyleGradientRasterPixels * StageDefaults.PhotoStyleGradientRasterPixels * 4,
+                raster.RetainedBytes);
+        }
+    }
+
+    [Theory]
+    [InlineData((int)StageBackgroundMode.ColorGradient)]
+    [InlineData((int)StageBackgroundMode.SoftGlow)]
+    public void ExpressiveRasterLeaseMatchesSelectedModeAndRemainsStable(int modeValue)
+    {
+        var mode = (StageBackgroundMode)modeValue;
+        using var decoded = StageTestImages.CreateDecoded();
+        var analysis = PhotoDerivedStylePolicyTests.CreateAnalysis(
+            new StageColor(80, 105, 130),
+            new StageColor(190, 70, 45),
+            new StageColor(25, 40, 70));
+        Assert.True(decoded.TryAttachPhotoStyleAnalysis(analysis));
+        using var first = Assert.IsType<Fovium.Imaging.DecodedImage.PhotoStyleRasterLease>(
+            decoded.TryAcquirePhotoStyleRaster(mode));
+        using var second = Assert.IsType<Fovium.Imaging.DecodedImage.PhotoStyleRasterLease>(
+            decoded.TryAcquirePhotoStyleRaster(mode));
+        using var expected = mode == StageBackgroundMode.ColorGradient
+            ? PhotoDerivedStylePolicy.CreateColorGradientImage(analysis)
+            : PhotoDerivedStylePolicy.CreateSoftGlowImage(analysis);
+        using var actualPixels = SKBitmap.FromImage(first.Image);
+        using var expectedPixels = SKBitmap.FromImage(expected);
+
+        Assert.Same(first.Image, second.Image);
+        Assert.Equal(expectedPixels.GetPixelSpan().ToArray(), actualPixels.GetPixelSpan().ToArray());
+        Assert.Null(decoded.TryAcquirePhotoStyleRaster(StageBackgroundMode.Neutral));
     }
 }

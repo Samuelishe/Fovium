@@ -2,6 +2,7 @@ using Fovium.ColorManagementProbe;
 using Fovium.ColorPicking;
 using Fovium.Histogram;
 using Fovium.Imaging;
+using Fovium.PhotoStyling;
 using Fovium.Rendering;
 using SkiaSharp;
 
@@ -32,6 +33,10 @@ public sealed class ColorDomainIndependenceTests
             SKColorSpaceXyz.AdobeRgb);
         var displayP3Pixel = SkiaColorTransformProbe.TransformPixel(sourcePixel, sourceSpace, displayP3);
         var adobeRgbPixel = SkiaColorTransformProbe.TransformPixel(sourcePixel, sourceSpace, adobeRgb);
+        var analysis = new PhotoStyleAnalyzer().Analyze(image, CancellationToken.None);
+        Assert.True(image.TryAttachPhotoStyleAnalysis(analysis));
+        _ = PhotoDerivedStylePolicy.ResolveLinearGradient(analysis);
+        _ = PhotoDerivedStylePolicy.ResolveRadialGlow(analysis);
 
         var pickerAfter = sampler.Sample(image, new PixelPoint(0, 0));
         var histogramAfter = Assert.IsType<HistogramData>(

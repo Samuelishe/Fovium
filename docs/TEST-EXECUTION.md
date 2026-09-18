@@ -269,6 +269,16 @@ largest-intersection/tie behavior, typed fallback precedence, complete transform
 behavior, and source-versus-destination ownership. The final domain-independence test proves that two destination
 transforms differ while R8-A reference-sRGB Picker output and source-domain Histogram bins remain unchanged. Platform
 APIs and real display-profile availability remain probe/manual evidence rather than skipped ordinary unit tests.
+R10-B hardens native source acquisition with deterministic Python unit tests that inject network/cache behavior without
+contacting upstream:
+
+```powershell
+python -m unittest discover -s eng/native/libheif/tests -p 'test_*.py' -v
+```
+
+The cases cover bounded transient 504/503 recovery, permanent 404, connection reset before and after partial output,
+downloaded hash mismatch, verified cache reuse, and invalid-cache replacement. Pinned URLs/versions/SHA-256 remain owned
+by `versions.json`; a hash mismatch is a single hard failure, and only a validated `.part` is atomically promoted.
 
 Run a clean native build locally with:
 
@@ -364,7 +374,7 @@ test requires both logical focusability and a locally assigned null `FocusAdorne
 plus Left/Right with F6, F11, context-menu, Settings, and focus loss/reacquisition to check that no inner viewport focus
 rectangle appears.
 
-## R10-A photo-derived styling
+## R10 photo-derived styling
 
 Run the focused analysis, policy, identity, Stage, settings, and viewer regressions with:
 
@@ -385,4 +395,13 @@ $env:FOVIUM_PHOTO_STYLE_SMOKE_OUTPUT = 'C:\path\ignored-output'
 dotnet test Fovium.Tests/Fovium.Tests.csproj -c Release --filter "FullyQualifiedName~PhotoDerivedStylingPerformanceSmokeTests" --logger "console;verbosity=detailed"
 ```
 
-same-core warnings, and per-term robust-core confidence. Canonical and two untuned holdouts require 99 reachable
+R10-B extends the same suite with strongest-axis and fixed radial policies, bounded 32×32 raster generation, exact
+identity and missing-raster fallback, deterministic pixels, 1.00/1.25/1.50/2.00 scale invariance, transparent/high-key/
+low-key/neutral cases, additive schema-v2 persistence, EN/RU parity, decoded-cache accounting, navigation/Blink/Peek
+ownership, source-domain Picker/Histogram independence, and one CMM operation across repeated style/scaling draws. The
+opt-in smoke reports median raster preparation, median 1280×800 Stage-only render cost against Neutral/Color Wash,
+and writes only ignored visual artifacts when the output variable is set. A no-restore WSL2 Ubuntu 24.04 run of the
+focused policy/cache/renderer/invariance filter passes 236 tests from the same Release output. The WSLg viewer enters
+its
+event loop, but the current host cannot capture the RDP/GPU surface for visual inspection; this is automated portability
+and launch evidence, not Linux human visual acceptance.

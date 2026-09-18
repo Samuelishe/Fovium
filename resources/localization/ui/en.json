@@ -41,6 +41,8 @@
   "stage.average": "Average",
   "stage.dominant": "Dominant",
   "stage.colorWash": "Color Wash",
+  "stage.colorGradient": "Color Gradient",
+  "stage.softGlow": "Soft Glow",
   "stage.background": "Background",
   "stage.matte": "Matte",
   "stage.matteEnabled": "Enabled",

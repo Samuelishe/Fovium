@@ -41,7 +41,13 @@ bash eng/native/libheif/build.sh osx-arm64
 
 The same script supports `osx-x64` on a real x64 macOS host. It does not pretend that an arm64 build is x64-compatible.
 
-Each invocation re-extracts source and rebuilds into ignored `artifacts/native/`. Downloaded archives may be reused only after their pinned SHA-256 is revalidated.
+Each invocation re-extracts source and rebuilds into ignored `artifacts/native/`. Downloaded archives may be reused only after their pinned SHA-256 is revalidated. Source acquisition makes at most four attempts and retries only transient HTTP/network failures with `1/2/4 s` backoff. Every attempt writes a unique `.part`; the final archive appears atomically only after the pinned SHA-256 succeeds. Permanent HTTP failures and hash mismatches fail immediately, and interrupted/truncated partial files are removed.
+
+The downloader boundary is verified without network access:
+
+```powershell
+python -m unittest discover -s eng/native/libheif/tests -p 'test_*.py' -v
+```
 
 ## Development materialization
 

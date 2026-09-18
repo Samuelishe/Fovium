@@ -53,5 +53,7 @@ internal static class StageDefaults
 
     public const int PhotoStyleWashRasterPixels = 64;
 
+    public const int PhotoStyleGradientRasterPixels = 32;
+
     public const byte HairlineOpacity = 176;
 }

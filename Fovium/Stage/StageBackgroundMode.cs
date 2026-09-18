@@ -9,6 +9,8 @@ internal enum StageBackgroundMode
     Average,
     Dominant,
     ColorWash,
+    ColorGradient,
+    SoftGlow,
 }
 
 internal static class StageBackgroundModeExtensions
@@ -19,5 +21,7 @@ internal static class StageBackgroundModeExtensions
     public static bool RequiresPhotoStyleAnalysis(this StageBackgroundMode mode) =>
         mode is StageBackgroundMode.Average or
             StageBackgroundMode.Dominant or
-            StageBackgroundMode.ColorWash;
+            StageBackgroundMode.ColorWash or
+            StageBackgroundMode.ColorGradient or
+            StageBackgroundMode.SoftGlow;
 }

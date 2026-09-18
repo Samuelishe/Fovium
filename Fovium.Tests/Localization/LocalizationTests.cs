@@ -146,9 +146,9 @@ public sealed class LocalizationTests
 
     [Theory]
     [InlineData("en-US", "Stage", "Black", "Neutral", "Custom", "Ambient", "Average", "Dominant", "Color Wash",
-        "Matte")]
+        "Color Gradient", "Soft Glow", "Matte")]
     [InlineData("ru-RU", "Фон", "Чёрный", "Нейтральный", "Свой цвет", "Ambient", "Средний цвет", "Доминирующий цвет",
-        "Цветовой wash", "Паспарту")]
+        "Цветовая заливка", "Цветовой градиент", "Мягкое свечение", "Паспарту")]
     public void StageCatalogsContainEveryBackgroundAndIndependentMatte(
         string cultureName,
         string section,
@@ -159,6 +159,8 @@ public sealed class LocalizationTests
         string average,
         string dominant,
         string colorWash,
+        string colorGradient,
+        string softGlow,
         string matte)
     {
         var localizer = Localizer.Create(CultureInfo.GetCultureInfo(cultureName));
@@ -171,6 +173,8 @@ public sealed class LocalizationTests
         Assert.Equal(average, localizer[UiStrings.StageAverage]);
         Assert.Equal(dominant, localizer[UiStrings.StageDominant]);
         Assert.Equal(colorWash, localizer[UiStrings.StageColorWash]);
+        Assert.Equal(colorGradient, localizer[UiStrings.StageColorGradient]);
+        Assert.Equal(softGlow, localizer[UiStrings.StageSoftGlow]);
         Assert.Equal(matte, localizer[UiStrings.StageMatte]);
     }
 

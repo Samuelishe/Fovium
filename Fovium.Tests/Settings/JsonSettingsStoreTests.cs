@@ -202,6 +202,33 @@ public sealed class JsonSettingsStoreTests : IDisposable
         Assert.False(result.RequiresSave);
     }
 
+    [Theory]
+    [InlineData("ColorGradient", (int)StageBackgroundMode.ColorGradient)]
+    [InlineData("SoftGlow", (int)StageBackgroundMode.SoftGlow)]
+    public async Task ExistingSchemaV2LoadsAdditiveExpressiveBackgroundModes(
+        string serializedMode,
+        int expectedModeValue)
+    {
+        await WriteAsync($$"""
+            {
+              "schemaVersion": 2,
+              "stage": {
+                "backgroundMode": "{{serializedMode}}",
+                "matteEnabled": true,
+                "matteColor": "#314159"
+              }
+            }
+            """);
+
+        var result = await CreateStore().LoadAsync(CancellationToken.None);
+
+        Assert.Equal((StageBackgroundMode)expectedModeValue, result.Settings.Stage.BackgroundMode);
+        Assert.True(result.Settings.Stage.MatteEnabled);
+        Assert.Equal(new StageColor(0x31, 0x41, 0x59), result.Settings.Stage.MatteColor);
+        Assert.False(result.RequiresSave);
+        Assert.Null(result.Diagnostic);
+    }
+
     [Fact]
     public async Task InvalidMatteGeometryValuesNormalizeSafelyWithoutChangingOtherSettings()
     {

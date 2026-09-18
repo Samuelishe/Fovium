@@ -7,13 +7,12 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R8-A-F12 is the locally complete research-corpus and professional-vocabulary campaign at `0.1.2.0014`, following
-pushed R8-A-F11 `0.1.2.0013` at `c0513d190fd9bf2eab5a386c16bc0655f1425a67`. It preserves the stable 45-family OKLCH
-geometry while expanding the declarative, locale-independent professional-shade layer from 80 to 94 bounded EN/RU
-terms and from 84 to 99 independently explainable regions. The developer audit now owns a 250-entry master candidate
-lexicon, source-independence/provenance grouping, component-aware mass mining, domain coverage, synonym/containment
-signals, per-term core confidence, and dedicated accepted/deferred visual sheets. Sampling, history/session behavior,
-creative matching, and the 1,800 anchors remain unchanged.
+R10-B is the locally complete expressive photo-derived Stage capability at `0.1.3.0000`, following pushed R8-A-F12
+`0.1.2.0014` at `7e38ce3190fb88da24111b10ac6da2bc656f84ca`. It adds persisted Color Gradient and Soft Glow backgrounds from the
+existing exact-image reference-sRGB analysis. Both are prepared once as deterministic `32×32` rasters under the existing
+decoded-cache ownership, identity, latest-wins, Blink/Peek, Color Management, and truthful-fallback contracts. No second
+analysis/cache pipeline, viewport-sized style surface, source-domain Picker/Histogram change, or runtime network/ML work
+is introduced.
 
 The retained R0 probe remains experimental evidence under `experiments/Fovium.RenderProbe`. Production code is the
 single `Fovium` assembly and does not depend on the experiment. The accepted R7-B hosted matrix restored, built, and
@@ -23,20 +22,21 @@ Windows at `RenderScaling = 1.00`.
 
 ## Current focus
 
-R8-A-F11 is pushed at commit `c0513d190fd9bf2eab5a386c16bc0655f1425a67`. Its native libheif Linux job reached the
-shared test phase and exposed a Histogram test-harness scheduling assumption: `TaskCompletionSource.SetResult` was
-treated as synchronous continuation evidence. R8-A-F12 replaces that assumption with an explicit post-cleanup read
-completion signal and deterministic stale-result waits; the production generation/identity latest-wins guard remains
-unchanged. R8-A-F12 is locally ready with canonical plus two holdout audits and complete local verification. Hosted
-verification remains pending until a future authorized push and rerun.
-The final canonical deep audit measured the indexed professional classifier at `99.3 ns/sample`, master-lexicon
-research clustering at `149.8 ms`, and the complete audit at `4.745 s`; these machine-local timings are diagnostic and
-excluded from the deterministic signature.
+R8-A-F12 is pushed at `7e38ce3190fb88da24111b10ac6da2bc656f84ca`; normal CI #59 passed. Native libheif workflow
+#33 failed before build on transient GitHub Release HTTP 504 responses for libheif/libde265, not on product code,
+native smoke, or the already-fixed Histogram harness race. R10-B hardens only pinned dependency acquisition with four
+transient-only attempts, deterministic `1/2/4 s` backoff, temporary partial files, atomic post-hash publication, and
+mandatory SHA-256 verification. Local deterministic downloader tests pass; hosted proof awaits an authorized push.
+
+The current Codex/Rider ACP session negotiates no true in-app browser backend. Browser-plugin discovery returns an empty
+backend list, and the Rider Playwright MCP entry has no command or URL and is absent from the session tool registry.
+Isolated installed Chrome may render ignored evidence, but is explicitly only a fallback. A true backend requires a
+capable host/session or a separately valid MCP registration plus Rider restart outside repository code.
 
 ## Implemented application functionality
 
-- Runnable zero-UI Avalonia desktop viewer with Black, Neutral, Custom, Ambient, Average, Dominant, or abstract Color
-  Wash Stage backgrounds and an independent optional Matte.
+- Runnable zero-UI Avalonia desktop viewer with Black, Neutral, Custom, Ambient, Average, Dominant, abstract Color Wash,
+  Color Gradient, or Soft Glow Stage backgrounds and an independent optional Matte.
 - Central JPEG/PNG/WebP/TIFF/HEIF/AVIF capability registry: candidate extensions, MIME hints, and picker patterns derive
   from one authority, while backend content probes determine actual format.
 - One shared bounded decoder dispatcher with Skia JPEG/PNG/static-WebP, focused managed TIFF, and focused app-local
@@ -69,7 +69,8 @@ excluded from the deterministic signature.
 - One deterministic oriented reference-sRGB analysis per decoded photograph, bounded to a 96-pixel long edge and
   attached to the existing byte-accounted decoded cache entry; exact-source publication exposes mathematical average,
   representative dominant, unchanged five-entry population palette, `6×6` spatial field, and boundary tone without
-  source re-decode or geometry recomputation.
+  source re-decode or geometry recomputation. Color Gradient and Soft Glow add two `32×32` retained rasters prepared
+  once from that same result; zoom, pan, resize, DPI, Matte, and slideshow cadence only stretch the existing artifact.
 - Persisted Matte physical width and Solid, Rounded, Soft, and Angular outer presentation styles; all styles retain an
   opaque rectangular backing beneath alpha photographs without changing photo geometry.
 - Bounded asynchronous blur-only Ambient preparation from the oriented decoded photograph; current-first scheduling
@@ -207,7 +208,9 @@ RAW, file associations/thumbnails, and monitor-aware output outside ordinary Win
   rendering is not implemented.
 - R9-B desktop timing and visual evidence is Windows-only at `RenderScaling = 1.00`; Linux/macOS runtime cadence,
   fractional-DPI multi-monitor movement during a running slideshow, and very-large-image fallback latency remain
-  unmeasured. Transitions, shuffle, music, countdown UI, and a multi-frame slideshow cache are intentionally absent.
+  unmeasured. Transitions, shuffle, music, countdown UI, and a multi-frame slideshow cache are intentionally absent.- R10-B visual acceptance covers eleven ignored local photographs across high/low key, neutral/chromatic, warm/cool,
+  green, portrait/skin, accent, and mixed geometry on Windows reference-sRGB renders. Automated pixels and geometry cover
+  1.00/1.25/1.50/2.00, but real fractional-DPI and Linux/macOS visual/runtime acceptance remain unmeasured.
 
 Open technical risks are tracked in [`KNOWN-PROBLEMS.md`](KNOWN-PROBLEMS.md). Directional stages are in [
 `ROADMAP.md`](ROADMAP.md). Git remains the authority for branch, HEAD, and worktree status.

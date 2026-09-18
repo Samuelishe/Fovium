@@ -653,6 +653,8 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
             [StageBackgroundMode.Average] = UiStrings.StageAverage,
             [StageBackgroundMode.Dominant] = UiStrings.StageDominant,
             [StageBackgroundMode.ColorWash] = UiStrings.StageColorWash,
+            [StageBackgroundMode.ColorGradient] = UiStrings.StageColorGradient,
+            [StageBackgroundMode.SoftGlow] = UiStrings.StageSoftGlow,
             [StageBackgroundMode.Custom] = UiStrings.StageCustom,
             [StageBackgroundMode.Ambient] = UiStrings.StageAmbient,
         };

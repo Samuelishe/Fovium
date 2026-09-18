@@ -59,7 +59,9 @@ internal sealed class DecodedImage : IRetainedResource
     private readonly SharedResource<NativePayload> _native;
     private readonly object _ownershipSync = new();
     private SharedResource<PreparedAmbient>? _ambient;
-    private SharedResource<PreparedColorWash>? _colorWash;
+    private SharedResource<PreparedPhotoStyleRaster>? _colorWash;
+    private SharedResource<PreparedPhotoStyleRaster>? _colorGradient;
+    private SharedResource<PreparedPhotoStyleRaster>? _softGlow;
     private PhotoStyleAnalysis? _photoStyleAnalysis;
     private bool _disposed;
 
@@ -93,7 +95,7 @@ internal sealed class DecodedImage : IRetainedResource
                 return checked(
                     Descriptor.EstimatedRetainedBytes +
                     ambientBytes +
-                    GetColorWashRetainedBytes() +
+                    GetPhotoStyleRasterRetainedBytes() +
                     (_photoStyleAnalysis?.RetainedBytes ?? 0));
             }
         }
@@ -124,19 +126,36 @@ internal sealed class DecodedImage : IRetainedResource
     public bool TryAttachPhotoStyleAnalysis(PhotoStyleAnalysis analysis)
     {
         ArgumentNullException.ThrowIfNull(analysis);
-        var colorWash = new SharedResource<PreparedColorWash>(
-            new PreparedColorWash(PhotoDerivedStylePolicy.CreateColorWashImage(analysis)));
-        lock (_ownershipSync)
+        SharedResource<PreparedPhotoStyleRaster>? colorWash = null;
+        SharedResource<PreparedPhotoStyleRaster>? colorGradient = null;
+        SharedResource<PreparedPhotoStyleRaster>? softGlow = null;
+        try
         {
-            if (_disposed || _photoStyleAnalysis is not null)
+            colorWash = CreatePhotoStyleRaster(PhotoDerivedStylePolicy.CreateColorWashImage(analysis));
+            colorGradient = CreatePhotoStyleRaster(PhotoDerivedStylePolicy.CreateColorGradientImage(analysis));
+            softGlow = CreatePhotoStyleRaster(PhotoDerivedStylePolicy.CreateSoftGlowImage(analysis));
+            lock (_ownershipSync)
             {
-                colorWash.ReleaseOwner();
-                return false;
-            }
+                if (_disposed || _photoStyleAnalysis is not null)
+                {
+                    return false;
+                }
 
-            _photoStyleAnalysis = analysis;
-            _colorWash = colorWash;
-            return true;
+                _photoStyleAnalysis = analysis;
+                _colorWash = colorWash;
+                _colorGradient = colorGradient;
+                _softGlow = softGlow;
+                colorWash = null;
+                colorGradient = null;
+                softGlow = null;
+                return true;
+            }
+        }
+        finally
+        {
+            colorWash?.ReleaseOwner();
+            colorGradient?.ReleaseOwner();
+            softGlow?.ReleaseOwner();
         }
     }
 
@@ -148,29 +167,42 @@ internal sealed class DecodedImage : IRetainedResource
         }
     }
 
-    public ColorWashLease? TryAcquireColorWash()
+    public PhotoStyleRasterLease? TryAcquirePhotoStyleRaster(StageBackgroundMode backgroundMode)
     {
         lock (_ownershipSync)
         {
-            return _disposed || _colorWash is null
+            var raster = backgroundMode switch
+            {
+                StageBackgroundMode.ColorWash => _colorWash,
+                StageBackgroundMode.ColorGradient => _colorGradient,
+                StageBackgroundMode.SoftGlow => _softGlow,
+                _ => null,
+            };
+            return _disposed || raster is null
                 ? null
-                : new ColorWashLease(_colorWash.Acquire());
+                : new PhotoStyleRasterLease(raster.Acquire());
         }
     }
 
-    private long GetColorWashRetainedBytes() =>
-        _colorWash is not null && _colorWash.TryGetValue(out var colorWash)
-            ? colorWash!.RetainedBytes
-            : 0;
+    private static SharedResource<PreparedPhotoStyleRaster> CreatePhotoStyleRaster(SKImage image) =>
+        new(new PreparedPhotoStyleRaster(image));
+
+    private long GetPhotoStyleRasterRetainedBytes() => checked(
+        GetRetainedBytes(_colorWash) +
+        GetRetainedBytes(_colorGradient) +
+        GetRetainedBytes(_softGlow));
+
+    private static long GetRetainedBytes(SharedResource<PreparedPhotoStyleRaster>? raster) =>
+        raster is not null && raster.TryGetValue(out var value) ? value!.RetainedBytes : 0;
 
     public bool HasAmbientForBlur(double blur)
     {
         lock (_ownershipSync)
         {
             return _ambient is not null &&
-                _ambient.TryGetValue(out var ambient) &&
-                ambient is not null &&
-                ambient.Blur.Equals(blur);
+                   _ambient.TryGetValue(out var ambient) &&
+                   ambient is not null &&
+                   ambient.Blur.Equals(blur);
         }
     }
 
@@ -257,7 +289,9 @@ internal sealed class DecodedImage : IRetainedResource
     public void Dispose()
     {
         SharedResource<PreparedAmbient>? ambient;
-        SharedResource<PreparedColorWash>? colorWash;
+        SharedResource<PreparedPhotoStyleRaster>? colorWash;
+        SharedResource<PreparedPhotoStyleRaster>? colorGradient;
+        SharedResource<PreparedPhotoStyleRaster>? softGlow;
         lock (_ownershipSync)
         {
             if (_disposed)
@@ -270,11 +304,17 @@ internal sealed class DecodedImage : IRetainedResource
             _ambient = null;
             colorWash = _colorWash;
             _colorWash = null;
+            colorGradient = _colorGradient;
+            _colorGradient = null;
+            softGlow = _softGlow;
+            _softGlow = null;
             _photoStyleAnalysis = null;
         }
 
         ambient?.ReleaseOwner();
         colorWash?.ReleaseOwner();
+        colorGradient?.ReleaseOwner();
+        softGlow?.ReleaseOwner();
         _native.ReleaseOwner();
     }
 
@@ -383,11 +423,11 @@ internal sealed class DecodedImage : IRetainedResource
             Volatile.Read(ref _lease) ?? throw new ObjectDisposedException(nameof(AmbientLease));
     }
 
-    internal sealed class ColorWashLease : IDisposable
+    internal sealed class PhotoStyleRasterLease : IDisposable
     {
-        private SharedResourceLease<PreparedColorWash>? _lease;
+        private SharedResourceLease<PreparedPhotoStyleRaster>? _lease;
 
-        internal ColorWashLease(SharedResourceLease<PreparedColorWash> lease)
+        internal PhotoStyleRasterLease(SharedResourceLease<PreparedPhotoStyleRaster> lease)
         {
             _lease = lease;
         }
@@ -396,11 +436,11 @@ internal sealed class DecodedImage : IRetainedResource
 
         public long RetainedBytes => GetLease().Value.RetainedBytes;
 
-        public ColorWashLease Acquire() => new(GetLease().Acquire());
+        public PhotoStyleRasterLease Acquire() => new(GetLease().Acquire());
 
         public void Dispose() => Interlocked.Exchange(ref _lease, null)?.Dispose();
 
-        private SharedResourceLease<PreparedColorWash> GetLease() =>
-            Volatile.Read(ref _lease) ?? throw new ObjectDisposedException(nameof(ColorWashLease));
+        private SharedResourceLease<PreparedPhotoStyleRaster> GetLease() =>
+            Volatile.Read(ref _lease) ?? throw new ObjectDisposedException(nameof(PhotoStyleRasterLease));
     }
 }

@@ -107,6 +107,9 @@ R10-A localizes Average, Dominant, Color Wash, Matte color source, Photo separat
 Persisted background/color-source/separation enum identities, reference-sRGB values, palette data, and analysis
 diagnostics remain English code identities and are never localized. Catalog validation retains exact EN/RU key parity
 and English fallback.
+R10-B adds paired Color Gradient/Цветовой градиент and Soft Glow/Мягкое свечение names. It also corrects the earlier
+literal mixed-language Color Wash label to the natural Russian Цветовая заливка. Stable enum identities and raster data
+remain locale-independent; the correction changes presentation only.
 
 ## Locale resolution
 

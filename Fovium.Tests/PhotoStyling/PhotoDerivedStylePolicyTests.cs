@@ -215,6 +215,129 @@ public sealed class PhotoDerivedStylePolicyTests
     }
 
     [Fact]
+    public void LinearGradientSelectsTheStrongestLowFrequencySpatialAxisDeterministically()
+    {
+        var horizontalField = CreateField((column, _) => PhotoStylingOklab.Lerp(
+            PhotoStylingOklab.FromSrgb(new StageColor(210, 70, 40)),
+            PhotoStylingOklab.FromSrgb(new StageColor(30, 90, 210)),
+            column / 5d).ToSrgb());
+        var analysis = CreateAnalysisWithField(
+            new StageColor(100, 90, 100),
+            new StageColor(170, 70, 80),
+            new StageColor(60, 70, 80),
+            horizontalField);
+
+        var first = PhotoDerivedStylePolicy.ResolveLinearGradient(analysis);
+        var second = PhotoDerivedStylePolicy.ResolveLinearGradient(analysis);
+
+        Assert.Equal(first, second);
+        Assert.Equal(PhotoGradientAxis.Horizontal, first.Axis);
+        Assert.NotEqual(first.Start, first.End);
+        Assert.NotEqual(first.Start, first.Middle);
+        Assert.NotEqual(first.Middle, first.End);
+    }
+
+    [Fact]
+    public void LinearGradientCanSelectVerticalEvidenceWithoutViewportInputs()
+    {
+        var verticalField = CreateField((_, row) => PhotoStylingOklab.Lerp(
+            PhotoStylingOklab.FromSrgb(new StageColor(30, 150, 70)),
+            PhotoStylingOklab.FromSrgb(new StageColor(130, 70, 30)),
+            row / 5d).ToSrgb());
+        var analysis = CreateAnalysisWithField(
+            new StageColor(80, 100, 70),
+            new StageColor(50, 140, 70),
+            new StageColor(60, 60, 50),
+            verticalField);
+
+        var expected = PhotoDerivedStylePolicy.ResolveLinearGradient(analysis);
+        for (var index = 0; index < 20; index++)
+        {
+            _ = StageGeometry.CalculateRenderGeometry(
+                StageSettings.Default,
+                new RectD(index, index * 2, 300 + index, 200 + index),
+                null,
+                new LogicalSize(640 + index, 480 + index),
+                1 + (index * 0.05));
+            Assert.Equal(expected, PhotoDerivedStylePolicy.ResolveLinearGradient(analysis));
+        }
+
+        Assert.Equal(PhotoGradientAxis.Vertical, expected.Axis);
+    }
+
+    [Fact]
+    public void RadialGlowUsesRepresentativeCoreAndBoundaryWithoutSubjectPositionInference()
+    {
+        var analysis = CreateAnalysis(
+            average: new StageColor(90, 110, 140),
+            dominant: new StageColor(220, 80, 45),
+            boundary: new StageColor(20, 45, 80));
+
+        var first = PhotoDerivedStylePolicy.ResolveRadialGlow(analysis);
+        var second = PhotoDerivedStylePolicy.ResolveRadialGlow(analysis);
+
+        Assert.Equal(first, second);
+        Assert.NotEqual(first.Center, first.Edge);
+        Assert.NotEqual(first.Middle, first.Edge);
+    }
+
+    [Fact]
+    public void UniformNeutralAnalysisProducesNeutralStopsAndARestrainedGlowWithoutInventedHue()
+    {
+        var neutral = new StageColor(112, 112, 112);
+        var analysis = CreateAnalysis(neutral, neutral, neutral);
+
+        var linear = PhotoDerivedStylePolicy.ResolveLinearGradient(analysis);
+        var radial = PhotoDerivedStylePolicy.ResolveRadialGlow(analysis);
+
+        Assert.Equal(linear.Start.Red, linear.Start.Green);
+        Assert.Equal(linear.Start.Green, linear.Start.Blue);
+        Assert.Equal(linear.Start, linear.Middle);
+        Assert.Equal(linear.Middle, linear.End);
+        Assert.Equal(radial.Center.Red, radial.Center.Green);
+        Assert.Equal(radial.Center.Green, radial.Center.Blue);
+        Assert.Equal(radial.Middle.Red, radial.Middle.Green);
+        Assert.Equal(radial.Middle.Green, radial.Middle.Blue);
+        Assert.Equal(radial.Edge.Red, radial.Edge.Green);
+        Assert.Equal(radial.Edge.Green, radial.Edge.Blue);
+        var center = PhotoStylingOklab.FromSrgb(radial.Center);
+        var edge = PhotoStylingOklab.FromSrgb(radial.Edge);
+        Assert.True(center.L > edge.L);
+        Assert.InRange(center.L - edge.L, 0.12, 0.16);
+    }
+
+    [Theory]
+    [InlineData(0, 0, 0)]
+    [InlineData(255, 255, 255)]
+    [InlineData(255, 0, 255)]
+    public void ExpressiveGradientStopsRemainWithinPresentationToneBounds(
+        byte red,
+        byte green,
+        byte blue)
+    {
+        var source = new StageColor(red, green, blue);
+        var analysis = CreateAnalysis(source, source, source);
+        var linear = PhotoDerivedStylePolicy.ResolveLinearGradient(analysis);
+        var radial = PhotoDerivedStylePolicy.ResolveRadialGlow(analysis);
+        StageColor[] stops =
+        [
+            linear.Start,
+            linear.Middle,
+            linear.End,
+            radial.Center,
+            radial.Middle,
+            radial.Edge,
+        ];
+
+        Assert.All(stops, stop =>
+        {
+            var lab = PhotoStylingOklab.FromSrgb(stop);
+            Assert.InRange(lab.L, 0.178, 0.782);
+            Assert.InRange(lab.Chroma, 0, 0.142);
+        });
+    }
+
+    [Fact]
     public void HairlineNoneAndDisabledMatteNeverPublishSeparation()
     {
         var analysis = CreateAnalysis(
@@ -246,8 +369,8 @@ public sealed class PhotoDerivedStylePolicyTests
         StageColor boundary)
     {
         var colors = Enumerable.Repeat(
-            average,
-            StageDefaults.PhotoStyleFieldColumns * StageDefaults.PhotoStyleFieldRows)
+                average,
+                StageDefaults.PhotoStyleFieldColumns * StageDefaults.PhotoStyleFieldRows)
             .ToImmutableArray();
         return new PhotoStyleAnalysis(
             average,
@@ -262,4 +385,29 @@ public sealed class PhotoDerivedStylePolicyTests
             16,
             TimeSpan.FromMilliseconds(1));
     }
+
+    private static ImmutableArray<StageColor> CreateField(
+        Func<int, int, StageColor> createColor) =>
+        Enumerable.Range(0, StageDefaults.PhotoStyleFieldRows)
+            .SelectMany(row => Enumerable.Range(0, StageDefaults.PhotoStyleFieldColumns)
+                .Select(column => createColor(column, row)))
+            .ToImmutableArray();
+
+    private static PhotoStyleAnalysis CreateAnalysisWithField(
+        StageColor average,
+        StageColor dominant,
+        StageColor boundary,
+        ImmutableArray<StageColor> field) =>
+        new(
+            average,
+            dominant,
+            boundary,
+            [new PhotoPaletteEntry(dominant, 1)],
+            new PhotoColorField(
+                StageDefaults.PhotoStyleFieldColumns,
+                StageDefaults.PhotoStyleFieldRows,
+                field),
+            new PixelSize(6, 6),
+            36,
+            TimeSpan.FromMilliseconds(1));
 }

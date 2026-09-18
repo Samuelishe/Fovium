@@ -55,6 +55,10 @@ independence anchors, and the Wiktionary Appendix:Colors under CC BY-SA/GFDL as 
 ignored cache; only source URLs, policy, and parsing code are tracked. CAMEO was consulted manually but not ingested
 because its redistribution terms are not an appropriate bundled-dataset basis. No raw reference dataset, web lookup
 response, or generated report is committed.
+R10-B changes no native pins, source URLs, licenses, or shipped dependencies. The existing libheif/libde265/dav1d
+archives remain trusted only through `versions.json` SHA-256 values; bounded transient retry and atomic `.part`
+publication improve availability without changing provenance or accepting an unverified cache. No GitHub Actions cache
+or vendored archive is introduced.
 
 ## Planned / under evaluation
 

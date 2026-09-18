@@ -57,13 +57,14 @@ custom control or focused code-behind while domain-independent math remains test
   immediate presentation work; each progressively ready adjacent decode may trigger speculative matching preparation
   without a full-neighbor barrier. The renderer receives one identity-coherent snapshot and rejects mismatched Ambient;
   it materializes backend paths without reading settings, scheduling background work, or modifying viewport state.
-- R10-A-F1 analysis runs once inside the existing off-UI decode boundary after canonical reference-sRGB pixels are
+- R10 analysis runs once inside the existing off-UI decode boundary after canonical reference-sRGB pixels are
   available. `PhotoStyleAnalyzer` produces a small immutable average/representative-dominant/raw-palette/boundary/`6×6`
   field attached to `DecodedImage`; the existing byte-bounded cache, shared image leases, cancellation, adjacent
   preload, and selection generation therefore remain its only ownership/publication authorities. The Stage renderer
   receives analysis only from the actually rendered image and enforces numeric identity again. It resolves derived
-  paints and Hairline without viewport state or CMM input; one byte-accounted `64×64` native Color Wash artifact is
-  prepared with the analysis and leased by draw operations without geometry-triggered regeneration. Opt-in test
+  paints and Hairline without viewport state or CMM input; one byte-accounted `64×64` Color Wash plus R10-B's two
+  `32×32` Color Gradient/Soft Glow native artifacts are prepared with the analysis and leased by draw operations without
+  geometry-triggered regeneration. Missing artifacts use Black fallback rather than UI-thread preparation. Opt-in test
   diagnostics expose raw-largest versus representative metrics without retaining them in production analysis state.
 - Viewer keys resolve through stable command, scope, group, context, and project-owned gesture models. Resolution orders
   active Markup, Highlight, then Global scope; duplicates are conflicts only within the same scope. Group metadata
@@ -180,9 +181,9 @@ preload, and large-image strategies without pushing those concerns into navigati
 
 Long-running operations receive cancellation and an explicit session/generation identity. Reference-counted
 cache/display/render leases let eviction or replacement release ownership while a retained Avalonia draw operation keeps
-native photo and optional Ambient/Color Wash `SKImage` instances alive. Photo-derived analysis and its one small native
-wash artifact are attached to and byte-accounted under that same decoded entry; draw operations only lease the already
-prepared wash. The optional blur-prepared Ambient is keyed by source identity plus blur, attached to the owning decoded
+native photo and optional Ambient/photo-style `SKImage` instances alive. Photo-derived analysis and its three small
+native style artifacts are attached to and byte-accounted under that same decoded entry; draw operations only lease the
+already prepared artifact selected by Stage mode. The optional blur-prepared Ambient is keyed by source identity plus blur, attached to the owning decoded
 image, and charged to the same byte-budget LRU. Geometry, brightness/saturation, and Matte changes do not create new
 native images. During Blink, the canonical photo/Ambient presentation stays retained while a separately retained
 comparison photo and, only when already matching, comparison Ambient are temporarily rendered. Release never navigates,

@@ -32,8 +32,9 @@ Rendering quality and precise interaction take priority over feature count.
 - photographer-oriented inspection with whole-viewport **Peek 100%** and non-navigating **Blink Compare**;
 - session-local presenter tools with image-bound markup, Ellipse, per-stroke opacity, constrained drawing, true partial
   erasing, per-image Undo/Redo, contextual controls, accurate drawing cursors, and a configurable cursor highlight;
-- a deliberate photographic **Stage** with Black, Neutral, Custom, Ambient, Average, Dominant, or abstract Color Wash
-  backgrounds plus an independent custom/auto-colored Matte and optional Hairline Auto separation;
+- a deliberate photographic **Stage** with Black, Neutral, Custom, Ambient, Average, Dominant, abstract Color Wash,
+  Color Gradient, or Soft Glow backgrounds plus an independent custom/auto-colored Matte and optional Hairline Auto
+  separation;
 - a session-local **Photo Presentation View** that independently fits each photograph inside a configurable edge margin
   while Matte decorates the resolved photo without changing its scale;
 - a session-local **Slideshow** on `F5`, with a persisted 1–60 second interval, stop-at-last or natural-order loop
@@ -51,17 +52,14 @@ and [imaging direction](docs/IMAGING-PIPELINE.md) for details.
 
 ## Current status
 
-The current locally complete checkpoint is **`0.1.2.0013`**. R8-A-F11 expands the declarative EN/RU Color Inspector
-professional-shade layer to 80 terms/84 regions and adds semantic-domain overlap severity plus a whole-catalog
-vocabulary-frontier report. R8-A-F10 is pushed at `5fce387`; hosted workflows were intentionally not polled for this
-campaign. The local `0.1.2.0013` candidate is not yet pushed or hosted-verified. Owner-accepted
-R6-A-F1 Photo
-Info/floating-drag behavior, R10-A-F1 photo-derived styling, R9-A-F2 Matte-independent Photo Presentation scale, R9-B-F1
-Slideshow layout independence, and R8-B-W1 ordinary-Windows-SDR Monitor Color Management remain unchanged; hosted and
-non-Windows visual status must be evaluated separately.
+The current locally complete checkpoint is **`0.1.3.0000`**. R10-B adds two bounded offline photo-derived Stage modes:
+directional Color Gradient and restrained Soft Glow. Both reuse R10-A's exact-image analysis, add only two `32×32`
+byte-accounted rasters, and retain Black fallback, Blink/Peek identity, source-domain inspection, and the existing
+geometry-independent Color Management path. The previous R8-A-F12 baseline is pushed at `7e38ce3`; hosted verification
+for the current work awaits a future authorized push.
 
-This is an alpha milestone, not a feature-complete or stable release claim. Gradient/textured Matte or backgrounds,
-inner shadows, material presets, slideshow transitions/shuffle/music/countdown UI, animated formats, RAW, Advanced
+This is an alpha milestone, not a feature-complete or stable release claim. Textured Matte/background materials,
+inner shadows, broad material presets, slideshow transitions/shuffle/music/countdown UI, animated formats, RAW, Advanced
 Metadata, persistent palettes, full monitor-aware ICC, platform associations, markup export/object editing, and
 selected-reference A/B comparison are not implemented. The current matrix
 is [FORMAT-SUPPORT.md](docs/FORMAT-SUPPORT.md), derived styling is specified

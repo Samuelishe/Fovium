@@ -18,6 +18,10 @@ internal static class PhotoDerivedStylePolicy
     internal const double WashMaximumLightness = 0.76;
     internal const double WashChromaGain = 1.18;
     internal const double WashMaximumChroma = 0.16;
+    internal const double GradientMinimumLightness = 0.18;
+    internal const double GradientMaximumLightness = 0.78;
+    internal const double GradientChromaGain = 1.06;
+    internal const double GradientMaximumChroma = 0.14;
 
     public static StageColor ResolveMatteColor(
         StageSettings stage,
@@ -74,6 +78,92 @@ internal static class PhotoDerivedStylePolicy
         return SKImage.FromBitmap(bitmap);
     }
 
+    public static SKImage CreateColorGradientImage(PhotoStyleAnalysis analysis)
+    {
+        ArgumentNullException.ThrowIfNull(analysis);
+        var gradient = ResolveLinearGradient(analysis);
+        return CreateGradientImage((x, y) =>
+        {
+            var amount = gradient.Axis == PhotoGradientAxis.Horizontal ? x : y;
+            return InterpolateGradientStops(
+                gradient.Start,
+                gradient.Middle,
+                gradient.End,
+                amount,
+                0.5);
+        });
+    }
+
+    public static SKImage CreateSoftGlowImage(PhotoStyleAnalysis analysis)
+    {
+        ArgumentNullException.ThrowIfNull(analysis);
+        var glow = ResolveRadialGlow(analysis);
+        return CreateGradientImage((x, y) =>
+        {
+            var horizontal = x - 0.5;
+            var vertical = y - 0.5;
+            var amount = Math.Min(1, Math.Sqrt((horizontal * horizontal) + (vertical * vertical)) / Math.Sqrt(0.5));
+            return InterpolateGradientStops(
+                glow.Center,
+                glow.Middle,
+                glow.Edge,
+                amount,
+                0.56);
+        });
+    }
+
+    public static PhotoLinearGradient ResolveLinearGradient(PhotoStyleAnalysis analysis)
+    {
+        ArgumentNullException.ThrowIfNull(analysis);
+        var field = analysis.SpatialField;
+        var left = AverageFieldBand(field, 0, Math.Min(2, field.Columns), 0, field.Rows);
+        var right = AverageFieldBand(
+            field,
+            Math.Max(0, field.Columns - 2),
+            field.Columns,
+            0,
+            field.Rows);
+        var top = AverageFieldBand(field, 0, field.Columns, 0, Math.Min(2, field.Rows));
+        var bottom = AverageFieldBand(
+            field,
+            0,
+            field.Columns,
+            Math.Max(0, field.Rows - 2),
+            field.Rows);
+        var horizontalDistance = ColorDistanceSquared(left, right);
+        var verticalDistance = ColorDistanceSquared(top, bottom);
+        var horizontal = horizontalDistance >= verticalDistance;
+        var boundary = PhotoStylingOklab.FromSrgb(analysis.BoundaryColor);
+        var start = horizontal ? left : top;
+        var end = horizontal ? right : bottom;
+        return new PhotoLinearGradient(
+            horizontal ? PhotoGradientAxis.Horizontal : PhotoGradientAxis.Vertical,
+            NormalizeGradientTone(PhotoStylingOklab.Lerp(boundary, start, 0.72).ToSrgb()),
+            NormalizeGradientTone(analysis.AverageColor),
+            NormalizeGradientTone(PhotoStylingOklab.Lerp(boundary, end, 0.72).ToSrgb()));
+    }
+
+    public static PhotoRadialGlow ResolveRadialGlow(PhotoStyleAnalysis analysis)
+    {
+        ArgumentNullException.ThrowIfNull(analysis);
+        var average = PhotoStylingOklab.FromSrgb(analysis.AverageColor);
+        var dominant = PhotoStylingOklab.FromSrgb(analysis.DominantColor);
+        var boundary = PhotoStylingOklab.FromSrgb(analysis.BoundaryColor);
+        var middle = PhotoStylingOklab.Lerp(average, dominant, 0.18);
+        var center = PhotoStylingOklab.Lerp(average, dominant, 0.50);
+        var edge = PhotoStylingOklab.Lerp(boundary, average, 0.10);
+        return new PhotoRadialGlow(
+            NormalizeGradientTone(new PhotoStylingOklab(
+                center.L + 0.06,
+                center.A,
+                center.B).ToSrgb()),
+            NormalizeGradientTone(middle.ToSrgb()),
+            NormalizeGradientTone(new PhotoStylingOklab(
+                Math.Min(edge.L, middle.L - 0.08),
+                edge.A,
+                edge.B).ToSrgb()));
+    }
+
     private static StageColor SampleSmoothField(
         PhotoColorField field,
         int x,
@@ -98,6 +188,45 @@ internal static class PhotoDerivedStylePolicy
             PhotoStylingOklab.FromSrgb(field[right, bottom]),
             horizontal);
         return PhotoStylingOklab.Lerp(topTone, bottomTone, vertical).ToSrgb();
+    }
+
+    private static SKImage CreateGradientImage(Func<double, double, StageColor> sample)
+    {
+        using var colorSpace = SKColorSpace.CreateSrgb();
+        using var bitmap = new SKBitmap(new SKImageInfo(
+            StageDefaults.PhotoStyleGradientRasterPixels,
+            StageDefaults.PhotoStyleGradientRasterPixels,
+            SKColorType.Bgra8888,
+            SKAlphaType.Opaque,
+            colorSpace));
+        var denominator = bitmap.Width - 1d;
+        for (var y = 0; y < bitmap.Height; y++)
+        {
+            for (var x = 0; x < bitmap.Width; x++)
+            {
+                var color = sample(x / denominator, y / denominator);
+                bitmap.SetPixel(x, y, new SKColor(color.Red, color.Green, color.Blue));
+            }
+        }
+
+        return SKImage.FromBitmap(bitmap);
+    }
+
+    private static StageColor InterpolateGradientStops(
+        StageColor start,
+        StageColor middle,
+        StageColor end,
+        double amount,
+        double middlePosition)
+    {
+        var first = amount <= middlePosition;
+        var localAmount = first
+            ? amount / middlePosition
+            : (amount - middlePosition) / (1 - middlePosition);
+        return PhotoStylingOklab.Lerp(
+            PhotoStylingOklab.FromSrgb(first ? start : middle),
+            PhotoStylingOklab.FromSrgb(first ? middle : end),
+            Math.Clamp(localAmount, 0, 1)).ToSrgb();
     }
 
     private static double SmoothStep(double value) => value * value * (3 - (2 * value));
@@ -172,6 +301,18 @@ internal static class PhotoDerivedStylePolicy
             lab.B * scale).ToSrgb();
     }
 
+    internal static StageColor NormalizeGradientTone(StageColor source)
+    {
+        var lab = PhotoStylingOklab.FromSrgb(source);
+        var chroma = lab.Chroma;
+        var targetChroma = Math.Min(chroma * GradientChromaGain, GradientMaximumChroma);
+        var scale = chroma > 0 ? targetChroma / chroma : 1;
+        return new PhotoStylingOklab(
+            Math.Clamp(lab.L, GradientMinimumLightness, GradientMaximumLightness),
+            lab.A * scale,
+            lab.B * scale).ToSrgb();
+    }
+
     internal static double ContrastRatio(StageColor first, StageColor second)
     {
         var firstLuminance = RelativeLuminance(first);
@@ -191,4 +332,41 @@ internal static class PhotoDerivedStylePolicy
             ? channel / 12.92
             : Math.Pow((channel + 0.055) / 1.055, 2.4);
 
+    private static PhotoStylingOklab AverageFieldBand(
+        PhotoColorField field,
+        int firstColumn,
+        int endColumn,
+        int firstRow,
+        int endRow)
+    {
+        var lightness = 0d;
+        var a = 0d;
+        var b = 0d;
+        var count = 0;
+        for (var row = firstRow; row < endRow; row++)
+        {
+            for (var column = firstColumn; column < endColumn; column++)
+            {
+                var color = PhotoStylingOklab.FromSrgb(field[column, row]);
+                lightness += color.L;
+                a += color.A;
+                b += color.B;
+                count++;
+            }
+        }
+
+        return count > 0
+            ? new PhotoStylingOklab(lightness / count, a / count, b / count)
+            : PhotoStylingOklab.FromSrgb(StageDefaults.BlackColor);
+    }
+
+    private static double ColorDistanceSquared(
+        PhotoStylingOklab first,
+        PhotoStylingOklab second)
+    {
+        var lightness = first.L - second.L;
+        var a = first.A - second.A;
+        var b = first.B - second.B;
+        return (lightness * lightness) + (a * a) + (b * b);
+    }
 }

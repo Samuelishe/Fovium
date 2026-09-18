@@ -21,7 +21,7 @@ public sealed class PhotoDerivedStylingPresentationTests
         try
         {
             using var firstPresentation = new StagePresentation(
-                StageSettings.Default with { BackgroundMode = StageBackgroundMode.Average },
+                StageSettings.Default with { BackgroundMode = StageBackgroundMode.ColorGradient },
                 first.Identity,
                 null);
             viewport.SetPresentation(
@@ -80,12 +80,12 @@ public sealed class PhotoDerivedStylingPresentationTests
             Assert.True(viewport.ShowBlinkComparison(
                 comparisonResource.Acquire(),
                 "comparison.png",
-                StageSettings.Default with { BackgroundMode = StageBackgroundMode.ColorWash },
+                StageSettings.Default with { BackgroundMode = StageBackgroundMode.SoftGlow },
                 null));
             var comparisonState = viewport.CapturePhotoStylePresentationState();
             Assert.Equal(comparison.Identity, comparisonState.ImageIdentity);
             Assert.Equal(comparison.Identity, comparisonState.PhotoStyleIdentity);
-            Assert.Equal(StageBackgroundMode.ColorWash, comparisonState.BackgroundMode);
+            Assert.Equal(StageBackgroundMode.SoftGlow, comparisonState.BackgroundMode);
 
             Assert.True(viewport.EndInspection());
             Assert.Equal(current.Identity, viewport.CapturePhotoStylePresentationState().PhotoStyleIdentity);

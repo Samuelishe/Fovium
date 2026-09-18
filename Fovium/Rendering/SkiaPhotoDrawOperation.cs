@@ -30,7 +30,7 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
     private readonly long? _ambientIdentity;
     private readonly PhotoStyleAnalysis? _photoStyleAnalysis;
     private readonly long? _photoStyleIdentity;
-    private DecodedImage.ColorWashLease? _colorWashLease;
+    private DecodedImage.PhotoStyleRasterLease? _photoStyleRasterLease;
     private readonly AmbientRenderFrameDiagnostics _frameDiagnostics;
     private readonly InteractionRenderDiagnostics _interactionDiagnostics;
     private readonly bool _suppressLegacyPhoto;
@@ -52,7 +52,7 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
         InteractionRenderDiagnostics interactionDiagnostics,
         PhotoStyleAnalysis? photoStyleAnalysis = null,
         long? photoStyleIdentity = null,
-        DecodedImage.ColorWashLease? colorWashLease = null,
+        DecodedImage.PhotoStyleRasterLease? photoStyleRasterLease = null,
         ManagedPhotoSourceLease? managedSource = null,
         bool suppressLegacyPhoto = false,
         ManagedPhotoPresentationCoordinator? managedCoordinator = null)
@@ -72,7 +72,7 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
         _interactionDiagnostics = interactionDiagnostics;
         _photoStyleAnalysis = photoStyleAnalysis;
         _photoStyleIdentity = photoStyleIdentity;
-        _colorWashLease = colorWashLease;
+        _photoStyleRasterLease = photoStyleRasterLease;
         _managedSource = managedSource;
         _suppressLegacyPhoto = suppressLegacyPhoto;
         _managedCoordinator = managedCoordinator;
@@ -118,7 +118,7 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
             _frameDiagnostics,
             _photoStyleAnalysis,
             _photoStyleIdentity,
-            _colorWashLease?.Image);
+            _photoStyleRasterLease?.Image);
         var managedSource = _managedSource;
         if (_suppressLegacyPhoto && managedSource is null)
         {
@@ -141,7 +141,6 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
         {
             _managedCoordinator?.RecordManagedSourceFrame();
         }
-
     }
 
     public bool Equals(ICustomDrawOperation? other) => false;
@@ -189,8 +188,7 @@ internal sealed class SkiaPhotoDrawOperation : ICustomDrawOperation
     {
         Interlocked.Exchange(ref _imageLease, null)?.Dispose();
         Interlocked.Exchange(ref _ambientLease, null)?.Dispose();
-        Interlocked.Exchange(ref _colorWashLease, null)?.Dispose();
+        Interlocked.Exchange(ref _photoStyleRasterLease, null)?.Dispose();
         Interlocked.Exchange(ref _managedSource, null)?.Dispose();
     }
-
 }

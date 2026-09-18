@@ -196,8 +196,9 @@ the visible zoom crop, Stage, Matte, Ambient, markup, pointer UI, or future moni
 identity, remains unchanged for Peek/zoom/pan, starts hidden, and may coexist with Photo Info and markup tools.
 
 Stage background selection is available from both the context menu and Settings. Black remains default; Neutral, Custom,
-Ambient, Average, Dominant, and Color Wash apply immediately. Average/Dominant are solid photograph-derived colors;
-Color Wash is a soft abstract spatial field rather than a readable duplicate of the photograph. Matte is an independent
+Ambient, Average, Dominant, Color Wash, Color Gradient, and Soft Glow apply immediately. Average/Dominant are solid photograph-derived colors;
+Color Wash is a soft abstract spatial field, Color Gradient is a calmer strongest-axis field, and Soft Glow is a fixed
+center/edge field; none is a readable duplicate of the photograph. Matte is an independent
 modifier over every background; Settings owns its physical width, outer style, Custom/Average/Dominant color source, and
 None/Hairline Auto photograph separation while the context menu and `M` retain the uncluttered enable/disable path.
 Missing exact analysis uses Black background, neutral Matte, and no line rather than stale styling. Neither choice

@@ -19,14 +19,14 @@ internal static class SkiaStageRenderer
         AmbientRenderFrameDiagnostics? frameDiagnostics = null,
         PhotoStyleAnalysis? photoStyleAnalysis = null,
         long? photoStyleIdentity = null,
-        SKImage? colorWashImage = null)
+        SKImage? photoStyleRasterImage = null)
     {
         ArgumentNullException.ThrowIfNull(canvas);
         ArgumentNullException.ThrowIfNull(stage);
         var ambientPresent = ambientImage is not null && ambientSize is { IsValid: true };
         var matchingAmbient = ambientPresent && (imageIdentity == 0 || ambientIdentity == imageIdentity);
         var matchingPhotoStyle = photoStyleAnalysis is not null &&
-            (imageIdentity == 0 || photoStyleIdentity == imageIdentity);
+                                 (imageIdentity == 0 || photoStyleIdentity == imageIdentity);
         frameDiagnostics?.Record(
             imageIdentity,
             stage.BackgroundMode,
@@ -46,15 +46,34 @@ internal static class SkiaStageRenderer
                 stage,
                 matchingPhotoStyle ? photoStyleAnalysis : null)),
         };
-        canvas.DrawRect(ToSkRect(viewport), backgroundPaint);
+        var drawExpressiveGradient = matchingPhotoStyle &&
+                                     photoStyleAnalysis is not null &&
+                                     photoStyleRasterImage is not null &&
+                                     stage.BackgroundMode is StageBackgroundMode.ColorGradient or
+                                         StageBackgroundMode.SoftGlow;
+        if (!drawExpressiveGradient)
+        {
+            canvas.DrawRect(ToSkRect(viewport), backgroundPaint);
+        }
 
         if (stage.BackgroundMode == StageBackgroundMode.ColorWash &&
             matchingPhotoStyle &&
-            colorWashImage is { } colorWash)
+            photoStyleRasterImage is { } colorWash)
         {
             canvas.DrawImage(
                 colorWash,
                 new SKRect(0, 0, colorWash.Width, colorWash.Height),
+                ToSkRect(viewport),
+                new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.None),
+                backgroundPaint);
+        }
+
+        if (drawExpressiveGradient && photoStyleAnalysis is not null)
+        {
+            var gradientRaster = photoStyleRasterImage!;
+            canvas.DrawImage(
+                gradientRaster,
+                new SKRect(0, 0, gradientRaster.Width, gradientRaster.Height),
                 ToSkRect(viewport),
                 new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.None),
                 backgroundPaint);
@@ -173,7 +192,7 @@ internal static class SkiaStageRenderer
                 break;
             case MatteStyle.Angular:
                 using (var path = CreateAngularPath(
-                    StageGeometry.CalculateAngularPoints(matte.OuterBounds, matte.ChamferDip)))
+                           StageGeometry.CalculateAngularPoints(matte.OuterBounds, matte.ChamferDip)))
                 {
                     canvas.DrawPath(path, paint);
                 }

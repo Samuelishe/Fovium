@@ -83,7 +83,7 @@ public sealed class SlideshowSessionTests
             new StageColor(30, 30, 210),
             new StageColor(30, 30, 210),
             new StageColor(30, 30, 210))));
-        var stage = StageSettings.Default with { BackgroundMode = StageBackgroundMode.ColorWash };
+        var stage = StageSettings.Default with { BackgroundMode = StageBackgroundMode.SoftGlow };
         var scheduler = new ControlledScheduler();
         var navigator = new ControlledNavigator(Slide(0, first.Identity, "A.png"));
         using var session = CreateSession(navigator, scheduler);
@@ -113,7 +113,7 @@ public sealed class SlideshowSessionTests
             Assert.Equal(photoPresentationEnabled, viewport.PhotoPresentationViewEnabled);
             Assert.Equal(second.Identity, state.ImageIdentity);
             Assert.Equal(second.Identity, state.PhotoStyleIdentity);
-            Assert.Equal(StageBackgroundMode.ColorWash, state.BackgroundMode);
+            Assert.Equal(StageBackgroundMode.SoftGlow, state.BackgroundMode);
             Assert.Equal(2, scheduler.Delays.Count);
         }
         finally

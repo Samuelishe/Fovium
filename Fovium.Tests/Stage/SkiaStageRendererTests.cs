@@ -215,13 +215,117 @@ public sealed class SkiaStageRendererTests
             imageIdentity: 7,
             photoStyleAnalysis: analysis,
             photoStyleIdentity: 7,
-            colorWashImage: wash);
+            photoStyleRasterImage: wash);
         using var result = surface.Snapshot();
         using var pixels = SKBitmap.FromImage(result);
 
         Assert.NotEqual(SKColors.Black, pixels.GetPixel(0, 0));
         Assert.Equal(StageDefaults.PhotoStyleWashRasterPixels, wash.Width);
         Assert.Equal(StageDefaults.PhotoStyleWashRasterPixels, wash.Height);
+    }
+
+    [Theory]
+    [InlineData((int)StageBackgroundMode.ColorGradient)]
+    [InlineData((int)StageBackgroundMode.SoftGlow)]
+    public void ExpressiveGradientStagesRenderDeterministicLowFrequencyVariation(int modeValue)
+    {
+        var analysis = PhotoDerivedStylePolicyTests.CreateAnalysis(
+            new StageColor(90, 120, 160),
+            new StageColor(210, 75, 45),
+            new StageColor(25, 45, 80));
+        using var first = RenderDerivedGradient((StageBackgroundMode)modeValue, analysis, 1);
+        using var second = RenderDerivedGradient((StageBackgroundMode)modeValue, analysis, 1);
+
+        Assert.NotEqual(SKColors.Black, first.GetPixel(0, 0));
+        Assert.NotEqual(first.GetPixel(0, 0), first.GetPixel(80, 50));
+        Assert.Equal(first.Bytes, second.Bytes);
+    }
+
+    [Theory]
+    [InlineData((int)StageBackgroundMode.ColorGradient)]
+    [InlineData((int)StageBackgroundMode.SoftGlow)]
+    public void ExpressiveGradientStagesRejectMismatchedAnalysisIdentity(int modeValue)
+    {
+        using var surface = SKSurface.Create(new SKImageInfo(80, 60));
+        var analysis = PhotoDerivedStylePolicyTests.CreateAnalysis(
+            new StageColor(240, 20, 180),
+            new StageColor(20, 220, 80),
+            new StageColor(80, 80, 220));
+        using var raster = (StageBackgroundMode)modeValue == StageBackgroundMode.ColorGradient
+            ? PhotoDerivedStylePolicy.CreateColorGradientImage(analysis)
+            : PhotoDerivedStylePolicy.CreateSoftGlowImage(analysis);
+
+        SkiaStageRenderer.Draw(
+            surface.Canvas,
+            new RectD(0, 0, 80, 60),
+            new RectD(20, 15, 40, 30),
+            1,
+            StageSettings.Default with { BackgroundMode = (StageBackgroundMode)modeValue },
+            null,
+            null,
+            imageIdentity: 902,
+            photoStyleAnalysis: analysis,
+            photoStyleIdentity: 901,
+            photoStyleRasterImage: raster);
+        using var result = surface.Snapshot();
+        using var pixels = SKBitmap.FromImage(result);
+
+        Assert.Equal(SKColors.Black, pixels.GetPixel(0, 0));
+        Assert.Equal(SKColors.Black, pixels.GetPixel(40, 30));
+    }
+
+    [Theory]
+    [InlineData((int)StageBackgroundMode.ColorGradient)]
+    [InlineData((int)StageBackgroundMode.SoftGlow)]
+    public void ExpressiveGradientStagesUseBlackFallbackWithoutPreparedRaster(int modeValue)
+    {
+        using var surface = SKSurface.Create(new SKImageInfo(80, 60));
+        var analysis = PhotoDerivedStylePolicyTests.CreateAnalysis(
+            new StageColor(240, 20, 180),
+            new StageColor(20, 220, 80),
+            new StageColor(80, 80, 220));
+
+        SkiaStageRenderer.Draw(
+            surface.Canvas,
+            new RectD(0, 0, 80, 60),
+            new RectD(20, 15, 40, 30),
+            1,
+            StageSettings.Default with { BackgroundMode = (StageBackgroundMode)modeValue },
+            null,
+            null,
+            imageIdentity: 902,
+            photoStyleAnalysis: analysis,
+            photoStyleIdentity: 902);
+        using var result = surface.Snapshot();
+        using var pixels = SKBitmap.FromImage(result);
+
+        Assert.Equal(SKColors.Black, pixels.GetPixel(0, 0));
+        Assert.Equal(SKColors.Black, pixels.GetPixel(40, 30));
+    }
+
+    [Theory]
+    [InlineData((int)StageBackgroundMode.ColorGradient)]
+    [InlineData((int)StageBackgroundMode.SoftGlow)]
+    public void ExpressiveGradientPixelsAreIndependentOfRenderScaling(int modeValue)
+    {
+        var analysis = PhotoDerivedStylePolicyTests.CreateAnalysis(
+            new StageColor(80, 115, 150),
+            new StageColor(190, 90, 55),
+            new StageColor(30, 50, 75));
+        var scaleFactors = new[] { 1d, 1.25, 1.5, 2 };
+        using var baseline = RenderDerivedGradient(
+            (StageBackgroundMode)modeValue,
+            analysis,
+            scaleFactors[0]);
+
+        foreach (var scale in scaleFactors.Skip(1))
+        {
+            using var actual = RenderDerivedGradient(
+                (StageBackgroundMode)modeValue,
+                analysis,
+                scale);
+            Assert.Equal(baseline.Bytes, actual.Bytes);
+        }
     }
 
     [Fact]
@@ -384,5 +488,30 @@ public sealed class SkiaStageRendererTests
         Assert.NotEqual(first[6], second[6]);
         Assert.Equal(1, first[18]);
         Assert.Equal(1, second[18]);
+    }
+
+    private static SKBitmap RenderDerivedGradient(
+        StageBackgroundMode mode,
+        PhotoStyleAnalysis analysis,
+        double renderScaling)
+    {
+        using var surface = SKSurface.Create(new SKImageInfo(160, 100));
+        using var raster = mode == StageBackgroundMode.ColorGradient
+            ? PhotoDerivedStylePolicy.CreateColorGradientImage(analysis)
+            : PhotoDerivedStylePolicy.CreateSoftGlowImage(analysis);
+        SkiaStageRenderer.Draw(
+            surface.Canvas,
+            new RectD(0, 0, 160, 100),
+            new RectD(40, 25, 80, 50),
+            renderScaling,
+            StageSettings.Default with { BackgroundMode = mode },
+            null,
+            null,
+            imageIdentity: 73,
+            photoStyleAnalysis: analysis,
+            photoStyleIdentity: 73,
+            photoStyleRasterImage: raster);
+        using var result = surface.Snapshot();
+        return SKBitmap.FromImage(result);
     }
 }

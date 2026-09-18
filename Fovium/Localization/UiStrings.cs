@@ -31,6 +31,8 @@ internal static class UiStrings
     public const string StageAverage = "stage.average";
     public const string StageDominant = "stage.dominant";
     public const string StageColorWash = "stage.colorWash";
+    public const string StageColorGradient = "stage.colorGradient";
+    public const string StageSoftGlow = "stage.softGlow";
     public const string StageBackground = "stage.background";
     public const string StageMatte = "stage.matte";
     public const string StageMatteEnabled = "stage.matteEnabled";

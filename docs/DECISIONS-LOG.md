@@ -737,7 +737,7 @@ pigment composition do not become product claims, and an ambiguous candidate ret
 
 ## D-069 — Master color lexicon and source independence remain developer research infrastructure
 
-Status: Implemented in the local R8-A-F12 candidate; hosted verification pending.
+Status: Implemented and accepted in pushed R8-A-F12.
 
 Professional vocabulary research uses one developer-only master lexicon that is intentionally broader than the runtime
 enum. It merges normalized canonical identities, aliases, anchor and lexical occurrences, source-independence groups,
@@ -751,3 +751,32 @@ OKLCH cores with EN/RU keys, reachability, counterexamples, rendered review, ove
 comparison, and two untuned holdouts. The audit may flag near-total containment and same-core similarity, but useful
 specific siblings are not rejected merely because their compact region sits inside a broader term. No research metadata
 or downloaded corpus participates in viewer runtime classification.
+
+## D-070 — Expressive photo-derived backgrounds remain exact-image bounded rasters
+
+Status: Implemented in local R10-B; hosted verification pending.
+
+Color Gradient and Soft Glow extend the R10-A analysis rather than creating another analysis, cache, or scheduling
+pipeline. Color Gradient derives one strongest low-frequency horizontal/vertical relation from the `6×6` field. Soft
+Glow derives one fixed centered radial field from average, representative Dominant, and boundary evidence without
+subject-position inference. Their tone bounds and OKLab interpolation are deterministic and offline.
+
+Each description is materialized once inside the existing off-UI decoded-image preparation as a `32×32` opaque raster,
+owned and byte-accounted beside the existing `64×64` Color Wash. The live renderer only leases and stretches the raster;
+viewport size, zoom, pan, DPI, Photo Presentation, Matte, and Slideshow never regenerate it. Exact rendered-image
+identity is mandatory, and absent/mismatched analysis or raster renders Black. Blink uses the comparison image's own
+artifact, Peek reuses canonical state, Picker/Histogram remain source-domain, and CMM remains photograph-only.
+
+## D-071 — Native source acquisition retries availability, never trust
+
+Status: Implemented in local R10-B; hosted verification pending.
+
+Pinned official URLs, versions, and SHA-256 values remain the sole source-acquisition trust authority. The native
+libheif builder may retry only classified transient HTTP/network failures, at most four attempts with bounded `1/2/4 s`
+backoff. Each attempt writes a unique temporary partial file; only a complete archive whose pinned hash succeeds is
+atomically published as cache. Permanent HTTP failures and hash mismatches are hard failures, and every failed partial is
+removed. A verified existing archive avoids network; an invalid cache is removed before one fresh acquisition.
+
+The policy is dependency-injected only at the small downloader boundary and covered by deterministic no-network tests.
+It does not add `continue-on-error`, workflow retries, vendored archives, binary commits, weaker native audits, or a
+GitHub Actions cache. Hosted clean-runner proof still requires a future authorized push.

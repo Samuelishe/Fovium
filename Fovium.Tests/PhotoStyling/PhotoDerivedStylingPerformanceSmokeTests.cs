@@ -79,8 +79,8 @@ public sealed class PhotoDerivedStylingPerformanceSmokeTests(ITestOutputHelper o
                 analysis.AnalyzedSize.Height,
                 analysis.VisibleSampleCount,
                 analysis.RetainedBytes,
-                GetWashRetainedBytes(image),
-                analysis.RetainedBytes + GetWashRetainedBytes(image),
+                GetRasterRetainedBytes(image, StageBackgroundMode.ColorWash),
+                analysis.RetainedBytes + GetAllRasterRetainedBytes(image),
                 diagnostics.RawLargestPopulation,
                 diagnostics.RawLargestColor.Red,
                 diagnostics.RawLargestColor.Green,
@@ -96,6 +96,20 @@ public sealed class PhotoDerivedStylingPerformanceSmokeTests(ITestOutputHelper o
                 analysis.AverageColor.Green,
                 analysis.AverageColor.Blue);
 
+            output.WriteLine(
+                "{0}: gradient preparation: ColorGradient={1:F2} us, SoftGlow={2:F2} us.",
+                Path.GetFileName(path),
+                MeasureRasterPreparation(analysis, PhotoDerivedStylePolicy.CreateColorGradientImage),
+                MeasureRasterPreparation(analysis, PhotoDerivedStylePolicy.CreateSoftGlowImage));
+            output.WriteLine(
+                "{0}: 1280x800 stage-only median render: Neutral={1:F2} us, ColorWash={2:F2} us, " +
+                "ColorGradient={3:F2} us, SoftGlow={4:F2} us.",
+                Path.GetFileName(path),
+                MeasureStageRender(image, analysis, StageBackgroundMode.Neutral),
+                MeasureStageRender(image, analysis, StageBackgroundMode.ColorWash),
+                MeasureStageRender(image, analysis, StageBackgroundMode.ColorGradient),
+                MeasureStageRender(image, analysis, StageBackgroundMode.SoftGlow));
+
             if (!string.IsNullOrWhiteSpace(outputDirectory))
             {
                 WriteVisualArtifacts(image, analysis, outputDirectory);
@@ -103,10 +117,90 @@ public sealed class PhotoDerivedStylingPerformanceSmokeTests(ITestOutputHelper o
         }
     }
 
-    private static long GetWashRetainedBytes(DecodedImage image)
+    private static long GetRasterRetainedBytes(DecodedImage image, StageBackgroundMode backgroundMode)
     {
-        using var wash = image.TryAcquireColorWash();
-        return wash?.RetainedBytes ?? 0;
+        using var raster = image.TryAcquirePhotoStyleRaster(backgroundMode);
+        return raster?.RetainedBytes ?? 0;
+    }
+
+    private static long GetAllRasterRetainedBytes(DecodedImage image) =>
+        GetRasterRetainedBytes(image, StageBackgroundMode.ColorWash) +
+        GetRasterRetainedBytes(image, StageBackgroundMode.ColorGradient) +
+        GetRasterRetainedBytes(image, StageBackgroundMode.SoftGlow);
+
+    private static double MeasureStageRender(
+        DecodedImage image,
+        PhotoStyleAnalysis analysis,
+        StageBackgroundMode backgroundMode)
+    {
+        const int batches = 5;
+        const int iterationsPerBatch = 10;
+        using var colorSpace = SKColorSpace.CreateSrgb();
+        var info = new SKImageInfo(1280, 800, SKColorType.Bgra8888, SKAlphaType.Premul, colorSpace);
+        using var surface = SKSurface.Create(info)
+                            ?? throw new InvalidOperationException("Skia could not allocate a timing surface.");
+        var viewport = new RectD(0, 0, 1280, 800);
+        var destination = Fit(image.Descriptor.OrientedSize, viewport, 96);
+        var settings = StageSettings.Default with { BackgroundMode = backgroundMode };
+        using var photoStyleRaster = image.TryAcquirePhotoStyleRaster(backgroundMode);
+        SkiaStageRenderer.Draw(
+            surface.Canvas,
+            viewport,
+            destination,
+            1,
+            settings,
+            null,
+            null,
+            image.Identity,
+            photoStyleAnalysis: analysis,
+            photoStyleIdentity: image.Identity,
+            photoStyleRasterImage: photoStyleRaster?.Image);
+        surface.Canvas.Flush();
+
+        var timings = new double[batches];
+        for (var batch = 0; batch < batches; batch++)
+        {
+            var clock = Stopwatch.StartNew();
+            for (var iteration = 0; iteration < iterationsPerBatch; iteration++)
+            {
+                SkiaStageRenderer.Draw(
+                    surface.Canvas,
+                    viewport,
+                    destination,
+                    1,
+                    settings,
+                    null,
+                    null,
+                    image.Identity,
+                    photoStyleAnalysis: analysis,
+                    photoStyleIdentity: image.Identity,
+                    photoStyleRasterImage: photoStyleRaster?.Image);
+            }
+
+            surface.Canvas.Flush();
+            clock.Stop();
+            timings[batch] = clock.Elapsed.TotalMicroseconds / iterationsPerBatch;
+        }
+
+        Array.Sort(timings);
+        return timings[timings.Length / 2];
+    }
+
+    private static double MeasureRasterPreparation(
+        PhotoStyleAnalysis analysis,
+        Func<PhotoStyleAnalysis, SKImage> prepare)
+    {
+        var timings = new double[5];
+        for (var iteration = 0; iteration < timings.Length; iteration++)
+        {
+            var clock = Stopwatch.StartNew();
+            using var image = prepare(analysis);
+            clock.Stop();
+            timings[iteration] = clock.Elapsed.TotalMicroseconds;
+        }
+
+        Array.Sort(timings);
+        return timings[timings.Length / 2];
     }
 
     private static void WriteVisualArtifacts(
@@ -119,6 +213,8 @@ public sealed class PhotoDerivedStylingPerformanceSmokeTests(ITestOutputHelper o
             ("average", StageSettings.Default with { BackgroundMode = StageBackgroundMode.Average }),
             ("dominant", StageSettings.Default with { BackgroundMode = StageBackgroundMode.Dominant }),
             ("color-wash", StageSettings.Default with { BackgroundMode = StageBackgroundMode.ColorWash }),
+            ("color-gradient", StageSettings.Default with { BackgroundMode = StageBackgroundMode.ColorGradient }),
+            ("soft-glow", StageSettings.Default with { BackgroundMode = StageBackgroundMode.SoftGlow }),
             ("auto-matte-hairline", StageSettings.Default with
             {
                 BackgroundMode = StageBackgroundMode.Neutral,
@@ -136,10 +232,8 @@ public sealed class PhotoDerivedStylingPerformanceSmokeTests(ITestOutputHelper o
             using var colorSpace = SKColorSpace.CreateSrgb();
             var info = new SKImageInfo(1280, 800, SKColorType.Bgra8888, SKAlphaType.Premul, colorSpace);
             using var surface = SKSurface.Create(info)
-                ?? throw new InvalidOperationException("Skia could not allocate a smoke surface.");
-            using var colorWash = variant.Settings.BackgroundMode == StageBackgroundMode.ColorWash
-                ? PhotoDerivedStylePolicy.CreateColorWashImage(analysis)
-                : null;
+                                ?? throw new InvalidOperationException("Skia could not allocate a smoke surface.");
+            using var photoStyleRaster = image.TryAcquirePhotoStyleRaster(variant.Settings.BackgroundMode);
             SkiaStageRenderer.Draw(
                 surface.Canvas,
                 viewport,
@@ -153,7 +247,7 @@ public sealed class PhotoDerivedStylingPerformanceSmokeTests(ITestOutputHelper o
                 null,
                 analysis,
                 image.Identity,
-                colorWash);
+                photoStyleRaster?.Image);
             using (var lease = image.AcquireRenderLease())
             {
                 SkiaPhotoDrawOperation.DrawPhoto(

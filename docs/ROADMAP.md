@@ -134,6 +134,15 @@ Locally complete at `0.1.2.0000`: add one bounded offline reference-sRGB analysi
 ### R10-A-F1 — Representative color and Color Wash tuning
 
 Locally complete at `0.1.2.0001`: preserve the R10-A ownership and bounds while selecting user-facing Dominant from substantial perceptual palette families rather than the raw largest bin. Tiny accents remain ineligible to capture a neutral image, raw palette/average data remain unchanged, automatic Matte shares the selector, and a `6×6` field plus modest bounded OKLab chroma/lightness mapping makes Color Wash richer without turning it into Ambient.
+## R10-B — Expressive photo-derived gradient styling
+
+Locally complete at `0.1.3.0000`: add two deliberately distinct Stage modes without changing the R10-A analysis owner.
+Color Gradient chooses the stronger horizontal/vertical low-frequency edge relation from the `6×6` field; Soft Glow
+uses a restrained representative center and darker boundary-derived edge. Each is converted once off-UI into a
+byte-accounted `32×32` raster owned by the exact `DecodedImage`. Exact identity, Black fallback, Normal Viewer, Photo
+Presentation, Slideshow, Blink/Peek, source-domain Picker/Histogram, and geometry-independent CMM remain authoritative.
+Mesh/multi-radial reconstruction, procedural grain/material texture, and added faux-depth decoration were rejected as
+too image-like, wallpaper-like, or redundant with Matte/Hairline.
 
 ## Later / separate platform milestones
 

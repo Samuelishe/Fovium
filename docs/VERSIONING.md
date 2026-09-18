@@ -164,6 +164,7 @@ never reuse an earlier version. No automatic rollover after BUILD `9999` is defi
 | `0.1.2.0012` | R8-A-F10                              | Multi-domain professional-shade expansion and global overlap audit                                                              |
 | `0.1.2.0013` | R8-A-F11                              | Fourth professional-shade campaign and semantic overlap/vocabulary-frontier audit                                               |
 | `0.1.2.0014` | R8-A-F12                              | Expanded independent color research corpus, master lexicon, mass mining, and Histogram CI regression                            |
+| `0.1.3.0000` | R10-B                                 | Expressive photo-derived Color Gradient and Soft Glow Stage backgrounds                                                         |
 
 The `0.0.0.xxxx` line records the completed foundation and early product-construction checkpoints. The explicit
 owner-controlled `0.1.0.0000` transition marks the first substantial usable Fovium alpha; it does not claim feature
@@ -172,10 +173,10 @@ completeness, a stable API, production release status, or `1.0` quality. Current
 
 ## Current checkpoint
 
-R8-A-F12 is the locally complete Color Inspector research-corpus and professional-vocabulary refinement at `0.1.2.0014`.
-It increments
-BUILD within PATCH `0.1.2` because it expands and validates the accepted Color Inspector naming capability without
-introducing a separate standalone viewer feature.
+R10-B is the locally complete expressive photo-derived Stage capability at `0.1.3.0000`. It increments PATCH and resets
+BUILD because Color Gradient and Soft Glow are independently useful, persisted user-visible presentation modes rather
+than a corrective refinement of the R10-A foundation. The native downloader and developer-tooling work included in the
+same engineering stage do not independently change the product version.
 
 ## Future code and packaging source
 
@@ -183,9 +184,9 @@ The root `Directory.Build.props` is the canonical source for the current compone
 supplies the production `Fovium` assembly with:
 
 ```text
-InformationalVersion = 0.1.2.0014
-AssemblyVersion      = 0.1.2.14
-FileVersion          = 0.1.2.14
+InformationalVersion = 0.1.3.0000
+AssemblyVersion      = 0.1.3.0
+FileVersion          = 0.1.3.0
 ```
 
 From that source:

@@ -1,6 +1,8 @@
 using Fovium.ColorManagement;
 using Fovium.Imaging;
+using Fovium.PhotoStyling;
 using Fovium.Rendering;
+using Fovium.Stage;
 using SkiaSharp;
 
 namespace Fovium.Tests.ColorManagement;
@@ -89,6 +91,56 @@ public sealed class GeometryIndependentManagedSourceTests
             var legacyFrame = Draw(canonicalLease.Image, destination, exact);
             var managedFrame = Draw(managed.Image, destination, exact);
             Assert.Equal(legacyFrame, managedFrame);
+        }
+
+        Assert.Equal(1, engine.TransformCalls);
+    }
+
+    [Theory]
+    [InlineData((int)StageBackgroundMode.ColorGradient)]
+    [InlineData((int)StageBackgroundMode.SoftGlow)]
+    public void ExpressiveStageChangesReuseOneManagedSourceWithoutAdditionalCmmWork(
+        int backgroundModeValue)
+    {
+        var backgroundMode = (StageBackgroundMode)backgroundModeValue;
+        using var canonical = CreatePatternImage(64, 48);
+        var analysis = new PhotoStyleAnalyzer().Analyze(canonical, CancellationToken.None);
+        Assert.True(canonical.TryAttachPhotoStyleAnalysis(analysis));
+        var engine = new CopyTransformEngine();
+        using var renderer = new SkiaLittleCmsPhotoRenderer(engine);
+        using var request = CreateRequest(canonical, new DisplayProfileIdentity("A", false));
+        using var managed = renderer.Render(request);
+        var settings = StageSettings.Default with { BackgroundMode = backgroundMode };
+
+        foreach (var scaling in new[] { 1d, 1.25d, 1.5d, 2d })
+        {
+            using var bitmap = new SKBitmap(new SKImageInfo(
+                240,
+                180,
+                SKColorType.Bgra8888,
+                SKAlphaType.Premul));
+            using var canvas = new SKCanvas(bitmap);
+            var viewport = new RectD(0, 0, 240, 180);
+            var destination = new RectD(24, 18, 192, 144);
+            SkiaStageRenderer.Draw(
+                canvas,
+                viewport,
+                destination,
+                scaling,
+                settings,
+                null,
+                null,
+                canonical.Identity,
+                photoStyleAnalysis: analysis,
+                photoStyleIdentity: canonical.Identity);
+            SkiaPhotoDrawOperation.DrawPhoto(
+                canvas,
+                managed.Image,
+                canonical.Descriptor.EncodedSize,
+                canonical.Descriptor.Orientation,
+                destination,
+                false);
+            canvas.Flush();
         }
 
         Assert.Equal(1, engine.TransformCalls);

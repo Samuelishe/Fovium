@@ -12,9 +12,13 @@ import os
 import platform
 import re
 import shutil
+import socket
 import subprocess
 import sys
 import tarfile
+import tempfile
+import time
+import urllib.error
 import urllib.request
 import zipfile
 from pathlib import Path
@@ -25,6 +29,10 @@ SCRIPT_ROOT = Path(__file__).resolve().parent
 REPOSITORY_ROOT = SCRIPT_ROOT.parents[2]
 VERSIONS_PATH = SCRIPT_ROOT / "versions.json"
 ARTIFACT_ROOT = REPOSITORY_ROOT / "artifacts" / "native"
+DOWNLOAD_ATTEMPTS = 4
+DOWNLOAD_TIMEOUT_SECONDS = 60
+DOWNLOAD_BACKOFF_SECONDS = (1.0, 2.0, 4.0)
+TRANSIENT_HTTP_STATUS = frozenset({408, 429, 500, 502, 503, 504})
 
 FORBIDDEN_DEPENDENCY_MARKERS = (
     "x265",
@@ -177,26 +185,86 @@ def recreate_directory(path: Path) -> None:
     path.mkdir(parents=True)
 
 
+def is_transient_download_error(error: BaseException) -> bool:
+    if isinstance(error, urllib.error.HTTPError):
+        return error.code in TRANSIENT_HTTP_STATUS
+    if isinstance(error, urllib.error.URLError):
+        return isinstance(
+            error.reason,
+            (ConnectionError, TimeoutError, socket.timeout),
+        )
+    return isinstance(error, (ConnectionError, TimeoutError, socket.timeout))
+
+
+def download_verified_archive(
+    component: dict[str, Any],
+    downloads: Path,
+    *,
+    opener: Any = urllib.request.urlopen,
+    sleep: Any = time.sleep,
+) -> Path:
+    downloads.mkdir(parents=True, exist_ok=True)
+    archive = downloads / component["archiveFile"]
+    expected_hash = component["archiveSha256"]
+    if archive.exists():
+        actual_hash = sha256(archive)
+        if actual_hash == expected_hash:
+            return archive
+        print(
+            f"Discarding invalid cached archive {archive.name}: {actual_hash}",
+            flush=True,
+        )
+        archive.unlink()
+
+    request = urllib.request.Request(
+        component["archiveUrl"], headers={"User-Agent": "Fovium-native-build/1"}
+    )
+    for attempt in range(1, DOWNLOAD_ATTEMPTS + 1):
+        print(
+            f"Downloading {component['archiveUrl']} "
+            f"(attempt {attempt}/{DOWNLOAD_ATTEMPTS})",
+            flush=True,
+        )
+        descriptor, temporary_name = tempfile.mkstemp(
+            prefix=f"{archive.name}.",
+            suffix=".part",
+            dir=downloads,
+        )
+        os.close(descriptor)
+        temporary = Path(temporary_name)
+        try:
+            with opener(request, timeout=DOWNLOAD_TIMEOUT_SECONDS) as response:
+                with temporary.open("wb") as output:
+                    shutil.copyfileobj(response, output)
+                    output.flush()
+                    os.fsync(output.fileno())
+
+            actual_hash = sha256(temporary)
+            if actual_hash != expected_hash:
+                raise RuntimeError(
+                    f"Archive hash mismatch for {archive.name}: {actual_hash}"
+                )
+
+            os.replace(temporary, archive)
+            return archive
+        except Exception as error:
+            temporary.unlink(missing_ok=True)
+            if attempt >= DOWNLOAD_ATTEMPTS or not is_transient_download_error(error):
+                raise
+            delay = DOWNLOAD_BACKOFF_SECONDS[attempt - 1]
+            print(
+                f"Transient download failure: {error}. Retrying in {delay:.0f}s.",
+                flush=True,
+            )
+            sleep(delay)
+
+    raise AssertionError("download attempt loop completed without a result")
+
+
 def download_and_extract(
     component: dict[str, Any], downloads: Path, sources: Path
 ) -> Path:
-    archive = downloads / component["archiveFile"]
-    if archive.exists() and sha256(archive) != component["archiveSha256"]:
-        archive.unlink()
-
-    if not archive.exists():
-        print(f"Downloading {component['archiveUrl']}")
-        request = urllib.request.Request(
-            component["archiveUrl"], headers={"User-Agent": "Fovium-native-build/1"}
-        )
-        with urllib.request.urlopen(request) as response, archive.open("wb") as output:
-            shutil.copyfileobj(response, output)
-
-    actual_hash = sha256(archive)
-    if actual_hash != component["archiveSha256"]:
-        raise RuntimeError(
-            f"Archive hash mismatch for {archive.name}: {actual_hash}"
-        )
+    archive = download_verified_archive(component, downloads)
 
     with tarfile.open(archive, mode="r:*") as source_archive:
         source_archive.extractall(sources, filter="data")

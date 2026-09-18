@@ -102,6 +102,20 @@ public sealed class StageSettingsTests
     }
 
     [Theory]
+    [InlineData((int)StageBackgroundMode.ColorGradient)]
+    [InlineData((int)StageBackgroundMode.SoftGlow)]
+    public void ExpressiveGradientModesRequireTheCanonicalPhotoAnalysis(int modeValue)
+    {
+        var stage = StageSettings.Default with
+        {
+            BackgroundMode = (StageBackgroundMode)modeValue,
+        };
+
+        Assert.True(stage.RequiresPhotoStyleAnalysis());
+        Assert.False(stage.BackgroundMode.RequiresAmbient());
+    }
+
+    [Theory]
     [InlineData(-100, 4)]
     [InlineData(0, 4)]
     [InlineData(3.99, 4)]
