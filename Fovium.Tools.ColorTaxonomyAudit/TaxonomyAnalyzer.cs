@@ -26,14 +26,31 @@ internal static class TaxonomyAnalyzer
         ("Yellow / yellow-green", "#C7CD75"), ("Yellow / yellow-green", "#CBDFA2"),
         ("Yellow / yellow-green", "#CBD97A"), ("Yellow / yellow-green", "#D5E29C"),
         ("Yellow / yellow-green", "#CBD862"), ("Yellow / yellow-green", "#AFBC4A"),
-        ("Yellow / yellow-green", "#B9D147")
+        ("Yellow / yellow-green", "#B9D147"),
+        ("F8 Indigo", "#4B0082"), ("F8 Indigo", "#380282"),
+        ("F8 Powder blue", "#B0E0E6"), ("F8 Powder blue", "#B1D1FC"),
+        ("F8 Steel blue", "#4682B4"), ("F8 Steel blue", "#5A7D9A"),
+        ("F8 Olive drab", "#6B8E23"), ("F8 Olive drab", "#6F7632"),
+        ("F8 Lime", "#00FF00"), ("F8 Lime", "#AAFF32"),
+        ("F8 Chartreuse", "#7FFF00"), ("F8 Chartreuse", "#C1F80A"),
+        ("F8 Seafoam", "#80F9AD"), ("F8 Seafoam", "#3EAF76"),
+        ("F8 Lilac", "#CEA2FD"), ("F8 Lilac", "#9C6DA5"),
+        ("F8 Mauve", "#AE7181"), ("F8 Mauve", "#C292A1"),
+        ("F8 Cobalt", "#0047AB"), ("F8 Cobalt", "#1E488F"),
+        ("F8 Cerulean", "#007BA7"), ("F8 Cerulean", "#0485D1"),
+        ("F8 Blood orange", "#FE4B03"), ("F8 Pumpkin", "#E17701"),
+        ("F8 Blush", "#F29E8E"), ("F8 Pistachio", "#C0FA8B"),
+        ("F8 Linen", "#FAF0E6")
     ];
 
     private static readonly string[] ProfessionalTermAnchorHex =
     [
         "#C79FEF", "#8E82FE", "#01153E", "#069AF3", "#75BBFD", "#87AE73",
         "#01A049", "#06470C", "#04D8B2", "#029386", "#FF796C", "#80013F",
-        "#A83C09", "#BE0119", "#FF9408", "#FFFFCB", "#343837", "#516572"
+        "#A83C09", "#BE0119", "#FF9408", "#FFFFCB", "#343837", "#516572",
+        "#4B0082", "#B0E0E6", "#4682B4", "#6B8E23", "#00FF00", "#C1F80A",
+        "#80F9AD", "#0047AB", "#007BA7", "#FE4B03", "#E17701", "#F29E8E",
+        "#C0FA8B", "#FAF0E6", "#C0C0C0"
     ];
 
     public static AuditReport Analyze(
@@ -83,6 +100,7 @@ internal static class TaxonomyAnalyzer
         var referenceDisagreements = AnalyzeReferences(referenceCandidates, references, anomalies);
         var semantic = SemanticReferenceAudit.Analyze(balancedSemantic, references);
         var vocabularyGaps = FindVocabularyGaps(semantic.Cohort);
+        var vocabularyCandidates = VocabularyCandidateAudit.Analyze(references);
         var professionalTermClassifications = ProfessionalTermAnchorHex
             .Select(hex => adapter.Classify(ParseHex(hex)))
             .ToArray();
@@ -125,7 +143,7 @@ internal static class TaxonomyAnalyzer
             runtimeSeconds);
 
         var report = new AuditReport(
-            "fovium-color-taxonomy-audit/v3",
+            "fovium-color-taxonomy-audit/v4",
             options.Mode.ToString(),
             options.Seed,
             options.Configuration,
@@ -152,11 +170,15 @@ internal static class TaxonomyAnalyzer
                 semantic.Cohort.Count(item => item.Sample.Specificity == "NeutralRole"),
                 vocabularyGaps.Count),
             VocabularyGaps = vocabularyGaps,
+            VocabularyCandidates = vocabularyCandidates,
             ProfessionalTermSamples = professionalTermClassifications
                 .Select(sample => new OwnerCandidateSample(
                     sample.ProfessionalTerm ?? sample.Family,
                     sample,
-                    professionalTermAssessments.GetValueOrDefault(sample.Rgb.Packed)))
+                    professionalTermAssessments.GetValueOrDefault(sample.Rgb.Packed))
+                {
+                    ProfessionalExplanation = adapter.ExplainProfessional(sample.Rgb)
+                })
                 .ToArray(),
             ProfessionalTermCoverage = CountBy(
                 all.Where(sample => sample.ProfessionalTerm is not null),

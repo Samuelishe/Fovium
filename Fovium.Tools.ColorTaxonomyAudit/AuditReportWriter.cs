@@ -76,13 +76,22 @@ internal static class AuditReportWriter
                 $"{item.DatasetSupport} datasets: {string.Join(", ", item.SupportingDatasets)}")));
         WriteSampleSheet(
             directory,
+            "vocabulary-candidates",
+            "Reference-driven professional vocabulary clusters",
+            report.VocabularyCandidates.Select(item => new SheetItem(
+                item.SpecificTerm,
+                item.Representative,
+                null,
+                $"{item.DatasetSupport} datasets · {item.AnchorCount} anchors · p90 ΔE {item.P90DeltaE:0.000}")));
+        WriteSampleSheet(
+            directory,
             "professional-terms",
             "Accepted professional-term reference anchors",
             report.ProfessionalTermSamples.Select(item => new SheetItem(
                 item.Region,
                 item.Sample,
                 item.Reference,
-                $"Base family: {item.Sample.Family}")));
+                $"Base family: {item.Sample.Family} · region: {item.ProfessionalExplanation?.WinnerRegionStableId}")));
         WriteSampleSheet(
             directory,
             "holdout-samples",
@@ -109,7 +118,11 @@ internal static class AuditReportWriter
 
         var deterministic = report with
         {
-            Metrics = report.Metrics with { RuntimeSeconds = 0 },
+            Metrics = report.Metrics with
+            {
+                RuntimeSeconds = 0,
+                ProfessionalClassificationNanosecondsPerSample = 0
+            },
             Comparison = null,
         };
         var bytes = JsonSerializer.SerializeToUtf8Bytes(deterministic, JsonOptions);
@@ -171,6 +184,8 @@ internal static class AuditReportWriter
         AppendMetric(builder, "Vocabulary-gap candidates", report.Specificity.VocabularyGapCandidates);
         AppendMetric(builder, "High-severity anomalies", report.Metrics.HighSeverityAnomalies);
         AppendMetric(builder, "Medium-severity anomalies", report.Metrics.MediumSeverityAnomalies);
+        builder.AppendLine(
+            $"| Professional classifier benchmark | {report.Metrics.ProfessionalClassificationNanosecondsPerSample:0.0} ns/sample |");
 
         if (report.References.Count > 0)
         {
@@ -230,6 +245,25 @@ internal static class AuditReportWriter
         }
 
         builder.AppendLine();
+        builder.AppendLine("## Professional-term match explanations");
+        builder.AppendLine();
+        builder.AppendLine("| Term | HEX | Winner region | Closest competing definitions |");
+        builder.AppendLine("| --- | --- | --- | --- |");
+        foreach (var sample in report.ProfessionalTermSamples)
+        {
+            var explanation = sample.ProfessionalExplanation;
+            var competitors = explanation is null
+                ? string.Empty
+                : string.Join(", ", explanation.Candidates
+                    .Where(item => item.RegionStableId != explanation.WinnerRegionStableId)
+                    .OrderByDescending(item => item.Priority)
+                    .Take(5)
+                    .Select(item => $"{item.RegionStableId}:{item.FailureReason}"));
+            builder.AppendLine(
+                $"| {sample.Region} | {sample.Sample.Rgb.Hex} | {explanation?.WinnerRegionStableId} | {EscapeMarkdown(competitors)} |");
+        }
+
+        builder.AppendLine();
         builder.AppendLine("## Balanced family semantic profiles");
         builder.AppendLine();
         builder.AppendLine(
@@ -250,6 +284,18 @@ internal static class AuditReportWriter
         {
             builder.AppendLine(
                 $"| {gap.SpecificTerm} | {gap.DatasetSupport} | {gap.Sample.Rgb.Hex} | {EscapeMarkdown(gap.Sample.DetailedName)} | {gap.Sample.Family} | {string.Join(", ", gap.SupportingDatasets)} |");
+        }
+
+        builder.AppendLine();
+        builder.AppendLine("## Reference-driven vocabulary candidate clusters");
+        builder.AppendLine();
+        builder.AppendLine(
+            "| Candidate | Shipped | Datasets | Anchors | Medoid | Median ΔE | P90 ΔE | Production families |");
+        builder.AppendLine("| --- | --- | ---: | ---: | --- | ---: | ---: | --- |");
+        foreach (var candidate in report.VocabularyCandidates)
+        {
+            builder.AppendLine(
+                $"| {candidate.SpecificTerm} | {candidate.IsShippedTerm} | {candidate.DatasetSupport} | {candidate.AnchorCount} | {candidate.Representative.Rgb.Hex} | {candidate.MedianDeltaE:0.000} | {candidate.P90DeltaE:0.000} | {EscapeMarkdown(string.Join(", ", candidate.ProductionFamilyCoverage.Select(pair => $"{pair.Key}={pair.Value}")))} |");
         }
 
         builder.AppendLine();
@@ -451,10 +497,12 @@ internal static class AuditReportWriter
             builder.AppendLine(
                 $"<rect x=\"{x + 8}\" y=\"{y + 8}\" width=\"64\" height=\"64\" rx=\"4\" fill=\"{item.Sample.Rgb.Hex}\" stroke=\"#888\"/>");
             builder.AppendLine(
-                $"<text x=\"{x + 80}\" y=\"{y + 20}\">{Xml(item.Sample.Rgb.Hex)} · {Xml(item.Sample.Family)}</text>");
-            builder.AppendLine($"<text x=\"{x + 80}\" y=\"{y + 38}\">{Xml(Trim(item.Sample.DetailedName, 31))}</text>");
+                $"<text x=\"{x + 80}\" y=\"{y + 18}\">{Xml(Trim(item.Label, 31))}</text>");
             builder.AppendLine(
-                $"<text class=\"small\" x=\"{x + 80}\" y=\"{y + 55}\">L {item.Sample.OklchL:P1} C {item.Sample.OklchC:0.000} h {item.Sample.OklchHue:0}°</text>");
+                $"<text class=\"small\" x=\"{x + 80}\" y=\"{y + 36}\">{Xml(item.Sample.Rgb.Hex)} · {Xml(item.Sample.Family)}</text>");
+            builder.AppendLine($"<text x=\"{x + 80}\" y=\"{y + 54}\">{Xml(Trim(item.Sample.DetailedName, 31))}</text>");
+            builder.AppendLine(
+                $"<text class=\"small\" x=\"{x + 80}\" y=\"{y + 70}\">L {item.Sample.OklchL:P1} C {item.Sample.OklchC:0.000} h {item.Sample.OklchHue:0}°</text>");
             builder.AppendLine(
                 $"<text class=\"small\" x=\"{x + 8}\" y=\"{y + 91}\">{Xml(Trim(ReferenceSummary(item.Reference), 47))}</text>");
             builder.AppendLine(

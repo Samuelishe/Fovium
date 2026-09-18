@@ -46,7 +46,12 @@ internal static class ColorTaxonomyAuditApplication
                 runtimeSeconds: 0);
             report = report with
             {
-                Metrics = report.Metrics with { RuntimeSeconds = stopwatch.Elapsed.TotalSeconds }
+                Metrics = report.Metrics with
+                {
+                    RuntimeSeconds = stopwatch.Elapsed.TotalSeconds,
+                    ProfessionalClassificationNanosecondsPerSample =
+                    ProfessionalShadeBenchmark.MeasureNanosecondsPerSample()
+                }
             };
             if (!string.IsNullOrWhiteSpace(options.BaselineReport))
             {

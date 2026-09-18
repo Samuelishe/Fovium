@@ -50,6 +50,25 @@ internal sealed class ProductionColorAdapter
     public static string ClassifyFamily(double lightness, double chroma, double hueDegrees) =>
         PerceptualColorClassifier.ClassifyHue(new OklchColor(lightness, chroma, hueDegrees)).ToString();
 
+    public AuditProfessionalExplanation ExplainProfessional(AuditRgb rgb)
+    {
+        var color = OklchColor.FromSrgb(rgb.Red, rgb.Green, rgb.Blue);
+        var role = PerceptualColorClassifier.ClassifyRole(color);
+        var family = PerceptualColorClassifier.ClassifyHue(color);
+        var explanation = ProfessionalShadeClassifier.Explain(color, role, family);
+        return new AuditProfessionalExplanation(
+            explanation.Winner?.Term.ToString(),
+            explanation.Winner?.TermStableId,
+            explanation.Winner?.RegionStableId,
+            explanation.Candidates.Select(item => new AuditProfessionalRegionEvaluation(
+                item.Term.ToString(),
+                item.TermStableId,
+                item.RegionStableId,
+                item.Priority,
+                item.Matched,
+                item.FailureReason)).ToArray());
+    }
+
     private static string ResolveSpecificity(PerceptualColorDescription description)
     {
         if (description.ProfessionalTerm is not null)

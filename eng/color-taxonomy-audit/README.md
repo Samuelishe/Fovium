@@ -46,15 +46,22 @@ dotnet run --project Fovium.Tools.ColorTaxonomyAudit -c Release -- --mode deep `
 
 Each run writes `summary.json`, `summary.md`, `summary.html`, `anomalies.csv`, `contact-sheet.svg`, balanced-spectrum,
 family-profile, owner-candidate, holdout, changed-region, reference-disagreement, vocabulary-gap, and accepted
-professional-term views, plus a deterministic SHA-256 signature. Runtime is retained in the reports but excluded from
-the signature. Schema v3 also reports generic/existing-specific/professional/neutral coverage and per-term sampled
-coverage. Reports rank abrupt semantic
+professional-term views, plus a reference-driven vocabulary-candidate view and a deterministic SHA-256 signature.
+Runtime and the isolated indexed-classifier benchmark are retained in the reports but excluded from the signature.
+Schema v4 reports generic/existing-specific/professional/neutral coverage, per-term sampled coverage, candidate source
+support/dispersion, and the winning/competing region explanation for accepted anchors. Reports rank abrupt semantic
 neighbors, role/modifier reversals, lightness A→B→A paths, small connected components, thin slivers, broad family
 coverage, distance-gated k-nearest reference disagreements, and per-family semantic profiles. These signals locate
 regions for engineering review; a high score or a distant named anchor is not an automatic product verdict. Inspect the
 rendered contact sheets, preserve the tuning seed, and require one or more unseen holdout seeds before accepting a
 classifier correction. A vocabulary-gap candidate requires two distance-qualified datasets to repeat the same specific
 term for a coordinate-driven generic sample; it is a research queue, not an automatic new product rule.
+
+Candidate discovery uses an audit-only vocabulary normalizer that is intentionally broader than the shipped term enum.
+This prevents current product vocabulary from defining its own research questions. Candidate profiles group recurring
+names across datasets, report medoid/dispersion and production-family coverage, and remain evidence for review rather
+than generated runtime definitions. Region explanations identify the winning stable term/region and why competitors
+failed (`parent-family`, `role`, `lightness`, `chroma`, or `hue`).
 
 ## Optional reference cache
 

@@ -220,6 +220,13 @@ the evidence. Focused tests require stable/unique/reachable definitions, unique 
 independently sourced term anchors, accepted adjacent controls, and exact boundary behavior. Canonical and two unseen
 holdout seeds must retain the topology/reference metrics while reducing generic-only coverage.
 
+R8-A-F8 advances the audit to schema v4. Reference-name normalization now discovers recurring candidate terms without
+depending on the shipped professional-term enum; the report groups their source coverage, medoid, dispersion, sampled
+production families, and shipped status. It also records the winning region, losing competitors and failure dimensions
+for accepted anchors, renders a vocabulary-candidate contact sheet, and benchmarks the indexed production lookup while
+excluding timing from the deterministic signature. Focused tests additionally require every declared region to win at
+an interior point, exercise both lobes of composite definitions, and pin both sides of meaningful hue/chroma edges.
+
 R8-B-P1 adds deterministic in-memory tests for bounded ICC display-profile validation, content identity, active-monitor
 largest-intersection/tie behavior, typed fallback precedence, complete transform-key equality, Skia destination/alpha
 behavior, and source-versus-destination ownership. The final domain-independence test proves that two destination

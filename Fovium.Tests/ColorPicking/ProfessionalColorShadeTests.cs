@@ -25,6 +25,22 @@ public sealed class ProfessionalColorShadeTests
     [InlineData("#FFFFCB", ProfessionalColorTerm.Ivory, PerceptualHueFamily.Cream)]
     [InlineData("#343837", ProfessionalColorTerm.Charcoal, PerceptualHueFamily.Neutral)]
     [InlineData("#516572", ProfessionalColorTerm.Slate, PerceptualHueFamily.BlueGray)]
+    [InlineData("#4B0082", ProfessionalColorTerm.Indigo, PerceptualHueFamily.BlueViolet)]
+    [InlineData("#B0E0E6", ProfessionalColorTerm.PowderBlue, PerceptualHueFamily.Cyan)]
+    [InlineData("#B1D1FC", ProfessionalColorTerm.PowderBlue, PerceptualHueFamily.Blue)]
+    [InlineData("#4682B4", ProfessionalColorTerm.SteelBlue, PerceptualHueFamily.Blue)]
+    [InlineData("#6B8E23", ProfessionalColorTerm.OliveDrab, PerceptualHueFamily.OliveGreen)]
+    [InlineData("#00FF00", ProfessionalColorTerm.Lime, PerceptualHueFamily.Green)]
+    [InlineData("#C1F80A", ProfessionalColorTerm.Chartreuse, PerceptualHueFamily.YellowGreen)]
+    [InlineData("#80F9AD", ProfessionalColorTerm.Seafoam, PerceptualHueFamily.Green)]
+    [InlineData("#0047AB", ProfessionalColorTerm.Cobalt, PerceptualHueFamily.Blue)]
+    [InlineData("#007BA7", ProfessionalColorTerm.Cerulean, PerceptualHueFamily.CyanBlue)]
+    [InlineData("#FE4B03", ProfessionalColorTerm.BloodOrange, PerceptualHueFamily.Red)]
+    [InlineData("#E17701", ProfessionalColorTerm.Pumpkin, PerceptualHueFamily.Ochre)]
+    [InlineData("#F29E8E", ProfessionalColorTerm.Blush, PerceptualHueFamily.Rose)]
+    [InlineData("#C0FA8B", ProfessionalColorTerm.Pistachio, PerceptualHueFamily.YellowGreen)]
+    [InlineData("#FAF0E6", ProfessionalColorTerm.Linen, PerceptualHueFamily.Cream)]
+    [InlineData("#C0C0C0", ProfessionalColorTerm.Silver, PerceptualHueFamily.Neutral)]
     public void IndependentReferenceAnchorsResolveSpecificTermsWithoutReplacingBaseFamilies(
         string hex,
         object expectedTerm,
@@ -38,7 +54,6 @@ public sealed class ProfessionalColorShadeTests
 
     [Theory]
     [InlineData("#341D6D")]
-    [InlineData("#00FF00")]
     [InlineData("#FF0000")]
     [InlineData("#FF00FF")]
     [InlineData("#C95E3A")]
@@ -47,6 +62,8 @@ public sealed class ProfessionalColorShadeTests
     [InlineData("#000000")]
     [InlineData("#0080FF")]
     [InlineData("#77C081")]
+    [InlineData("#D2D3D8")]
+    [InlineData("#ADF0D1")]
     public void SpecificTermsDoNotConsumeAcceptedGenericOrAdjacentControls(string hex)
     {
         Assert.Null(Describe(hex).ProfessionalTerm);
@@ -56,22 +73,19 @@ public sealed class ProfessionalColorShadeTests
     public void DeclarativeCatalogHasStableUniqueReachableLocalizedDefinitions()
     {
         var definitions = ProfessionalShadeCatalog.Definitions;
+        var regions = definitions.SelectMany(definition => definition.Regions).ToArray();
 
-        Assert.Equal(18, definitions.Count);
+        Assert.Equal(33, definitions.Count);
         Assert.Equal(definitions.Count, definitions.Select(item => item.StableId).Distinct().Count());
         Assert.Equal(definitions.Count, definitions.Select(item => item.Term).Distinct().Count());
-        Assert.Equal(definitions.Count, definitions.Select(item => item.Priority).Distinct().Count());
+        Assert.Equal(34, regions.Length);
+        Assert.Equal(regions.Length, regions.Select(item => item.StableId).Distinct().Count());
+        Assert.Equal(regions.Length, regions.Select(item => item.Priority).Distinct().Count());
         Assert.All(definitions, definition =>
         {
             Assert.StartsWith("professional-", definition.StableId, StringComparison.Ordinal);
             Assert.NotEmpty(definition.LocalizationKey);
-            Assert.NotEmpty(definition.ParentFamilies);
-            Assert.InRange(definition.MinimumLightness, 0, 1);
-            Assert.InRange(definition.MaximumLightness, 0, 1.001);
-            Assert.True(definition.MinimumLightness < definition.MaximumLightness);
-            Assert.True(definition.MinimumChroma < definition.MaximumChroma);
-            Assert.InRange(definition.MinimumHue, 0, 360);
-            Assert.InRange(definition.MaximumHue, 0, 360);
+            Assert.NotEmpty(definition.Regions);
 
             var english = Localizer.Create(CultureInfo.GetCultureInfo("en-US"))[definition.LocalizationKey];
             var russian = Localizer.Create(CultureInfo.GetCultureInfo("ru-RU"))[definition.LocalizationKey];
@@ -79,6 +93,62 @@ public sealed class ProfessionalColorShadeTests
             Assert.NotEqual(definition.LocalizationKey, russian);
             Assert.NotEqual(english, russian);
         });
+        Assert.All(regions, region =>
+        {
+            Assert.StartsWith("professional-", region.StableId, StringComparison.Ordinal);
+            Assert.NotEmpty(region.ParentFamilies);
+            Assert.InRange(region.MinimumLightness, 0, 1);
+            Assert.InRange(region.MaximumLightness, 0, 1.001);
+            Assert.True(region.MinimumLightness < region.MaximumLightness);
+            Assert.True(region.MinimumChroma < region.MaximumChroma);
+            Assert.InRange(region.MinimumHue, 0, 360);
+            Assert.InRange(region.MaximumHue, 0, 360);
+        });
+    }
+
+    [Fact]
+    public void OneProfessionalTermCanOwnMultipleBoundedRegionsWithoutDuplicatingItsIdentity()
+    {
+        var powderBlue = ProfessionalShadeCatalog.Get(ProfessionalColorTerm.PowderBlue);
+
+        Assert.Equal("professional-powder-blue", powderBlue.StableId);
+        Assert.Equal(2, powderBlue.Regions.Count);
+        Assert.Equal(
+            ["professional-powder-blue-blue", "professional-powder-blue-cyan"],
+            powderBlue.Regions.Select(region => region.StableId).Order().ToArray());
+    }
+
+    [Fact]
+    public void EveryDeclaredRegionHasAReachableWinningPoint()
+    {
+        foreach (var definition in ProfessionalShadeCatalog.Definitions)
+        {
+            foreach (var region in definition.Regions)
+            {
+                Assert.True(
+                    CanWin(definition.Term, region),
+                    $"Region '{region.StableId}' is unreachable because it never wins inside its declared bounds.");
+            }
+        }
+    }
+
+    [Fact]
+    public void ExplanationNamesWinningRegionAndWhyCompetingRegionsFail()
+    {
+        var color = OklchColor.FromSrgb(199, 159, 239);
+
+        var explanation = ProfessionalShadeClassifier.Explain(
+            color,
+            PerceptualColorRole.Chromatic,
+            PerceptualHueFamily.BlueViolet);
+
+        Assert.NotNull(explanation.Winner);
+        Assert.Equal(ProfessionalColorTerm.Lavender, explanation.Winner.Term);
+        Assert.Equal("professional-lavender-core", explanation.Winner.RegionStableId);
+        Assert.Contains(explanation.Candidates, item =>
+            item.Term == ProfessionalColorTerm.Periwinkle &&
+            !item.Matched &&
+            item.FailureReason == "hue");
     }
 
     [Theory]
@@ -107,6 +177,30 @@ public sealed class ProfessionalColorShadeTests
                 new OklchColor(lightness, chroma, hue),
                 PerceptualColorRole.Chromatic,
                 family));
+    }
+
+    [Theory]
+    [InlineData(0.86, 0.22, 137.999, PerceptualHueFamily.YellowGreen, ProfessionalColorTerm.Chartreuse)]
+    [InlineData(0.86, 0.22, 138.000, PerceptualHueFamily.Green, ProfessionalColorTerm.Lime)]
+    [InlineData(0.45, 0.17, 269.999, PerceptualHueFamily.Blue, ProfessionalColorTerm.Cobalt)]
+    [InlineData(0.45, 0.17, 270.000, PerceptualHueFamily.BlueViolet, null)]
+    [InlineData(0.60, 0.104999, 245, PerceptualHueFamily.CyanBlue, ProfessionalColorTerm.SteelBlue)]
+    [InlineData(0.60, 0.105000, 245, PerceptualHueFamily.CyanBlue, ProfessionalColorTerm.Cerulean)]
+    [InlineData(0.60, 0.159999, 245, PerceptualHueFamily.Blue, ProfessionalColorTerm.Cerulean)]
+    [InlineData(0.60, 0.160000, 245, PerceptualHueFamily.Blue, ProfessionalColorTerm.Azure)]
+    public void SecondWaveBoundariesHaveExplicitAdjacentBehavior(
+        double lightness,
+        double chroma,
+        double hue,
+        object family,
+        object? expected)
+    {
+        Assert.Equal(
+            (ProfessionalColorTerm?)expected,
+            ProfessionalShadeClassifier.Classify(
+                new OklchColor(lightness, chroma, hue),
+                PerceptualColorRole.Chromatic,
+                (PerceptualHueFamily)family));
     }
 
     [Theory]
@@ -142,4 +236,61 @@ public sealed class ProfessionalColorShadeTests
             $"rgb-{hex[1..].ToLowerInvariant()}",
             null,
             ColorSampleAccuracy.Exact));
+
+    private static bool CanWin(
+        ProfessionalColorTerm term,
+        ProfessionalShadeRegionDefinition region)
+    {
+        var lightnesses = InteriorSamples(region.MinimumLightness, region.MaximumLightness);
+        var chromas = InteriorSamples(region.MinimumChroma, region.MaximumChroma);
+        var hues = HueInteriorSamples(region.MinimumHue, region.MaximumHue);
+
+        foreach (var role in Enum.GetValues<PerceptualColorRole>())
+        {
+            foreach (var family in region.ParentFamilies)
+            {
+                foreach (var lightness in lightnesses)
+                {
+                    foreach (var chroma in chromas)
+                    {
+                        foreach (var hue in hues)
+                        {
+                            var explanation = ProfessionalShadeClassifier.Explain(
+                                new OklchColor(lightness, chroma, hue), role, family);
+                            if (explanation.Winner?.Term == term &&
+                                explanation.Winner.RegionStableId == region.StableId)
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static double[] InteriorSamples(double minimum, double maximum)
+    {
+        var epsilon = Math.Min(0.000001, (maximum - minimum) / 4);
+        return [minimum + epsilon, (minimum + maximum) / 2, maximum - epsilon];
+    }
+
+    private static double[] HueInteriorSamples(double minimum, double maximum)
+    {
+        if (minimum <= maximum)
+        {
+            return InteriorSamples(minimum, maximum);
+        }
+
+        var span = 360 - minimum + maximum;
+        var epsilon = Math.Min(0.000001, span / 4);
+        return
+        [
+            (minimum + epsilon) % 360,
+            (minimum + span / 2) % 360,
+            (maximum - epsilon + 360) % 360
+        ];
+    }
 }

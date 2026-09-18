@@ -51,10 +51,11 @@ and [imaging direction](docs/IMAGING-PIPELINE.md) for details.
 
 ## Current status
 
-The current locally complete checkpoint is **`0.1.2.0009`**. R8-A-F7 adds a declarative EN/RU professional-shade layer
-above the stable Color Inspector geometry and extends the reproducible audit with specificity, vocabulary-gap, and
-accepted-term coverage. R8-A-F6 is pushed at `7215b31`; ordinary CI and the path-applicable native libheif workflow are
-green. The local `0.1.2.0009` candidate is not yet pushed or hosted-verified. Owner-accepted R6-A-F1 Photo
+The current locally complete checkpoint is **`0.1.2.0010`**. R8-A-F8 expands the declarative EN/RU Color Inspector
+professional-shade layer to 33 terms and adds composite bounded regions plus independent candidate discovery and region
+explanations to the reproducible audit. R8-A-F7 is pushed at `a85b356`; ordinary CI and the path-applicable native
+libheif workflow are green. The local `0.1.2.0010` candidate is not yet pushed or hosted-verified. Owner-accepted
+R6-A-F1 Photo
 Info/floating-drag behavior, R10-A-F1 photo-derived styling, R9-A-F2 Matte-independent Photo Presentation scale, R9-B-F1
 Slideshow layout independence, and R8-B-W1 ordinary-Windows-SDR Monitor Color Management remain unchanged; hosted and
 non-Windows visual status must be evaluated separately.

@@ -52,6 +52,17 @@ internal sealed record VocabularyGapCandidate(
     AuditClassification Sample,
     AuditReferenceAssessment Reference);
 
+internal sealed record VocabularyCandidateProfile(
+    string SpecificTerm,
+    int AnchorCount,
+    int DatasetSupport,
+    IReadOnlyList<string> SupportingDatasets,
+    double MedianDeltaE,
+    double P90DeltaE,
+    bool IsShippedTerm,
+    AuditClassification Representative,
+    IReadOnlyDictionary<string, int> ProductionFamilyCoverage);
+
 internal sealed record AuditReferenceAssessment(
     string ProductSemantic,
     string ConsensusSemantic,
@@ -87,7 +98,24 @@ internal sealed record FamilySemanticProfile(
 internal sealed record OwnerCandidateSample(
     string Region,
     AuditClassification Sample,
-    AuditReferenceAssessment? Reference);
+    AuditReferenceAssessment? Reference)
+{
+    public AuditProfessionalExplanation? ProfessionalExplanation { get; init; }
+}
+
+internal sealed record AuditProfessionalRegionEvaluation(
+    string Term,
+    string TermStableId,
+    string RegionStableId,
+    int Priority,
+    bool Matched,
+    string? FailureReason);
+
+internal sealed record AuditProfessionalExplanation(
+    string? WinnerTerm,
+    string? WinnerTermStableId,
+    string? WinnerRegionStableId,
+    IReadOnlyList<AuditProfessionalRegionEvaluation> Candidates);
 
 internal sealed record AuditClassificationChange(
     AuditClassification Before,
@@ -123,7 +151,10 @@ internal sealed record AuditMetrics(
     int BalancedIncompatibleDisagreements,
     int HighSeverityAnomalies,
     int MediumSeverityAnomalies,
-    double RuntimeSeconds);
+    double RuntimeSeconds)
+{
+    public double ProfessionalClassificationNanosecondsPerSample { get; init; }
+}
 
 internal sealed record AuditReport(
     string Schema,
@@ -148,6 +179,8 @@ internal sealed record AuditReport(
     public AuditSpecificityMetrics Specificity { get; init; } = new(0, 0, 0, 0, 0);
 
     public IReadOnlyList<VocabularyGapCandidate> VocabularyGaps { get; init; } = [];
+
+    public IReadOnlyList<VocabularyCandidateProfile> VocabularyCandidates { get; init; } = [];
 
     public IReadOnlyList<OwnerCandidateSample> ProfessionalTermSamples { get; init; } = [];
 

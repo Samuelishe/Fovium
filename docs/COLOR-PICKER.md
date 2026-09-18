@@ -114,19 +114,22 @@ violet/magenta transitions likewise use shared OKLCH regions rather than RGB
 exceptions.
 
 R8-A-F7 keeps those broad families as the stable geometry and adds a separate declarative professional-shade layer.
-Each definition has a stable identity, parent family, eligible role, bounded OKLCH region, explicit priority, and one
-EN/RU localization key. The first evidence-backed set is Lavender, Periwinkle, Navy, Azure, Sky Blue, Sage, Emerald,
-Forest Green, Aquamarine, Teal, Salmon, Wine, Rust, Scarlet, Tangerine, Ivory, Charcoal, and Slate. When a definition
+Each term has a stable identity, one EN/RU localization key, and one or more independently identified regions with
+parent families, eligible roles, bounded OKLCH coordinates, and explicit priorities. R8-A-F8 expands the evidenced set
+from 18 to 33 terms with Indigo, Powder Blue, Steel Blue, Olive Drab, Lime, Chartreuse, Seafoam, Cobalt Blue, Cerulean
+Blue, Blood Orange, Pumpkin, Blush, Pistachio, Linen, and Silver. A composite term such as Powder Blue can cover two
+related bounded lobes without creating multiple user-facing names or one over-broad rectangle. When a definition
 matches, its concise human term becomes the primary inspector/history name; the broad family remains the detail tone
-and the fallback outside well-supported regions. Definitions are pre-indexed by parent family, so selecting history or
+and fallback outside well-supported regions. Definitions remain pre-indexed by parent family, so selecting history or
 rendering the UI does not scan external data, resample the image, or rerun creative matching.
 
 Developer changes to this taxonomy use the reproducible audit route documented in
 [`../eng/color-taxonomy-audit/README.md`](../eng/color-taxonomy-audit/README.md).
 Its structured in-gamut grid, fixed-seed RGB sampling, boundary refinement,
 topology checks, coordinate-driven balanced hue/lightness/chroma cohort,
-family profiles, specificity/vocabulary-gap reporting, accepted-term coverage, and optional named-color neighbors
-exercise the production classifier. Independent holdout seeds validate corrections after tuning.
+family profiles, reference-driven vocabulary-candidate discovery, specificity/vocabulary-gap reporting, region
+explanations, accepted-term coverage, measured classification cost, and optional named-color neighbors exercise the
+production classifier. Independent holdout seeds validate corrections after tuning.
 External names rank suspicious regions only; they do not override
 the project-owned taxonomy or become runtime data.
 

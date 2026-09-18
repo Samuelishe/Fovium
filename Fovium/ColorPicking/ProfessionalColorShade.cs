@@ -21,7 +21,22 @@ internal enum ProfessionalColorTerm
     Tangerine,
     Ivory,
     Charcoal,
-    Slate
+    Slate,
+    Indigo,
+    PowderBlue,
+    SteelBlue,
+    OliveDrab,
+    Lime,
+    Chartreuse,
+    Seafoam,
+    Cobalt,
+    Cerulean,
+    BloodOrange,
+    Pumpkin,
+    Blush,
+    Pistachio,
+    Linen,
+    Silver
 }
 
 [Flags]
@@ -40,6 +55,10 @@ internal sealed record ProfessionalShadeDefinition(
     string StableId,
     ProfessionalColorTerm Term,
     string LocalizationKey,
+    IReadOnlyList<ProfessionalShadeRegionDefinition> Regions);
+
+internal sealed record ProfessionalShadeRegionDefinition(
+    string StableId,
     IReadOnlyList<PerceptualHueFamily> ParentFamilies,
     PerceptualRoleSet Roles,
     double MinimumLightness,
@@ -53,12 +72,35 @@ internal sealed record ProfessionalShadeDefinition(
     public bool Matches(
         OklchColor color,
         PerceptualColorRole role,
-        PerceptualHueFamily family) =>
-        ParentFamilies.Contains(family) &&
-        Roles.HasFlag(ToRoleSet(role)) &&
-        color.L >= MinimumLightness && color.L < MaximumLightness &&
-        color.C >= MinimumChroma && color.C < MaximumChroma &&
-        ContainsHue(color.HueDegrees);
+        PerceptualHueFamily family) => FailureReason(color, role, family) is null;
+
+    public string? FailureReason(
+        OklchColor color,
+        PerceptualColorRole role,
+        PerceptualHueFamily family)
+    {
+        if (!ParentFamilies.Contains(family))
+        {
+            return "parent-family";
+        }
+
+        if (!Roles.HasFlag(ToRoleSet(role)))
+        {
+            return "role";
+        }
+
+        if (color.L < MinimumLightness || color.L >= MaximumLightness)
+        {
+            return "lightness";
+        }
+
+        if (color.C < MinimumChroma || color.C >= MaximumChroma)
+        {
+            return "chroma";
+        }
+
+        return ContainsHue(color.HueDegrees) ? null : "hue";
+    }
 
     internal bool ContainsHue(double hue) => MinimumHue <= MaximumHue
         ? hue >= MinimumHue && hue < MaximumHue
@@ -76,6 +118,24 @@ internal sealed record ProfessionalShadeDefinition(
     };
 }
 
+internal sealed record ProfessionalShadeMatch(
+    ProfessionalColorTerm Term,
+    string TermStableId,
+    string RegionStableId,
+    int Priority);
+
+internal sealed record ProfessionalShadeRegionEvaluation(
+    ProfessionalColorTerm Term,
+    string TermStableId,
+    string RegionStableId,
+    int Priority,
+    bool Matched,
+    string? FailureReason);
+
+internal sealed record ProfessionalShadeExplanation(
+    ProfessionalShadeMatch? Winner,
+    IReadOnlyList<ProfessionalShadeRegionEvaluation> Candidates);
+
 internal static class ProfessionalShadeCatalog
 {
     // These compact OKLCH regions sit above the stable broad-family geometry.
@@ -83,6 +143,69 @@ internal static class ProfessionalShadeCatalog
     // deliberately leaves ambiguous boundary colors to their broad fallback.
     public static IReadOnlyList<ProfessionalShadeDefinition> Definitions { get; } =
     [
+        Define("professional-indigo", ProfessionalColorTerm.Indigo, UiStrings.ColorPickerProfessionalIndigo,
+            [PerceptualHueFamily.BlueViolet, PerceptualHueFamily.Violet], PerceptualRoleSet.Chromatic,
+            0.22, 0.48, 0.15, 0.26, 278, 308, 210),
+        DefineComposite("professional-powder-blue", ProfessionalColorTerm.PowderBlue,
+            UiStrings.ColorPickerProfessionalPowderBlue,
+            Region("professional-powder-blue-cyan",
+                [PerceptualHueFamily.Cyan, PerceptualHueFamily.CyanBlue, PerceptualHueFamily.BlueGray],
+                PerceptualRoleSet.Chromatic | PerceptualRoleSet.TintedNeutral,
+                0.82, 0.93, 0.025, 0.076, 195, 232, 209),
+            Region("professional-powder-blue-blue",
+                [PerceptualHueFamily.CyanBlue, PerceptualHueFamily.Blue, PerceptualHueFamily.BlueGray],
+                PerceptualRoleSet.Chromatic | PerceptualRoleSet.TintedNeutral,
+                0.80, 0.93, 0.030, 0.086, 232, 266, 208)),
+        Define("professional-steel-blue", ProfessionalColorTerm.SteelBlue,
+            UiStrings.ColorPickerProfessionalSteelBlue,
+            [PerceptualHueFamily.BlueGray, PerceptualHueFamily.CyanBlue, PerceptualHueFamily.Blue],
+            PerceptualRoleSet.TintedNeutral | PerceptualRoleSet.Chromatic,
+            0.48, 0.70, 0.050, 0.105, 230, 262, 207),
+        Define("professional-olive-drab", ProfessionalColorTerm.OliveDrab,
+            UiStrings.ColorPickerProfessionalOliveDrab,
+            [PerceptualHueFamily.Olive, PerceptualHueFamily.OliveGreen, PerceptualHueFamily.YellowGreen],
+            PerceptualRoleSet.Chromatic, 0.42, 0.66, 0.070, 0.165, 108, 131, 206),
+        Define("professional-lime", ProfessionalColorTerm.Lime, UiStrings.ColorPickerProfessionalLime,
+            [PerceptualHueFamily.YellowGreen, PerceptualHueFamily.Green], PerceptualRoleSet.Chromatic,
+            0.76, 0.97, 0.18, 0.36, 138, 153, 205),
+        Define("professional-chartreuse", ProfessionalColorTerm.Chartreuse,
+            UiStrings.ColorPickerProfessionalChartreuse,
+            [PerceptualHueFamily.YellowGreen, PerceptualHueFamily.Green], PerceptualRoleSet.Chromatic,
+            0.72, 0.96, 0.18, 0.34, 112, 138, 204),
+        Define("professional-seafoam", ProfessionalColorTerm.Seafoam, UiStrings.ColorPickerProfessionalSeafoam,
+            [PerceptualHueFamily.Green, PerceptualHueFamily.Mint, PerceptualHueFamily.Turquoise],
+            PerceptualRoleSet.Chromatic, 0.76, 0.94, 0.10, 0.18, 148, 166, 203),
+        Define("professional-cobalt", ProfessionalColorTerm.Cobalt, UiStrings.ColorPickerProfessionalCobalt,
+            [PerceptualHueFamily.Blue, PerceptualHueFamily.BlueViolet], PerceptualRoleSet.Chromatic,
+            0.34, 0.58, 0.11, 0.23, 250, 270, 202),
+        Define("professional-cerulean", ProfessionalColorTerm.Cerulean, UiStrings.ColorPickerProfessionalCerulean,
+            [PerceptualHueFamily.Cyan, PerceptualHueFamily.CyanBlue, PerceptualHueFamily.Blue],
+            PerceptualRoleSet.Chromatic, 0.48, 0.70, 0.08, 0.16, 222, 247, 201),
+        Define("professional-blood-orange", ProfessionalColorTerm.BloodOrange,
+            UiStrings.ColorPickerProfessionalBloodOrange,
+            [PerceptualHueFamily.Red, PerceptualHueFamily.RedOrange, PerceptualHueFamily.Coral],
+            PerceptualRoleSet.Chromatic, 0.55, 0.76, 0.18, 0.29, 30, 47, 200),
+        Define("professional-pumpkin", ProfessionalColorTerm.Pumpkin, UiStrings.ColorPickerProfessionalPumpkin,
+            [PerceptualHueFamily.Orange, PerceptualHueFamily.Amber, PerceptualHueFamily.Ochre],
+            PerceptualRoleSet.Chromatic, 0.55, 0.76, 0.09, 0.19, 48, 72, 199),
+        Define("professional-blush", ProfessionalColorTerm.Blush, UiStrings.ColorPickerProfessionalBlush,
+            [PerceptualHueFamily.Rose, PerceptualHueFamily.Pink, PerceptualHueFamily.Coral],
+            PerceptualRoleSet.Chromatic, 0.72, 0.90, 0.025, 0.12, 350, 36, 198),
+        Define("professional-pistachio", ProfessionalColorTerm.Pistachio,
+            UiStrings.ColorPickerProfessionalPistachio,
+            [PerceptualHueFamily.YellowGreen, PerceptualHueFamily.Green], PerceptualRoleSet.Chromatic,
+            0.78, 0.95, 0.055, 0.18, 112, 138, 197),
+        Define("professional-linen", ProfessionalColorTerm.Linen, UiStrings.ColorPickerProfessionalLinen,
+            [PerceptualHueFamily.Cream], PerceptualRoleSet.NearWhite,
+            0.93, 1.001, 0.010, 0.036, 45, 80, 196),
+        Define("professional-silver", ProfessionalColorTerm.Silver, UiStrings.ColorPickerProfessionalSilver,
+            [
+                PerceptualHueFamily.Neutral, PerceptualHueFamily.WarmGray, PerceptualHueFamily.CoolGray,
+                PerceptualHueFamily.BlueGray, PerceptualHueFamily.GreenGray, PerceptualHueFamily.RoseGray,
+                PerceptualHueFamily.VioletGray, PerceptualHueFamily.LilacGray
+            ],
+            PerceptualRoleSet.Neutral | PerceptualRoleSet.NearNeutral | PerceptualRoleSet.TintedNeutral,
+            0.76, 0.83, 0, 0.014, 0, 360, 195),
         Define("professional-lavender", ProfessionalColorTerm.Lavender, UiStrings.ColorPickerProfessionalLavender,
             [PerceptualHueFamily.BlueViolet, PerceptualHueFamily.Violet, PerceptualHueFamily.PinkLilac],
             PerceptualRoleSet.Chromatic, 0.68, 0.88, 0.06, 0.18, 292, 320, 180),
@@ -165,6 +288,38 @@ internal static class ProfessionalShadeCatalog
         stableId,
         term,
         localizationKey,
+        [
+            new ProfessionalShadeRegionDefinition(
+                stableId + "-core",
+                parentFamilies,
+                roles,
+                minimumLightness,
+                maximumLightness,
+                minimumChroma,
+                maximumChroma,
+                minimumHue,
+                maximumHue,
+                priority)
+        ]);
+
+    private static ProfessionalShadeDefinition DefineComposite(
+        string stableId,
+        ProfessionalColorTerm term,
+        string localizationKey,
+        params ProfessionalShadeRegionDefinition[] regions) => new(stableId, term, localizationKey, regions);
+
+    private static ProfessionalShadeRegionDefinition Region(
+        string stableId,
+        IReadOnlyList<PerceptualHueFamily> parentFamilies,
+        PerceptualRoleSet roles,
+        double minimumLightness,
+        double maximumLightness,
+        double minimumChroma,
+        double maximumChroma,
+        double minimumHue,
+        double maximumHue,
+        int priority) => new(
+        stableId,
         parentFamilies,
         roles,
         minimumLightness,
@@ -178,22 +333,67 @@ internal static class ProfessionalShadeCatalog
 
 internal static class ProfessionalShadeClassifier
 {
-    private static readonly IReadOnlyDictionary<PerceptualHueFamily, ProfessionalShadeDefinition[]> ByFamily =
+    private sealed record IndexedRegion(
+        ProfessionalShadeDefinition Definition,
+        ProfessionalShadeRegionDefinition Region);
+
+    private static readonly IndexedRegion[] Regions = ProfessionalShadeCatalog.Definitions
+        .SelectMany(definition => definition.Regions.Select(region => new IndexedRegion(definition, region)))
+        .OrderByDescending(item => item.Region.Priority)
+        .ThenBy(item => item.Region.StableId, StringComparer.Ordinal)
+        .ToArray();
+
+    private static readonly IReadOnlyDictionary<PerceptualHueFamily, IndexedRegion[]> ByFamily =
         ProfessionalShadeCatalog.Definitions
-            .SelectMany(definition => definition.ParentFamilies.Select(family => (family, definition)))
+            .SelectMany(definition => definition.Regions.SelectMany(region =>
+                region.ParentFamilies.Select(family => (family, item: new IndexedRegion(definition, region)))))
             .GroupBy(item => item.family)
             .ToDictionary(
                 group => group.Key,
-                group => group.Select(item => item.definition)
-                    .OrderByDescending(definition => definition.Priority)
-                    .ThenBy(definition => definition.StableId, StringComparer.Ordinal)
+                group => group.Select(item => item.item)
+                    .OrderByDescending(item => item.Region.Priority)
+                    .ThenBy(item => item.Region.StableId, StringComparer.Ordinal)
                     .ToArray());
 
     public static ProfessionalColorTerm? Classify(
         OklchColor color,
         PerceptualColorRole role,
-        PerceptualHueFamily family) => ByFamily.GetValueOrDefault(family, [])
-        .Where(definition => definition.Matches(color, role, family))
-        .Select(definition => (ProfessionalColorTerm?)definition.Term)
-        .FirstOrDefault();
+        PerceptualHueFamily family) => ClassifyMatch(color, role, family)?.Term;
+
+    public static ProfessionalShadeMatch? ClassifyMatch(
+        OklchColor color,
+        PerceptualColorRole role,
+        PerceptualHueFamily family)
+    {
+        var winner = ByFamily.GetValueOrDefault(family, [])
+            .FirstOrDefault(item => item.Region.Matches(color, role, family));
+        return winner is null
+            ? null
+            : new ProfessionalShadeMatch(
+                winner.Definition.Term,
+                winner.Definition.StableId,
+                winner.Region.StableId,
+                winner.Region.Priority);
+    }
+
+    public static ProfessionalShadeExplanation Explain(
+        OklchColor color,
+        PerceptualColorRole role,
+        PerceptualHueFamily family)
+    {
+        var evaluations = Regions.Select(item =>
+        {
+            var failure = item.Region.FailureReason(color, role, family);
+            return new ProfessionalShadeRegionEvaluation(
+                item.Definition.Term,
+                item.Definition.StableId,
+                item.Region.StableId,
+                item.Region.Priority,
+                failure is null,
+                failure);
+        }).ToArray();
+        return new ProfessionalShadeExplanation(
+            ClassifyMatch(color, role, family),
+            evaluations);
+    }
 }

@@ -157,6 +157,16 @@ public sealed class ColorTaxonomyAuditTests
     [InlineData("forest green", "ForestGreen")]
     [InlineData("salmon pink", "Salmon")]
     [InlineData("charcoal grey", "Charcoal")]
+    [InlineData("pale lilac", "Lilac")]
+    [InlineData("dusty mauve", "Mauve")]
+    [InlineData("deep cerulean blue", "Cerulean")]
+    [InlineData("seafoam green", "Seafoam")]
+    [InlineData("powder blue", "PowderBlue")]
+    [InlineData("steel blue", "SteelBlue")]
+    [InlineData("royal blue", "RoyalBlue")]
+    [InlineData("blood orange", "BloodOrange")]
+    [InlineData("rose quartz", "RoseQuartz")]
+    [InlineData("olive drab", "OliveDrab")]
     [InlineData("navy green", null)]
     [InlineData("unparseable fantasy", null)]
     public void ReferenceNamesExposeSpecificVocabularyWithoutTreatingFantasyAsTruth(
@@ -201,6 +211,43 @@ public sealed class ColorTaxonomyAuditTests
         {
             Directory.Delete(directory, recursive: true);
         }
+    }
+
+    [Fact]
+    public void VocabularyCandidateProfilesAreReferenceDrivenAndExposeClusterCoherence()
+    {
+        var catalog = new ReferenceCatalog(
+            [
+                CreateSpecificReference("xkcd", "seafoam", new AuditRgb(128, 249, 173), "Seafoam"),
+                CreateSpecificReference("meodai", "sea foam green", new AuditRgb(126, 237, 177), "Seafoam"),
+                CreateSpecificReference("meodai", "dark seafoam", new AuditRgb(31, 181, 122), "Seafoam")
+            ],
+            []);
+
+        var profile = Assert.Single(VocabularyCandidateAudit.Analyze(catalog));
+
+        Assert.Equal("Seafoam", profile.SpecificTerm);
+        Assert.Equal(3, profile.AnchorCount);
+        Assert.Equal(2, profile.DatasetSupport);
+        Assert.Equal(["meodai", "xkcd"], profile.SupportingDatasets);
+        Assert.True(profile.IsShippedTerm);
+        Assert.True(profile.P90DeltaE > 0);
+        Assert.Equal(3, profile.ProductionFamilyCoverage.Values.Sum());
+        Assert.Contains(profile.Representative.Rgb, catalog.Anchors.Select(anchor => anchor.Rgb));
+    }
+
+    [Fact]
+    public void ProfessionalExplanationReportsWinningCompositeRegionAndRejectedCompetitor()
+    {
+        var explanation = new ProductionColorAdapter().ExplainProfessional(new AuditRgb(176, 224, 230));
+
+        Assert.Equal("PowderBlue", explanation.WinnerTerm);
+        Assert.Equal("professional-powder-blue", explanation.WinnerTermStableId);
+        Assert.Equal("professional-powder-blue-cyan", explanation.WinnerRegionStableId);
+        Assert.Contains(explanation.Candidates, item =>
+            item.RegionStableId == "professional-powder-blue-blue" &&
+            !item.Matched &&
+            item.FailureReason == "parent-family");
     }
 
     [Theory]
@@ -266,7 +313,14 @@ public sealed class ColorTaxonomyAuditTests
             var first = AuditReportWriter.Write(firstDirectory, report);
             var second = AuditReportWriter.Write(
                 secondDirectory,
-                report with { Metrics = report.Metrics with { RuntimeSeconds = 9.75 } });
+                report with
+                {
+                    Metrics = report.Metrics with
+                    {
+                        RuntimeSeconds = 9.75,
+                        ProfessionalClassificationNanosecondsPerSample = 1234.5
+                    }
+                });
 
             Assert.Equal(first, second);
             using var json = JsonDocument.Parse(File.ReadAllText(Path.Combine(secondDirectory, "summary.json")));
@@ -278,6 +332,7 @@ public sealed class ColorTaxonomyAuditTests
             Assert.True(File.Exists(Path.Combine(firstDirectory, "owner-candidates.svg")));
             Assert.True(File.Exists(Path.Combine(firstDirectory, "reference-disagreements.html")));
             Assert.True(File.Exists(Path.Combine(firstDirectory, "vocabulary-gaps.html")));
+            Assert.True(File.Exists(Path.Combine(firstDirectory, "vocabulary-candidates.html")));
             Assert.True(File.Exists(Path.Combine(firstDirectory, "professional-terms.html")));
             Assert.True(File.Exists(Path.Combine(firstDirectory, "holdout-samples.svg")));
             Assert.True(File.Exists(Path.Combine(firstDirectory, "changed-regions.html")));
@@ -287,6 +342,15 @@ public sealed class ColorTaxonomyAuditTests
             Directory.Delete(firstDirectory, recursive: true);
             Directory.Delete(secondDirectory, recursive: true);
         }
+    }
+
+    [Fact]
+    public void ProfessionalClassifierBenchmarkMeasuresTheIndexedProductionRoute()
+    {
+        var nanoseconds = ProfessionalShadeBenchmark.MeasureNanosecondsPerSample(rounds: 8);
+
+        Assert.True(double.IsFinite(nanoseconds));
+        Assert.True(nanoseconds > 0);
     }
 
     [Fact]
@@ -308,11 +372,11 @@ public sealed class ColorTaxonomyAuditTests
             Assert.Contains("Mode: Fast", output.ToString());
             Assert.True(File.Exists(Path.Combine(directory, "summary.json")));
             using var json = JsonDocument.Parse(File.ReadAllText(Path.Combine(directory, "summary.json")));
-            Assert.Equal("fovium-color-taxonomy-audit/v3", json.RootElement.GetProperty("schema").GetString());
+            Assert.Equal("fovium-color-taxonomy-audit/v4", json.RootElement.GetProperty("schema").GetString());
             Assert.True(json.RootElement.GetProperty("balancedCohort").GetArrayLength() > 300);
             Assert.True(json.RootElement.GetProperty("specificity").GetProperty("genericFamilyOnly").GetInt32() > 0);
-            Assert.Equal(18, json.RootElement.GetProperty("professionalTermSamples").GetArrayLength());
-            Assert.Equal(18, json.RootElement.GetProperty("professionalTermCoverage").EnumerateObject().Count());
+            Assert.Equal(33, json.RootElement.GetProperty("professionalTermSamples").GetArrayLength());
+            Assert.Equal(33, json.RootElement.GetProperty("professionalTermCoverage").EnumerateObject().Count());
         }
         finally
         {
@@ -360,6 +424,16 @@ public sealed class ColorTaxonomyAuditTests
             classified.LabA,
             classified.LabB);
     }
+
+    private static ReferenceAnchor CreateSpecificReference(
+        string dataset,
+        string name,
+        AuditRgb rgb,
+        string specificTerm) =>
+        CreateReference(dataset, name, rgb, SemanticNameNormalizer.Normalize(name)) with
+        {
+            SpecificTerm = specificTerm
+        };
 
     private static string CreateTemporaryDirectory()
     {

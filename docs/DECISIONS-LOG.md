@@ -663,7 +663,7 @@ depend on the audit.
 
 ## D-064 — Specific professional terms layer over stable perceptual geometry
 
-Status: Implemented in the local R8-A-F7 candidate; owner acceptance pending.
+Status: Accepted in R8-A-F7.
 
 Broad OKLCH families remain the stable classifier geometry and truthful fallback. More useful conventional names are a
 separate declarative layer whose definitions own stable IDs, parent families, eligible roles, bounded lightness/chroma/
@@ -674,3 +674,19 @@ turning the base classifier or resolver into an unbounded conditional chain.
 Candidate terms require recurring independent reference evidence, visual contact-sheet review, adjacent fallback
 controls, deterministic boundary tests, and post-tuning holdouts. External anchors and web research remain developer
 evidence only; no downloaded name list enters runtime, and ambiguous colors intentionally retain the broad name.
+
+## D-065 — Professional terms may own multiple bounded, explainable regions
+
+Status: Implemented in the local R8-A-F8 candidate; owner acceptance pending.
+
+A conventional professional term may occupy more than one related OKLCH lobe. The stable term owns its localization
+and one or more independently identified bounded regions; each region owns parent families, eligible roles, bounds, and
+priority. Parent-family indexing remains the runtime lookup strategy. This avoids either duplicating a visible term or
+inflating one rectangular region until it produces false positives, while preserving deterministic fallback to the
+broad family.
+
+Developer audit output identifies the winning term and region, lists competing regions and the first failed dimension,
+and measures indexed classification separately from report generation. Candidate discovery is reference-driven rather
+than limited to the current production enum. New terms still require independent evidence, rendered review, reachable
+regions, non-conflicting priorities, adjacent controls, and canonical plus unseen-holdout audits; external vocabularies
+remain non-runtime evidence rather than product truth.

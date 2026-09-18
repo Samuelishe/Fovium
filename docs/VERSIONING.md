@@ -158,6 +158,8 @@ never reuse an earlier version. No automatic rollover after BUILD `9999` is defi
 | `0.1.2.0006` | R8-A-F4                               | Warm-neutral/earth-tone Color Inspector taxonomy and presentation polish                                                        |
 | `0.1.2.0007` | R8-A-F5                               | Systematic Color Inspector taxonomy audit and yellow-brown/olive boundary correction                                            |
 | `0.1.2.0008` | R8-A-F6                               | Balanced semantic Color Inspector audit and evidenced taxonomy/localization corrections                                         |
+| `0.1.2.0009` | R8-A-F7                               | Declarative professional Color Inspector shade taxonomy and specificity/vocabulary-gap audit                                    |
+| `0.1.2.0010` | R8-A-F8                               | Second professional-shade vocabulary wave, composite regions, and explainable candidate audit                                   |
 
 The `0.0.0.xxxx` line records the completed foundation and early product-construction checkpoints. The explicit
 owner-controlled `0.1.0.0000` transition marks the first substantial usable Fovium alpha; it does not claim feature
@@ -166,9 +168,9 @@ completeness, a stable API, production release status, or `1.0` quality. Current
 
 ## Current checkpoint
 
-R8-A-F6 is the locally complete Color Inspector corrective checkpoint at `0.1.2.0008`. It increments BUILD within
-PATCH `0.1.2` because it corrects accepted professional perceptual naming and expands developer-side semantic
-evaluation without introducing a separate standalone viewer capability.
+R8-A-F8 is the locally complete Color Inspector professional-vocabulary refinement at `0.1.2.0010`. It increments
+BUILD within PATCH `0.1.2` because it expands and validates the accepted Color Inspector naming capability without
+introducing a separate standalone viewer feature.
 
 ## Future code and packaging source
 
@@ -176,9 +178,9 @@ The root `Directory.Build.props` is the canonical source for the current compone
 supplies the production `Fovium` assembly with:
 
 ```text
-InformationalVersion = 0.1.2.0008
-AssemblyVersion      = 0.1.2.8
-FileVersion          = 0.1.2.8
+InformationalVersion = 0.1.2.0010
+AssemblyVersion      = 0.1.2.10
+FileVersion          = 0.1.2.10
 ```
 
 From that source:
