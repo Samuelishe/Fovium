@@ -7,13 +7,14 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-HOME-UX-R1-F1 is locally complete after HOME-UX-R1. Product version is `0.1.6.0001`: Home is now the reusable
-no-sequence
-state reached both at empty startup and through Close photo / `Ctrl+W`. Recent remains six lightweight locations but now
-uses real bounded previews, stable folder preview identity, honest unavailable/recovery state, explicit item removal,
-and one responsive grab-scroll strip with bounded inertia and edge fades. Empty/hidden Recent and visible Recent have
-separate balanced compositions; duplicate in-content branding is removed. The viewer remains photograph-first rather
-than adding a gallery, catalog, Favorites, or organizer semantics.
+HOME-UX-R1-F2 is locally complete after HOME-UX-R1-F1. Product version is `0.1.6.0002`: Remember recent photos is a
+privacy contract rather than a visibility toggle. Turning it off atomically clears persisted history, cancels Recent
+preview work, clears its session-memory cache, hides the strip, and suppresses future history writes until it is enabled
+again. An explicit legacy `ShowRecentItems=false` migrates as the same privacy intent and cannot reveal previously
+hidden
+history. The bounded MRU now holds 20 locations while previews load only for the visible window plus one neighboring
+card into an independent eight-item/4 MiB LRU. Cards use 320 px Mitchell-filtered previews, and the grab strip has a
+clearer but still capped glide. The viewer remains photograph-first rather than adding gallery or catalog semantics.
 
 SETTINGS-UX-R1 remains the Settings baseline after BRAND-R1: Settings uses compact vertical
 navigation across General, Viewing, Color, Stage, Presentation, Controls, and About; bounded scrollable cards replace
@@ -47,13 +48,14 @@ Windows at `RenderScaling = 1.00`.
 
 ## Current focus
 
-HOME-UX-R1-F1 is ready for owner review/commit and hosted CI. Local Windows production-runtime evidence covers RU/EN
-empty and six-preview states at `1440×900`, `920×700`, and compact `560×620`; Recent disabled; unavailable and recovered
-locations; valid OLE file drag-over; physical mouse grab without accidental activation; ordinary card activation; and
-repeated
-Home → Viewer → `Ctrl+W` → Home. Precision-touchpad, real fractional DPI, and Linux/macOS Home interaction remain
-owner/manual follow-up surfaces. The 205-test focused filter and 2,309-test full Release suite pass; the solution build
-has zero warnings/errors. Detailed verification is recorded in `TEST-EXECUTION.md`.
+HOME-UX-R1-F2 is ready for owner review/commit. Local evidence covers privacy migration and suppression, 20-entry MRU
+normalization, viewport-first preview scheduling, independent cache bounds, deterministic carousel motion, context-menu
+grouping, and official dav1d fallback acquisition. Rider/CLI investigation found no `PhotoColorProfileTests` source
+error: Release and Debug project builds and the targeted tests are clean, while the earlier isolated design-time build
+had stale pre-F1 reference output. Hosted libheif verification remains a post-push gate. Precision-touchpad, real
+fractional-DPI, and Linux/macOS Home interaction remain owner/manual follow-up surfaces. Detailed verification is
+recorded in `TEST-EXECUTION.md`: focused F2 tests pass 160/160, the full Release suite passes 2,324/2,324, the native
+downloader suite passes 13/13, and the Release solution build has zero warnings/errors.
 
 SETTINGS-UX-R1 evidence covers Russian and English General, the persisted restart hint and restart application, every
 navigation section, grouped Controls, About at ordinary and `760×560` size, fullscreen ownership, non-topmost extended
@@ -86,10 +88,10 @@ runtime behavior and real fractional-DPI/multi-monitor visual acceptance remain 
 - Natural filename ordering, failure skipping, adjacent preload, latest-wins publication, and a byte-bounded cache.
 - Fullscreen, cursor auto-hide, `Ctrl+O`, and a basic temporary context menu.
 - Localized responsive Home with no automatic startup picker, file/folder/drop entry, return from every active sequence
-  through Close photo / `Ctrl+W`, effective Open shortcut, polished adaptive hero, and a bounded six-location visual
-  Recent strip. Real lazy oriented previews, explicit per-item/Clear removal, unavailable recovery, grab-scroll,
-  restrained inertia, wheel/keyboard access, edge fades, and a persisted General visibility preference remain secondary
-  to the primary Open actions.
+  through Close photo / `Ctrl+W`, effective Open shortcut, polished adaptive hero, and a bounded 20-location visual
+  Recent strip. Visible-window-first 320 px oriented previews, explicit per-item/Clear removal, unavailable recovery,
+  grab-scroll, restrained inertia, wheel/keyboard access, edge fades, and a privacy-correct General memory preference
+  remain secondary to the primary Open actions. `Ctrl+W` on Home is a no-op.
 - English/Russian runtime localization with English fallback plus a persisted General → Language choice for System
   default, English, or Русский, resolved before UI construction and applied after restart.
 - Persistent image-change view policy: Keep current scale by default, or Fit each image.

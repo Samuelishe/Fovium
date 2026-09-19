@@ -27,7 +27,9 @@ internal static class UiStrings
     public const string HomeRecentFile = "home.recentFile";
     public const string HomeRecentFolder = "home.recentFolder";
     public const string HomeRecentUnavailable = "home.recentUnavailable";
+    public const string HomeRecentBecameUnavailable = "home.recentBecameUnavailable";
     public const string HomeRemoveRecent = "home.removeRecent";
+    public const string HomeRecentActions = "home.recentActions";
     public const string SettingsTitle = "settings.title";
     public const string SettingsViewing = "settings.viewing";
     public const string SettingsColor = "settings.color";
@@ -438,8 +440,11 @@ internal static class UiStrings
     public const string SettingsLanguageEnglish = "settings.languageEnglish";
     public const string SettingsLanguageRussian = "settings.languageRussian";
     public const string SettingsLanguageRestart = "settings.languageRestart";
-    public const string SettingsShowRecentItems = "settings.showRecentItems";
-    public const string SettingsShowRecentItemsDescription = "settings.showRecentItemsDescription";
+    public const string SettingsRememberRecentPhotos = "settings.rememberRecentPhotos";
+
+    public const string SettingsRememberRecentPhotosDescription =
+        "settings.rememberRecentPhotosDescription";
+
     public const string SettingsKeyboardShortcuts = "settings.keyboardShortcuts";
 
     public const string SettingsKeyboardShortcutsDescription =

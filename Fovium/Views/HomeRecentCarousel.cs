@@ -23,6 +23,8 @@ internal sealed class HomeRecentCarousel : IDisposable
     private long _lastFrameTimestamp;
     private bool _disposed;
 
+    public event Action<double, double>? ViewportChanged;
+
     public HomeRecentCarousel(
         ScrollViewer scroller,
         Control leftFade,
@@ -243,6 +245,7 @@ internal sealed class HomeRecentCarousel : IDisposable
         _scroller.Cursor = overflow.IsScrollable
             ? _motion.IsDragging ? _grabbingCursor : _grabCursor
             : null;
+        ViewportChanged?.Invoke(_scroller.Offset.X, _scroller.Viewport.Width);
     }
 
     private double MaximumOffset => Math.Max(0, _scroller.Extent.Width - _scroller.Viewport.Width);

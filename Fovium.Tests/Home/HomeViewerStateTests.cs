@@ -13,7 +13,7 @@ public sealed class HomeViewerStateTests
         Assert.True(state.TryPublish(state.BeginOpen()));
         Assert.Equal(ViewerContentMode.Viewer, state.Mode);
 
-        state.ReturnHome();
+        Assert.True(state.TryReturnHome());
 
         Assert.Equal(ViewerContentMode.Home, state.Mode);
         Assert.True(state.TryPublish(state.BeginOpen()));
@@ -25,11 +25,23 @@ public sealed class HomeViewerStateTests
     {
         var state = new HomeViewerState();
         var ticket = state.BeginOpen();
+        Assert.True(state.TryPublish(state.BeginOpen()));
 
-        state.ReturnHome();
+        Assert.True(state.TryReturnHome());
 
         Assert.False(state.TryPublish(ticket));
         Assert.Equal(ViewerContentMode.Home, state.Mode);
+    }
+
+    [Fact]
+    public void ClosePhotoWhileHomeIsANoOpAndDoesNotCancelPendingOpen()
+    {
+        var state = new HomeViewerState();
+        var ticket = state.BeginOpen();
+
+        Assert.False(state.TryReturnHome());
+        Assert.True(state.TryPublish(ticket));
+        Assert.Equal(ViewerContentMode.Viewer, state.Mode);
     }
 
     [Fact]

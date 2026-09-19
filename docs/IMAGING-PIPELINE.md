@@ -90,12 +90,13 @@ and all three style rasters are byte-accounted by the existing decoded cache and
 decode, monitor-managed presentation, or geometry-triggered work. Cancellation disposes an unpublished decoded
 candidate; a contained analysis failure leaves decode usable and activates truthful Stage fallback.
 
-HOME-UX-R1-F1 adds a deliberately smaller independent Recent-preview route, not another canonical decode. When Home is
-visible, at most two workers lazily content-detect a remembered file, request a reduced Skia decode, convert to sRGB,
-apply the canonical orientation transform exactly once, and encode a transparent `160 px`-long-edge PNG for UI
-handoff. Intermediate decode is refused above `2048 px` long edge or 16 MiB; failure, unsupported content, source
-locking, disappearance, or cancellation produces a placeholder without changing successful-view history. The route
-retains no full-resolution decode and does not participate in Stage, Matte, Color Management, metadata, or navigation.
+HOME-UX-R1-F2 keeps the deliberately independent Recent-preview route rather than introducing another canonical decode.
+When Home is visible, at most two workers lazily content-detect a remembered file, request a reduced Skia decode,
+convert to sRGB, apply the canonical orientation transform exactly once, then use bounded Mitchell cubic sampling to
+encode a transparent `320 px`-long-edge PNG for UI handoff. Intermediate decode is refused above `2048 px` long edge or
+16 MiB; failure, unsupported content, source locking, disappearance, or cancellation produces a placeholder without
+changing successful-view history. The route retains no full-resolution decode and does not participate in Stage, Matte,
+Color Management, metadata, or navigation.
 
 ## Decoder registry direction
 

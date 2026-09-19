@@ -40,11 +40,11 @@ public sealed class JsonSettingsStoreTests : IDisposable
         {
             var path = Path.Combine(directory.FullName, "settings.json");
             await File.WriteAllTextAsync(path, """
-                {
-                  "schemaVersion": 2,
-                  "imageChangeViewPolicy": "fitEachImage"
-                }
-                """);
+                                               {
+                                                 "schemaVersion": 2,
+                                                 "imageChangeViewPolicy": "fitEachImage"
+                                               }
+                                               """);
             var store = new JsonSettingsStore(path);
 
             var result = await store.LoadAsync(CancellationToken.None);
@@ -56,6 +56,54 @@ public sealed class JsonSettingsStoreTests : IDisposable
         {
             directory.Delete(true);
         }
+    }
+
+    [Fact]
+    public async Task LegacyShowRecentFalseMigratesPrivacyIntentAndDeletesHiddenHistory()
+    {
+        var recentPath = Path.Combine(_directory, "private.jpg");
+        await WriteAsync(
+            $$"""
+              {
+                "schemaVersion": 2,
+                "home": {
+                  "showRecentItems": false,
+                  "recentLocations": [
+                    { "kind": "File", "path": "{{recentPath.Replace("\\", "\\\\")}}" }
+                  ]
+                }
+              }
+              """);
+
+        var result = await CreateStore().LoadAsync(CancellationToken.None);
+
+        Assert.False(result.Settings.Home.RememberRecentPhotos);
+        Assert.Empty(result.Settings.Home.RecentLocations);
+        Assert.True(result.RequiresSave);
+    }
+
+    [Fact]
+    public async Task LegacyShowRecentTruePreservesHistoryAndMigratesToRememberRecent()
+    {
+        var recentPath = Path.Combine(_directory, "retained.jpg");
+        await WriteAsync(
+            $$"""
+              {
+                "schemaVersion": 2,
+                "home": {
+                  "showRecentItems": true,
+                  "recentLocations": [
+                    { "kind": "File", "path": "{{recentPath.Replace("\\", "\\\\")}}" }
+                  ]
+                }
+              }
+              """);
+
+        var result = await CreateStore().LoadAsync(CancellationToken.None);
+
+        Assert.True(result.Settings.Home.RememberRecentPhotos);
+        Assert.Equal(Path.GetFullPath(recentPath), Assert.Single(result.Settings.Home.RecentLocations).Path);
+        Assert.True(result.RequiresSave);
     }
 
     [Fact]
@@ -210,15 +258,15 @@ public sealed class JsonSettingsStoreTests : IDisposable
         int expectedModeValue)
     {
         await WriteAsync($$"""
-            {
-              "schemaVersion": 2,
-              "stage": {
-                "backgroundMode": "{{serializedMode}}",
-                "matteEnabled": true,
-                "matteColor": "#314159"
-              }
-            }
-            """);
+                           {
+                             "schemaVersion": 2,
+                             "stage": {
+                               "backgroundMode": "{{serializedMode}}",
+                               "matteEnabled": true,
+                               "matteColor": "#314159"
+                             }
+                           }
+                           """);
 
         var result = await CreateStore().LoadAsync(CancellationToken.None);
 
@@ -387,11 +435,11 @@ public sealed class JsonSettingsStoreTests : IDisposable
     public async Task ExistingV2ReceivesPresentationDefaultsAndFreeHighlightMarkupShortcuts()
     {
         await WriteAsync("""
-            {
-              "schemaVersion": 2,
-              "shortcuts": { "bindings": { "viewer.fit": { "key": "0", "modifiers": "None" } } }
-            }
-            """);
+                         {
+                           "schemaVersion": 2,
+                           "shortcuts": { "bindings": { "viewer.fit": { "key": "0", "modifiers": "None" } } }
+                         }
+                         """);
 
         var result = await CreateStore().LoadAsync(CancellationToken.None);
 
@@ -405,16 +453,16 @@ public sealed class JsonSettingsStoreTests : IDisposable
     public async Task ExistingV2CustomHAndPBindingsWinOverNewPresentationDefaults()
     {
         await WriteAsync("""
-            {
-              "schemaVersion": 2,
-              "shortcuts": {
-                "bindings": {
-                  "viewer.fit": { "key": "H", "modifiers": "None" },
-                  "viewer.toggleMatte": { "key": "P", "modifiers": "None" }
-                }
-              }
-            }
-            """);
+                         {
+                           "schemaVersion": 2,
+                           "shortcuts": {
+                             "bindings": {
+                               "viewer.fit": { "key": "H", "modifiers": "None" },
+                               "viewer.toggleMatte": { "key": "P", "modifiers": "None" }
+                             }
+                           }
+                         }
+                         """);
 
         var result = await CreateStore().LoadAsync(CancellationToken.None);
 
@@ -428,11 +476,11 @@ public sealed class JsonSettingsStoreTests : IDisposable
     public async Task ExistingV2ReceivesFreeMarkupHistoryDefaultsWithoutSchemaBump()
     {
         await WriteAsync("""
-            {
-              "schemaVersion": 2,
-              "shortcuts": { "bindings": { "viewer.fit": { "key": "0", "modifiers": "None" } } }
-            }
-            """);
+                         {
+                           "schemaVersion": 2,
+                           "shortcuts": { "bindings": { "viewer.fit": { "key": "0", "modifiers": "None" } } }
+                         }
+                         """);
 
         var result = await CreateStore().LoadAsync(CancellationToken.None);
 
@@ -452,17 +500,17 @@ public sealed class JsonSettingsStoreTests : IDisposable
     public async Task ExistingV2CustomizedHistoryGesturesAreNeverStolen()
     {
         await WriteAsync("""
-            {
-              "schemaVersion": 2,
-              "shortcuts": {
-                "bindings": {
-                  "viewer.fit": { "key": "Z", "modifiers": "Control" },
-                  "viewer.toggleMatte": { "key": "Y", "modifiers": "Control" },
-                  "viewer.toggleHighlight": { "key": "Delete", "modifiers": "Control" }
-                }
-              }
-            }
-            """);
+                         {
+                           "schemaVersion": 2,
+                           "shortcuts": {
+                             "bindings": {
+                               "viewer.fit": { "key": "Z", "modifiers": "Control" },
+                               "viewer.toggleMatte": { "key": "Y", "modifiers": "Control" },
+                               "viewer.toggleHighlight": { "key": "Delete", "modifiers": "Control" }
+                             }
+                           }
+                         }
+                         """);
 
         var result = await CreateStore().LoadAsync(CancellationToken.None);
 
@@ -484,18 +532,18 @@ public sealed class JsonSettingsStoreTests : IDisposable
     public async Task ExistingV2WithoutMarkupOpacityDefaultsToOpaqueWithoutLosingPresentation()
     {
         await WriteAsync("""
-            {
-              "schemaVersion": 2,
-              "presentation": {
-                "markupToolsEnabled": false,
-                "highlightColor": "#010203",
-                "highlightOpacity": 0.4,
-                "highlightRadiusPhysicalPixels": 70,
-                "defaultMarkupColor": "#AABBCC",
-                "defaultMarkupStrokePhysicalPixels": 11
-              }
-            }
-            """);
+                         {
+                           "schemaVersion": 2,
+                           "presentation": {
+                             "markupToolsEnabled": false,
+                             "highlightColor": "#010203",
+                             "highlightOpacity": 0.4,
+                             "highlightRadiusPhysicalPixels": 70,
+                             "defaultMarkupColor": "#AABBCC",
+                             "defaultMarkupStrokePhysicalPixels": 11
+                           }
+                         }
+                         """);
 
         var result = await CreateStore().LoadAsync(CancellationToken.None);
 
@@ -526,16 +574,16 @@ public sealed class JsonSettingsStoreTests : IDisposable
     public async Task PreviousDefaultBlinkAndClearPairMigrates()
     {
         await WriteAsync("""
-            {
-              "schemaVersion": 2,
-              "shortcuts": {
-                "bindings": {
-                  "viewer.blinkCompare": { "key": "C", "modifiers": "None" },
-                  "viewer.clearMarkup": { "key": "Delete", "modifiers": "Control" }
-                }
-              }
-            }
-            """);
+                         {
+                           "schemaVersion": 2,
+                           "shortcuts": {
+                             "bindings": {
+                               "viewer.blinkCompare": { "key": "C", "modifiers": "None" },
+                               "viewer.clearMarkup": { "key": "Delete", "modifiers": "Control" }
+                             }
+                           }
+                         }
+                         """);
 
         var result = await CreateStore().LoadAsync(CancellationToken.None);
 
@@ -550,16 +598,16 @@ public sealed class JsonSettingsStoreTests : IDisposable
     public async Task EvolvedBlinkAndClearDefaultsAreIdempotent()
     {
         await WriteAsync("""
-            {
-              "schemaVersion": 2,
-              "shortcuts": {
-                "bindings": {
-                  "viewer.blinkCompare": { "key": "C", "modifiers": "Shift" },
-                  "viewer.clearMarkup": { "key": "C", "modifiers": "None" }
-                }
-              }
-            }
-            """);
+                         {
+                           "schemaVersion": 2,
+                           "shortcuts": {
+                             "bindings": {
+                               "viewer.blinkCompare": { "key": "C", "modifiers": "Shift" },
+                               "viewer.clearMarkup": { "key": "C", "modifiers": "None" }
+                             }
+                           }
+                         }
+                         """);
 
         var result = await CreateStore().LoadAsync(CancellationToken.None);
 
@@ -574,16 +622,16 @@ public sealed class JsonSettingsStoreTests : IDisposable
     public async Task CustomizedBlinkIsPreservedWithoutEvolvingClear()
     {
         await WriteAsync("""
-            {
-              "schemaVersion": 2,
-              "shortcuts": {
-                "bindings": {
-                  "viewer.blinkCompare": { "key": "B", "modifiers": "None" },
-                  "viewer.clearMarkup": { "key": "Delete", "modifiers": "Control" }
-                }
-              }
-            }
-            """);
+                         {
+                           "schemaVersion": 2,
+                           "shortcuts": {
+                             "bindings": {
+                               "viewer.blinkCompare": { "key": "B", "modifiers": "None" },
+                               "viewer.clearMarkup": { "key": "Delete", "modifiers": "Control" }
+                             }
+                           }
+                         }
+                         """);
 
         var result = await CreateStore().LoadAsync(CancellationToken.None);
 
@@ -598,16 +646,16 @@ public sealed class JsonSettingsStoreTests : IDisposable
     public async Task CustomizedClearIsPreservedWithoutEvolvingBlink()
     {
         await WriteAsync("""
-            {
-              "schemaVersion": 2,
-              "shortcuts": {
-                "bindings": {
-                  "viewer.blinkCompare": { "key": "C", "modifiers": "None" },
-                  "viewer.clearMarkup": { "key": "X", "modifiers": "None" }
-                }
-              }
-            }
-            """);
+                         {
+                           "schemaVersion": 2,
+                           "shortcuts": {
+                             "bindings": {
+                               "viewer.blinkCompare": { "key": "C", "modifiers": "None" },
+                               "viewer.clearMarkup": { "key": "X", "modifiers": "None" }
+                             }
+                           }
+                         }
+                         """);
 
         var result = await CreateStore().LoadAsync(CancellationToken.None);
 
@@ -641,18 +689,18 @@ public sealed class JsonSettingsStoreTests : IDisposable
     public async Task GlobalBracketBindingsCoexistWithContextualDefaults()
     {
         await WriteAsync("""
-            {
-              "schemaVersion": 2,
-              "shortcuts": {
-                "bindings": {
-                  "viewer.fit": { "key": "OpenBracket", "modifiers": "None" },
-                  "viewer.toggleMatte": { "key": "CloseBracket", "modifiers": "None" },
-                  "viewer.toggleHighlight": { "key": "OpenBracket", "modifiers": "Control" },
-                  "viewer.toggleMarkupTools": { "key": "CloseBracket", "modifiers": "Control" }
-                }
-              }
-            }
-            """);
+                         {
+                           "schemaVersion": 2,
+                           "shortcuts": {
+                             "bindings": {
+                               "viewer.fit": { "key": "OpenBracket", "modifiers": "None" },
+                               "viewer.toggleMatte": { "key": "CloseBracket", "modifiers": "None" },
+                               "viewer.toggleHighlight": { "key": "OpenBracket", "modifiers": "Control" },
+                               "viewer.toggleMarkupTools": { "key": "CloseBracket", "modifiers": "Control" }
+                             }
+                           }
+                         }
+                         """);
 
         var result = await CreateStore().LoadAsync(CancellationToken.None);
 
@@ -679,15 +727,15 @@ public sealed class JsonSettingsStoreTests : IDisposable
     public async Task ExistingSameScopeCustomizationWinsOverNewToolDefault()
     {
         await WriteAsync("""
-            {
-              "schemaVersion": 2,
-              "shortcuts": {
-                "bindings": {
-                  "viewer.clearMarkup": { "key": "B", "modifiers": "None" }
-                }
-              }
-            }
-            """);
+                         {
+                           "schemaVersion": 2,
+                           "shortcuts": {
+                             "bindings": {
+                               "viewer.clearMarkup": { "key": "B", "modifiers": "None" }
+                             }
+                           }
+                         }
+                         """);
 
         var result = await CreateStore().LoadAsync(CancellationToken.None);
 
@@ -731,8 +779,8 @@ public sealed class JsonSettingsStoreTests : IDisposable
         bool expectedMatte)
     {
         await WriteAsync($$"""
-            { "schemaVersion": 1, "imageChangeViewPolicy": "FitEachImage", "stageMode": "{{legacyMode}}" }
-            """);
+                           { "schemaVersion": 1, "imageChangeViewPolicy": "FitEachImage", "stageMode": "{{legacyMode}}" }
+                           """);
 
         var result = await CreateStore().LoadAsync(CancellationToken.None);
 

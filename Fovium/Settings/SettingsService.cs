@@ -91,13 +91,21 @@ internal sealed class SettingsService(ISettingsStore store) : IDisposable
                 : settings with { MonitorColorManagementEnabled = enabled },
             cancellationToken);
 
-    public Task SetShowRecentItemsAsync(
-        bool show,
+    public Task SetRememberRecentPhotosAsync(
+        bool remember,
         CancellationToken cancellationToken = default) =>
         UpdateAsync(
-            settings => settings.Home.ShowRecentItems == show
+            settings => settings.Home.RememberRecentPhotos == remember &&
+                        (remember || settings.Home.RecentLocations.Count == 0)
                 ? settings
-                : settings with { Home = settings.Home with { ShowRecentItems = show } },
+                : settings with
+                {
+                    Home = settings.Home with
+                    {
+                        RememberRecentPhotos = remember,
+                        RecentLocations = remember ? settings.Home.RecentLocations : [],
+                    },
+                },
             cancellationToken);
 
     public Task AddRecentLocationAsync(
@@ -118,19 +126,21 @@ internal sealed class SettingsService(ISettingsStore store) : IDisposable
             ? StringComparer.OrdinalIgnoreCase
             : StringComparer.Ordinal;
         return UpdateAsync(
-            settings => settings with
-            {
-                Home = settings.Home with
+            settings => !settings.Home.RememberRecentPhotos
+                ? settings
+                : settings with
                 {
-                    RecentLocations =
-                    [
-                        normalized,
-                        .. settings.Home.RecentLocations
-                            .Where(item => !comparer.Equals(item.Path, normalized.Path))
-                            .Take(HomeSettings.MaximumRecentLocations - 1),
-                    ],
+                    Home = settings.Home with
+                    {
+                        RecentLocations =
+                        [
+                            normalized,
+                            .. settings.Home.RecentLocations
+                                .Where(item => !comparer.Equals(item.Path, normalized.Path))
+                                .Take(HomeSettings.MaximumRecentLocations - 1),
+                        ],
+                    },
                 },
-            },
             cancellationToken);
     }
 
@@ -389,7 +399,7 @@ internal sealed class SettingsService(ISettingsStore store) : IDisposable
         SettingsEqual(left.Shortcuts, right.Shortcuts);
 
     private static bool HomeSettingsEqual(HomeSettings left, HomeSettings right) =>
-        left.ShowRecentItems == right.ShowRecentItems &&
+        left.RememberRecentPhotos == right.RememberRecentPhotos &&
         left.RecentLocations.SequenceEqual(right.RecentLocations);
 
     private static bool SettingsEqual(ShortcutSettings left, ShortcutSettings right) =>

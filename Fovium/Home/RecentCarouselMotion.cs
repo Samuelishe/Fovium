@@ -34,11 +34,12 @@ internal readonly record struct RecentCarouselOverflow(
 internal sealed class RecentCarouselMotion
 {
     public const double DragThreshold = 6;
-    public const double MaximumCoastDistance = 160;
+    public const double MaximumCoastDistance = 280;
     private const double HorizontalIntentRatio = 1.15;
-    private const double MinimumInertiaVelocity = 120;
-    private const double MaximumInertiaVelocity = 1_800;
-    private const double FrictionPerSecond = 10;
+    internal const double MinimumInertiaVelocity = 100;
+    internal const double MaximumInertiaVelocity = 2_200;
+    internal const double FrictionPerSecond = 7;
+    internal const double StopInertiaVelocity = 50;
     private static readonly TimeSpan VelocityWindow = TimeSpan.FromMilliseconds(120);
     private readonly List<PointerSample> _samples = [];
     private GestureState _gesture;
@@ -153,7 +154,7 @@ internal sealed class RecentCarouselMotion
         _velocity = nextVelocity;
         if (reachedEdge ||
             _coastDistance >= MaximumCoastDistance - 0.01 ||
-            Math.Abs(_velocity) < 15)
+            Math.Abs(_velocity) < StopInertiaVelocity)
         {
             CancelInertia();
         }

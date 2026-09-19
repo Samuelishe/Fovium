@@ -968,3 +968,34 @@ The visible Recent control is one clipped horizontal strip. A deterministic pure
 threshold, horizontal-intent gate, recent `120 ms` velocity window, exponential friction, and a hard `160 px` coast
 bound; the Avalonia adapter owns capture, timer, wheel, focus reveal, and non-interactive edge fades. This separates
 testable gesture correctness from timer feel and prevents wrap, endless fling, or system scrollbar chrome.
+
+## D-082 — Recent memory is a privacy control with independent history and preview bounds
+
+Status: Implemented in local HOME-UX-R1-F2; hosted verification pending.
+
+Remember recent photos owns both recording and presentation. Off atomically clears the persisted MRU, cancels preview
+work, disposes Home preview bitmaps, invalidates and clears the Recent-only memory LRU, hides the strip, and suppresses
+future activation writes. Enabling starts from empty. Schema v2 remains valid: an explicit legacy
+`ShowRecentItems=false` is privacy intent, so migration deletes history that the old implementation recorded while
+hidden; true preserves it. Missing or malformed legacy state follows the normal default.
+
+The persisted MRU holds 20 normalized locations, independently of an eight-item/4 MiB preview LRU. Home requests only
+the visible range plus one neighboring card, cancels work that leaves that window, and keeps two-way preparation
+concurrency. A 320 px long edge with Mitchell cubic final sampling is the smallest compared source that remains clean
+at the current card size through simulated 1.50 scale. Carousel friction changes from 10 to 7 per second, stop velocity
+from 15 to 50 px/s, and coast cap from 160 to 280 px; the pure model remains deterministic and edges/input cancel it.
+
+## D-083 — Pinned native acquisition may use ordered official sources
+
+Status: Implemented in local HOME-UX-R1-F2; hosted verification pending.
+
+One native component may declare ordered official sources, each with its own exact archive filename and SHA-256 because
+release and repository-tag archive bytes differ. Each source retains bounded transient retry, unique `.part` lifecycle,
+hash validation, and atomic publication. Exhausted transient availability or permanent not-found may advance to the next
+pinned source; a freshly downloaded integrity mismatch is terminal and never falls through. A valid cache remains an
+optimization, never the only correctness path.
+
+dav1d 1.5.4 keeps the official VideoLAN release archive as primary and uses the official read-only VideoLAN GitHub
+mirror tag archive as fallback. Both provenance records and hashes are owned by `eng/native/libheif/versions.json`.
+Deterministic no-network tests cover primary/fallback, retries, cache validity, hash failure, partial cleanup, and total
+failure. Hosted recovery is not claimed before the next owner push.

@@ -26,7 +26,7 @@ public sealed class RecentThumbnailProviderTests : IDisposable
 
         Assert.Equal(RecentThumbnailStatus.Ready, result.Status);
         Assert.NotNull(result.PngBytes);
-        Assert.Equal(160, Math.Max(result.Size.Width, result.Size.Height));
+        Assert.Equal(320, Math.Max(result.Size.Width, result.Size.Height));
         using var bitmap = SKBitmap.Decode(result.PngBytes);
         Assert.NotNull(bitmap);
         Assert.Equal(result.Size.Width, bitmap.Width);
@@ -124,8 +124,28 @@ public sealed class RecentThumbnailProviderTests : IDisposable
         }
 
         var metrics = provider.GetMetrics();
-        Assert.InRange(metrics.CachedItems, 1, 6);
-        Assert.InRange(metrics.RetainedBytes, 1, 2 * 1024 * 1024);
+        Assert.InRange(metrics.CachedItems, 1, RecentThumbnailProvider.MaximumCachedItems);
+        Assert.InRange(metrics.RetainedBytes, 1, RecentThumbnailProvider.MaximumCachedBytes);
+    }
+
+    [Fact]
+    public async Task ClearingMemoryCacheRemovesRecentOwnedPreviewBytes()
+    {
+        Directory.CreateDirectory(_directory);
+        var path = Path.Combine(_directory, "private.jpg");
+        await File.WriteAllBytesAsync(
+            path,
+            EncodedImageTestData.Create(SKEncodedImageFormat.Jpeg, 640, 360));
+        using var provider = new RecentThumbnailProvider();
+        Assert.Equal(RecentThumbnailStatus.Ready, (await provider.PrepareAsync(path)).Status);
+
+        provider.ClearMemoryCache();
+
+        var cleared = provider.GetMetrics();
+        Assert.Equal(0, cleared.CachedItems);
+        Assert.Equal(0, cleared.RetainedBytes);
+        var rebuilt = await provider.PrepareAsync(path);
+        Assert.False(rebuilt.FromMemoryCache);
     }
 
     public void Dispose()

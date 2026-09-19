@@ -24,18 +24,25 @@ automatically. Home is also the destination of Close photo: it ends the active s
 stops viewer-only temporary state, rejects late publication, and leaves preferences and recent history intact. Home
 disappears completely after a photograph is published and never overlays a photograph. Its primary path is Open files,
 with Open folder and whole-window file/folder drag and drop as equal direct inputs; the effective Open shortcut remains
-visible when assigned.
+visible when assigned. `Ctrl+W` performs Close photo only while Viewer is active and is a no-op on Home; window close,
+Exit Fovium, and `Alt+F4` retain separate application-termination semantics.
 
 The landing composition is one calm central entry surface with a project-authored abstract image motif. It has no side
 navigation, Favorites, catalog, or organizer semantics. A bounded MRU list of successfully opened photos or folders may
 appear below as secondary convenience. Its single horizontal strip uses real bounded previews when available, retains
 unavailable paths in a dimmed state, supports explicit per-item removal and Clear recent, and is hidden when General →
-Show recent items on the home screen is off. Overflow never wraps: mouse grab-scroll, restrained bounded inertia,
+Remember recent photos is off. Off also deletes the bounded history and Recent-owned memory previews, cancels pending
+preview work, and stops recording until the preference is enabled again from an empty state. Overflow never wraps:
+mouse grab-scroll, restrained bounded inertia,
 horizontal touchpad/wheel input, Shift+wheel, keyboard focus reveal, and stateful edge fades expose clipped cards
 without
 a system scrollbar. Small windows keep primary actions visible by collapsing the decorative motif; larger windows add
 space and the motif without turning Home into a dashboard. With no visible Recent, the hero centers as the complete
 composition; with Recent, hero and strip form one vertically balanced group.
+
+The viewing context menu groups Open and Close photo as session actions before navigation. Close photo is hidden on
+Home.
+Settings remains an application preference action; Exit Fovium is last and separated from Settings by a divider.
 
 ## Baseline input
 

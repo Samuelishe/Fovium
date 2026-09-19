@@ -196,6 +196,131 @@ class DownloadVerifiedArchiveTests(unittest.TestCase):
         self.assertEqual(self.payload, result.read_bytes())
         self.assertEqual([], list(self.downloads.glob("*.part")))
 
+    def test_primary_source_success_does_not_open_fallback(self) -> None:
+        urls: list[str] = []
+
+        def opener(request: object, **_: object) -> _Response:
+            urls.append(request.full_url)
+            return _Response(self.payload)
+
+        archive = BUILD.download_verified_archive(
+            self._multi_component(),
+            self.downloads,
+            opener=opener,
+            sleep=lambda _: self.fail("primary success must not back off"),
+        )
+
+        self.assertEqual("primary.tar.gz", archive.name)
+        self.assertEqual(["https://primary.invalid/archive"], urls)
+
+    def test_transient_primary_exhaustion_reaches_verified_fallback(self) -> None:
+        calls: list[str] = []
+        delays: list[float] = []
+
+        def opener(request: object, **_: object) -> _Response:
+            calls.append(request.full_url)
+            if "primary" in request.full_url:
+                raise TimeoutError("primary timed out")
+            return _Response(self.payload)
+
+        archive = BUILD.download_verified_archive(
+            self._multi_component(),
+            self.downloads,
+            opener=opener,
+            sleep=delays.append,
+        )
+
+        self.assertEqual("fallback.tar.gz", archive.name)
+        self.assertEqual(4, calls.count("https://primary.invalid/archive"))
+        self.assertEqual("https://fallback.invalid/archive", calls[-1])
+        self.assertEqual([1.0, 2.0, 4.0], delays)
+        self.assertEqual(self.payload, archive.read_bytes())
+
+    def test_permanent_primary_not_found_moves_immediately_to_fallback(self) -> None:
+        calls: list[str] = []
+
+        def opener(request: object, **_: object) -> _Response:
+            calls.append(request.full_url)
+            if "primary" in request.full_url:
+                raise self._http_error(404)
+            return _Response(self.payload)
+
+        archive = BUILD.download_verified_archive(
+            self._multi_component(),
+            self.downloads,
+            opener=opener,
+            sleep=lambda _: self.fail("404 must not back off"),
+        )
+
+        self.assertEqual("fallback.tar.gz", archive.name)
+        self.assertEqual(2, len(calls))
+
+    def test_primary_hash_mismatch_is_terminal_and_never_reaches_fallback(self) -> None:
+        calls: list[str] = []
+
+        def opener(request: object, **_: object) -> _Response:
+            calls.append(request.full_url)
+            return _Response(b"wrong archive bytes")
+
+        with self.assertRaises(BUILD.ArchiveIntegrityError):
+            BUILD.download_verified_archive(
+                self._multi_component(),
+                self.downloads,
+                opener=opener,
+                sleep=lambda _: self.fail("integrity failure must not back off"),
+            )
+
+        self.assertEqual(["https://primary.invalid/archive"], calls)
+        self.assertFalse((self.downloads / "fallback.tar.gz").exists())
+
+    def test_both_sources_failing_reports_bounded_combined_failure(self) -> None:
+        calls: list[str] = []
+
+        def opener(request: object, **_: object) -> _Response:
+            calls.append(request.full_url)
+            raise self._http_error(404)
+
+        with self.assertRaisesRegex(RuntimeError, "All pinned archive sources failed"):
+            BUILD.download_verified_archive(
+                self._multi_component(),
+                self.downloads,
+                opener=opener,
+                sleep=lambda _: self.fail("404 must not back off"),
+            )
+
+        self.assertEqual(2, len(calls))
+        self.assertEqual([], list(self.downloads.glob("*.part")))
+
+    def test_stale_partial_is_removed_before_cache_or_network_is_considered(self) -> None:
+        stale = self.downloads / "dependency.tar.gz.crashed.part"
+        stale.write_bytes(b"partial bytes from an interrupted process")
+
+        result = BUILD.download_verified_archive(
+            self.component,
+            self.downloads,
+            opener=lambda *_args, **_kwargs: _Response(self.payload),
+            sleep=lambda _: self.fail("success must not back off"),
+        )
+
+        self.assertEqual(self.payload, result.read_bytes())
+        self.assertFalse(stale.exists())
+
+    def _multi_component(self) -> dict[str, object]:
+        return {
+            "archives": [
+                {
+                    "archiveFile": "primary.tar.gz",
+                    "archiveUrl": "https://primary.invalid/archive",
+                    "archiveSha256": self.expected_hash,
+                },
+                {
+                    "archiveFile": "fallback.tar.gz",
+                    "archiveUrl": "https://fallback.invalid/archive",
+                    "archiveSha256": self.expected_hash,
+                },
+            ]
+        }
+
     @staticmethod
     def _http_error(status: int) -> urllib.error.HTTPError:
         return urllib.error.HTTPError(

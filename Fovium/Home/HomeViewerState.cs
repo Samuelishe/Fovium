@@ -27,9 +27,15 @@ internal sealed class HomeViewerState
         return true;
     }
 
-    public void ReturnHome()
+    public bool TryReturnHome()
     {
+        if (Mode == ViewerContentMode.Home)
+        {
+            return false;
+        }
+
         _revision++;
         Mode = ViewerContentMode.Home;
+        return true;
     }
 }

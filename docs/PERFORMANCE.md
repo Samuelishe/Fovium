@@ -128,24 +128,26 @@ one 1×1 Skia source-to-sRGB conversion, and scans 1,800 precomputed OKLab ancho
 objects and cannot grow with continued use. The embedded JSON resource is about 148 KiB; the catalog initializes lazily
 on first nontransparent sample and has no background worker or network latency.
 
-## Cache and memory budget
+## Home preview budget
 
-HOME-UX-R1-F1 keeps Home interactive before previews complete. Recent cards and availability labels publish
-immediately; at most two background preview preparations run concurrently. A session-memory LRU retains no more than
-six encoded `160 px` previews and 2 MiB, keyed by normalized path plus source length and last-write time. Missing
-sources
-may reuse an already prepared session preview while remaining visibly unavailable; mutation invalidates the preview.
-UI bitmap instances are disposed when Home hides, inertia stops immediately, and the tiny encoded LRU may remain for a
-warm return to Home. There is no disk cache, recursive folder scan, retained full-resolution Home decode, or startup
-wait for all previews. `FOVIUM_HOME_DIAGNOSTICS=1` reports synchronous Home construction and aggregate preview metrics
-without logging source paths.
+HOME-UX-R1-F2 keeps Home interactive before previews complete. All 20 bounded Recent cards and inexpensive availability
+labels may publish immediately, but preview requests are limited to the visible card range plus one card of look-ahead
+on each side; moving the strip cancels abandoned requests and schedules the new range. At most two preparations run
+concurrently. A session-memory LRU independently retains at most eight encoded `320 px` previews and 4 MiB, keyed by
+normalized path plus source length and last-write time. Turning Remember recent photos off increments cache generation,
+cancels work, disposes Home bitmaps, and clears the LRU so late workers cannot republish private history. There is no
+disk
+cache, recursive folder scan, retained full-resolution Home decode, or startup wait for all history entries.
 
-A local Windows Release run with six real JPEGs measured synchronous Home construction at `12.06 ms` cold and `4.63
-ms` after Viewer → Home. Six first preparations totaled `421.49 ms` of background worker time (`68.86 ms` last item)
-with two-way concurrency; the warm return produced six memory hits, zero failures/cancellations, and retained `201,364`
-encoded preview bytes. Six maximum-size BGRA UI bitmaps are structurally below `614,400` bytes and are released on
-Viewer entry; the encoded session LRU remained for the warm return. These are single-machine observations, not latency
-or working-set promises.
+Local Windows Release comparison of 160/256/320/384 px sources across architecture, foliage, portrait, and industrial
+detail at simulated 1.00/1.25/1.50 display scale selected 320 px: 160 visibly blurred when enlarged, 256 remained
+softer, and 384 added little visible detail over 320. Mitchell cubic sampling is used for the final oriented resize.
+Preparation at 320 px measured `70.65–139.06 ms` per sample (`100.49 ms` median, `139.06 ms` sample p95) and retained
+`157,162–206,481` PNG bytes in this four-image run. A clean 20-location production Home requested eight previews during
+initial layout rather than all 20, synchronously appeared in `16.77 ms`, prepared eight in `716.10 ms` aggregate worker
+time, and retained `871,350` encoded bytes. Empty/disabled Home observations were `1.01–2.33 ms`. The pure carousel
+update measured `0.000062 ms` per synthetic begin/move/end/tick iteration, below any meaningful UI budget on the same
+machine. These are single-machine comparative observations, not cross-platform latency promises.
 
 ## Cache and memory budget
 

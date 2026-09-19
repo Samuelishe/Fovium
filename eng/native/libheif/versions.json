@@ -30,9 +30,20 @@
       "tag": "1.5.4",
       "commit": "191bdda98ec3c68137754dc97da1db34043d7cd4",
       "sourceUrl": "https://code.videolan.org/videolan/dav1d",
-      "archiveUrl": "https://download.videolan.org/pub/videolan/dav1d/1.5.4/dav1d-1.5.4.tar.xz",
-      "archiveFile": "dav1d-1.5.4.tar.xz",
-      "archiveSha256": "686616b7c69eb88d44459391ab25cac13b6647a3b288835c5784e71c1514a5c5",
+      "archives": [
+        {
+          "archiveUrl": "https://download.videolan.org/pub/videolan/dav1d/1.5.4/dav1d-1.5.4.tar.xz",
+          "archiveFile": "dav1d-1.5.4.tar.xz",
+          "archiveSha256": "686616b7c69eb88d44459391ab25cac13b6647a3b288835c5784e71c1514a5c5",
+          "provenance": "VideoLAN official release archive"
+        },
+        {
+          "archiveUrl": "https://codeload.github.com/videolan/dav1d/tar.gz/refs/tags/1.5.4",
+          "archiveFile": "dav1d-1.5.4-github.tar.gz",
+          "archiveSha256": "a1d5b63d2d38ec9bd03acf643caa51fa22edd1e89c5a109c4807717216bbec07",
+          "provenance": "VideoLAN official read-only GitHub mirror tag archive"
+        }
+      ],
       "sourceDirectory": "dav1d-1.5.4",
       "license": "BSD-2-Clause",
       "licenseFile": "COPYING"

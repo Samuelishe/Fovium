@@ -14,24 +14,37 @@ Run the full suite in the default configuration:
 dotnet test Fovium.sln
 ```
 
-Run the focused HOME-UX-R1-F1 lifecycle, Recent, thumbnail, carousel, settings, localization, and structure contracts:
+Run the focused HOME-UX-R1-F2 privacy, migration, Recent, thumbnail, carousel, settings, localization, command, and
+structure contracts:
 
 ```powershell
-dotnet test Fovium.Tests/Fovium.Tests.csproj -c Release --no-restore --filter "FullyQualifiedName~Fovium.Tests.Home|FullyQualifiedName~ActivationPlanTests|FullyQualifiedName~DirectorySequenceBuilderTests|FullyQualifiedName~HomeSettingsTests|FullyQualifiedName~HomeLocalizationTests|FullyQualifiedName~ViewerSessionTests|FullyQualifiedName~ViewerCommandExecutorTests|FullyQualifiedName~ShortcutDefaultsTests|FullyQualifiedName~PresentationOverlaySessionTests"
+dotnet test Fovium.Tests/Fovium.Tests.csproj -c Release --no-restore --filter "FullyQualifiedName~Fovium.Tests.Home|FullyQualifiedName~HomeSettingsTests|FullyQualifiedName~JsonSettingsStoreTests|FullyQualifiedName~HomeLocalizationTests|FullyQualifiedName~ViewerCommandExecutorTests|FullyQualifiedName~ShortcutDefaultsTests|FullyQualifiedName~FoviumVersionTests"
 ```
 
-Ignored Windows runtime evidence under `artifacts/home-r1-f1/` covers RU/EN large, medium, and compact composition;
-Recent enabled/disabled; six real previews; overflow before/after physical mouse drag; ordinary card activation;
-Viewer → `Ctrl+W` → Home; unavailable/recovered state; valid OLE file drag-over; and local performance diagnostics.
-The harness backs up and restores the per-user Settings document. Pure tests own deterministic threshold, intent,
-inertia, clamp, fade,
-cancellation, orientation, cache, and stale-publication semantics; physical precision-touchpad and Linux/macOS feel
-remain separate manual evidence.
+Ignored Windows runtime evidence under `artifacts/home-r1-f2/` covers a 20-location real MRU at beginning/middle/end,
+physical mouse slow/strong drag, edge fades, activation after scrolling, resize at a nonzero offset, per-card removal,
+context-menu grouping, and the complete privacy sequence. Turning memory off produced persisted count zero and cache
+count/bytes zero; two photo activations plus restart while off still produced zero; enabling began empty; the next photo
+produced exactly one item. The harness backs up and byte-verifies restoration of the per-user Settings document.
 
-The final local HOME-UX-R1-F1 run passes the 205-test focused filter and 2,309/2,309 full Release tests; the preceding
-Release solution build completes with zero warnings and errors. The changed-file formatter, localization parity,
-Markdown-link audit, privacy/path audit, and `git diff --check` also pass. The solution-wide formatter still reports
-pre-existing whitespace findings in unrelated color-performance and metadata-formatting files.
+The final local HOME-UX-R1-F2 focused filter passes 160/160 and the full Release suite passes 2,324/2,324; the Release
+solution build completes with zero warnings and errors. The deterministic native downloader suite passes 13/13. Pure
+tests own threshold, velocity, clamp, decay, edge/input cancellation, migration, privacy, capacity, viewport scheduling,
+cache generation, orientation, and stale-publication semantics; physical precision-touchpad and Linux/macOS feel remain
+separate manual evidence.
+
+`PhotoColorProfileTests` is also an explicit Rider diagnostic gate:
+
+```powershell
+dotnet build Fovium.sln -c Release
+dotnet build Fovium.Tests/Fovium.Tests.csproj -c Debug --no-restore
+dotnet test Fovium.Tests/Fovium.Tests.csproj -c Release --no-build --filter "FullyQualifiedName~PhotoColorProfileTests"
+```
+
+HOME-UX-R1-F2 records 11/11 passing tests and clean Debug/Release compiles. Rider's previous red diagnostics came from a
+frontend/backend document synchronization failure (`backend document length 0`, expected 9680), followed by cascading
+unresolved/ambiguous symbols. Reopening the file forced a full daemon analysis to `UP_TO_DATE` and cleared the errors;
+no source, test-semantic, `.idea`, or cache deletion was needed.
 
 Run the same verification used by CI after a Release build:
 
@@ -389,16 +402,19 @@ largest-intersection/tie behavior, typed fallback precedence, complete transform
 behavior, and source-versus-destination ownership. The final domain-independence test proves that two destination
 transforms differ while R8-A reference-sRGB Picker output and source-domain Histogram bins remain unchanged. Platform
 APIs and real display-profile availability remain probe/manual evidence rather than skipped ordinary unit tests.
-R10-B hardens native source acquisition with deterministic Python unit tests that inject network/cache behavior without
+HOME-UX-R1-F2 hardens native source acquisition with deterministic Python unit tests that inject network/cache behavior without
 contacting upstream:
 
 ```powershell
 python -m unittest discover -s eng/native/libheif/tests -p 'test_*.py' -v
 ```
 
-The cases cover bounded transient 504/503 recovery, permanent 404, connection reset before and after partial output,
-downloaded hash mismatch, verified cache reuse, and invalid-cache replacement. Pinned URLs/versions/SHA-256 remain owned
-by `versions.json`; a hash mismatch is a single hard failure, and only a validated `.part` is atomically promoted.
+The 13 cases cover primary success, bounded transient recovery, permanent 404, primary exhaustion to fallback, connection
+reset before/after partial output, terminal downloaded hash mismatch, verified cache reuse, invalid-cache replacement,
+stale-part removal, and both sources failing. Pinned URLs/versions/SHA-256 remain owned by `versions.json`; a fresh hash
+mismatch is terminal, and only a validated `.part` is atomically promoted. A clean live smoke acquired the exact dav1d
+1.5.4 archive from VideoLAN's official read-only GitHub mirror and matched its pinned SHA-256. Hosted matrix success is
+not claimed before a future owner push.
 
 Run a clean native build locally with:
 

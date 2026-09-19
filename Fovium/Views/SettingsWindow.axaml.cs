@@ -31,7 +31,7 @@ internal sealed partial class SettingsWindow : Window
     private readonly ComboBox _languageOption;
     private readonly Border _languageRestartPanel;
     private readonly TextBlock _languageRestartHint;
-    private readonly CheckBox _showRecentItemsOption;
+    private readonly CheckBox _rememberRecentPhotosOption;
     private readonly RadioButton _keepCurrentScaleOption;
     private readonly RadioButton _fitEachImageOption;
     private readonly CheckBox _photoPresentationEnabledOption;
@@ -121,7 +121,7 @@ internal sealed partial class SettingsWindow : Window
         _languageOption = FindRequired<ComboBox>("LanguageOption");
         _languageRestartPanel = FindRequired<Border>("LanguageRestartPanel");
         _languageRestartHint = FindRequired<TextBlock>("LanguageRestartHint");
-        _showRecentItemsOption = FindRequired<CheckBox>("ShowRecentItemsOption");
+        _rememberRecentPhotosOption = FindRequired<CheckBox>("RememberRecentPhotosOption");
         _keepCurrentScaleOption = FindRequired<RadioButton>("KeepCurrentScaleOption");
         _fitEachImageOption = FindRequired<RadioButton>("FitEachImageOption");
         _photoPresentationEnabledOption =
@@ -225,9 +225,9 @@ internal sealed partial class SettingsWindow : Window
             localizer[UiStrings.SettingsLanguageDescription];
         _languageRestartHint.Text = localizer[UiStrings.SettingsLanguageRestart];
         FindRequired<TextBlock>("RecentItemsHeading").Text =
-            localizer[UiStrings.SettingsShowRecentItems];
+            localizer[UiStrings.SettingsRememberRecentPhotos];
         FindRequired<TextBlock>("RecentItemsDescription").Text =
-            localizer[UiStrings.SettingsShowRecentItemsDescription];
+            localizer[UiStrings.SettingsRememberRecentPhotosDescription];
         _languageOption.ItemsSource = Enum.GetValues<UiLanguage>()
             .Select(language => new ComboBoxItem
             {
@@ -346,11 +346,12 @@ internal sealed partial class SettingsWindow : Window
         _closeButton.Click += (_, _) => Close();
         _settingsNavigation.SelectionChanged += OnSettingsNavigationChanged;
         _languageOption.SelectionChanged += OnLanguageChanged;
-        _showRecentItemsOption.IsCheckedChanged += async (_, _) =>
+        _rememberRecentPhotosOption.IsCheckedChanged += async (_, _) =>
         {
             if (!_initializing)
             {
-                await _settings.SetShowRecentItemsAsync(_showRecentItemsOption.IsChecked == true);
+                await _settings.SetRememberRecentPhotosAsync(
+                    _rememberRecentPhotosOption.IsChecked == true);
             }
         };
         _keepCurrentScaleOption.IsCheckedChanged += OnKeepCurrentScaleChanged;
@@ -849,7 +850,7 @@ internal sealed partial class SettingsWindow : Window
             .Single(item => item.Tag is UiLanguage language && language == settings.Language);
         _languageRestartPanel.IsVisible =
             LocaleResolver.Resolve(settings.Language, CultureInfo.CurrentUICulture) != _localizer.Locale;
-        _showRecentItemsOption.IsChecked = settings.Home.ShowRecentItems;
+        _rememberRecentPhotosOption.IsChecked = settings.Home.RememberRecentPhotos;
         _keepCurrentScaleOption.IsChecked =
             settings.ImageChangeViewPolicy == ImageChangeViewPolicy.KeepCurrentScale;
         _fitEachImageOption.IsChecked =

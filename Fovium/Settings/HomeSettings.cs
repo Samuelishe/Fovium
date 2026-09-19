@@ -17,9 +17,9 @@ internal sealed record RecentLocation
 
 internal sealed record HomeSettings
 {
-    public const int MaximumRecentLocations = 6;
+    public const int MaximumRecentLocations = 20;
 
-    public bool ShowRecentItems { get; init; } = true;
+    public bool RememberRecentPhotos { get; init; } = true;
 
     public IReadOnlyList<RecentLocation> RecentLocations { get; init; } = [];
 
@@ -27,6 +27,11 @@ internal sealed record HomeSettings
 
     public HomeSettings Normalize()
     {
+        if (!RememberRecentPhotos)
+        {
+            return this with { RecentLocations = [] };
+        }
+
         var pathComparer = OperatingSystem.IsWindows()
             ? StringComparer.OrdinalIgnoreCase
             : StringComparer.Ordinal;

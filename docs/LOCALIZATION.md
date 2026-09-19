@@ -141,6 +141,10 @@ as “System default”, “English”, and “Русский”; their persiste
 loads before localization at process startup, so English and Russian are real application choices rather than capture
 host culture overrides.
 
+HOME-UX-R1-F2 replaces visibility-only Recent wording with the privacy-correct paired label Remember recent photos /
+Запоминать недавние фотографии. Its EN/RU descriptions both state that disabling clears history. Per-card actions and
+the compact became-unavailable state are also paired; persisted property names and diagnostics remain locale-independent.
+
 ## Locale resolution
 
 Before an explicit user choice:

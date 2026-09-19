@@ -61,8 +61,60 @@ public sealed class RecentCarouselMotionTests
         }
 
         Assert.False(motion.HasInertia);
-        Assert.InRange(motion.Offset - releaseOffset, 159, 160);
+        Assert.InRange(motion.Offset - releaseOffset, 279, 280);
         Assert.InRange(motion.Offset, 0, 1_000);
+    }
+
+    [Fact]
+    public void OrdinaryFlickDecaysMonotonicallyWithACalmVisibleCoast()
+    {
+        var motion = new RecentCarouselMotion();
+        motion.Begin(300, 20, 100, TimeSpan.Zero);
+        motion.Move(220, 20, 1_000, TimeSpan.FromMilliseconds(100));
+        Assert.True(motion.End(1_000, TimeSpan.FromMilliseconds(101)));
+        var releaseOffset = motion.Offset;
+        var previous = releaseOffset;
+        var frames = 0;
+        while (motion.HasInertia && frames < 180)
+        {
+            var current = motion.AdvanceInertia(1d / 60d, 1_000);
+            Assert.True(current >= previous);
+            previous = current;
+            frames++;
+        }
+
+        Assert.False(motion.HasInertia);
+        Assert.InRange(frames / 60d, 0.35, 0.45);
+        Assert.InRange(motion.Offset - releaseOffset, 100, 115);
+    }
+
+    [Fact]
+    public void ExtremePointerVelocityIsClampedBeforeCoasting()
+    {
+        var motion = new RecentCarouselMotion();
+        motion.Begin(1_000, 20, 100, TimeSpan.Zero);
+        motion.Move(0, 20, 2_000, TimeSpan.FromMilliseconds(1));
+        Assert.True(motion.End(2_000, TimeSpan.FromMilliseconds(2)));
+        var releaseOffset = motion.Offset;
+
+        motion.AdvanceInertia(0.1, 2_000);
+
+        var maximumFirstStep = RecentCarouselMotion.MaximumInertiaVelocity *
+                               (1 - Math.Exp(-RecentCarouselMotion.FrictionPerSecond * 0.1)) /
+                               RecentCarouselMotion.FrictionPerSecond;
+        Assert.InRange(motion.Offset - releaseOffset, 0, maximumFirstStep + 0.01);
+    }
+
+    [Fact]
+    public void InertiaStopsImmediatelyAtAnEdge()
+    {
+        var motion = new RecentCarouselMotion();
+        motion.Begin(200, 20, 250, TimeSpan.Zero);
+        motion.Move(0, 20, 300, TimeSpan.FromMilliseconds(50));
+        Assert.True(motion.End(300, TimeSpan.FromMilliseconds(51)));
+
+        Assert.Equal(300, motion.AdvanceInertia(1d / 60d, 300));
+        Assert.False(motion.HasInertia);
     }
 
     [Fact]

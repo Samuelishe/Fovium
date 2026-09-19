@@ -34,8 +34,8 @@ public sealed class HomeLocalizationTests
         Assert.NotEqual(UiStrings.HomeRemoveRecent, localizer[UiStrings.HomeRemoveRecent]);
         Assert.NotEqual(UiStrings.CommandClosePhoto, localizer[UiStrings.CommandClosePhoto]);
         Assert.NotEqual(UiStrings.MenuExitFovium, localizer[UiStrings.MenuExitFovium]);
-        Assert.NotEqual(UiStrings.SettingsShowRecentItems,
-            localizer[UiStrings.SettingsShowRecentItems]);
+        Assert.NotEqual(UiStrings.SettingsRememberRecentPhotos,
+            localizer[UiStrings.SettingsRememberRecentPhotos]);
         Assert.NotEqual(UiStrings.ErrorFolderEmpty, localizer[UiStrings.ErrorFolderEmpty]);
     }
 }

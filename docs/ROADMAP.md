@@ -354,6 +354,15 @@ removal, hidden system scrollbars, mouse grab-scroll, restrained bounded inertia
 fades. Empty/hidden Recent centers the polished hero; visible Recent forms a balanced secondary composition. No disk
 thumbnail cache, recursive folder cover scan, navigation rail, Favorites, catalog, or DAM behavior is introduced.
 
+## HOME-UX-R1-F2 — Recent privacy, fidelity, and integration correction
+
+Locally complete at `0.1.6.0002`: replace the former visibility-only Recent toggle with a privacy-correct Remember
+recent photos contract that clears history/cache and stops recording when disabled, including safe migration of legacy
+explicit false. Expand the bounded MRU to 20 while loading only the visible preview window plus one look-ahead card into
+an independent cache. Raise previews to the smallest visually clean 320 px Mitchell-filtered source, tune a calm capped
+glide, regroup session/application menu actions, and keep `Ctrl+W` inert on Home. Native libheif acquisition now has an
+exact-hash official dav1d GitHub fallback; hosted confirmation follows a future owner push.
+
 ## Later / separate platform milestones
 
 - file association and Open With integration;

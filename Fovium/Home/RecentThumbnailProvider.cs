@@ -33,9 +33,9 @@ internal readonly record struct RecentThumbnailMetrics(
 
 internal sealed class RecentThumbnailProvider : IDisposable
 {
-    public const int TargetLongEdge = 160;
-    public const int MaximumCachedItems = 6;
-    public const long MaximumCachedBytes = 2 * 1024 * 1024;
+    public const int TargetLongEdge = 320;
+    public const int MaximumCachedItems = 8;
+    public const long MaximumCachedBytes = 4 * 1024 * 1024;
     private const int MaximumIntermediateLongEdge = 2_048;
     private const long MaximumIntermediateBytes = 16 * 1024 * 1024;
     private readonly Lock _sync = new();
@@ -45,6 +45,7 @@ internal sealed class RecentThumbnailProvider : IDisposable
         OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
 
     private long _accessSequence;
+    private long _cacheGeneration;
     private long _requests;
     private long _prepared;
     private long _memoryCacheHits;
@@ -61,7 +62,13 @@ internal sealed class RecentThumbnailProvider : IDisposable
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(targetLongEdge);
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        long cacheGeneration;
+        lock (_sync)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            cacheGeneration = _cacheGeneration;
+        }
+
         Interlocked.Increment(ref _requests);
         try
         {
@@ -70,7 +77,7 @@ internal sealed class RecentThumbnailProvider : IDisposable
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
                 return await Task.Run(
-                        () => PrepareCore(path, targetLongEdge, cancellationToken),
+                        () => PrepareCore(path, targetLongEdge, cacheGeneration, cancellationToken),
                         cancellationToken)
                     .ConfigureAwait(false);
             }
@@ -103,6 +110,15 @@ internal sealed class RecentThumbnailProvider : IDisposable
         }
     }
 
+    public void ClearMemoryCache()
+    {
+        lock (_sync)
+        {
+            _cacheGeneration++;
+            _cache.Clear();
+        }
+    }
+
     public void Dispose()
     {
         lock (_sync)
@@ -113,6 +129,7 @@ internal sealed class RecentThumbnailProvider : IDisposable
             }
 
             _disposed = true;
+            _cacheGeneration++;
             _cache.Clear();
         }
     }
@@ -120,6 +137,7 @@ internal sealed class RecentThumbnailProvider : IDisposable
     private RecentThumbnailResult PrepareCore(
         string path,
         int targetLongEdge,
+        long cacheGeneration,
         CancellationToken cancellationToken)
     {
         var watch = Stopwatch.StartNew();
@@ -239,7 +257,8 @@ internal sealed class RecentThumbnailProvider : IDisposable
                 new PixelSize(scaled.Width, scaled.Height),
                 orientation,
                 targetSize,
-                SKColors.Transparent);
+                SKColors.Transparent,
+                new SKSamplingOptions(SKCubicResampler.Mitchell));
             cancellationToken.ThrowIfCancellationRequested();
             using var prepared = surface.Snapshot();
             using var encoded = prepared.Encode(SKEncodedImageFormat.Png, 92);
@@ -249,7 +268,8 @@ internal sealed class RecentThumbnailProvider : IDisposable
                 return Complete(RecentThumbnailStatus.Failed, null, default, false, watch.Elapsed);
             }
 
-            AddCache(path, identity, targetSize, bytes);
+            cancellationToken.ThrowIfCancellationRequested();
+            AddCache(path, identity, targetSize, bytes, cacheGeneration);
             Interlocked.Increment(ref _prepared);
             var duration = watch.Elapsed;
             Interlocked.Exchange(ref _lastDurationTicks, duration.Ticks);
@@ -309,11 +329,16 @@ internal sealed class RecentThumbnailProvider : IDisposable
         }
     }
 
-    private void AddCache(string path, FileIdentity identity, PixelSize size, byte[] bytes)
+    private void AddCache(
+        string path,
+        FileIdentity identity,
+        PixelSize size,
+        byte[] bytes,
+        long cacheGeneration)
     {
         lock (_sync)
         {
-            if (_disposed)
+            if (_disposed || cacheGeneration != _cacheGeneration)
             {
                 return;
             }

@@ -196,6 +196,10 @@ def is_transient_download_error(error: BaseException) -> bool:
     return isinstance(error, (ConnectionError, TimeoutError, socket.timeout))
 
 
+class ArchiveIntegrityError(RuntimeError):
+    pass
+
+
 def download_verified_archive(
     component: dict[str, Any],
     downloads: Path,
@@ -204,8 +208,49 @@ def download_verified_archive(
     sleep: Any = time.sleep,
 ) -> Path:
     downloads.mkdir(parents=True, exist_ok=True)
-    archive = downloads / component["archiveFile"]
-    expected_hash = component["archiveSha256"]
+    archive_sources = component.get("archives")
+    if archive_sources is None:
+        archive_sources = [component]
+
+    failures: list[str] = []
+    for index, source in enumerate(archive_sources):
+        try:
+            return download_verified_source(
+                source,
+                downloads,
+                opener=opener,
+                sleep=sleep,
+            )
+        except ArchiveIntegrityError:
+            raise
+        except Exception as error:
+            failures.append(f"{source['archiveUrl']}: {error}")
+            if index + 1 >= len(archive_sources):
+                if len(archive_sources) == 1:
+                    raise
+                raise RuntimeError(
+                    "All pinned archive sources failed: " + " | ".join(failures)
+                ) from error
+            print(
+                f"Pinned source unavailable: {error}. Trying fallback source.",
+                flush=True,
+            )
+
+    raise AssertionError("archive source loop completed without a result")
+
+
+def download_verified_source(
+    source: dict[str, Any],
+    downloads: Path,
+    *,
+    opener: Any,
+    sleep: Any,
+) -> Path:
+    archive = downloads / source["archiveFile"]
+    expected_hash = source["archiveSha256"]
+    for partial in downloads.glob(f"{archive.name}.*.part"):
+        partial.unlink(missing_ok=True)
+
     if archive.exists():
         actual_hash = sha256(archive)
         if actual_hash == expected_hash:
@@ -217,11 +262,11 @@ def download_verified_archive(
         archive.unlink()
 
     request = urllib.request.Request(
-        component["archiveUrl"], headers={"User-Agent": "Fovium-native-build/1"}
+        source["archiveUrl"], headers={"User-Agent": "Fovium-native-build/1"}
     )
     for attempt in range(1, DOWNLOAD_ATTEMPTS + 1):
         print(
-            f"Downloading {component['archiveUrl']} "
+            f"Downloading {source['archiveUrl']} "
             f"(attempt {attempt}/{DOWNLOAD_ATTEMPTS})",
             flush=True,
         )
@@ -241,7 +286,7 @@ def download_verified_archive(
 
             actual_hash = sha256(temporary)
             if actual_hash != expected_hash:
-                raise RuntimeError(
+                raise ArchiveIntegrityError(
                     f"Archive hash mismatch for {archive.name}: {actual_hash}"
                 )
 

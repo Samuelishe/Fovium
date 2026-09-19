@@ -1,3 +1,4 @@
+using Fovium.Home;
 using Fovium.Settings;
 
 namespace Fovium.Tests.Settings;
@@ -12,6 +13,7 @@ public sealed class HomeSettingsTests : IDisposable
     [Fact]
     public async Task RecentLocationsAreMostRecentFirstDeduplicatedAndBounded()
     {
+        Assert.Equal(20, HomeSettings.MaximumRecentLocations);
         var store = new RecordingSettingsStore();
         using var service = new SettingsService(store);
         var paths = Enumerable.Range(1, HomeSettings.MaximumRecentLocations + 2)
@@ -45,7 +47,15 @@ public sealed class HomeSettingsTests : IDisposable
     }
 
     [Fact]
-    public async Task ShowRecentPreferenceHidesPresentationWithoutClearingHistory()
+    public void ThumbnailCacheCapacityIsIndependentFromPersistedHistoryCapacity()
+    {
+        Assert.Equal(20, HomeSettings.MaximumRecentLocations);
+        Assert.Equal(8, RecentThumbnailProvider.MaximumCachedItems);
+        Assert.True(RecentThumbnailProvider.MaximumCachedItems < HomeSettings.MaximumRecentLocations);
+    }
+
+    [Fact]
+    public async Task DisablingRememberRecentClearsHistoryAndSuppressesFutureWrites()
     {
         var store = new RecordingSettingsStore();
         using var service = new SettingsService(store);
@@ -56,31 +66,37 @@ public sealed class HomeSettingsTests : IDisposable
             Path = path,
         });
 
-        await service.SetShowRecentItemsAsync(false);
+        await service.SetRememberRecentPhotosAsync(false);
+        await service.AddRecentLocationAsync(new RecentLocation
+        {
+            Kind = RecentLocationKind.File,
+            Path = Path.Combine(_directory, "must-not-be-recorded.jpg"),
+        });
         await service.FlushAsync();
 
-        Assert.False(service.Current.Home.ShowRecentItems);
-        Assert.Equal(Path.GetFullPath(path), Assert.Single(service.Current.Home.RecentLocations).Path);
-        Assert.False(store.Saved?.Home.ShowRecentItems);
+        Assert.False(service.Current.Home.RememberRecentPhotos);
+        Assert.Empty(service.Current.Home.RecentLocations);
+        Assert.False(store.Saved?.Home.RememberRecentPhotos);
+        Assert.Empty(store.Saved?.Home.RecentLocations ?? []);
     }
 
     [Fact]
-    public async Task ClearRecentRemovesHistoryAndPreservesVisibilityPreference()
+    public async Task ReenablingRememberRecentStartsWithAnEmptyHistory()
     {
         var store = new RecordingSettingsStore();
         using var service = new SettingsService(store);
-        await service.SetShowRecentItemsAsync(false);
         await service.AddRecentLocationAsync(new RecentLocation
         {
             Kind = RecentLocationKind.Folder,
             Path = _directory,
         });
 
-        await service.ClearRecentLocationsAsync();
+        await service.SetRememberRecentPhotosAsync(false);
+        await service.SetRememberRecentPhotosAsync(true);
         await service.FlushAsync();
 
         Assert.Empty(service.Current.Home.RecentLocations);
-        Assert.False(service.Current.Home.ShowRecentItems);
+        Assert.True(service.Current.Home.RememberRecentPhotos);
         Assert.Empty(store.Saved?.Home.RecentLocations ?? []);
     }
 
@@ -151,7 +167,7 @@ public sealed class HomeSettingsTests : IDisposable
         {
             Home = new HomeSettings
             {
-                ShowRecentItems = false,
+                RememberRecentPhotos = false,
                 RecentLocations =
                 [
                     new RecentLocation
@@ -167,12 +183,41 @@ public sealed class HomeSettingsTests : IDisposable
         await store.SaveAsync(settings, CancellationToken.None);
         var result = await store.LoadAsync(CancellationToken.None);
 
-        Assert.False(result.Settings.Home.ShowRecentItems);
-        var recent = Assert.Single(result.Settings.Home.RecentLocations);
-        Assert.Equal(RecentLocationKind.Folder, recent.Kind);
-        Assert.Equal(Path.GetFullPath(locationPath), recent.Path);
-        Assert.Null(recent.PreviewPath);
+        Assert.False(result.Settings.Home.RememberRecentPhotos);
+        Assert.Empty(result.Settings.Home.RecentLocations);
         Assert.Null(result.Diagnostic);
+    }
+
+    [Fact]
+    public async Task RevisitingFolderMovesItToFrontAndUpdatesItsPreview()
+    {
+        var store = new RecordingSettingsStore();
+        using var service = new SettingsService(store);
+        var folder = Path.Combine(_directory, "photos");
+        var firstPreview = Path.Combine(folder, "first.jpg");
+        var latestPreview = Path.Combine(folder, "latest.jpg");
+        await service.AddRecentLocationAsync(new RecentLocation
+        {
+            Kind = RecentLocationKind.Folder,
+            Path = folder,
+            PreviewPath = firstPreview,
+        });
+        await service.AddRecentLocationAsync(new RecentLocation
+        {
+            Kind = RecentLocationKind.File,
+            Path = Path.Combine(_directory, "other.jpg"),
+        });
+
+        await service.AddRecentLocationAsync(new RecentLocation
+        {
+            Kind = RecentLocationKind.Folder,
+            Path = folder,
+            PreviewPath = latestPreview,
+        });
+
+        Assert.Equal(Path.GetFullPath(folder), service.Current.Home.RecentLocations[0].Path);
+        Assert.Equal(Path.GetFullPath(latestPreview), service.Current.Home.RecentLocations[0].PreviewPath);
+        Assert.Equal(2, service.Current.Home.RecentLocations.Count);
     }
 
     public void Dispose()

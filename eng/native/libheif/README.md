@@ -41,7 +41,9 @@ bash eng/native/libheif/build.sh osx-arm64
 
 The same script supports `osx-x64` on a real x64 macOS host. It does not pretend that an arm64 build is x64-compatible.
 
-Each invocation re-extracts source and rebuilds into ignored `artifacts/native/`. Downloaded archives may be reused only after their pinned SHA-256 is revalidated. Source acquisition makes at most four attempts and retries only transient HTTP/network failures with `1/2/4 s` backoff. Every attempt writes a unique `.part`; the final archive appears atomically only after the pinned SHA-256 succeeds. Permanent HTTP failures and hash mismatches fail immediately, and interrupted/truncated partial files are removed.
+Each invocation re-extracts source and rebuilds into ignored `artifacts/native/`. Downloaded archives may be reused only after their pinned SHA-256 is revalidated. A component may declare ordered official sources, each with its own archive filename and SHA-256. Source acquisition makes at most four attempts per source and retries only transient HTTP/network failures with `1/2/4 s` backoff. Every attempt writes a unique `.part`; the final archive appears atomically only after that source's pinned SHA-256 succeeds. Exhausted transient availability or permanent not-found advances to the next pinned source. A fresh hash mismatch is a hard failure and never falls through; interrupted/truncated partial files are removed.
+
+dav1d 1.5.4 uses the VideoLAN release `.tar.xz` as primary and the exact 1.5.4 tag archive from VideoLAN's official read-only GitHub mirror as fallback. The two archive formats have distinct pinned hashes in [`versions.json`](versions.json). Cache remains optional: a clean runner can acquire either verified official source.
 
 The downloader boundary is verified without network access:
 

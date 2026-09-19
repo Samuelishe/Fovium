@@ -35,6 +35,41 @@ public sealed class HomeViewStructureTests
         Assert.DoesNotContain(home.Descendants(), element => Name(element) == "HomeBrandTitle");
     }
 
+    [Fact]
+    public void ContextMenuGroupsSessionAndApplicationActionsAndHidesCloseOnHome()
+    {
+        var source = File.ReadAllText(RepositoryPath("Fovium", "Views", "ViewerWindow.axaml.cs"))
+            .ReplaceLineEndings("\n");
+        var start = source.IndexOf("private ContextMenu CreateContextMenu()", StringComparison.Ordinal);
+        var end = source.IndexOf("private IReadOnlyDictionary<StageBackgroundMode", start, StringComparison.Ordinal);
+        var menu = source[start..end];
+        var open = menu.IndexOf("UiStrings.MenuOpen", StringComparison.Ordinal);
+        var close = menu.IndexOf("closePhoto,", StringComparison.Ordinal);
+        var previous = menu.IndexOf("_previousMenuItem", StringComparison.Ordinal);
+        var settings = menu.IndexOf("UiStrings.MenuSettings", StringComparison.Ordinal);
+        var exit = menu.IndexOf("UiStrings.MenuExitFovium", StringComparison.Ordinal);
+
+        Assert.True(open < close && close < previous);
+        Assert.True(previous < settings && settings < exit);
+        Assert.Contains("closePhoto.IsVisible = _contentState.Mode == ViewerContentMode.Viewer", menu);
+        Assert.Contains("UiStrings.MenuSettings,\n                    ViewerCommand.Settings", menu);
+        Assert.Contains("new Separator(),\n                CreateMenuItem(UiStrings.MenuExitFovium", menu);
+    }
+
+    [Fact]
+    public void DisablingRecentStopsWorkAndClearsHomeOwnedThumbnailState()
+    {
+        var source = File.ReadAllText(RepositoryPath("Fovium", "Views", "ViewerWindow.axaml.cs"))
+            .ReplaceLineEndings("\n");
+        var start = source.IndexOf("if (!settings.Home.RememberRecentPhotos)", StringComparison.Ordinal);
+        var end = source.IndexOf("if (_contentState.Mode == ViewerContentMode.Home)", start, StringComparison.Ordinal);
+        var disabledRecent = source[start..end];
+
+        Assert.Contains("StopHomeRefresh();", disabledRecent);
+        Assert.Contains("DisposeHomeThumbnailBitmaps();", disabledRecent);
+        Assert.Contains("_recentThumbnailProvider.ClearMemoryCache();", disabledRecent);
+    }
+
     private static string? Name(XElement element) =>
         element.Attributes().SingleOrDefault(attribute => attribute.Name.LocalName == "Name")?.Value;
 

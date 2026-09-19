@@ -174,6 +174,7 @@ never reuse an earlier version. No automatic rollover after BUILD `9999` is defi
 | `0.1.5.0000` | SETTINGS-UX-R1                        | Human-first Settings redesign with persisted startup-resolved English, Russian, or system language                              |
 | `0.1.6.0000` | HOME-UX-R1                            | Localized no-image landing state, file/folder/drop entry, and bounded optional recent locations                                 |
 | `0.1.6.0001` | HOME-UX-R1-F1                         | Return-to-Home lifecycle, visual Recent carousel, unavailable state, and responsive startup polish                              |
+| `0.1.6.0002` | HOME-UX-R1-F2                         | Privacy-correct Recent memory, longer lazy carousel, higher-fidelity previews, and integration cleanup                          |
 
 The `0.0.0.xxxx` line records the completed foundation and early product-construction checkpoints. The explicit
 owner-controlled `0.1.0.0000` transition marks the first substantial usable Fovium alpha; it does not claim feature
@@ -216,6 +217,9 @@ locations without changing photograph-viewing chrome.
 HOME-UX-R1-F1 increments BUILD to `0.1.6.0001`: Close photo completes the existing Home lifecycle while previews,
 availability, one-row overflow interaction, and adaptive composition refine the existing Home/Recent surface rather
 than introducing a new library, organizer, or viewing mode.
+HOME-UX-R1-F2 increments BUILD to `0.1.6.0002`: privacy semantics, longer bounded history, lazy higher-fidelity
+previews, carousel feel, and menu grouping correct and refine that same Home/Recent capability. The native-source
+fallback alone would not change the product version.
 
 ## Future code and packaging source
 
@@ -223,9 +227,9 @@ The root `Directory.Build.props` is the canonical source for the current compone
 supplies the production `Fovium` assembly with:
 
 ```text
-InformationalVersion = 0.1.6.0001
-AssemblyVersion      = 0.1.6.1
-FileVersion          = 0.1.6.1
+InformationalVersion = 0.1.6.0002
+AssemblyVersion      = 0.1.6.2
+FileVersion          = 0.1.6.2
 ```
 
 From that source:

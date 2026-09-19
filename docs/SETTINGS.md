@@ -38,8 +38,8 @@ behavior. It is owned by the Viewer and stays above that Viewer, including fulls
 
 - **Language** is implemented as System default, English, or Русский. The locale-independent choice autosaves; a
   different resolved language applies after restart and is accompanied by an explicit in-window restart hint;
-- **Show recent items on the home screen** is implemented and defaults on. Turning it off hides the secondary home MRU
-  without deleting it; Clear recent is the explicit history-removal action;
+- **Remember recent photos** is implemented and defaults on. Turning it off immediately clears the bounded Home MRU and
+  its memory-only previews and stops recording newly opened files/folders. Enabling it starts an empty history;
 - startup and window behavior when a real product need is established;
 - ordinary remembered application preferences.
 
@@ -204,13 +204,18 @@ before constructing the localizer; an explicit locale therefore applies to the c
 capture hosts or process-culture tricks. The choice is ordinary autosaved preference state, not localized serialized
 text.
 
-HOME-UX-R1-F1 keeps schema v2 and extends the backward-compatible `Home` state. `ShowRecentItems` defaults to true. Up
-to six successfully opened file or folder paths persist in most-recent-first order, deduplicated with the platform path
-comparison. A file points to itself for preview; a folder may persist only the last successfully presented photo from
-that activation as `PreviewPath`, so Home never rescans the folder for a cover. No thumbnail bytes, directory contents,
-catalog, or navigation history is serialized. Hiding Recent preserves the bounded list and history continues to update.
-Unavailable paths remain persisted and recover automatically; Remove from recent and Clear recent are the only removal
-actions. Clear recent does not own any disk-thumbnail cleanup because Fovium creates no disk thumbnail cache.
+HOME-UX-R1-F2 keeps schema v2 and evolves `Home` without weakening malformed/v1/v2 fallback. `RememberRecentPhotos`
+defaults to true. When the new field is absent, a valid legacy `ShowRecentItems` value is migrated and the settings file
+is rewritten: true preserves the existing list, while explicit false is treated as privacy intent and deletes any
+history accumulated under the former visibility-only behavior. Missing or malformed legacy values retain the normal
+default. A persisted new false always normalizes the list to empty.
+
+Up to 20 successfully opened file or folder paths persist in most-recent-first order, deduplicated with the platform
+path comparison. A successful revisit moves an entry to the front; a folder updates only its last successfully presented
+photo as `PreviewPath`; unavailable entries still count toward the bound; explicit removal compacts the list. No
+thumbnail bytes, directory contents, catalog, or navigation history is serialized. Turning memory off clears persisted
+history, cancels outstanding preview work, clears the Recent-owned memory cache, hides cards immediately, and suppresses
+future writes. Re-enabling starts empty. Fovium has no disk thumbnail cache to clean.
 
 Settings normally autosave after a valid non-destructive preference change. Do not require Save or Apply buttons without
 evidence that deferred application is necessary. Destructive or system-owned actions remain explicit.

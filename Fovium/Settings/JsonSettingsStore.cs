@@ -67,7 +67,7 @@ internal sealed class JsonSettingsStore(string path) : ISettingsStore
             if (schemaVersion == 1)
             {
                 var legacy = document.Deserialize<LegacyV1Settings>(SerializerOptions)
-                    ?? throw new JsonException("The schema-v1 settings document is empty.");
+                             ?? throw new JsonException("The schema-v1 settings document is empty.");
                 return new SettingsLoadResult(MigrateV1(legacy), null, RequiresSave: true);
             }
 
@@ -79,14 +79,15 @@ internal sealed class JsonSettingsStore(string path) : ISettingsStore
             }
 
             var settings = document.Deserialize<FoviumSettings>(SerializerOptions)
-                ?? throw new JsonException("The settings document is empty.");
-            var normalized = settings.Normalize();
+                           ?? throw new JsonException("The settings document is empty.");
+            var homeEvolution = EvolveHomePrivacy(document.RootElement, settings.Home);
+            var normalized = (settings with { Home = homeEvolution.Settings }).Normalize();
             var shortcuts = (settings.Shortcuts ?? ShortcutSettings.Default)
                 .NormalizePersistedDefaults(out var evolvedPreviousDefaults);
             return new SettingsLoadResult(
                 normalized with { Shortcuts = shortcuts },
                 null,
-                RequiresSave: evolvedPreviousDefaults);
+                RequiresSave: evolvedPreviousDefaults || homeEvolution.RequiresSave);
         }
         catch (FileNotFoundException)
         {
@@ -114,7 +115,7 @@ internal sealed class JsonSettingsStore(string path) : ISettingsStore
     {
         ArgumentNullException.ThrowIfNull(settings);
         var directory = System.IO.Path.GetDirectoryName(Path)
-            ?? throw new InvalidOperationException("Settings path has no containing directory.");
+                        ?? throw new InvalidOperationException("Settings path has no containing directory.");
         var temporaryPath = Path + ".tmp";
 
         await Task.Run(() => Directory.CreateDirectory(directory), cancellationToken).ConfigureAwait(false);
@@ -161,6 +162,34 @@ internal sealed class JsonSettingsStore(string path) : ISettingsStore
         Exception? exception = null) =>
         new(FoviumSettings.Default, new SettingsDiagnostic(kind, message, exception));
 
+    private static HomePrivacyEvolution EvolveHomePrivacy(
+        JsonElement root,
+        HomeSettings? deserializedHome)
+    {
+        var home = deserializedHome ?? HomeSettings.Default;
+        if (!root.TryGetProperty("home", out var homeElement) ||
+            homeElement.ValueKind != JsonValueKind.Object ||
+            homeElement.TryGetProperty("rememberRecentPhotos", out _))
+        {
+            return new HomePrivacyEvolution(home, false);
+        }
+
+        if (!homeElement.TryGetProperty("showRecentItems", out var legacyRemember) ||
+            legacyRemember.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+        {
+            return new HomePrivacyEvolution(home, false);
+        }
+
+        var remember = legacyRemember.GetBoolean();
+        return new HomePrivacyEvolution(
+            home with
+            {
+                RememberRecentPhotos = remember,
+                RecentLocations = remember ? home.RecentLocations : [],
+            },
+            true);
+    }
+
     private static FoviumSettings MigrateV1(LegacyV1Settings legacy)
     {
         var stage = legacy.StageMode switch
@@ -206,4 +235,6 @@ internal sealed class JsonSettingsStore(string path) : ISettingsStore
 
         public LegacyStageMode StageMode { get; init; } = LegacyStageMode.Black;
     }
+
+    private readonly record struct HomePrivacyEvolution(HomeSettings Settings, bool RequiresSave);
 }

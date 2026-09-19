@@ -58,8 +58,11 @@ custom control or focused code-behind while domain-independent math remains test
   File, explicit multi-file, and top-level folder activation converge on the existing `ImageSequence`/`ViewerSession`
   publication boundary. A recent location is recorded only after successful publication.
 - Recent preview preparation is a separate Home concern: two bounded asynchronous workers use reduced Skia decode,
-  canonical orientation drawing, a `160 px` long-edge target, and a six-item/2 MiB session-memory LRU. UI-owned preview
-  bitmaps are released when Home hides; no persistent thumbnail database or folder enumeration is introduced.
+  canonical orientation drawing, a `320 px` long-edge target with Mitchell final sampling, and an eight-item/4 MiB
+  session-memory LRU independent of the 20-location MRU. Only the visible range plus one neighboring card is requested;
+  leaving that window cancels work. UI-owned preview bitmaps are released when Home hides, while disabling memory also
+  invalidates and clears the LRU so late work cannot republish. No persistent thumbnail database or folder enumeration
+  is introduced.
 - Photo Presentation View owns only session mode state and one normalized edge-margin preference. The pure
   `PhotoPresentationLayout` receives current viewport/DPI, oriented source size, and edge margin, then returns only
   photograph destination, photograph presentation bounds, and physical scale. Existing `StageGeometry` independently

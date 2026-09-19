@@ -11,7 +11,8 @@ internal static class OrientedImageRenderer
         PixelSize encodedSize,
         ExifOrientation orientation,
         PixelSize targetSize,
-        SKColor? clearColor = null)
+        SKColor? clearColor = null,
+        SKSamplingOptions? sampling = null)
     {
         ArgumentNullException.ThrowIfNull(canvas);
         ArgumentNullException.ThrowIfNull(source);
@@ -41,7 +42,7 @@ internal static class OrientedImageRenderer
             source,
             0,
             0,
-            new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear),
+            sampling ?? new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear),
             paint);
         canvas.Flush();
     }
