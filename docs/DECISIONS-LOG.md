@@ -895,3 +895,20 @@ A separately selected 20-photo holdout was inspected only after coefficients wer
 failure class or noisy capacity filling. Tiny downscaled evidence, human material-color constancy under deep shadow,
 and subject importance requiring recognition are accepted boundaries; they do not justify ML, object detection, a
 second decode, or weaker noise guards.
+
+## D-078 — More Notable resolution is rejected without repeated candidate recovery
+
+Status: Implemented in local R11-C; hosted verification pending.
+
+A deterministic 60-photo owner corpus was split before inspection into 25 tuning, 15 validation, and 20 final holdout
+images. On tuning photographs, the same analyzer was compared at `96`, `128`, `160`, and `192 px`, alongside stronger
+classical-salience and region-oriented ranking prototypes. Higher resolution did not repeatedly recover the visible
+missing clothing, flower, sign, or neutral groups, changed some outputs non-monotonically, and increased median local
+analysis time from `1.60 ms` to `4.42 ms`. The alternative rankings routinely filled seven to ten slots with related
+shades or weak neutrals.
+
+Production therefore retains the single shared `96 px` R10 analysis. R11-C adds only a guarded coherent-neutral
+admission route, a bounded information floor for coherent structural masses that overlap narrow Frequent bins, and a
+second achromatic slot when lightness separation is at least `0.24`. The final holdout still exposes one substantial
+blue-clothing miss caused by novelty/presentation suppression; it is recorded as a limitation rather than tuned after
+the freeze. Photo Color Profile remains deterministic bounded color/spatial evidence, not subject recognition.

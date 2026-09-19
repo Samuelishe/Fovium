@@ -74,6 +74,48 @@ public sealed class PhotoStyleAnalyzerTests
     }
 
     [Fact]
+    public void DiagnosticsCanCompareResolutionWithoutChangingTheProductionContract()
+    {
+        using var decoded = CreateDecoded(
+            600,
+            400,
+            (x, y) => new SKColor((byte)(x % 256), (byte)(y % 256), (byte)((x + y) % 256)));
+        var analyzer = new PhotoStyleAnalyzer();
+
+        var production = analyzer.Analyze(decoded, CancellationToken.None);
+        var explicitNinetySix = PhotoStyleAnalyzer.AnalyzeWithDiagnostics(
+            decoded,
+            StageDefaults.PhotoStyleLongEdgePixels,
+            CancellationToken.None).Analysis;
+        var experimental = PhotoStyleAnalyzer.AnalyzeWithDiagnostics(
+            decoded,
+            160,
+            CancellationToken.None).Analysis;
+
+        Assert.Equal(new PixelSize(96, 64), production.AnalyzedSize);
+        Assert.Equal(production.AverageColor, explicitNinetySix.AverageColor);
+        Assert.Equal(production.DominantColor, explicitNinetySix.DominantColor);
+        Assert.Equal(production.BoundaryColor, explicitNinetySix.BoundaryColor);
+        Assert.True(production.Palette.SequenceEqual(explicitNinetySix.Palette));
+        Assert.True(production.SpatialField.Colors.SequenceEqual(explicitNinetySix.SpatialField.Colors));
+        Assert.True(production.NotableColors.SequenceEqual(explicitNinetySix.NotableColors));
+        Assert.Equal(new PixelSize(160, 107), experimental.AnalyzedSize);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(513)]
+    public void DiagnosticsRejectUnboundedResolution(int longEdgePixels)
+    {
+        using var decoded = CreateSolidDecoded(96, 64, SKColors.SteelBlue);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => PhotoStyleAnalyzer.AnalyzeWithDiagnostics(
+            decoded,
+            longEdgePixels,
+            CancellationToken.None));
+    }
+
+    [Fact]
     public void SpatialFieldRetainsImageDistributionInsteadOfCollapsingToAverage()
     {
         using var decoded = CreateDecoded(
@@ -307,7 +349,7 @@ public sealed class PhotoStyleAnalyzerTests
     }
 
     [Fact]
-    public void AchromaticCandidatesDoNotCrowdOutCoherentChromaticAccent()
+    public void AchromaticCandidatesRemainBoundedAndDoNotCrowdOutCoherentChromaticAccent()
     {
         using var decoded = CreateDecoded(
             96,
@@ -326,11 +368,16 @@ public sealed class PhotoStyleAnalyzerTests
         Assert.Contains(analysis.NotableColors, entry =>
             entry.Color.Red > entry.Color.Green + 35 &&
             entry.Color.Green > entry.Color.Blue);
-        Assert.InRange(
-            analysis.NotableColors.Count(entry =>
-                PhotoStylingOklab.FromSrgb(entry.Color).Chroma <= 0.04),
-            0,
-            1);
+        var achromatic = analysis.NotableColors
+            .Where(entry => PhotoStylingOklab.FromSrgb(entry.Color).Chroma <= 0.04)
+            .Select(entry => PhotoStylingOklab.FromSrgb(entry.Color))
+            .OrderBy(entry => entry.L)
+            .ToArray();
+        Assert.InRange(achromatic.Length, 0, 2);
+        if (achromatic.Length == 2)
+        {
+            Assert.True(achromatic[1].L - achromatic[0].L >= 0.24);
+        }
     }
 
     [Fact]
@@ -420,6 +467,130 @@ public sealed class PhotoStyleAnalyzerTests
         Assert.True(candidate.AdmissionPaths.HasFlag(NotableColorAdmissionPath.LightnessContrastNeutral));
         Assert.True(candidate.LocalLightnessContrast > 0.40);
         Assert.True(candidate.LargestComponentFraction > 0.08);
+    }
+
+    [Fact]
+    public void LargeCoherentWarmLowChromaSubjectCanSurface()
+    {
+        using var decoded = CreateDecoded(
+            96,
+            64,
+            (x, y) => x is >= 32 and < 64 && y is >= 12 and < 54
+                ? new SKColor(145, 132, 124)
+                : new SKColor(
+                    (byte)(205 + ((x / 8 + y / 8) % 4) * 5),
+                    (byte)(201 + ((x / 8 + y / 8) % 4) * 5),
+                    (byte)(190 + ((x / 8 + y / 8) % 4) * 4)));
+
+        var result = new PhotoStyleAnalyzer().AnalyzeWithDiagnostics(decoded, CancellationToken.None);
+
+        var subject = Assert.Single(result.Analysis.NotableColors.Where(entry =>
+            entry.Color.Red is >= 125 and <= 165 &&
+            entry.Color.Green is >= 115 and <= 150 &&
+            entry.Color.Blue is >= 105 and <= 140));
+        var candidate = Assert.Single(result.Diagnostics.Notable.Candidates.Where(entry =>
+            ColorDistance(entry.Color, subject.Color) < 0.04));
+        Assert.True(candidate.SupportFraction > 0.18);
+        Assert.True(candidate.LargestComponentFraction > 0.15);
+        Assert.True(candidate.Chroma < 0.04);
+        Assert.True(candidate.AdmissionPaths.HasFlag(NotableColorAdmissionPath.CoherentNeutralStructure));
+    }
+
+    [Fact]
+    public void LargeLightNeutralStructureWithModerateBoundaryContrastCanSurface()
+    {
+        using var decoded = CreateDecoded(
+            96,
+            64,
+            (x, y) => x is >= 8 and < 36 && y is >= 18 and < 48
+                ? new SKColor(225, 226, 222)
+                : new SKColor(
+                    (byte)(115 + ((x / 12 + y / 9) % 4) * 5),
+                    (byte)(151 + ((x / 12 + y / 9) % 4) * 4),
+                    (byte)(177 + ((x / 12 + y / 9) % 4) * 5)));
+
+        var result = new PhotoStyleAnalyzer().AnalyzeWithDiagnostics(decoded, CancellationToken.None);
+
+        var structure = Assert.Single(result.Analysis.NotableColors.Where(entry =>
+            entry.Color.Red > 205 && entry.Color.Green > 205 && entry.Color.Blue > 200));
+        var candidate = Assert.Single(result.Diagnostics.Notable.Candidates.Where(entry =>
+            ColorDistance(entry.Color, structure.Color) < 0.04));
+        Assert.True(candidate.SupportFraction > 0.10);
+        Assert.True(candidate.LocalLightnessContrast > 0.12);
+        Assert.True(candidate.AdmissionPaths.HasFlag(NotableColorAdmissionPath.CoherentNeutralStructure));
+    }
+
+    [Fact]
+    public void LargeCoherentFrequentShadeCanStillAddStructuralInformation()
+    {
+        using var decoded = CreateDecoded(
+            96,
+            64,
+            (x, y) => y >= 47
+                ? new SKColor(73, 83, 98)
+                : y < 18
+                    ? new SKColor(213, 222, 225)
+                    : GreenTone((x / 8 + y / 7) % 6));
+
+        var result = new PhotoStyleAnalyzer().AnalyzeWithDiagnostics(decoded, CancellationToken.None);
+
+        Assert.Contains(result.Analysis.Palette, entry =>
+            entry.Color.Blue > entry.Color.Red + 15 && entry.Color.Blue > entry.Color.Green + 5);
+        var structural = Assert.Single(result.Analysis.NotableColors.Where(entry =>
+            entry.Color.Blue > entry.Color.Red + 15 && entry.Color.Blue > entry.Color.Green + 5));
+        var candidate = Assert.Single(result.Diagnostics.Notable.Candidates.Where(entry =>
+            ColorDistance(entry.Color, structural.Color) < 0.04));
+        Assert.True(candidate.FrequentOverlap > 0.10);
+        Assert.True(candidate.LargestComponentFraction > 0.15);
+    }
+
+    [Fact]
+    public void MediumCoherentFrequentShadeCanStillAddStructuralInformation()
+    {
+        using var decoded = CreateDecoded(
+            96,
+            64,
+            (x, y) => x is >= 58 and < 77 && y is >= 23 and < 41
+                ? new SKColor(140, 100, 75)
+                : new SKColor(
+                    (byte)(54 + ((x / 7 + y / 5) % 7) * 7),
+                    (byte)(91 + ((x / 9 + y / 6) % 6) * 9),
+                    (byte)(65 + ((x / 5 + y / 8) % 7) * 6)));
+
+        var result = new PhotoStyleAnalyzer().AnalyzeWithDiagnostics(decoded, CancellationToken.None);
+
+        Assert.Contains(result.Analysis.Palette, entry =>
+            entry.Color.Red > entry.Color.Green + 35 && entry.Color.Green > entry.Color.Blue + 20);
+        var structural = Assert.Single(result.Analysis.NotableColors.Where(entry =>
+            entry.Color.Red > entry.Color.Green + 35 && entry.Color.Green > entry.Color.Blue + 20));
+        var candidate = Assert.Single(result.Diagnostics.Notable.Candidates.Where(entry =>
+            ColorDistance(entry.Color, structural.Color) < 0.04));
+        Assert.InRange(candidate.SupportFraction, 0.04, 0.08);
+        Assert.True(candidate.LargestComponentFraction >= candidate.SupportFraction * 0.80);
+    }
+
+    [Fact]
+    public void StronglySeparatedDarkAndLightNeutralStructuresCanBothSurface()
+    {
+        using var decoded = CreateDecoded(
+            96,
+            64,
+            (x, y) => x < 20
+                ? new SKColor(18, 20, 23)
+                : x >= 76
+                    ? new SKColor(232, 233, 230)
+                    : new SKColor(84, 132, 154));
+
+        var analysis = new PhotoStyleAnalyzer().Analyze(decoded, CancellationToken.None);
+        var achromatic = analysis.NotableColors
+            .Where(entry => PhotoStylingOklab.FromSrgb(entry.Color).Chroma < 0.025)
+            .OrderBy(entry => PhotoStylingOklab.FromSrgb(entry.Color).L)
+            .ToArray();
+
+        Assert.Equal(2, achromatic.Length);
+        Assert.True(
+            PhotoStylingOklab.FromSrgb(achromatic[1].Color).L -
+            PhotoStylingOklab.FromSrgb(achromatic[0].Color).L > 0.50);
     }
 
     [Fact]
@@ -574,6 +745,26 @@ public sealed class PhotoStyleAnalyzerTests
 
         Assert.Empty(result.Analysis.NotableColors);
         Assert.Empty(result.Diagnostics.Notable.Candidates);
+    }
+
+    [Fact]
+    public void NearMonochromeGradientDoesNotRepeatItsFrequentShadeAsNotable()
+    {
+        using var decoded = CreateDecoded(
+            96,
+            64,
+            (x, y) =>
+            {
+                var step = (x + y) % 5;
+                return new SKColor(
+                    (byte)(41 + step * 5),
+                    (byte)(98 + step * 8),
+                    (byte)(158 + step * 10));
+            });
+
+        var analysis = new PhotoStyleAnalyzer().Analyze(decoded, CancellationToken.None);
+
+        Assert.Empty(analysis.NotableColors);
     }
 
     [Fact]

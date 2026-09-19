@@ -35,15 +35,25 @@ close. Each resulting family is measured for aggregate support, largest and top-
 count, `6×6` cell occupancy, and OKLab contrast at immediate group boundaries on the same sample grid.
 
 Admission is separate from ranking. A candidate may qualify through substantial coherent mass, a compact chromatic
-accent, a strong lightness-contrast neutral, distributed repeated structure, or a muted but distinct secondary mass.
+accent, a strong lightness-contrast neutral, distributed repeated structure, a muted but distinct secondary mass, or a
+coherent low-chroma structure. The last route requires bounded support, component coherence, global novelty, and both
+global and immediate-boundary lightness contrast; it does not admit a neutral merely because it is frequent.
 Every route combines a hard support/coherence guard with the perceptual/spatial evidence relevant to that shape; no
 single scalar is simultaneously the noise gate and rank. After admission, ranking treats support as a soft factor and
 combines route strength, perceptual novelty, local contrast, spatial evidence, and chroma/lightness strength. Final
 selection incrementally discounts candidates already explained by Characteristic, weighted Frequent shades, or an
-already selected perceptual near-duplicate. It stops below an information threshold, retains at most one achromatic
-candidate, and caps the qualified shortlist/result at 16/10 rather than filling slots. Isolated pixels, uniform inputs,
-and fully transparent inputs therefore produce no invented Notable color. This is bounded classical color/spatial
-salience, not object recognition, subject importance, semantic segmentation, or a material-color correction.
+already selected perceptual near-duplicate. A coherent structural mass may retain a bounded information floor even when
+a narrow related Frequent bin exists. Selection stops below an information threshold and may retain a second
+achromatic candidate only when its OKLab lightness differs by at least `0.24`; it still caps the qualified
+shortlist/result at 16/10 rather than filling slots. Isolated pixels, uniform inputs, and fully transparent inputs
+therefore produce no invented Notable color. This is bounded classical color/spatial salience, not object recognition,
+subject importance, semantic segmentation, or a material-color correction.
+
+R11-C compared the unchanged production scan against otherwise identical `128`, `160`, and `192 px` diagnostic runs on
+25 deterministically selected owner photographs. Higher resolution did not repeatedly recover the visually missing
+clothing, flower, sign, or neutral classes; results sometimes changed non-monotonically and the median analysis cost
+rose from `1.60 ms` at `96 px` to `4.42 ms` at `192 px`. Production therefore remains one `96 px` analysis shared with
+R10. The diagnostic overload is developer-only and cannot change normal Stage styling semantics.
 
 The immutable managed result is attached to its exact `DecodedImage` and charged to the same session-local byte-bounded
 decoded cache entry. There is no second file decode, independent styling cache, full-resolution analysis loop, or
@@ -91,13 +101,18 @@ canonical photograph and therefore reuses its analysis without recomputation.
 ## Semantic Color Profile
 
 R11-A derives one immutable `PhotoColorProfile` from this already-computed analysis immediately after successful
-attachment. R11-B-F1 extends that same projection with zero to ten adaptive Notable colors. It classifies
+attachment. R11-C retains R11-B-F1's zero to ten adaptive Notable colors while refining admission and presentation as
+described above. It classifies
 representative, Average,
 raw palette, and Notable values through shared `Fovium.ColorSemantics`; it does not read pixels, decode again, invoke
 CMM, or create a raster. A five-entry profile with ten Notable values retains an estimated 2,904 bytes and is charged
-to the same exact `DecodedImage`. R11-B-F1's 16-photo tuning set plus untouched 20-photo holdout measured the selector's
-grouping/components/local-contrast/admission/ranking work at a combined `0.28–7.72 ms` (`0.48 ms` median); these are
-local engineering observations rather than latency guarantees.
+to the same exact `DecodedImage`. R11-C visually inspected a deterministic 60-photo, nine-root corpus split before
+output inspection into 25 tuning, 15 validation, and 20 final holdout photographs. Labels are engineering visual review,
+not objective color ground truth. Remaining misses include a coherent blue clothing region suppressed as redundant and
+small or fragmented semantic subjects; neither justifies an object-recognition claim or a higher-resolution pass.
+Across the final 60 profiles, selected counts ranged from zero through seven (mean `3.2`): four returned zero, and no
+photograph needed more than seven. The adaptive `0..10` capacity therefore remains sufficient without force-filling or
+adding another UI row.
 
 Photo Info labels representative Dominant as Characteristic, labels the unchanged population palette Frequent shades,
 and shows Notable colors as a separate optional grid of at most two five-swatch rows. Average remains in the reusable

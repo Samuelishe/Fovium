@@ -315,6 +315,19 @@ swatches. A 16-photo known-class tuning corpus and a frozen, separately selected
 visually reviewed; accepted limits remain tiny evidence lost at `96 px`, heavily shadowed canonical material color, and
 importance that requires human subject recognition.
 
+## R11-C — Autonomous visual audit and robust Color Profile refinement
+
+Locally complete at `0.1.4.0003`: a deterministic 60-photo corpus from nine owner roots was split before inspection
+into 25 tuning, 15 validation, and 20 final holdout photographs. Readable contact sheets, candidate diagnostics,
+algorithm prototypes, and a reusable ignored-output audit harness support future independent review without copying
+owner images into the repository.
+
+The `96/128/160/192 px` comparison did not show repeated recovery from extra resolution, so R10 styling and Notable
+remain one `96 px` analysis. Classical-salience and region-oriented prototypes overfilled related shades and neutrals.
+The retained bounded refinement instead adds a guarded coherent-neutral route, preserves structurally coherent masses
+against narrow Frequent overlap, and permits two strongly lightness-separated achromatic colors. It remains
+deterministic color/spatial analysis, not subject or object recognition.
+
 ## Later / separate platform milestones
 
 - file association and Open With integration;

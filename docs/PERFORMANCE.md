@@ -213,6 +213,17 @@ a `0.48 ms` median. Whole existing bounded analysis measured `5.95–62.48 ms`, 
 not latency guarantees. Existing R10 representative, palette, field, boundary, and raster inputs remain on the same
 unchanged `96 px` scan.
 
+R11-C tested the same analysis at `96/128/160/192 px` over the frozen 25-photo tuning split before choosing production
+resolution. Median whole-analysis times were `1.60/2.49/3.22/4.42 ms`; observed p95 values were
+`2.45/3.91/4.51/6.36 ms`. The diagnostic harness estimates bounded transient work at roughly
+`252/326/424/540 KiB` for the representative portrait geometry. Higher resolutions did not repeatedly recover the
+visually missing color groups and sometimes changed selections non-monotonically, so the production path remains the
+single R10-compatible `96 px` scan. The added coherent-neutral route and structural presentation floor use the existing
+candidate evidence and retain no additional raster or cache entry. These are local Windows Release engineering
+measurements, not a cross-platform latency or allocation guarantee. The same real-photo runs observed full decode plus
+analysis/profile work at roughly `31–359 ms`, so even the rejected higher-resolution experiment remained small relative
+to decode; it was rejected for lack of repeated visual recovery, not solely for cost.
+
 The final local Windows Release run measured analysis at `8.37 ms` for a 1.16 MP near-monochrome input, `16.73 ms` at
 6.32 MP, `12.10 ms` at 12 MP, `17.73 ms` at 15 MP, and `20.03 ms` at 24 MP. The prior accepted R10-A five-image range
 was `3.40–17.49 ms`; the new large-image maximum is about 14.5% higher and remains below the stage's roughly 25%

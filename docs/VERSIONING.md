@@ -169,6 +169,7 @@ never reuse an earlier version. No automatic rollover after BUILD `9999` is defi
 | `0.1.4.0000` | R11-A                                 | On-demand semantic Photo Color Profile derived from the existing exact-image photo analysis                                     |
 | `0.1.4.0001` | R11-B                                 | Separate bounded Notable colors signal plus truthful Characteristic and Frequent shades Photo Info wording                      |
 | `0.1.4.0002` | R11-B-F1                              | Multi-route Notable color admission, adaptive zero-to-ten output, and compact two-row Color Profile layout                      |
+| `0.1.4.0003` | R11-C                                 | Real-photo-audited coherent neutral and structural-mass refinement of the existing Notable Color Profile                        |
 
 The `0.0.0.xxxx` line records the completed foundation and early product-construction checkpoints. The explicit
 owner-controlled `0.1.0.0000` transition marks the first substantial usable Fovium alpha; it does not claim feature
@@ -196,6 +197,9 @@ pipeline.
 R11-B-F1 increments BUILD to `0.1.4.0002`: robust route-specific admission and adaptive/two-row presentation correct
 the existing Notable colors capability without adding a new product surface or image-analysis pipeline. Artifact
 cleanup tooling alone has no version effect.
+R11-C increments BUILD to `0.1.4.0003`: the real-photo audit changes bounded Notable admission and presentation while
+retaining the existing Photo Info surface, adaptive capacity, one-scan ownership, and R10 styling semantics. The audit
+harness alone would not change the version.
 
 ## Future code and packaging source
 

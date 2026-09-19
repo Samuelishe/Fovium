@@ -34,6 +34,7 @@ internal sealed class PhotoStyleAnalyzer : IPhotoStyleAnalyzer
 {
     private const int QuantizationLevels = 16;
     private const int QuantizationBinCount = QuantizationLevels * QuantizationLevels * QuantizationLevels;
+    private const int MaximumDiagnosticLongEdgePixels = 512;
     private const double BoundaryFraction = 0.15;
 
     public PhotoStyleAnalysis Analyze(DecodedImage image, CancellationToken cancellationToken) =>
@@ -41,14 +42,27 @@ internal sealed class PhotoStyleAnalyzer : IPhotoStyleAnalyzer
 
     internal PhotoStyleAnalysisResult AnalyzeWithDiagnostics(
         DecodedImage image,
+        CancellationToken cancellationToken) =>
+        AnalyzeWithDiagnostics(
+            image,
+            StageDefaults.PhotoStyleLongEdgePixels,
+            cancellationToken);
+
+    internal static PhotoStyleAnalysisResult AnalyzeWithDiagnostics(
+        DecodedImage image,
+        int longEdgePixels,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ArgumentOutOfRangeException.ThrowIfLessThan(longEdgePixels, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(
+            longEdgePixels,
+            MaximumDiagnosticLongEdgePixels);
         cancellationToken.ThrowIfCancellationRequested();
         var stopwatch = Stopwatch.StartNew();
         var targetSize = BoundedImageSize.Calculate(
             image.Descriptor.OrientedSize,
-            StageDefaults.PhotoStyleLongEdgePixels);
+            longEdgePixels);
         using var colorSpace = SKColorSpace.CreateSrgb();
         var imageInfo = new SKImageInfo(
             targetSize.Width,

@@ -7,12 +7,13 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R11-B-F1 is locally complete on pushed R11-B baseline `890ed592b1af18789c942909808bc3c11003e158`. Product version is
-`0.1.4.0002`: Photo Info retains Characteristic color and unchanged population-ranked Frequent shades, while adaptive
-Notable colors now use separate route-specific admission, information ranking, and incremental presentation selection
-with capacity from zero to ten. The deterministic salience projection reuses the existing bounded R10 analysis scan and
-exact `DecodedImage` ownership; it adds no second decode, full-image analyzer, auxiliary thumbnail, CMM pass, raster,
-model, network path, or recomputation on UI geometry. Structural Color Semantics remain primary and creative names
+R11-C is locally complete on pushed R11-B-F1 baseline `ecd4aa1c86000ef85ed01ded51ce6fab1caaca66`. Product version is
+`0.1.4.0003`: Photo Info retains Characteristic, unchanged population-ranked Frequent shades, and adaptive zero-to-ten
+Notable colors. A guarded coherent-neutral route now admits substantial low-chroma structures; coherent structural
+masses receive bounded protection from narrow Frequent overlap; and a second achromatic result is allowed only across
+strong lightness separation. The deterministic salience projection still reuses the bounded `96 px` R10 analysis and
+exact `DecodedImage` ownership; it adds no second decode, full-image analyzer, production auxiliary thumbnail, CMM pass,
+raster, model, network path, or UI-geometry recomputation. Structural Color Semantics remain primary and creative names
 remain secondary tooltip detail. The existing 45 broad families, 99 Professional
 terms / 104 reachable lobes, and 1,800 creative anchors are unchanged.
 
@@ -30,13 +31,16 @@ Windows at `RenderScaling = 1.00`.
 
 ## Current focus
 
-R11-B-F1 is ready for owner review/commit and hosted CI. Its ignored Windows evidence separates 16 known-class tuning
-photographs from a frozen 20-photo holdout selected across three other dates. The holdout produced adaptive zero-to-six
-results without weak ten-slot filling or a repeated new failure class. Tiny evidence lost at `96 px`, shadowed canonical
-material color, and subject importance requiring recognition remain accepted model limits. Hosted CI, Linux/macOS,
-runtime fractional-DPI visual acceptance, and broader photographic validation remain future evidence. The expanded
-199-test targeted Release filter and full 2,229-test local Windows Release suite pass after a zero-warning/error build.
-R10-E's whole 250-entry research frontier and Antique White/Linen warning remain unchanged.
+R11-C is ready for owner review/commit and hosted CI. Ignored Windows evidence covers 60 deterministic photographs from
+nine owner roots, split before inspection into 25 tuning, 15 validation, and 20 final holdout images. Final engineering
+visual review classified validation as 14 GOOD and 1 EXPECTED LIMITATION; holdout as 15 GOOD, 3 PARTIAL, 1 REAL MISS,
+and 1 EXPECTED LIMITATION. The one real holdout miss is a coherent blue clothing region present in candidates but
+suppressed by incremental novelty; the frozen holdout was not used for further tuning. `96/128/160/192 px` comparison
+found no repeated recovery from extra resolution, while stronger classical/region prototypes overfilled related shades
+and neutrals. Real Windows Avalonia review accepts zero, one-row, and two-row Russian Photo Info layouts. Hosted CI,
+Linux/macOS, and runtime fractional-DPI visual acceptance remain future evidence. The full local Windows Release suite
+passes 2,238 tests after targeted mutation checks of resolution, route, structural novelty, achromatic, and capacity
+contracts. R10-E's whole 250-entry research frontier and Antique White/Linen warning remain unchanged.
 
 The current Codex/Rider ACP session negotiates no true in-app browser backend. Browser-plugin discovery returns an empty
 backend list, and the Rider Playwright MCP entry has no command or URL and is absent from the session tool registry.

@@ -13,7 +13,8 @@ internal enum NotableColorAdmissionPath
     CompactChromaticAccent = 1 << 1,
     LightnessContrastNeutral = 1 << 2,
     DistributedRepeatedStructure = 1 << 3,
-    MutedDistinctMass = 1 << 4
+    MutedDistinctMass = 1 << 4,
+    CoherentNeutralStructure = 1 << 5
 }
 
 internal sealed record NotableColorCandidateDiagnostics(
@@ -458,6 +459,17 @@ internal static class NotableColorSelector
             routes |= NotableColorAdmissionPath.LightnessContrastNeutral;
         }
 
+        var coherentNeutral = evidence.LargestComponent >= Math.Max(0.006, support * 0.55) ||
+                              (support < 0.08 &&
+                               evidence.TopComponentSupport >= support * 0.75 &&
+                               evidence.LocalLightnessContrast >= 0.20);
+        if (support >= 0.018 && coherentNeutral &&
+            lab.Chroma <= 0.055 && globalNovelty >= 0.055 &&
+            averageLightnessContrast >= 0.075 && evidence.LocalLightnessContrast >= 0.12)
+        {
+            routes |= NotableColorAdmissionPath.CoherentNeutralStructure;
+        }
+
         if (support >= 0.009 && evidence.ComponentCount >= 3 &&
             evidence.TopComponentSupport >= 0.003 && evidence.CoherentSupport >= 0.008 &&
             evidence.SpatialCellOccupancy >= 3 && globalNovelty >= 0.055 &&
@@ -583,6 +595,15 @@ internal static class NotableColorSelector
                 Normalize(evidence.LocalContrast, 0.065, 0.22)));
         }
 
+        if (routes.HasFlag(NotableColorAdmissionPath.CoherentNeutralStructure))
+        {
+            strength = Math.Max(strength, Average(
+                Normalize(support, 0.018, 0.14),
+                Normalize(evidence.LargestComponent, 0.006, 0.10),
+                Normalize(evidence.LocalLightnessContrast, 0.12, 0.42),
+                Normalize(globalNovelty, 0.055, 0.22)));
+        }
+
         return 0.45 + (0.55 * strength);
     }
 
@@ -608,9 +629,16 @@ internal static class NotableColorSelector
             var bestPenalty = 0d;
             foreach (var candidate in qualified)
             {
-                if (IsAchromatic(candidate.Lab) && selected.Any(existing => IsAchromatic(existing.Lab)))
+                if (IsAchromatic(candidate.Lab))
                 {
-                    continue;
+                    var selectedAchromatic = selected
+                        .Where(existing => IsAchromatic(existing.Lab))
+                        .ToArray();
+                    if (selectedAchromatic.Length >= 2 || selectedAchromatic.Any(existing =>
+                            Math.Abs(existing.Lab.L - candidate.Lab.L) < 0.24))
+                    {
+                        continue;
+                    }
                 }
 
                 var nearestSelected = selected.Count == 0
@@ -630,17 +658,30 @@ internal static class NotableColorSelector
                     ? 1
                     : Normalize(nearestSelected, DuplicateDistance, 0.18);
                 var representativeFactor = 0.68 + (0.32 * representativeNovelty);
-                var frequentFactor = 0.45 + (0.55 * frequentNovelty);
+                var frequentFloor = candidate.Notable.SupportFraction is >= 0.04 and < 0.30 &&
+                                    candidate.Notable.LargestComponentFraction >= Math.Max(
+                                        0.035,
+                                        candidate.Notable.SupportFraction * 0.55)
+                    ? 0.62
+                    : 0.45;
+                var frequentFactor = frequentFloor + ((1 - frequentFloor) * frequentNovelty);
                 var selectedFactor = 0.62 + (0.38 * selectedNovelty);
-                var presentationScore = candidate.Notable.Score *
-                                        representativeFactor *
-                                        frequentFactor *
-                                        selectedFactor;
+                var informationFactor = representativeFactor * frequentFactor * selectedFactor;
+                var coherentStructuralMass = candidate.Notable.SupportFraction is >= 0.04 and < 0.30 &&
+                                             candidate.Notable.LargestComponentFraction >= Math.Max(
+                                                 0.035,
+                                                 candidate.Notable.SupportFraction * 0.55);
+                if (coherentStructuralMass)
+                {
+                    informationFactor = Math.Max(informationFactor, 0.64);
+                }
+
+                var presentationScore = candidate.Notable.Score * informationFactor;
                 if (presentationScore > bestScore)
                 {
                     best = candidate;
                     bestScore = presentationScore;
-                    bestPenalty = 1 - (representativeFactor * frequentFactor * selectedFactor);
+                    bestPenalty = 1 - informationFactor;
                 }
             }
 
