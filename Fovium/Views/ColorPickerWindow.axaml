@@ -2,64 +2,27 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="using:Fovium.Views"
         x:Class="Fovium.Views.ColorPickerWindow"
+        Classes="fovium-secondary-window"
         Width="610"
         Height="690"
         CanResize="False"
-        Background="#17151C"
-        WindowDecorations="None"
-        ShowInTaskbar="False"
-        Topmost="False"
-        WindowStartupLocation="CenterOwner">
+        Background="Transparent">
     <Window.Styles>
-        <Style Selector="Button.window-close">
-            <Setter Property="Width" Value="32" />
-            <Setter Property="Height" Value="32" />
-            <Setter Property="Padding" Value="8" />
-            <Setter Property="Background" Value="#292530" />
-            <Setter Property="BorderBrush" Value="#403A49" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="16" />
-        </Style>
-        <Style Selector="Button.window-close:pointerover">
-            <Setter Property="Background" Value="#55313A" />
-            <Setter Property="BorderBrush" Value="#80505B" />
-        </Style>
-        <Style Selector="Button.mode-button">
-            <Setter Property="MinWidth" Value="82" />
-            <Setter Property="Height" Value="32" />
-            <Setter Property="Padding" Value="14,5" />
-            <Setter Property="Background" Value="#2B2732" />
-            <Setter Property="BorderBrush" Value="#413B49" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="6" />
-        </Style>
-        <Style Selector="Button.mode-button:selected">
-            <Setter Property="Background" Value="#594066" />
-            <Setter Property="BorderBrush" Value="#8A62A0" />
-        </Style>
-        <Style Selector="Button.accent">
-            <Setter Property="Background" Value="#6F4E80" />
-            <Setter Property="BorderBrush" Value="#9A70AE" />
-            <Setter Property="BorderThickness" Value="1" />
-        </Style>
-        <Style Selector="Button.accent:pointerover">
-            <Setter Property="Background" Value="#805C92" />
-        </Style>
         <Style Selector="TextBox.channel-input">
             <Setter Property="Width" Value="104" />
             <Setter Property="HorizontalContentAlignment" Value="Right" />
         </Style>
     </Window.Styles>
 
-    <Border Margin="1" Padding="26,22,26,24" Background="#1C1922"
-            BorderBrush="#3C3644" BorderThickness="1" CornerRadius="14">
+    <Border Margin="1" Padding="{StaticResource FoviumDialogPadding}"
+            Classes="fovium-window-surface">
         <Grid RowDefinitions="Auto,*,Auto,Auto,Auto" RowSpacing="18">
             <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Spacing="3" VerticalAlignment="Center">
-                    <TextBlock x:Name="PickerTitle" FontSize="22" FontWeight="SemiBold" />
-                    <TextBlock x:Name="PickerDescription" Foreground="#AFA8B8" FontSize="13" />
+                    <TextBlock x:Name="PickerTitle" Classes="dialog-title" />
+                    <TextBlock x:Name="PickerDescription" Classes="supporting" />
                 </StackPanel>
-                <Button x:Name="CloseButton" Grid.Column="1" Classes="window-close" Content="×" />
+                <Button x:Name="CloseButton" Grid.Column="1" Classes="window-close" />
             </Grid>
 
             <Grid Grid.Row="1" ColumnDefinitions="*,52" ColumnSpacing="22"
@@ -70,16 +33,15 @@
 
             <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="16">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                    <Button x:Name="RgbModeButton" Classes="mode-button" Content="RGB" />
-                    <Button x:Name="HsvModeButton" Classes="mode-button" Content="HSV" />
-                    <Button x:Name="HexModeButton" Classes="mode-button" Content="HEX" />
+                    <Button x:Name="RgbModeButton" Classes="fovium-button segmented" Content="RGB" />
+                    <Button x:Name="HsvModeButton" Classes="fovium-button segmented" Content="HSV" />
+                    <Button x:Name="HexModeButton" Classes="fovium-button segmented" Content="HEX" />
                 </StackPanel>
-                <TextBlock x:Name="ValidationText" Grid.Column="1" Foreground="#FFE57373"
+                <TextBlock x:Name="ValidationText" Grid.Column="1" Foreground="{StaticResource FoviumWarningBrush}"
                            VerticalAlignment="Center" />
             </Grid>
 
-            <Border Grid.Row="3" Padding="16,14" Background="#24212B" BorderBrush="#37333F"
-                    BorderThickness="1" CornerRadius="9">
+            <Border Grid.Row="3" Padding="16,14" Classes="fovium-card">
                 <Grid>
                     <Grid x:Name="RgbPanel" ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
                           ColumnSpacing="9" HorizontalAlignment="Center">
@@ -110,20 +72,22 @@
 
             <Grid Grid.Row="4" ColumnDefinitions="Auto,Auto,*,Auto,Auto" ColumnSpacing="12">
                 <StackPanel Spacing="5">
-                    <TextBlock x:Name="OriginalLabel" Foreground="#AAA4B3" FontSize="12" />
+                    <TextBlock x:Name="OriginalLabel" Classes="caption" />
                     <Border x:Name="OriginalPreview" Width="70" Height="34" CornerRadius="6"
-                            BorderBrush="#5B5364" BorderThickness="1" />
+                            BorderBrush="{StaticResource FoviumBorderInteractiveBrush}" BorderThickness="1" />
                 </StackPanel>
-                <TextBlock Grid.Column="1" Text="→" Margin="4,20,4,0" Foreground="#8D8497"
+                <TextBlock Grid.Column="1" Text="→" Margin="4,20,4,0"
+                           Foreground="{StaticResource FoviumTextSecondaryBrush}"
                            FontSize="18" VerticalAlignment="Center" />
                 <StackPanel Grid.Column="2" Spacing="5" HorizontalAlignment="Left">
-                    <TextBlock x:Name="CurrentLabel" Foreground="#AAA4B3" FontSize="12" />
+                    <TextBlock x:Name="CurrentLabel" Classes="caption" />
                     <Border x:Name="CurrentPreview" Width="70" Height="34" CornerRadius="6"
-                            BorderBrush="#8A62A0" BorderThickness="1" />
+                            BorderBrush="{StaticResource FoviumFocusRingBrush}" BorderThickness="1" />
                 </StackPanel>
-                <Button x:Name="CancelButton" Grid.Column="3" MinWidth="94" VerticalAlignment="Bottom" />
+                <Button x:Name="CancelButton" Grid.Column="3" MinWidth="94" VerticalAlignment="Bottom"
+                        Classes="fovium-button" />
                 <Button x:Name="OkButton" Grid.Column="4" MinWidth="94" VerticalAlignment="Bottom"
-                        Classes="accent" />
+                        Classes="fovium-button primary" />
             </Grid>
         </Grid>
     </Border>

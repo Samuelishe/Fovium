@@ -18,11 +18,8 @@ internal sealed record StageSettings
 
     public PhotoSeparationMode PhotoSeparation { get; init; } = PhotoSeparationMode.None;
 
-    public double AmbientBrightness { get; init; } = StageDefaults.AmbientBrightness;
-
-    public double AmbientSaturation { get; init; } = StageDefaults.AmbientSaturation;
-
-    public double AmbientBlur { get; init; } = StageDefaults.AmbientBlurSigmaPixels;
+    public StageBackgroundAdjustments BackgroundAdjustments { get; init; } =
+        StageBackgroundAdjustments.Default;
 
     public static StageSettings Default { get; } = new();
 
@@ -45,21 +42,7 @@ internal sealed record StageSettings
             StageDefaults.MatteWidthPhysicalPixels,
             StageDefaults.MatteWidthMinimumPhysicalPixels,
             StageDefaults.MatteWidthMaximumPhysicalPixels),
-        AmbientBrightness = NormalizeFinite(
-            AmbientBrightness,
-            StageDefaults.AmbientBrightness,
-            StageDefaults.AmbientBrightnessMinimum,
-            StageDefaults.AmbientBrightnessMaximum),
-        AmbientSaturation = NormalizeFinite(
-            AmbientSaturation,
-            StageDefaults.AmbientSaturation,
-            StageDefaults.AmbientSaturationMinimum,
-            StageDefaults.AmbientSaturationMaximum),
-        AmbientBlur = NormalizeFinite(
-            AmbientBlur,
-            StageDefaults.AmbientBlurSigmaPixels,
-            StageDefaults.AmbientBlurMinimum,
-            StageDefaults.AmbientBlurMaximum),
+        BackgroundAdjustments = (BackgroundAdjustments ?? StageBackgroundAdjustments.Default).Normalize(),
     };
 
     private static double NormalizeFinite(double value, double fallback, double minimum, double maximum) =>

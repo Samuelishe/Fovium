@@ -31,6 +31,18 @@ internal static class StageDefaults
 
     public const double AmbientBlurMaximum = 32;
 
+    public const double BackgroundBrightness = 1.00;
+
+    public const double BackgroundBrightnessMinimum = 0.50;
+
+    public const double BackgroundBrightnessMaximum = 1.50;
+
+    public const double BackgroundSaturation = 1.00;
+
+    public const double BackgroundSaturationMinimum = 0.00;
+
+    public const double BackgroundSaturationMaximum = 2.00;
+
     public const MatteStyle MatteStyle = global::Fovium.Stage.MatteStyle.Solid;
 
     public const double MatteWidthPhysicalPixels = 24;

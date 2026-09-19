@@ -68,6 +68,7 @@ internal sealed partial class ColorPickerWindow : Window
         _hexModeButton = FindRequired<Button>("HexModeButton");
         _invalidColorText = localizer[UiStrings.ColorInvalid];
 
+        Title = title;
         FindRequired<TextBlock>("PickerTitle").Text = title;
         FindRequired<TextBlock>("PickerDescription").Text = localizer[UiStrings.ColorPickerDialogDescription];
         FindRequired<TextBlock>("HexLabel").Text = localizer[UiStrings.ColorHex];
@@ -77,6 +78,7 @@ internal sealed partial class ColorPickerWindow : Window
 
         var close = FindRequired<Button>("CloseButton");
         AutomationProperties.SetName(close, localizer[UiStrings.CommonClose]);
+        ToolTip.SetTip(close, localizer[UiStrings.CommonClose]);
         close.Click += (_, _) => Close(false);
         var cancel = FindRequired<Button>("CancelButton");
         cancel.Content = localizer[UiStrings.CommonCancel];

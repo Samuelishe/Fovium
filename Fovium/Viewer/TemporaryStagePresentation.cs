@@ -25,7 +25,8 @@ internal sealed class TemporaryStagePresentation : IDisposable
         if (stage.BackgroundMode.RequiresAmbient())
         {
             ambient = comparisonImage.TryAcquireAmbient();
-            if (ambient is not null && !ambient.Blur.Equals(stage.AmbientBlur))
+            if (ambient is not null &&
+                !ambient.Blur.Equals(stage.BackgroundAdjustments.Ambient.Blur))
             {
                 ambient.Dispose();
                 ambient = null;

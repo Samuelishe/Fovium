@@ -36,6 +36,7 @@ Each durable subject has one owner. Other documents may summarize and link but m
 | Settings organization, preference persistence, reset, and About content              | [`SETTINGS.md`](SETTINGS.md)                                                                               |
 | UI locales, locale resolution, fallback, and translation boundaries                  | [`LOCALIZATION.md`](LOCALIZATION.md)                                                                       |
 | Application UI themes and visual roles                                               | [`THEMES.md`](THEMES.md)                                                                                   |
+| UI composition, shared controls, secondary chrome, and scrolling                     | [`UI-DESIGN.md`](UI-DESIGN.md)                                                                             |
 | File activation, associations, document icons, thumbnails, and packaging integration | [`PLATFORM-INTEGRATION.md`](PLATFORM-INTEGRATION.md)                                                       |
 | Future stage direction                                                               | [`ROADMAP.md`](ROADMAP.md)                                                                                 |
 | Accepted durable decisions                                                           | [`DECISIONS-LOG.md`](DECISIONS-LOG.md)                                                                     |

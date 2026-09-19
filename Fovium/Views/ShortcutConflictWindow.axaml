@@ -1,45 +1,23 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="Fovium.Views.ShortcutConflictWindow"
+        Classes="fovium-secondary-window"
         Width="470"
         Height="230"
         CanResize="False"
-        Background="#17151C"
-        WindowDecorations="None"
-        ShowInTaskbar="False"
-        Topmost="False"
-        WindowStartupLocation="CenterOwner">
-    <Window.Styles>
-        <Style Selector="Button.window-close">
-            <Setter Property="Width" Value="30" />
-            <Setter Property="Height" Value="30" />
-            <Setter Property="Padding" Value="7" />
-            <Setter Property="Background" Value="#292530" />
-            <Setter Property="BorderBrush" Value="#403A49" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="15" />
-        </Style>
-        <Style Selector="Button.accent">
-            <Setter Property="Background" Value="#6F4E80" />
-            <Setter Property="BorderBrush" Value="#9A70AE" />
-            <Setter Property="BorderThickness" Value="1" />
-        </Style>
-    </Window.Styles>
-    <Border Margin="1" Padding="24,20,24,22" Background="#1C1922"
-            BorderBrush="#3C3644" BorderThickness="1" CornerRadius="12">
+        Background="Transparent">
+    <Border Margin="1" Padding="24,20,24,22" Classes="fovium-window-surface">
         <Grid RowDefinitions="Auto,*,Auto" RowSpacing="16">
             <Grid ColumnDefinitions="*,Auto">
-                <TextBlock x:Name="TitleText" FontSize="20" FontWeight="SemiBold"
-                           VerticalAlignment="Center" />
-                <Button x:Name="CloseButton" Grid.Column="1" Classes="window-close" Content="×" />
+                <TextBlock x:Name="TitleText" Classes="dialog-title" VerticalAlignment="Center" />
+                <Button x:Name="CloseButton" Grid.Column="1" Classes="window-close" />
             </Grid>
-            <Border Grid.Row="1" Padding="15,13" Background="#24212B" BorderBrush="#37333F"
-                    BorderThickness="1" CornerRadius="8">
+            <Border Grid.Row="1" Padding="15,13" Classes="fovium-card">
                 <TextBlock x:Name="MessageText" TextWrapping="Wrap" VerticalAlignment="Center" />
             </Border>
             <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
-                <Button x:Name="CancelButton" MinWidth="94" />
-                <Button x:Name="OkButton" MinWidth="94" Classes="accent" />
+                <Button x:Name="CancelButton" MinWidth="94" Classes="fovium-button" />
+                <Button x:Name="OkButton" MinWidth="94" Classes="fovium-button primary" />
             </StackPanel>
         </Grid>
     </Border>

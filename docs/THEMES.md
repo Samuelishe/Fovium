@@ -44,25 +44,17 @@ Changing application theme must not silently change Stage mode, Matte color/widt
 must not change Settings, menus, or dialogs. Neither system may modify the original photograph. Stage product semantics
 remain owned by [`PROJECT-VISION.md`](PROJECT-VISION.md).
 
-## Visual-system direction
+## Visual-system implementation
 
-Future implementation should centralize semantic roles rather than scatter raw brushes or color constants through views.
-Expected roles include:
+The fixed-Dark implementation centralizes semantic resources for application/window/sidebar/card/elevated surfaces,
+subtle and interactive borders, primary and secondary text, accent interaction states, focus, warning, selection, and
+hover/pressed states. `Fovium/Themes/FoviumTokens.axaml` owns exact values. Views consume semantic resources rather than
+copying palette literals for an already-owned role. Fovium remains visually quiet and purpose-built rather than a
+generic framework-theme demonstration.
 
-```text
-Surface
-ElevatedSurface
-TextPrimary
-TextSecondary
-Border
-Hover
-Selected
-Accent
-Error
-```
-
-Exact colors, contrast values, platform chrome treatment, and theme resource mechanics wait for implementation evidence.
-Fovium should remain visually quiet and purpose-built rather than becoming a generic framework-theme demonstration.
+The composition and control contract—typography, cards, buttons, close chrome, swatches, secondary windows, and
+edge-fade scrolling—is owned by [`UI-DESIGN.md`](UI-DESIGN.md). Light remains a contracted future option; the current
+resource dictionary does not claim that it is implemented.
 
 HOME-UX-R1 applies the current fixed-Dark application surface roles to the no-image landing state: restrained layered
 surfaces, one violet primary action, subdued borders, and project-authored vector geometry. It remains independent of
@@ -78,13 +70,14 @@ surfaces. R5-F3 retains ordinary themed Button/MenuItem semantics for the movabl
 using centralized project-owned monochrome vector geometry; checked overlay state and disabled history actions remain
 semantic control states rather than icon color alone. SETTINGS-UX-R1 gives Settings a restrained dark
 surface/elevated-card/selected-accent hierarchy and project-owned circular close button while retaining normal hover,
-focus, selection, scrolling, and platform resize behavior. These values remain local to the current fixed-Dark surface
-rather than claiming a complete theme-token system. There is no selector or final semantic palette yet. Stage
-background, custom colors, Ambient treatment, and independent Matte do not derive from Dark theme resources. Light
-remains a contracted future option.
+focus, selection, scrolling, and platform resize behavior. UI-SYSTEM-R1 promotes those accepted roles into shared
+fixed-Dark token/control dictionaries and migrates Settings, Color Picker, and Shortcut Conflict to one chrome
+authority. Stage background, custom colors, Ambient treatment, and independent Matte do not derive from Dark theme
+resources.
 
 SETTINGS-UX-R1-F1 extends that same secondary-window language to the reusable Color Picker and Shortcut Conflict:
 decoration-free owned dark surfaces, rounded boundaries, project close controls, normal keyboard focus, and restrained
 violet selection. The Color Picker's hue field and value preview are data, so their chroma does not redefine application
-accent roles. Settings scroll fades derive from its actual `#17151C` surface, remain non-interactive, and appear only at
-clipped edges; no blur or new theme framework is introduced.
+accent roles. Settings and bounded mode-list fades derive from the semantic owning surface, remain non-interactive, and
+appear only at clipped edges. The shared scrollbar preserves a thin visual thumb inside a wider transparent pointer
+target; no blur or external theme framework is introduced.

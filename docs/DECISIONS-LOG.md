@@ -1016,3 +1016,19 @@ color claim is introduced. Settings pages keep headers outside inset scroll view
 fades reflect actual overflow and each section retains its offset only for the current window lifetime. General's
 Recent capture policy defaults to explicit opens; successful canonical manual navigation is opt-in, and slideshow,
 inspection, preload, failed, or stale presentation cannot create history.
+
+## D-085 — Shared UI primitives and downstream per-mode Stage adjustment
+
+Status: Implemented in local UI-SYSTEM-R1; hosted verification pending.
+
+Fovium owns one small fixed-Dark design foundation: semantic resource tokens, typography/card/button variants, one
+vector close template, one secondary-window surface, one interactive color swatch, and one edge-fade scroll
+composition. Settings, Color Picker, and Shortcut Conflict consume those authorities. The scrollbar deliberately
+separates a wide transparent pointer target from a thin visible thumb; Settings pages and the Stage mode rail share
+overflow-state logic. Exact palette/dimensions remain in XAML resources, while `UI-DESIGN.md` owns composition rules.
+
+Stage Background uses a compact selection rail plus contextual editor. Black/Neutral expose no knobs, Custom exposes
+only color, five photo-derived modes own independent persisted Brightness/Saturation, and Ambient additionally owns its
+existing Blur. Legacy Ambient values migrate into typed adjustments without a schema increment. New adjustments use
+identity defaults and are applied as a bounded render-time matrix after photo-derived truth, so they do not mutate or
+rerun source analysis, inspection values, Color Management, or retained tiny rasters.

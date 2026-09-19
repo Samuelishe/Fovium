@@ -157,14 +157,14 @@ public sealed class SettingsServiceTests
         var store = new RecordingSettingsStore();
         using var service = new SettingsService(store);
 
-        var first = service.SetStageAsync(StageSettings.Default with { AmbientBrightness = 0.5 });
-        var second = service.SetStageAsync(StageSettings.Default with { AmbientBrightness = 0.6 });
-        var third = service.SetStageAsync(StageSettings.Default with { AmbientBrightness = 0.7 });
+        var first = service.SetStageAsync(WithAmbientBrightness(0.5));
+        var second = service.SetStageAsync(WithAmbientBrightness(0.6));
+        var third = service.SetStageAsync(WithAmbientBrightness(0.7));
         await Task.WhenAll(first, second, third);
         await service.FlushAsync();
 
         Assert.Equal(1, store.SaveCount);
-        Assert.Equal(0.7, store.Saved?.Stage.AmbientBrightness);
+        Assert.Equal(0.7, store.Saved?.Stage.BackgroundAdjustments.Ambient.Brightness);
     }
 
     [Fact]
@@ -209,9 +209,7 @@ public sealed class SettingsServiceTests
         Assert.Equal(before.MatteColor, service.Current.Stage.MatteColor);
         Assert.Equal(before.MatteStyle, service.Current.Stage.MatteStyle);
         Assert.Equal(before.MatteWidthPhysicalPixels, service.Current.Stage.MatteWidthPhysicalPixels);
-        Assert.Equal(before.AmbientBrightness, service.Current.Stage.AmbientBrightness);
-        Assert.Equal(before.AmbientSaturation, service.Current.Stage.AmbientSaturation);
-        Assert.Equal(before.AmbientBlur, service.Current.Stage.AmbientBlur);
+        Assert.Equal(before.BackgroundAdjustments, service.Current.Stage.BackgroundAdjustments);
     }
 
     [Fact]
@@ -305,6 +303,17 @@ public sealed class SettingsServiceTests
         Assert.Equal(presentation, store.Saved?.Presentation);
         Assert.Equal(StageSettings.Default, service.Current.Stage);
     }
+
+    private static StageSettings WithAmbientBrightness(double brightness) => StageSettings.Default with
+    {
+        BackgroundAdjustments = StageSettings.Default.BackgroundAdjustments with
+        {
+            Ambient = StageSettings.Default.BackgroundAdjustments.Ambient with
+            {
+                Brightness = brightness,
+            },
+        },
+    };
 
     private sealed class RecordingSettingsStore(bool failSave = false) : ISettingsStore
     {

@@ -251,6 +251,12 @@ comparison's own styling analysis or fallback; Peek reuses current analysis. Det
 `PHOTO-DERIVED-STYLING.md`](PHOTO-DERIVED-STYLING.md), and general Stage definitions belong to [
 `PROJECT-VISION.md`](PROJECT-VISION.md).
 
+Settings presents Background as a compact keyboard-navigable vertical mode rail beside a stable contextual panel, not
+a growing radio-button form. Black/Neutral show a quiet no-options message; Custom shows its color swatch; photo-derived
+modes show their own Brightness/Saturation; only Ambient adds Blur. Switching modes restores that mode's persisted
+tuning. These controls adjust only final Stage presentation downstream of photo-derived truth and never reclassify,
+redecode, or alter inspection/color-management data.
+
 ## Settings principles
 
 Settings expose durable preferences, not ordinary navigation. They open as secondary UI from the context menu or
@@ -261,17 +267,24 @@ expert jargon where a product concept exists. Section ownership, persistence, an
 Settings uses a stable left navigation rail and one bounded, vertically scrollable content column. General owns the
 Language choice; Controls groups shortcuts by task and presents gestures as keys; About carries identity, version, and
 one concise product description. The window has no duplicate native titlebar or visible platform border: one
-project-owned close button occupies the content surface, invisible edge/corner zones retain resize, and dragging begins
+canonical project-owned vector close button occupies the content surface, invisible edge/corner zones retain resize, and
+dragging begins
 only from non-interactive areas so navigation, sliders, selectors, and shortcut capture remain predictable. Settings is
 owned by its Viewer and must remain above that Viewer through fullscreen transitions, but is never globally topmost over
 other applications. Keyboard focus and scrolling continue to use ordinary Avalonia control semantics.
 
 Each page keeps its title and summary stable while only its cards scroll in an inset viewport. A subtle 30 DIP top
 fade appears after leaving the start, and a matching bottom fade appears while content remains below; neither exists
-without overflow or accepts input. Each section keeps its own offset while the Settings instance is open. Color
+without overflow or accepts input. The same overflow primitive serves bounded mode rails. Its scrollbar uses a broad
+transparent pointer target around a thin visible thumb with immediate hover feedback and an inset quiet track. Each
+section keeps its own offset while the Settings instance is open. Color
 swatches are focusable buttons that open the same owned Fovium Color Picker for all Stage and Presentation callers.
 The picker uses circular Hue/Saturation, vertical Value, and synchronized RGB/HSV/HEX input; it has no alpha or
 eyedropper. Live changes preview immediately, while Cancel, Esc, and close restore the exact starting color.
+
+Settings, Color Picker, and Shortcut Conflict share secondary-window surface, border, radii, typography, centered
+button variants, close geometry, and hover/pressed/focus states. Exact composition rules belong to [
+`UI-DESIGN.md`](UI-DESIGN.md); a new dialog must consume that authority rather than copy local styles.
 
 Dark/Light application theme affects controls and secondary UI, never the photograph or Stage. The separation is owned
 by [`THEMES.md`](THEMES.md).

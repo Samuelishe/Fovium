@@ -33,7 +33,10 @@ public sealed class TemporaryStagePresentationTests
         var stage = StageSettings.Default with
         {
             BackgroundMode = StageBackgroundMode.Ambient,
-            AmbientBlur = 18,
+            BackgroundAdjustments = StageSettings.Default.BackgroundAdjustments with
+            {
+                Ambient = StageSettings.Default.BackgroundAdjustments.Ambient with { Blur = 18 },
+            },
         };
 
         using var missingPresentation = TemporaryStagePresentation.Create(stage, missing);

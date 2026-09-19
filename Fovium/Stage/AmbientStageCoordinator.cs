@@ -167,7 +167,7 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
             path = _currentPath;
             identity = _currentIdentity.Value;
             generation = _sourceGeneration;
-            blur = _stage.AmbientBlur;
+            blur = _stage.BackgroundAdjustments.Ambient.Blur;
             _startedSelectionGeneration = generation;
             _photoPublicationTimestamp = Stopwatch.GetTimestamp();
             _photoPublicationGeneration = generation;
@@ -231,7 +231,8 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
 
             var previouslyRequiredAmbient = _stage.BackgroundMode.RequiresAmbient();
             var nowRequiresAmbient = normalized.BackgroundMode.RequiresAmbient();
-            var blurChanged = !_stage.AmbientBlur.Equals(normalized.AmbientBlur);
+            var blurChanged = !_stage.BackgroundAdjustments.Ambient.Blur.Equals(
+                normalized.BackgroundAdjustments.Ambient.Blur);
             _stage = normalized;
             path = _currentPath;
             identity = _currentIdentity;
@@ -262,7 +263,7 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
                 generation,
                 path!,
                 identity!.Value,
-                normalized.AmbientBlur,
+                normalized.BackgroundAdjustments.Ambient.Blur,
                 debounce,
                 token);
         }
@@ -295,12 +296,13 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
 
             var ambient = imageLease.Value.TryAcquireAmbient();
             if (ambient is not null &&
-                !ambient.Blur.Equals(stage.AmbientBlur) &&
+                !ambient.Blur.Equals(stage.BackgroundAdjustments.Ambient.Blur) &&
                 identity != _transitionalAmbientIdentity)
             {
                 ambient.Dispose();
                 ambient = null;
             }
+
             if (ambient is not null)
             {
                 Interlocked.Increment(ref _cacheHitCount);
@@ -462,7 +464,7 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
             }
 
             generation = _sourceGeneration;
-            blur = _stage.AmbientBlur;
+            blur = _stage.BackgroundAdjustments.Ambient.Blur;
             token = _workCancellation.Token;
         }
 
@@ -642,9 +644,9 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
         lock (_sync)
         {
             return !_disposed &&
-                generation == _sourceGeneration &&
-                _stage.BackgroundMode.RequiresAmbient() &&
-                _stage.AmbientBlur.Equals(blur);
+                   generation == _sourceGeneration &&
+                   _stage.BackgroundMode.RequiresAmbient() &&
+                   _stage.BackgroundAdjustments.Ambient.Blur.Equals(blur);
         }
     }
 
@@ -727,7 +729,7 @@ internal sealed class AmbientStageCoordinator : IAsyncDisposable
         !_disposed &&
         generation == _sourceGeneration &&
         _stage.BackgroundMode.RequiresAmbient() &&
-        _stage.AmbientBlur.Equals(blur) &&
+        _stage.BackgroundAdjustments.Ambient.Blur.Equals(blur) &&
         string.Equals(path, _currentPath, StringComparison.Ordinal) &&
         identity == _currentIdentity;
 

@@ -1,0 +1,210 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="using:Fovium.Views">
+    <Style Selector="TextBlock.page-title">
+        <Setter Property="FontSize" Value="28" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{StaticResource FoviumTextPrimaryBrush}" />
+    </Style>
+    <Style Selector="TextBlock.dialog-title">
+        <Setter Property="FontSize" Value="22" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{StaticResource FoviumTextPrimaryBrush}" />
+    </Style>
+    <Style Selector="TextBlock.page-description">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Foreground" Value="{StaticResource FoviumTextSecondaryBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="TextBlock.card-title">
+        <Setter Property="FontSize" Value="17" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{StaticResource FoviumTextPrimaryBrush}" />
+    </Style>
+    <Style Selector="TextBlock.body">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Foreground" Value="{StaticResource FoviumTextPrimaryBrush}" />
+    </Style>
+    <Style Selector="TextBlock.supporting">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Foreground" Value="{StaticResource FoviumTextSecondaryBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="TextBlock.caption">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{StaticResource FoviumTextSecondaryBrush}" />
+    </Style>
+    <Style Selector="TextBlock.numeric-value">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontFamily" Value="Consolas" />
+        <Setter Property="TextAlignment" Value="Right" />
+    </Style>
+
+    <Style Selector="Border.fovium-card">
+        <Setter Property="Background" Value="{StaticResource FoviumCardSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource FoviumBorderSubtleBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{StaticResource FoviumCornerRadiusMedium}" />
+        <Setter Property="Padding" Value="{StaticResource FoviumCardPadding}" />
+    </Style>
+    <Style Selector="Border.stage-mode-rail, Border.stage-context-panel">
+        <Setter Property="Background" Value="{StaticResource FoviumCardSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource FoviumBorderSubtleBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{StaticResource FoviumCornerRadiusSmall}" />
+    </Style>
+    <Style Selector="Border.stage-mode-rail">
+        <Setter Property="Padding" Value="8" />
+    </Style>
+    <Style Selector="Border.stage-context-panel">
+        <Setter Property="Padding" Value="14" />
+    </Style>
+    <Style Selector="ListBoxItem.stage-mode-item">
+        <Setter Property="MinHeight" Value="38" />
+        <Setter Property="Margin" Value="0,2" />
+        <Setter Property="Padding" Value="12,8" />
+        <Setter Property="CornerRadius" Value="{StaticResource FoviumCornerRadiusSmall}" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="ListBoxItem.stage-mode-item:pointerover">
+        <Setter Property="Background" Value="{StaticResource FoviumHoverSurfaceBrush}" />
+    </Style>
+    <Style Selector="ListBoxItem.stage-mode-item:selected">
+        <Setter Property="Background" Value="{StaticResource FoviumSelectedSurfaceBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource FoviumTextPrimaryBrush}" />
+    </Style>
+    <Style Selector="ListBoxItem.stage-mode-item:focus-visible">
+        <Setter Property="BorderBrush" Value="{StaticResource FoviumFocusRingBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <Style Selector="Button.fovium-button">
+        <Setter Property="MinHeight" Value="{StaticResource FoviumControlHeight}" />
+        <Setter Property="Padding" Value="14,6" />
+        <Setter Property="CornerRadius" Value="{StaticResource FoviumCornerRadiusSmall}" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Background" Value="{StaticResource FoviumElevatedSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource FoviumBorderInteractiveBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="Button.fovium-button:pointerover">
+        <Setter Property="Background" Value="{StaticResource FoviumHoverSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource FoviumFocusRingBrush}" />
+    </Style>
+    <Style Selector="Button.fovium-button:pressed">
+        <Setter Property="Background" Value="{StaticResource FoviumPressedSurfaceBrush}" />
+    </Style>
+    <Style Selector="Button.fovium-button:disabled">
+        <Setter Property="Opacity" Value="0.46" />
+    </Style>
+    <Style Selector="Button.fovium-button:focus-visible">
+        <Setter Property="BorderBrush" Value="{StaticResource FoviumFocusRingBrush}" />
+        <Setter Property="BorderThickness" Value="2" />
+    </Style>
+    <Style Selector="Button.primary">
+        <Setter Property="Background" Value="{StaticResource FoviumAccentBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource FoviumFocusRingBrush}" />
+    </Style>
+    <Style Selector="Button.primary:pointerover">
+        <Setter Property="Background" Value="{StaticResource FoviumAccentHoverBrush}" />
+    </Style>
+    <Style Selector="Button.primary:pressed">
+        <Setter Property="Background" Value="{StaticResource FoviumAccentPressedBrush}" />
+    </Style>
+    <Style Selector="Button.quiet">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.icon-button">
+        <Setter Property="Width" Value="34" />
+        <Setter Property="Height" Value="32" />
+        <Setter Property="MinHeight" Value="32" />
+        <Setter Property="Padding" Value="6" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.segmented">
+        <Setter Property="MinWidth" Value="82" />
+        <Setter Property="Height" Value="{StaticResource FoviumCompactControlHeight}" />
+        <Setter Property="MinHeight" Value="{StaticResource FoviumCompactControlHeight}" />
+        <Setter Property="Padding" Value="14,5" />
+    </Style>
+    <Style Selector="Button.segmented.selected">
+        <Setter Property="Background" Value="{StaticResource FoviumSelectedSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource FoviumFocusRingBrush}" />
+    </Style>
+
+    <Style Selector="Button.window-close">
+        <Setter Property="Width" Value="32" />
+        <Setter Property="Height" Value="32" />
+        <Setter Property="Padding" Value="8" />
+        <Setter Property="Background" Value="{StaticResource FoviumElevatedSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource FoviumBorderInteractiveBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="16" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border x:Name="Chrome"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                    <PathIcon Width="{StaticResource FoviumIconSizeSmall}"
+                              Height="{StaticResource FoviumIconSizeSmall}"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              Data="{StaticResource FoviumCloseIconGeometry}" />
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="Button.window-close:pointerover">
+        <Setter Property="Background" Value="{StaticResource FoviumDestructiveHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource FoviumDestructiveBorderBrush}" />
+    </Style>
+    <Style Selector="Button.window-close:pressed">
+        <Setter Property="Background" Value="{StaticResource FoviumPressedSurfaceBrush}" />
+    </Style>
+    <Style Selector="Button.window-close:focus-visible">
+        <Setter Property="BorderBrush" Value="{StaticResource FoviumFocusRingBrush}" />
+        <Setter Property="BorderThickness" Value="2" />
+    </Style>
+
+    <Style Selector="views|ColorSwatchButton">
+        <Setter Property="Width" Value="52" />
+        <Setter Property="Height" Value="32" />
+        <Setter Property="Padding" Value="3" />
+        <Setter Property="Background" Value="{StaticResource FoviumElevatedSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource FoviumBorderInteractiveBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="7" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalContentAlignment" Value="Stretch" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        Padding="{TemplateBinding Padding}">
+                    <Border Background="{Binding SwatchBrush, RelativeSource={RelativeSource TemplatedParent}}"
+                            CornerRadius="4" />
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="views|ColorSwatchButton:pointerover">
+        <Setter Property="Background" Value="{StaticResource FoviumHoverSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource FoviumFocusRingBrush}" />
+    </Style>
+    <Style Selector="views|ColorSwatchButton:focus-visible">
+        <Setter Property="BorderBrush" Value="{StaticResource FoviumFocusRingBrush}" />
+        <Setter Property="BorderThickness" Value="2" />
+    </Style>
+</Styles>

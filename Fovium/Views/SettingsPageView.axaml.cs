@@ -1,6 +1,5 @@
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
-using Avalonia.Threading;
 using Avalonia.VisualTree;
 
 namespace Fovium.Views;
@@ -8,22 +7,13 @@ namespace Fovium.Views;
 internal sealed partial class SettingsPageView : UserControl
 {
     private readonly ContentControl _headerHost;
-    private readonly ContentControl _bodyHost;
-    private readonly Border _topFade;
-    private readonly Border _bottomFade;
-    private readonly ScrollViewer _scroller;
+    private readonly EdgeFadeScrollViewer _bodyScroller;
 
     public SettingsPageView()
     {
         InitializeComponent();
-        _scroller = FindRequired<ScrollViewer>("ScrollViewport");
         _headerHost = FindRequired<ContentControl>("HeaderHost");
-        _bodyHost = FindRequired<ContentControl>("BodyHost");
-        _topFade = FindRequired<Border>("TopFade");
-        _bottomFade = FindRequired<Border>("BottomFade");
-        _scroller.ScrollChanged += (_, _) => UpdateEdgeFades();
-        _scroller.SizeChanged += (_, _) => ScheduleEdgeFadeUpdate();
-        AttachedToVisualTree += (_, _) => ScheduleEdgeFadeUpdate();
+        _bodyScroller = FindRequired<EdgeFadeScrollViewer>("BodyScroller");
     }
 
     public Control? Header
@@ -34,26 +24,13 @@ internal sealed partial class SettingsPageView : UserControl
 
     public Control? Body
     {
-        get => _bodyHost.Content as Control;
-        set => _bodyHost.Content = value;
+        get => _bodyScroller.Body;
+        set => _bodyScroller.Body = value;
     }
 
-    internal double VerticalOffset => _scroller.Offset.Y;
+    internal double VerticalOffset => _bodyScroller.VerticalOffset;
 
     private void InitializeComponent() => AvaloniaXamlLoader.Load(this);
-
-    private void ScheduleEdgeFadeUpdate() =>
-        Dispatcher.UIThread.Post(UpdateEdgeFades, DispatcherPriority.Loaded);
-
-    private void UpdateEdgeFades()
-    {
-        var state = SettingsScrollEdgeState.Resolve(
-            _scroller.Offset.Y,
-            _scroller.Extent.Height,
-            _scroller.Viewport.Height);
-        _topFade.IsVisible = state.ShowTopFade;
-        _bottomFade.IsVisible = state.ShowBottomFade;
-    }
 
     private T FindRequired<T>(string name)
         where T : Control =>

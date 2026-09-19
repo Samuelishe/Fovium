@@ -1,43 +1,14 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:Fovium.Views"
              x:Class="Fovium.Views.SettingsPageView">
-    <UserControl.Styles>
-        <Style Selector="ScrollBar:vertical">
-            <Setter Property="Width" Value="7" />
-            <Setter Property="Margin" Value="7,3,2,3" />
-            <Setter Property="Opacity" Value="0.48" />
-        </Style>
-        <Style Selector="ScrollBar:vertical:pointerover">
-            <Setter Property="Opacity" Value="0.82" />
-        </Style>
-    </UserControl.Styles>
     <Grid Margin="34,26,24,20" RowDefinitions="Auto,*">
         <ContentControl x:Name="HeaderHost" Margin="0,0,48,0" />
-        <Grid Grid.Row="1" Margin="0,16,0,0" ClipToBounds="True">
-            <ScrollViewer x:Name="ScrollViewport"
-                          HorizontalScrollBarVisibility="Disabled"
-                          VerticalScrollBarVisibility="Auto">
-                <ContentControl x:Name="BodyHost" Margin="0,4,14,32"
-                                HorizontalContentAlignment="Stretch" />
-            </ScrollViewer>
-            <Border x:Name="TopFade" Height="30" VerticalAlignment="Top"
-                    IsHitTestVisible="False" IsVisible="False">
-                <Border.Background>
-                    <LinearGradientBrush StartPoint="50%,0%" EndPoint="50%,100%">
-                        <GradientStop Color="#FF17151C" Offset="0" />
-                        <GradientStop Color="#0017151C" Offset="1" />
-                    </LinearGradientBrush>
-                </Border.Background>
-            </Border>
-            <Border x:Name="BottomFade" Height="30" VerticalAlignment="Bottom"
-                    IsHitTestVisible="False" IsVisible="False">
-                <Border.Background>
-                    <LinearGradientBrush StartPoint="50%,0%" EndPoint="50%,100%">
-                        <GradientStop Color="#0017151C" Offset="0" />
-                        <GradientStop Color="#FF17151C" Offset="1" />
-                    </LinearGradientBrush>
-                </Border.Background>
-            </Border>
-        </Grid>
+        <views:EdgeFadeScrollViewer x:Name="BodyScroller"
+                                    Grid.Row="1"
+                                    Margin="0,16,0,0"
+                                    BodyMargin="0,4,14,32"
+                                    TopFadeBrush="{StaticResource FoviumWindowTopFadeBrush}"
+                                    BottomFadeBrush="{StaticResource FoviumWindowBottomFadeBrush}" />
     </Grid>
 </UserControl>

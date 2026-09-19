@@ -21,6 +21,12 @@ public sealed class StageDefaultsTests
         Assert.Equal(1.25, StageDefaults.AmbientSaturationMaximum);
         Assert.Equal(8, StageDefaults.AmbientBlurMinimum);
         Assert.Equal(32, StageDefaults.AmbientBlurMaximum);
+        Assert.Equal(1, StageDefaults.BackgroundBrightness);
+        Assert.Equal(0.5, StageDefaults.BackgroundBrightnessMinimum);
+        Assert.Equal(1.5, StageDefaults.BackgroundBrightnessMaximum);
+        Assert.Equal(1, StageDefaults.BackgroundSaturation);
+        Assert.Equal(0, StageDefaults.BackgroundSaturationMinimum);
+        Assert.Equal(2, StageDefaults.BackgroundSaturationMaximum);
         Assert.Equal(24, StageDefaults.MatteWidthPhysicalPixels);
         Assert.Equal(4, StageDefaults.MatteWidthMinimumPhysicalPixels);
         Assert.Equal(192, StageDefaults.MatteWidthMaximumPhysicalPixels);

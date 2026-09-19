@@ -1,0 +1,97 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="using:System">
+    <Color x:Key="FoviumAppBackgroundColor">#FF17151C</Color>
+    <Color x:Key="FoviumWindowSurfaceColor">#FF1C1922</Color>
+    <Color x:Key="FoviumSidebarSurfaceColor">#FF201D27</Color>
+    <Color x:Key="FoviumCardSurfaceColor">#FF24212B</Color>
+    <Color x:Key="FoviumElevatedSurfaceColor">#FF2B2732</Color>
+    <Color x:Key="FoviumBorderSubtleColor">#FF37333F</Color>
+    <Color x:Key="FoviumBorderInteractiveColor">#FF5A5263</Color>
+    <Color x:Key="FoviumTextPrimaryColor">#FFF7F3FA</Color>
+    <Color x:Key="FoviumTextSecondaryColor">#FFAAA4B3</Color>
+    <Color x:Key="FoviumAccentColor">#FF6F4E80</Color>
+    <Color x:Key="FoviumAccentHoverColor">#FF805C92</Color>
+    <Color x:Key="FoviumAccentPressedColor">#FF5B3F69</Color>
+    <Color x:Key="FoviumSelectedSurfaceColor">#FF46364F</Color>
+    <Color x:Key="FoviumHoverSurfaceColor">#FF302B39</Color>
+    <Color x:Key="FoviumPressedSurfaceColor">#FF26212E</Color>
+    <Color x:Key="FoviumDestructiveHoverColor">#FF55313A</Color>
+    <Color x:Key="FoviumDestructiveBorderColor">#FF80505B</Color>
+    <Color x:Key="FoviumWarningColor">#FFE57373</Color>
+    <Color x:Key="FoviumFocusRingColor">#FFB38BC6</Color>
+
+    <SolidColorBrush x:Key="FoviumAppBackgroundBrush" Color="{StaticResource FoviumAppBackgroundColor}" />
+    <SolidColorBrush x:Key="FoviumWindowSurfaceBrush" Color="{StaticResource FoviumWindowSurfaceColor}" />
+    <SolidColorBrush x:Key="FoviumSidebarSurfaceBrush" Color="{StaticResource FoviumSidebarSurfaceColor}" />
+    <SolidColorBrush x:Key="FoviumCardSurfaceBrush" Color="{StaticResource FoviumCardSurfaceColor}" />
+    <SolidColorBrush x:Key="FoviumElevatedSurfaceBrush" Color="{StaticResource FoviumElevatedSurfaceColor}" />
+    <SolidColorBrush x:Key="FoviumBorderSubtleBrush" Color="{StaticResource FoviumBorderSubtleColor}" />
+    <SolidColorBrush x:Key="FoviumBorderInteractiveBrush" Color="{StaticResource FoviumBorderInteractiveColor}" />
+    <SolidColorBrush x:Key="FoviumTextPrimaryBrush" Color="{StaticResource FoviumTextPrimaryColor}" />
+    <SolidColorBrush x:Key="FoviumTextSecondaryBrush" Color="{StaticResource FoviumTextSecondaryColor}" />
+    <SolidColorBrush x:Key="FoviumAccentBrush" Color="{StaticResource FoviumAccentColor}" />
+    <SolidColorBrush x:Key="FoviumAccentHoverBrush" Color="{StaticResource FoviumAccentHoverColor}" />
+    <SolidColorBrush x:Key="FoviumAccentPressedBrush" Color="{StaticResource FoviumAccentPressedColor}" />
+    <SolidColorBrush x:Key="FoviumSelectedSurfaceBrush" Color="{StaticResource FoviumSelectedSurfaceColor}" />
+    <SolidColorBrush x:Key="FoviumHoverSurfaceBrush" Color="{StaticResource FoviumHoverSurfaceColor}" />
+    <SolidColorBrush x:Key="FoviumPressedSurfaceBrush" Color="{StaticResource FoviumPressedSurfaceColor}" />
+    <SolidColorBrush x:Key="FoviumDestructiveHoverBrush" Color="{StaticResource FoviumDestructiveHoverColor}" />
+    <SolidColorBrush x:Key="FoviumDestructiveBorderBrush" Color="{StaticResource FoviumDestructiveBorderColor}" />
+    <SolidColorBrush x:Key="FoviumWarningBrush" Color="{StaticResource FoviumWarningColor}" />
+    <SolidColorBrush x:Key="FoviumFocusRingBrush" Color="{StaticResource FoviumFocusRingColor}" />
+
+    <LinearGradientBrush x:Key="FoviumWindowTopFadeBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="{StaticResource FoviumWindowSurfaceColor}" Offset="0" />
+        <GradientStop Color="#001C1922" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="FoviumWindowBottomFadeBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#001C1922" Offset="0" />
+        <GradientStop Color="{StaticResource FoviumWindowSurfaceColor}" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="FoviumCardTopFadeBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="{StaticResource FoviumCardSurfaceColor}" Offset="0" />
+        <GradientStop Color="#0024212B" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="FoviumCardBottomFadeBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#0024212B" Offset="0" />
+        <GradientStop Color="{StaticResource FoviumCardSurfaceColor}" Offset="1" />
+    </LinearGradientBrush>
+
+    <CornerRadius x:Key="FoviumCornerRadiusSmall">6</CornerRadius>
+    <CornerRadius x:Key="FoviumCornerRadiusMedium">10</CornerRadius>
+    <CornerRadius x:Key="FoviumCornerRadiusLarge">14</CornerRadius>
+    <Thickness x:Key="FoviumDialogPadding">26,22,26,24</Thickness>
+    <Thickness x:Key="FoviumCardPadding">18</Thickness>
+    <system:Double x:Key="FoviumControlHeight">36</system:Double>
+    <system:Double x:Key="FoviumCompactControlHeight">32</system:Double>
+    <system:Double x:Key="FoviumEdgeFadeDepth">30</system:Double>
+    <system:Double x:Key="FoviumIconSizeSmall">14</system:Double>
+    <system:Double x:Key="FoviumIconSizeMedium">18</system:Double>
+
+    <StreamGeometry x:Key="FoviumCloseIconGeometry">M2,3 L3,2 L8,7 L13,2 L14,3 L9,8 L14,13 L13,14 L8,9 L3,14 L2,13 L7,8 Z</StreamGeometry>
+
+    <ControlTheme x:Key="FoviumScrollbarThumbTheme" TargetType="Thumb">
+        <Setter Property="Background" Value="#A8A099AD" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid Background="Transparent">
+                    <Border x:Name="VisibleThumb"
+                            Width="6"
+                            Margin="0,2"
+                            HorizontalAlignment="Center"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="3" />
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+        <Style Selector="^:pointerover /template/ Border#VisibleThumb">
+            <Setter Property="Width" Value="7" />
+            <Setter Property="Background" Value="#D0C7BED7" />
+        </Style>
+        <Style Selector="^:pressed /template/ Border#VisibleThumb">
+            <Setter Property="Width" Value="7" />
+            <Setter Property="Background" Value="{StaticResource FoviumTextPrimaryBrush}" />
+        </Style>
+    </ControlTheme>
+</ResourceDictionary>

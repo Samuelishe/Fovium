@@ -26,9 +26,16 @@ public sealed class JsonSettingsStoreTests : IDisposable
         Assert.Equal(PhotoSeparationMode.None, FoviumSettings.Default.Stage.PhotoSeparation);
         Assert.Equal(MatteStyle.Solid, FoviumSettings.Default.Stage.MatteStyle);
         Assert.Equal(24, FoviumSettings.Default.Stage.MatteWidthPhysicalPixels);
-        Assert.Equal(StageDefaults.AmbientBrightness, FoviumSettings.Default.Stage.AmbientBrightness);
-        Assert.Equal(StageDefaults.AmbientSaturation, FoviumSettings.Default.Stage.AmbientSaturation);
-        Assert.Equal(StageDefaults.AmbientBlurSigmaPixels, FoviumSettings.Default.Stage.AmbientBlur);
+        Assert.Equal(
+            StageDefaults.AmbientBrightness,
+            FoviumSettings.Default.Stage.BackgroundAdjustments.Ambient.Brightness);
+        Assert.Equal(
+            StageDefaults.AmbientSaturation,
+            FoviumSettings.Default.Stage.BackgroundAdjustments.Ambient.Saturation);
+        Assert.Equal(
+            StageDefaults.AmbientBlurSigmaPixels,
+            FoviumSettings.Default.Stage.BackgroundAdjustments.Ambient.Blur);
+        Assert.True(FoviumSettings.Default.Stage.BackgroundAdjustments.Average.IsIdentity);
         Assert.Equal(PresentationSettings.Default, FoviumSettings.Default.Presentation);
     }
 
@@ -164,9 +171,20 @@ public sealed class JsonSettingsStoreTests : IDisposable
                 PhotoSeparation = PhotoSeparationMode.HairlineAuto,
                 MatteStyle = MatteStyle.Angular,
                 MatteWidthPhysicalPixels = 96,
-                AmbientBrightness = 0.72,
-                AmbientSaturation = 1.1,
-                AmbientBlur = 24,
+                BackgroundAdjustments = StageBackgroundAdjustments.Default with
+                {
+                    Average = new StageColorAdjustment { Brightness = 0.82, Saturation = 1.35 },
+                    Dominant = new StageColorAdjustment { Brightness = 1.15, Saturation = 0.76 },
+                    ColorWash = new StageColorAdjustment { Brightness = 0.91, Saturation = 1.2 },
+                    ColorGradient = new StageColorAdjustment { Brightness = 1.08, Saturation = 1.1 },
+                    SoftGlow = new StageColorAdjustment { Brightness = 0.95, Saturation = 0.88 },
+                    Ambient = new AmbientStageAdjustment
+                    {
+                        Brightness = 0.72,
+                        Saturation = 1.1,
+                        Blur = 24,
+                    },
+                },
             },
             Shortcuts = ShortcutSettings.Default.WithBinding(
                 ViewerCommand.ToggleMatte,
@@ -206,11 +224,13 @@ public sealed class JsonSettingsStoreTests : IDisposable
         Assert.DoesNotContain("currentSample", serialized, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("history", serialized, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("isReserved", serialized, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("backgroundAdjustments", serialized, StringComparison.Ordinal);
+        Assert.DoesNotContain("ambientBrightness", serialized, StringComparison.Ordinal);
         Assert.Null(result.Diagnostic);
     }
 
     [Fact]
-    public async Task ExistingSchemaV2WithoutMatteGeometryUsesSolidAnd24Pixels()
+    public async Task ExistingSchemaV2AmbientFieldsMigrateIntoTypedAdjustments()
     {
         await WriteAsync(
             """
@@ -244,10 +264,14 @@ public sealed class JsonSettingsStoreTests : IDisposable
         Assert.Equal(new StageColor(0x65, 0x43, 0x21), result.Settings.Stage.MatteColor);
         Assert.Equal(MatteStyle.Solid, result.Settings.Stage.MatteStyle);
         Assert.Equal(24, result.Settings.Stage.MatteWidthPhysicalPixels);
+        Assert.Equal(0.72, result.Settings.Stage.BackgroundAdjustments.Ambient.Brightness);
+        Assert.Equal(1.1, result.Settings.Stage.BackgroundAdjustments.Ambient.Saturation);
+        Assert.Equal(24, result.Settings.Stage.BackgroundAdjustments.Ambient.Blur);
+        Assert.True(result.Settings.Stage.BackgroundAdjustments.Average.IsIdentity);
         Assert.Equal(new ShortcutGesture("K", ShortcutModifiers.Control),
             result.Settings.Shortcuts.Get(ViewerCommand.ToggleMatte));
         Assert.Null(result.Diagnostic);
-        Assert.False(result.RequiresSave);
+        Assert.True(result.RequiresSave);
     }
 
     [Theory]

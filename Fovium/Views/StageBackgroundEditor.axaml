@@ -1,0 +1,79 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:Fovium.Views"
+             x:Class="Fovium.Views.StageBackgroundEditor">
+    <Grid ColumnDefinitions="200,*" ColumnSpacing="14" Height="320">
+        <Border Classes="stage-mode-rail">
+            <views:EdgeFadeScrollViewer x:Name="ModeScroller"
+                                        BodyMargin="0,2,8,10"
+                                        TopFadeBrush="{StaticResource FoviumCardTopFadeBrush}"
+                                        BottomFadeBrush="{StaticResource FoviumCardBottomFadeBrush}">
+                <views:EdgeFadeScrollViewer.Body>
+                    <ListBox x:Name="ModeSelector"
+                             Background="Transparent"
+                             BorderThickness="0">
+                        <ListBoxItem x:Name="BlackModeItem" Classes="stage-mode-item" />
+                        <ListBoxItem x:Name="NeutralModeItem" Classes="stage-mode-item" />
+                        <ListBoxItem x:Name="AverageModeItem" Classes="stage-mode-item" />
+                        <ListBoxItem x:Name="DominantModeItem" Classes="stage-mode-item" />
+                        <ListBoxItem x:Name="ColorWashModeItem" Classes="stage-mode-item" />
+                        <ListBoxItem x:Name="ColorGradientModeItem" Classes="stage-mode-item" />
+                        <ListBoxItem x:Name="SoftGlowModeItem" Classes="stage-mode-item" />
+                        <ListBoxItem x:Name="CustomModeItem" Classes="stage-mode-item" />
+                        <ListBoxItem x:Name="AmbientModeItem" Classes="stage-mode-item" />
+                    </ListBox>
+                </views:EdgeFadeScrollViewer.Body>
+            </views:EdgeFadeScrollViewer>
+        </Border>
+
+        <Border Grid.Column="1" Classes="stage-context-panel">
+            <Grid RowDefinitions="Auto,Auto,*" RowSpacing="3">
+                <TextBlock x:Name="SelectedModeTitle" Classes="card-title" />
+                <TextBlock x:Name="SelectedModeDescription"
+                           Grid.Row="1"
+                           Classes="supporting"
+                           MaxWidth="390" />
+                <Grid Grid.Row="2" Margin="0,10,0,0">
+                    <TextBlock x:Name="NoModeOptions"
+                               Classes="supporting"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Center" />
+                    <Grid x:Name="CustomModeOptions"
+                          ColumnDefinitions="*,Auto"
+                          ColumnSpacing="18"
+                          VerticalAlignment="Top"
+                          IsVisible="False">
+                        <TextBlock x:Name="CustomColorLabel" VerticalAlignment="Center" />
+                        <views:ColorSwatchButton x:Name="CustomColorButton" Grid.Column="1" />
+                    </Grid>
+                    <StackPanel x:Name="AdjustmentModeOptions" Spacing="6" IsVisible="False">
+                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="3">
+                            <TextBlock x:Name="BrightnessLabel" Grid.Row="0" Grid.Column="0"
+                                       VerticalAlignment="Center" />
+                            <TextBlock x:Name="BrightnessValue" Grid.Row="0" Grid.Column="1" Width="54"
+                                       Classes="numeric-value" VerticalAlignment="Center" />
+                            <Slider x:Name="BrightnessSlider" Grid.Row="1" Grid.Column="0"
+                                    Grid.ColumnSpan="2" TickFrequency="1" />
+                        </Grid>
+                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="3">
+                            <TextBlock x:Name="SaturationLabel" Grid.Row="0" Grid.Column="0"
+                                       VerticalAlignment="Center" />
+                            <TextBlock x:Name="SaturationValue" Grid.Row="0" Grid.Column="1" Width="54"
+                                       Classes="numeric-value" VerticalAlignment="Center" />
+                            <Slider x:Name="SaturationSlider" Grid.Row="1" Grid.Column="0"
+                                    Grid.ColumnSpan="2" TickFrequency="1" />
+                        </Grid>
+                        <Grid x:Name="BlurRow" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="3">
+                            <TextBlock x:Name="BlurLabel" Grid.Row="0" Grid.Column="0"
+                                       VerticalAlignment="Center" />
+                            <TextBlock x:Name="BlurValue" Grid.Row="0" Grid.Column="1" Width="54"
+                                       Classes="numeric-value" VerticalAlignment="Center" />
+                            <Slider x:Name="BlurSlider" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                                    Minimum="8" Maximum="32" TickFrequency="1" />
+                        </Grid>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

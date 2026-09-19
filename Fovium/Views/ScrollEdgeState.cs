@@ -1,8 +1,8 @@
 namespace Fovium.Views;
 
-internal readonly record struct SettingsScrollEdgeState(bool ShowTopFade, bool ShowBottomFade)
+internal readonly record struct ScrollEdgeState(bool ShowTopFade, bool ShowBottomFade)
 {
-    public static SettingsScrollEdgeState Resolve(
+    public static ScrollEdgeState Resolve(
         double offset,
         double extent,
         double viewport,
@@ -13,7 +13,7 @@ internal readonly record struct SettingsScrollEdgeState(bool ShowTopFade, bool S
         var safeViewport = double.IsFinite(viewport) ? Math.Max(0, viewport) : 0;
         var safeThreshold = double.IsFinite(threshold) ? Math.Max(0, threshold) : 0.5;
         var overflow = safeExtent > safeViewport + safeThreshold;
-        return new SettingsScrollEdgeState(
+        return new ScrollEdgeState(
             overflow && safeOffset > safeThreshold,
             overflow && safeExtent - safeViewport - safeOffset > safeThreshold);
     }

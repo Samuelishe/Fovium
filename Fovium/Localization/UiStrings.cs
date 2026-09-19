@@ -52,10 +52,12 @@ internal static class UiStrings
     public const string StageBackground = "stage.background";
     public const string StageMatte = "stage.matte";
     public const string StageMatteEnabled = "stage.matteEnabled";
-    public const string StageAmbientOptions = "stage.ambientOptions";
-    public const string StageAmbientBrightness = "stage.ambientBrightness";
-    public const string StageAmbientSaturation = "stage.ambientSaturation";
-    public const string StageAmbientBlur = "stage.ambientBlur";
+    public const string StageBrightness = "stage.brightness";
+    public const string StageSaturation = "stage.saturation";
+    public const string StageBlur = "stage.blur";
+    public const string StageAdjustmentDescription = "stage.adjustmentDescription";
+    public const string StageNoAdjustments = "stage.noAdjustments";
+    public const string StageCustomColorDescription = "stage.customColorDescription";
     public const string StageCustomColor = "stage.customColor";
     public const string StageMatteColor = "stage.matteColor";
     public const string StageMatteColorSource = "stage.matteColorSource";

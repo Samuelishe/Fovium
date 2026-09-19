@@ -17,12 +17,18 @@ public sealed class StageSettingsTests
         Assert.Equal(PhotoSeparationMode.None, defaults.PhotoSeparation);
         Assert.Equal(MatteStyle.Solid, defaults.MatteStyle);
         Assert.Equal(24, defaults.MatteWidthPhysicalPixels);
-        Assert.Equal(0.65, defaults.AmbientBrightness);
-        Assert.Equal(0.85, defaults.AmbientSaturation);
-        Assert.Equal(18, defaults.AmbientBlur);
-        Assert.InRange(defaults.AmbientBrightness, 0.30, 1.00);
-        Assert.InRange(defaults.AmbientSaturation, 0.00, 1.25);
-        Assert.InRange(defaults.AmbientBlur, 8, 32);
+        var ambient = defaults.BackgroundAdjustments.Ambient;
+        Assert.Equal(0.65, ambient.Brightness);
+        Assert.Equal(0.85, ambient.Saturation);
+        Assert.Equal(18, ambient.Blur);
+        Assert.InRange(ambient.Brightness, 0.30, 1.00);
+        Assert.InRange(ambient.Saturation, 0.00, 1.25);
+        Assert.InRange(ambient.Blur, 8, 32);
+        Assert.True(defaults.BackgroundAdjustments.Average.IsIdentity);
+        Assert.True(defaults.BackgroundAdjustments.Dominant.IsIdentity);
+        Assert.True(defaults.BackgroundAdjustments.ColorWash.IsIdentity);
+        Assert.True(defaults.BackgroundAdjustments.ColorGradient.IsIdentity);
+        Assert.True(defaults.BackgroundAdjustments.SoftGlow.IsIdentity);
     }
 
     [Theory]
@@ -38,14 +44,20 @@ public sealed class StageSettingsTests
     {
         var normalized = (StageSettings.Default with
         {
-            AmbientBrightness = brightness,
-            AmbientSaturation = saturation,
-            AmbientBlur = blur,
+            BackgroundAdjustments = StageSettings.Default.BackgroundAdjustments with
+            {
+                Ambient = StageSettings.Default.BackgroundAdjustments.Ambient with
+                {
+                    Brightness = brightness,
+                    Saturation = saturation,
+                    Blur = blur,
+                },
+            },
         }).Normalize();
 
-        Assert.Equal(expectedBrightness, normalized.AmbientBrightness);
-        Assert.Equal(expectedSaturation, normalized.AmbientSaturation);
-        Assert.Equal(expectedBlur, normalized.AmbientBlur);
+        Assert.Equal(expectedBrightness, normalized.BackgroundAdjustments.Ambient.Brightness);
+        Assert.Equal(expectedSaturation, normalized.BackgroundAdjustments.Ambient.Saturation);
+        Assert.Equal(expectedBlur, normalized.BackgroundAdjustments.Ambient.Blur);
     }
 
     [Fact]
@@ -53,14 +65,121 @@ public sealed class StageSettingsTests
     {
         var normalized = (StageSettings.Default with
         {
-            AmbientBrightness = double.NaN,
-            AmbientSaturation = double.PositiveInfinity,
-            AmbientBlur = double.NegativeInfinity,
+            BackgroundAdjustments = StageSettings.Default.BackgroundAdjustments with
+            {
+                Ambient = StageSettings.Default.BackgroundAdjustments.Ambient with
+                {
+                    Brightness = double.NaN,
+                    Saturation = double.PositiveInfinity,
+                    Blur = double.NegativeInfinity,
+                },
+            },
         }).Normalize();
 
-        Assert.Equal(StageDefaults.AmbientBrightness, normalized.AmbientBrightness);
-        Assert.Equal(StageDefaults.AmbientSaturation, normalized.AmbientSaturation);
-        Assert.Equal(StageDefaults.AmbientBlurSigmaPixels, normalized.AmbientBlur);
+        Assert.Equal(
+            StageDefaults.AmbientBrightness,
+            normalized.BackgroundAdjustments.Ambient.Brightness);
+        Assert.Equal(
+            StageDefaults.AmbientSaturation,
+            normalized.BackgroundAdjustments.Ambient.Saturation);
+        Assert.Equal(
+            StageDefaults.AmbientBlurSigmaPixels,
+            normalized.BackgroundAdjustments.Ambient.Blur);
+    }
+
+    [Theory]
+    [InlineData(-1, 3, 0.5, 2.0)]
+    [InlineData(2, -1, 1.5, 0.0)]
+    [InlineData(double.NaN, double.PositiveInfinity, 1.0, 1.0)]
+    public void DerivedAdjustmentValuesNormalizeToPresentationBounds(
+        double brightness,
+        double saturation,
+        double expectedBrightness,
+        double expectedSaturation)
+    {
+        var normalized = (StageSettings.Default with
+        {
+            BackgroundAdjustments = StageSettings.Default.BackgroundAdjustments with
+            {
+                Average = new StageColorAdjustment
+                {
+                    Brightness = brightness,
+                    Saturation = saturation,
+                },
+            },
+        }).Normalize();
+
+        Assert.Equal(expectedBrightness, normalized.BackgroundAdjustments.Average.Brightness);
+        Assert.Equal(expectedSaturation, normalized.BackgroundAdjustments.Average.Saturation);
+    }
+
+    [Fact]
+    public void EachGeneratedModeRemembersItsOwnAdjustment()
+    {
+        var adjustments = StageBackgroundAdjustments.Default
+            .With(StageBackgroundMode.Average, new StageColorAdjustment
+            {
+                Brightness = 0.8,
+                Saturation = 1.1,
+            })
+            .With(StageBackgroundMode.ColorGradient, new StageColorAdjustment
+            {
+                Brightness = 1.2,
+                Saturation = 0.7,
+            })
+            .With(StageBackgroundMode.Ambient, new StageColorAdjustment
+            {
+                Brightness = 0.9,
+                Saturation = 1.2,
+            });
+
+        Assert.Equal(new StageColorAdjustment { Brightness = 0.8, Saturation = 1.1 }, adjustments.Average);
+        Assert.Equal(
+            new StageColorAdjustment { Brightness = 1.2, Saturation = 0.7 },
+            adjustments.ColorGradient);
+        Assert.True(adjustments.Dominant.IsIdentity);
+        Assert.True(adjustments.ColorWash.IsIdentity);
+        Assert.True(adjustments.SoftGlow.IsIdentity);
+        Assert.Equal(0.9, adjustments.Ambient.Brightness);
+        Assert.Equal(1.2, adjustments.Ambient.Saturation);
+        Assert.Equal(StageDefaults.AmbientBlurSigmaPixels, adjustments.Ambient.Blur);
+    }
+
+    [Theory]
+    [InlineData((int)StageBackgroundMode.Average)]
+    [InlineData((int)StageBackgroundMode.Dominant)]
+    [InlineData((int)StageBackgroundMode.ColorWash)]
+    [InlineData((int)StageBackgroundMode.ColorGradient)]
+    [InlineData((int)StageBackgroundMode.SoftGlow)]
+    public void UpdatingOnePhotoDerivedModeLeavesEveryOtherModeAtIdentity(int modeValue)
+    {
+        var mode = (StageBackgroundMode)modeValue;
+        var expected = new StageColorAdjustment { Brightness = 0.8, Saturation = 1.2 };
+        var updated = StageBackgroundAdjustments.Default.With(mode, expected);
+        var generatedModes = new[]
+        {
+            StageBackgroundMode.Average,
+            StageBackgroundMode.Dominant,
+            StageBackgroundMode.ColorWash,
+            StageBackgroundMode.ColorGradient,
+            StageBackgroundMode.SoftGlow
+        };
+
+        foreach (var candidate in generatedModes)
+        {
+            Assert.Equal(candidate == mode ? expected : StageColorAdjustment.Identity, updated.For(candidate));
+        }
+    }
+
+    [Theory]
+    [InlineData((int)StageBackgroundMode.Black)]
+    [InlineData((int)StageBackgroundMode.Neutral)]
+    [InlineData((int)StageBackgroundMode.Custom)]
+    public void ModesWithoutPresentationTuningResolveIdentity(int modeValue)
+    {
+        var adjustment = StageBackgroundAdjustments.Default.For((StageBackgroundMode)modeValue);
+
+        Assert.True(adjustment.IsIdentity);
     }
 
     [Fact]

@@ -373,6 +373,17 @@ rollback. Give every Settings section a fixed header, inset viewport, directiona
 session-local scroll position. Align Shortcut Conflict with the same secondary-window language. Eyedropper and screen
 sampling remain future review items rather than part of this stage.
 
+## UI-SYSTEM-R1 — Shared UI foundation and contextual Stage editor
+
+Locally complete at `0.1.8.0000`: establish semantic fixed-Dark tokens, canonical typography/cards/buttons/swatch,
+one vector-close secondary-window chrome, and reusable edge-fade scrolling with a wide scrollbar hit target around a
+thin visual thumb. Migrate Settings, Color Picker, and Shortcut Conflict to this authority. Replace the growing Stage
+Background radio list with a compact scrollable mode rail and stable contextual editor; persist independent identity-
+default Brightness/Saturation for Average, Dominant, Color Wash, Color Gradient, and Soft Glow while faithfully
+migrating Ambient brightness/saturation/blur. Adjustments remain downstream render presentation and never alter or
+rerun photograph analysis. No external UI library, public component framework, Viewer redesign, or broad SettingsWindow
+decomposition is introduced.
+
 ## Later / separate platform milestones
 
 - file association and Open With integration;

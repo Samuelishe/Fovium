@@ -7,21 +7,22 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-SETTINGS-UX-R1-F1 is locally complete over the HOME-UX-R1-F2 baseline. Product version is `0.1.7.0000`: General now
-offers a conservative `Items I open` Recent capture default and an opt-in `Every photo I view` policy. The latter
-records only successful canonical manual-navigation publications; preload, failed/stale publication, Peek, Blink, and
-slideshow advance do not add entries, and Remember recent photos remains the absolute recording gate.
+UI-SYSTEM-R1 is locally implemented over the SETTINGS-UX-R1-F1 baseline. Product version is `0.1.8.0000`. The
+application now loads project-owned semantic tokens plus shared typography, card, button, color-swatch,
+secondary-window, vector-close, and edge-fade scroll resources. Settings, Color Picker, and Shortcut Conflict consume
+one chrome/button authority. The canonical scrollbar keeps a broad transparent pointer target around a thin visual
+thumb with immediate hover response, while Settings pages and bounded lists share overflow-state logic.
 
-The legacy RGB-slider Color Editor is replaced by one reusable, owned, decoration-free Fovium Color Picker for Stage,
-Matte, Cursor Highlight, default Markup, and active Viewer Markup color. Its circular Hue/Saturation field, vertical
-Value strip, double-outline marker, and bidirectional RGB/HSV/HEX inputs edit the existing reference-sRGB bytes without
-alpha or semantic-color coupling. Settings color swatches are the focusable buttons. Live preview remains reversible:
-OK accepts while Cancel, Esc, and close restore the exact original caller value.
+Stage Background is now a compact keyboard-aware mode rail beside a stable contextual panel rather than a long radio
+list. Black/Neutral show no irrelevant controls; Custom shows the shared color swatch; Average, Dominant, Color Wash,
+Color Gradient, and Soft Glow each remember independent Brightness/Saturation; Ambient retains independent
+Brightness/Saturation plus Blur. Legacy flat Ambient values migrate into the typed schema-v2 representation without
+resetting existing user tuning. New modes default to identity. The bounded render-time transform is downstream of
+photo-derived truth and neither reruns nor mutates analysis, Picker, Histogram, or Color Management data.
 
-Settings pages now keep their title/description in a stable header above an inset scroll viewport. Dynamic 30 DIP
-surface-colored edge fades indicate only the directions with hidden content, overlays never accept input, scrollbars
-are inset, and each section keeps its own offset for the lifetime of the window. Shortcut Conflict uses matching owned
-Fovium chrome. No eyedropper or screen/source-photo sampling flow is part of this stage.
+`UI-DESIGN.md` is the durable composition authority and `Fovium/Themes` owns exact resources. This remains a small
+internal design layer rather than an external library or public component framework; Home keeps its accepted expressive
+composition and the Viewer has not been broadly redesigned.
 
 HOME-UX-R1-F2 remains the Recent privacy foundation: Remember recent photos is a
 privacy contract rather than a visibility toggle. Turning it off atomically clears persisted history, cancels Recent
@@ -64,14 +65,13 @@ Windows at `RenderScaling = 1.00`.
 
 ## Current focus
 
-SETTINGS-UX-R1-F1 is ready for owner review/commit. Focused tests cover Recent capture policy, canonical-presentation
-gating, HSV/RGB/HEX conversion and geometry, reversible color-edit transactions, scroll-edge state, swatch structure,
-and secondary-window ownership. Windows runtime evidence covers RU/EN, `760×560`, fixed headers, top/middle/bottom
-fades, section-local scroll retention, all color representations, deterministic reference colors, marker visibility,
-and picker entry from both Settings and Viewer Markup. The focused Release filter passes 138/138, the full Release
-suite passes 2,383/2,383, and the solution build completes with zero warnings/errors. A forced scale-factor launch did
-not establish a different Avalonia RenderScaling, so real fractional-DPI and Linux/macOS window interaction remain
-manual follow-up surfaces.
+UI-SYSTEM-R1 is ready for owner review/commit. The focused Release filter passes 211/211, the full Release suite passes
+2,412/2,412, and the Release solution build completes with zero warnings/errors. Six injected UI/model/migration/render
+mutations were killed by their narrow owning tests. Production-Avalonia evidence covers every Background mode, canonical
+Settings/Picker/Conflict close chrome, shared buttons/swatches, RU/EN, normal and `760×560`, Stage top/middle/bottom,
+rail overflow, idle/immediate-hover scrollbar states, and a successful drag initiated in the wide transparent target
+beside the thin thumb. The per-user settings file was restored to its exact original SHA-256 and no Fovium process
+remains. Real fractional-DPI and Linux/macOS window interaction remain manual follow-up surfaces.
 
 HOME-UX-R1-F2 local evidence covers privacy migration and suppression, 20-entry MRU
 normalization, viewport-first preview scheduling, independent cache bounds, deterministic carousel motion, context-menu
@@ -123,17 +123,21 @@ runtime behavior and real fractional-DPI/multi-monitor visual acceptance remain 
   photographs; slideshow, inspection, preload, and failed/stale work never churn the bounded MRU.
 - Persistent image-change view policy: Keep current scale by default, or Fit each image.
 - Human-first dark Settings window with implemented General, Viewing, Color, Stage, Presentation, Controls, and About
-  sections; vertical navigation; fixed page headers; inset scrollable cards with dynamic edge fades; grouped shortcut
-  keycaps; project identity/version; owned decoration-free chrome; schema-v2 JSON autosave; explicit v1 migration; and
-  malformed-file fallback. One reusable project-owned HS-wheel/Value color dialog edits Stage and Presentation colors
-  through synchronized RGB/HSV/HEX values and exact Cancel restoration. Monitor Color
+  sections; vertical navigation; fixed page headers; inset scrollable cards with shared dynamic edge fades and usable
+  thin-visual scrollbars; grouped shortcut keycaps; project identity/version; owned decoration-free chrome; schema-v2
+  JSON autosave; explicit v1/legacy-Ambient evolution; and malformed-file fallback. Settings, Color Picker, and Shortcut
+  Conflict consume shared semantic tokens, typography/cards/buttons, secondary chrome, and one vector close template.
+  One reusable project-owned HS-wheel/Value color dialog edits Stage and Presentation colors through synchronized
+  RGB/HSV/HEX values and exact Cancel restoration. Monitor Color
   Management is enabled by default and its single persisted checkbox can restore the exact legacy path.
 - Windows ordinary-SDR photograph presentation through the assigned active-monitor RGB ICC and app-local Little CMS
   2.19, with one encoded-size managed source per active source/destination, source/destination latest-wins publication,
   the unchanged canonical spatial renderer for all viewport interaction, explicit fallback state, and no monitor
   transform of Stage, Matte, Ambient, markup, Color Picker, or Histogram.
-- Persisted Stage background, custom/matte colors, independent Matte, and configurable Ambient
-  brightness/saturation/blur with synchronized Settings and context-menu surfaces; Matte color may use Custom,
+- Persisted Stage background, custom/matte colors, independent Matte, and a contextual Background mode rail with
+  independent Brightness/Saturation for every photo-derived mode plus Ambient Brightness/Saturation/Blur; identity
+  defaults preserve former output and render-time adjustment leaves analysis truth unchanged. Matte color may use
+  Custom,
   presentation-safe Average, or presentation-safe Dominant source and may add Hairline Auto separation.
 - One deterministic oriented reference-sRGB analysis per decoded photograph, bounded to a 96-pixel long edge and
   attached to the existing byte-accounted decoded cache entry; exact-source publication exposes mathematical average,

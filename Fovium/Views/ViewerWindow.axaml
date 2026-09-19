@@ -354,10 +354,8 @@
                 </StackPanel>
                 <Separator Height="1" />
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                    <Button x:Name="MarkupColorButton" Width="36" Height="28" Padding="6" Focusable="False">
-                        <Border x:Name="MarkupColorSwatch"
-                                Width="18" Height="18" CornerRadius="3" />
-                    </Button>
+                    <views:ColorSwatchButton x:Name="MarkupColorButton"
+                                             Width="36" Height="28" Padding="5" Focusable="False" />
                     <TextBlock x:Name="MarkupStrokeText"
                                VerticalAlignment="Center"
                                Margin="3,0,0,0" />

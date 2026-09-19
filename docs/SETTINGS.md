@@ -73,14 +73,22 @@ A future zoom-step control may present a Fine-to-Coarse slider. It adjusts the s
 
 ### Stage
 
-Stage background is a typed choice: Black (default), fixed Neutral `#505050`, configurable Custom solid color, Ambient,
-Average, Dominant, Color Wash, Color Gradient, or Soft Glow. Matte is an independent toggle over any background with
+Stage background is a typed choice presented in a compact scrollable mode rail: Black (default), fixed Neutral
+`#505050`, configurable Custom solid color, Average, Dominant, Color Wash, Color Gradient, Soft Glow, or Ambient. A
+stable contextual panel shows only meaningful controls: Black/Neutral have no tuning, Custom has the shared color
+swatch, the five photo-derived modes have Brightness/Saturation, and only Ambient additionally has Blur. Each tunable
+mode remembers its own persisted values. Newly tunable modes default to identity, so an untouched upgrade preserves
+their prior pixels.
+
+Matte is an independent card below Background and remains a toggle over any background with
 Solid/Rounded/Soft/Angular outer style, physical-pixel width (`24` default, `4–192`), and persisted
 Custom/Average/Dominant color source. Custom preserves the existing color; automatic sources use deterministic
 presentation-safe analysis tones. Photo separation persists as None (default) or Hairline Auto. Style affects only the
 area outside the complete rectangular photograph; transparent pixels remain backed by opaque Matte color. Ambient
-exposes bounded brightness, saturation, and blur controls. Background, Matte color source/separation, color,
-enabled/style/width, brightness, and saturation apply live; blur preparations are coalesced and asynchronous. Settings
+uses its established bounded brightness, saturation, and blur ranges. Background, per-mode adjustment, Matte color
+source/separation, color, enabled/style/width apply live; only Ambient blur preparations are coalesced and asynchronous.
+Brightness/Saturation are presentation adjustments downstream of photo analysis and never modify Average, Dominant,
+Notable colors, Histogram, picker values, or color-management input. Settings
 and the context menu observe the same state owner and autosave without Save/Apply. Stage remains independent from
 application theme; see [`PROJECT-VISION.md`](PROJECT-VISION.md), [`PHOTO-DERIVED-STYLING.md`](PHOTO-DERIVED-STYLING.md),
 and [`THEMES.md`](THEMES.md).
@@ -218,6 +226,13 @@ never serialized.
 R10-B keeps schema v2 and adds only the `ColorGradient` and `SoftGlow` enum identities. Existing schema-v2 files load
 them without migration, missing values preserve prior defaults, and customized Stage state remains untouched. Analysis
 and all derived rasters remain runtime cache data and are never serialized.
+
+UI-SYSTEM-R1 keeps schema v2 and replaces the three flat Ambient tuning fields with typed
+`BackgroundAdjustments`: separate Average, Dominant, Color Wash, Color Gradient, and Soft Glow color adjustments plus
+Ambient brightness/saturation/blur. On first load of an older schema-v2 file, any valid legacy Ambient values migrate
+into the typed Ambient record and request one normalized rewrite; missing or malformed members retain established
+defaults. New photo-derived records use exact identity defaults. Analysis output and derived rasters remain runtime
+truth and are never serialized.
 
 SETTINGS-UX-R1 keeps schema v2 and adds the `Language` identity: `SystemDefault`, `English`, or `Russian`. Missing and
 invalid values normalize to `SystemDefault`, so existing files preserve OS-culture resolution. Startup loads settings

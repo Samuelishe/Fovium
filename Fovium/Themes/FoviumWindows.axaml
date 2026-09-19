@@ -1,0 +1,16 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Style Selector="Window.fovium-secondary-window">
+        <Setter Property="Background" Value="{StaticResource FoviumAppBackgroundBrush}" />
+        <Setter Property="WindowDecorations" Value="None" />
+        <Setter Property="ShowInTaskbar" Value="False" />
+        <Setter Property="Topmost" Value="False" />
+        <Setter Property="WindowStartupLocation" Value="CenterOwner" />
+    </Style>
+    <Style Selector="Border.fovium-window-surface">
+        <Setter Property="Background" Value="{StaticResource FoviumWindowSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource FoviumBorderInteractiveBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{StaticResource FoviumCornerRadiusLarge}" />
+    </Style>
+</Styles>

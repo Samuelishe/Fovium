@@ -256,6 +256,12 @@ medians at `1.21–2.83 ms`, and 1280×800 Stage-only raster-CPU medians at `1.6
 shader path that was consistently about twice as expensive. These numbers exclude photograph composition and are local
 comparative CPU evidence, not cross-platform GPU guarantees.
 
+UI-SYSTEM-R1 applies per-mode Stage Brightness/Saturation as a bounded render-time color matrix after the existing
+photo-derived color or tiny raster is selected. Identity defaults bypass the filter, preserving the former output path.
+Changing these values neither decodes nor reruns the `96 px` analyzer and does not regenerate the retained `32×32`
+Gradient/Soft Glow rasters; it requests only ordinary Stage presentation. Ambient retains the same rule for
+Brightness/Saturation, while Blur alone remains the coalesced derived-raster invalidation.
+
 Matte style, width, color, and enabled state remain synchronous draw-time presentation and never invalidate Ambient.
 Solid, Rounded, and Angular materialize bounded geometry; Soft uses one bounded mask blur on the Matte shape without a
 viewport-sized offscreen or retained cache. A local Windows raster observation at 1920×1080 over 300 draws measured

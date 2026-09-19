@@ -58,7 +58,7 @@ Run the focused SETTINGS-UX-R1-F1 Recent policy, canonical publication, color mo
 localization, persistence, and version contracts:
 
 ```powershell
-dotnet test Fovium.Tests/Fovium.Tests.csproj -c Release --no-restore --filter "FullyQualifiedName~RecentCapturePolicyTests|FullyQualifiedName~RecentNavigationCaptureTests|FullyQualifiedName~RecentCapturePolicySettingsTests|FullyQualifiedName~ColorSelectionModelTests|FullyQualifiedName~ColorWheelGeometryTests|FullyQualifiedName~SettingsScrollEdgeStateTests|FullyQualifiedName~SettingsEcosystemStructureTests|FullyQualifiedName~JsonSettingsStoreTests|FullyQualifiedName~LocalizationTests|FullyQualifiedName~FoviumVersionTests"
+dotnet test Fovium.Tests/Fovium.Tests.csproj -c Release --no-restore --filter "FullyQualifiedName~RecentCapturePolicyTests|FullyQualifiedName~RecentNavigationCaptureTests|FullyQualifiedName~RecentCapturePolicySettingsTests|FullyQualifiedName~ColorSelectionModelTests|FullyQualifiedName~ColorWheelGeometryTests|FullyQualifiedName~ScrollEdgeStateTests|FullyQualifiedName~SettingsEcosystemStructureTests|FullyQualifiedName~JsonSettingsStoreTests|FullyQualifiedName~LocalizationTests|FullyQualifiedName~FoviumVersionTests"
 ```
 
 The final local filter passes 138/138 and the full Release suite passes 2,383/2,383; the preceding Release solution
@@ -73,6 +73,23 @@ visibility, exact HEX edit, and picker ownership from both Settings and Viewer M
 launch did not prove that Avalonia used a different RenderScaling. A real conflicting shortcut also opens the redesigned
 owned Fovium dialog and Cancel leaves the existing owner intact. Real fractional-DPI remains unclaimed. No Fovium
 process or changed AppData is left after capture.
+
+Run the focused UI-SYSTEM-R1 shared-UI, Stage model/migration/rendering, localization, and version contracts:
+
+```powershell
+dotnet test Fovium.Tests/Fovium.Tests.csproj -c Release --no-restore --filter "FullyQualifiedName~StageSettingsTests|FullyQualifiedName~JsonSettingsStoreTests|FullyQualifiedName~SkiaStageRendererTests|FullyQualifiedName~SettingsEcosystemStructureTests|FullyQualifiedName~StageBackgroundEditorModeStateTests|FullyQualifiedName~AmbientStageCoordinatorTests|FullyQualifiedName~TemporaryStagePresentationTests|FullyQualifiedName~SettingsServiceTests|FullyQualifiedName~StageDefaultsTests|FullyQualifiedName~ScrollEdgeStateTests|FullyQualifiedName~LocalizationTests|FullyQualifiedName~FoviumVersionTests"
+```
+
+The final local filter passes 211/211 and the full Release suite passes 2,412/2,412; the preceding Release solution
+build completes with zero warnings/errors. Six injected mutations were each killed by the narrow owning tests:
+cross-mode tuning write, Gradient gaining Blur, lost legacy Ambient brightness, hit-testable fade, a 16 DIP visible
+thumb, and bypassed render adjustment.
+
+Ignored production-Avalonia evidence under `artifacts/ui-system-r1/` covers Settings/Picker/Conflict canonical close
+contact sheet, centered Primary/Secondary buttons, shared swatches, every Background mode, RU/EN, normal and `760×560`,
+Stage top/middle/bottom fades, idle/hover scrollbar, and a successful drag initiated beside the 6 DIP thumb but inside
+its 16 DIP target. The harness used a real local photograph, restored the per-user settings file to the exact original
+SHA-256, and left no Fovium process. Fractional-DPI and non-Windows interaction remain unclaimed.
 
 Run the focused SETTINGS-UX-R1 language, startup, persistence, section, window-drag, and version contracts:
 

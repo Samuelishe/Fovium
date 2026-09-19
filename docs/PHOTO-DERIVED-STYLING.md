@@ -90,6 +90,11 @@ analysis with ten Notable values,
 16,384 Color Wash, and two 4,096-byte gradient rasters. Geometry only stretches the selected artifact and never rebuilds
 it. A missing raster never triggers UI-thread gradient synthesis; it uses the same truthful Black fallback.
 
+Persisted per-mode Brightness/Saturation is a later Stage-presentation transform over the selected exact solid or tiny
+raster. Identity values preserve the original output. The transform does not feed back into this analysis, its Average
+or Dominant, palette/spatial field, Notable colors, Color Profile, automatic Matte policy, Picker, or Histogram, and
+changing it never regenerates the retained analysis/rasters.
+
 Derived styling is accepted only when its source identity equals the actually rendered photograph identity. If analysis
 is unavailable or mismatched, derived backgrounds render Black, automatic Matte renders the fixed neutral fallback, and
 Hairline Auto is omitted. A previous photograph's style is never displayed as the new photograph's style.

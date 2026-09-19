@@ -44,15 +44,7 @@ internal sealed partial class SettingsWindow : Window
     private readonly RadioButton _slideshowStopAtEndOption;
     private readonly RadioButton _slideshowLoopOption;
     private readonly CheckBox _monitorColorManagementOption;
-    private readonly RadioButton _blackStageOption;
-    private readonly RadioButton _neutralStageOption;
-    private readonly RadioButton _customStageOption;
-    private readonly RadioButton _ambientStageOption;
-    private readonly RadioButton _averageStageOption;
-    private readonly RadioButton _dominantStageOption;
-    private readonly RadioButton _colorWashStageOption;
-    private readonly RadioButton _colorGradientStageOption;
-    private readonly RadioButton _softGlowStageOption;
+    private readonly StageBackgroundEditor _stageBackgroundEditor;
     private readonly CheckBox _matteEnabledOption;
     private readonly ComboBox _matteStyleOption;
     private readonly ComboBox _matteColorSourceOption;
@@ -60,23 +52,11 @@ internal sealed partial class SettingsWindow : Window
     private readonly Grid _matteCustomColorPanel;
     private readonly Slider _matteWidthSlider;
     private readonly TextBlock _matteWidthValue;
-    private readonly Border _customColorSwatch;
-    private readonly Border _matteColorSwatch;
-    private readonly Slider _brightnessSlider;
-    private readonly Slider _saturationSlider;
-    private readonly Slider _blurSlider;
-    private readonly TextBlock _brightnessValue;
-    private readonly TextBlock _saturationValue;
-    private readonly TextBlock _blurValue;
+    private readonly ColorSwatchButton _matteColorButton;
     private readonly TextBlock _shortcutValidationText;
-    private readonly Expander _ambientOptions;
     private readonly CheckBox _enableMarkupOption;
-    private readonly Border _highlightColorSwatch;
-    private readonly Border _defaultMarkupColorSwatch;
-    private readonly Button _customColorButton;
-    private readonly Button _matteColorButton;
-    private readonly Button _highlightColorButton;
-    private readonly Button _defaultMarkupColorButton;
+    private readonly ColorSwatchButton _highlightColorButton;
+    private readonly ColorSwatchButton _defaultMarkupColorButton;
     private readonly Slider _highlightOpacitySlider;
     private readonly Slider _highlightRadiusSlider;
     private readonly Slider _defaultStrokeSlider;
@@ -140,15 +120,7 @@ internal sealed partial class SettingsWindow : Window
         _slideshowStopAtEndOption = FindRequired<RadioButton>("SlideshowStopAtEndOption");
         _slideshowLoopOption = FindRequired<RadioButton>("SlideshowLoopOption");
         _monitorColorManagementOption = FindRequired<CheckBox>("MonitorColorManagementOption");
-        _blackStageOption = FindRequired<RadioButton>("BlackStageOption");
-        _neutralStageOption = FindRequired<RadioButton>("NeutralStageOption");
-        _customStageOption = FindRequired<RadioButton>("CustomStageOption");
-        _ambientStageOption = FindRequired<RadioButton>("AmbientStageOption");
-        _averageStageOption = FindRequired<RadioButton>("AverageStageOption");
-        _dominantStageOption = FindRequired<RadioButton>("DominantStageOption");
-        _colorWashStageOption = FindRequired<RadioButton>("ColorWashStageOption");
-        _colorGradientStageOption = FindRequired<RadioButton>("ColorGradientStageOption");
-        _softGlowStageOption = FindRequired<RadioButton>("SoftGlowStageOption");
+        _stageBackgroundEditor = FindRequired<StageBackgroundEditor>("StageBackgroundEditor");
         _matteEnabledOption = FindRequired<CheckBox>("MatteEnabledOption");
         _matteStyleOption = FindRequired<ComboBox>("MatteStyleOption");
         _matteColorSourceOption = FindRequired<ComboBox>("MatteColorSourceOption");
@@ -156,23 +128,11 @@ internal sealed partial class SettingsWindow : Window
         _matteCustomColorPanel = FindRequired<Grid>("MatteCustomColorPanel");
         _matteWidthSlider = FindRequired<Slider>("MatteWidthSlider");
         _matteWidthValue = FindRequired<TextBlock>("MatteWidthValue");
-        _customColorSwatch = FindRequired<Border>("CustomColorSwatch");
-        _matteColorSwatch = FindRequired<Border>("MatteColorSwatch");
-        _brightnessSlider = FindRequired<Slider>("BrightnessSlider");
-        _saturationSlider = FindRequired<Slider>("SaturationSlider");
-        _blurSlider = FindRequired<Slider>("BlurSlider");
-        _brightnessValue = FindRequired<TextBlock>("BrightnessValue");
-        _saturationValue = FindRequired<TextBlock>("SaturationValue");
-        _blurValue = FindRequired<TextBlock>("BlurValue");
         _shortcutValidationText = FindRequired<TextBlock>("ShortcutValidationText");
-        _ambientOptions = FindRequired<Expander>("AmbientOptions");
         _enableMarkupOption = FindRequired<CheckBox>("EnableMarkupOption");
-        _highlightColorSwatch = FindRequired<Border>("HighlightColorSwatch");
-        _defaultMarkupColorSwatch = FindRequired<Border>("DefaultMarkupColorSwatch");
-        _customColorButton = FindRequired<Button>("CustomColorButton");
-        _matteColorButton = FindRequired<Button>("MatteColorButton");
-        _highlightColorButton = FindRequired<Button>("HighlightColorButton");
-        _defaultMarkupColorButton = FindRequired<Button>("DefaultMarkupColorButton");
+        _matteColorButton = FindRequired<ColorSwatchButton>("MatteColorButton");
+        _highlightColorButton = FindRequired<ColorSwatchButton>("HighlightColorButton");
+        _defaultMarkupColorButton = FindRequired<ColorSwatchButton>("DefaultMarkupColorButton");
         _highlightOpacitySlider = FindRequired<Slider>("HighlightOpacitySlider");
         _highlightRadiusSlider = FindRequired<Slider>("HighlightRadiusSlider");
         _defaultStrokeSlider = FindRequired<Slider>("DefaultStrokeSlider");
@@ -183,9 +143,8 @@ internal sealed partial class SettingsWindow : Window
         _defaultMarkupOpacityValue = FindRequired<TextBlock>("DefaultMarkupOpacityValue");
 
         Title = localizer[UiStrings.SettingsTitle];
-        _closeButton.Content = FoviumIconCatalog.Create(FoviumIcon.Close, 14);
-        ToolTip.SetTip(_closeButton, localizer[UiStrings.MenuClose]);
-        AutomationProperties.SetName(_closeButton, localizer[UiStrings.MenuClose]);
+        ToolTip.SetTip(_closeButton, localizer[UiStrings.CommonClose]);
+        AutomationProperties.SetName(_closeButton, localizer[UiStrings.CommonClose]);
         AttachResizeHandle("ResizeNorth", WindowEdge.North);
         AttachResizeHandle("ResizeSouth", WindowEdge.South);
         AttachResizeHandle("ResizeWest", WindowEdge.West);
@@ -293,9 +252,6 @@ internal sealed partial class SettingsWindow : Window
         FindRequired<TextBlock>("DefaultStrokeLabel").Text = localizer[UiStrings.PresentationStroke];
         FindRequired<TextBlock>("DefaultMarkupOpacityLabel").Text =
             localizer[UiStrings.PresentationOpacity];
-        FindRequired<TextBlock>("BrightnessLabel").Text = localizer[UiStrings.StageAmbientBrightness];
-        FindRequired<TextBlock>("SaturationLabel").Text = localizer[UiStrings.StageAmbientSaturation];
-        FindRequired<TextBlock>("BlurLabel").Text = localizer[UiStrings.StageAmbientBlur];
         FindRequired<TextBlock>("MatteStyleLabel").Text = localizer[UiStrings.StageMatteStyle];
         FindRequired<TextBlock>("MatteSizeLabel").Text = localizer[UiStrings.StageMatteSize];
         FindRequired<TextBlock>("MatteColorLabel").Text = localizer[UiStrings.StageMatteColor];
@@ -305,17 +261,8 @@ internal sealed partial class SettingsWindow : Window
             localizer[UiStrings.StagePhotoSeparation];
         _keepCurrentScaleOption.Content = localizer[UiStrings.SettingsKeepCurrentScale];
         _fitEachImageOption.Content = localizer[UiStrings.SettingsFitEachImage];
-        _blackStageOption.Content = localizer[UiStrings.StageBlack];
-        _neutralStageOption.Content = localizer[UiStrings.StageNeutral];
-        _customStageOption.Content = localizer[UiStrings.StageCustom];
-        _ambientStageOption.Content = localizer[UiStrings.StageAmbient];
-        _averageStageOption.Content = localizer[UiStrings.StageAverage];
-        _dominantStageOption.Content = localizer[UiStrings.StageDominant];
-        _colorWashStageOption.Content = localizer[UiStrings.StageColorWash];
-        _colorGradientStageOption.Content = localizer[UiStrings.StageColorGradient];
-        _softGlowStageOption.Content = localizer[UiStrings.StageSoftGlow];
         _matteEnabledOption.Content = localizer[UiStrings.StageMatteEnabled];
-        _ambientOptions.Header = localizer[UiStrings.StageAmbientOptions];
+        _stageBackgroundEditor.Configure(localizer);
         _matteStyleOption.ItemsSource = Enum.GetValues<MatteStyle>()
             .Select(style => new ComboBoxItem { Content = LocalizeMatteStyle(style), Tag = style })
             .ToArray();
@@ -340,7 +287,6 @@ internal sealed partial class SettingsWindow : Window
             FoviumVersion.Display);
         FindRequired<TextBlock>("AboutProductDescription").Text =
             localizer[UiStrings.SettingsAboutProductDescription];
-        ConfigureColorButton(_customColorButton, localizer[UiStrings.StageCustomColor]);
         ConfigureColorButton(_matteColorButton, localizer[UiStrings.StageMatteColor]);
         ConfigureColorButton(_highlightColorButton, localizer[UiStrings.PresentationHighlightColor]);
         ConfigureColorButton(_defaultMarkupColorButton, localizer[UiStrings.PresentationMarkupColor]);
@@ -416,43 +362,20 @@ internal sealed partial class SettingsWindow : Window
                     _monitorColorManagementOption.IsChecked == true);
             }
         };
-        _blackStageOption.IsCheckedChanged += (_, _) => SetBackgroundIfChecked(
-            _blackStageOption,
-            StageBackgroundMode.Black);
-        _neutralStageOption.IsCheckedChanged += (_, _) => SetBackgroundIfChecked(
-            _neutralStageOption,
-            StageBackgroundMode.Neutral);
-        _customStageOption.IsCheckedChanged += (_, _) => SetBackgroundIfChecked(
-            _customStageOption,
-            StageBackgroundMode.Custom);
-        _ambientStageOption.IsCheckedChanged += (_, _) => SetBackgroundIfChecked(
-            _ambientStageOption,
-            StageBackgroundMode.Ambient);
-        _averageStageOption.IsCheckedChanged += (_, _) => SetBackgroundIfChecked(
-            _averageStageOption,
-            StageBackgroundMode.Average);
-        _dominantStageOption.IsCheckedChanged += (_, _) => SetBackgroundIfChecked(
-            _dominantStageOption,
-            StageBackgroundMode.Dominant);
-        _colorWashStageOption.IsCheckedChanged += (_, _) => SetBackgroundIfChecked(
-            _colorWashStageOption,
-            StageBackgroundMode.ColorWash);
-        _colorGradientStageOption.IsCheckedChanged += (_, _) => SetBackgroundIfChecked(
-            _colorGradientStageOption,
-            StageBackgroundMode.ColorGradient);
-        _softGlowStageOption.IsCheckedChanged += (_, _) => SetBackgroundIfChecked(
-            _softGlowStageOption,
-            StageBackgroundMode.SoftGlow);
+        _stageBackgroundEditor.StageChanged += async (_, e) =>
+        {
+            if (!_initializing)
+            {
+                await _settings.SetStageAsync(e.Settings);
+            }
+        };
+        _stageBackgroundEditor.CustomColorRequested += async (_, _) =>
+            await EditColorAsync(customBackground: true);
         _matteEnabledOption.IsCheckedChanged += OnMatteEnabledChanged;
         _matteStyleOption.SelectionChanged += OnMatteStyleChanged;
         _matteColorSourceOption.SelectionChanged += OnMatteColorSourceChanged;
         _photoSeparationOption.SelectionChanged += OnPhotoSeparationChanged;
         _matteWidthSlider.ValueChanged += OnMatteWidthChanged;
-        _brightnessSlider.ValueChanged += OnAmbientSliderChanged;
-        _saturationSlider.ValueChanged += OnAmbientSliderChanged;
-        _blurSlider.ValueChanged += OnAmbientSliderChanged;
-        _customColorButton.Click += async (_, _) =>
-            await EditColorAsync(customBackground: true);
         _matteColorButton.Click += async (_, _) =>
             await EditColorAsync(customBackground: false);
         FindRequired<Button>("ResetShortcutsButton").Click += async (_, _) =>
@@ -651,14 +574,6 @@ internal sealed partial class SettingsWindow : Window
             _settings.Current.Slideshow with { EndBehavior = behavior });
     }
 
-    private async void SetBackgroundIfChecked(RadioButton option, StageBackgroundMode mode)
-    {
-        if (!_initializing && option.IsChecked == true)
-        {
-            await _settings.SetStageAsync(_settings.Current.Stage with { BackgroundMode = mode });
-        }
-    }
-
     private async void OnMatteEnabledChanged(object? sender, RoutedEventArgs e)
     {
         if (!_initializing)
@@ -691,23 +606,6 @@ internal sealed partial class SettingsWindow : Window
         {
             MatteWidthPhysicalPixels = width,
         });
-    }
-
-    private async void OnAmbientSliderChanged(object? sender, RangeBaseValueChangedEventArgs e)
-    {
-        if (_initializing)
-        {
-            return;
-        }
-
-        var stage = _settings.Current.Stage with
-        {
-            AmbientBrightness = _brightnessSlider.Value / 100,
-            AmbientSaturation = _saturationSlider.Value / 100,
-            AmbientBlur = Math.Round(_blurSlider.Value),
-        };
-        UpdateAmbientValueText(stage);
-        await _settings.SetStageAsync(stage);
     }
 
     private async Task EditColorAsync(bool customBackground)
@@ -895,16 +793,7 @@ internal sealed partial class SettingsWindow : Window
             settings.Slideshow.EndBehavior == SlideshowEndBehavior.StopAtEnd;
         _slideshowLoopOption.IsChecked = settings.Slideshow.EndBehavior == SlideshowEndBehavior.Loop;
         _monitorColorManagementOption.IsChecked = settings.MonitorColorManagementEnabled;
-        _blackStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.Black;
-        _neutralStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.Neutral;
-        _customStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.Custom;
-        _ambientStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.Ambient;
-        _averageStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.Average;
-        _dominantStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.Dominant;
-        _colorWashStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.ColorWash;
-        _colorGradientStageOption.IsChecked =
-            settings.Stage.BackgroundMode == StageBackgroundMode.ColorGradient;
-        _softGlowStageOption.IsChecked = settings.Stage.BackgroundMode == StageBackgroundMode.SoftGlow;
+        _stageBackgroundEditor.Apply(settings.Stage);
         _matteEnabledOption.IsChecked = settings.Stage.MatteEnabled;
         _matteStyleOption.SelectedItem = _matteStyleOption.ItemsSource?
             .OfType<ComboBoxItem>()
@@ -920,12 +809,7 @@ internal sealed partial class SettingsWindow : Window
         _matteCustomColorPanel.IsEnabled =
             settings.Stage.MatteColorSource == MatteColorSource.Custom;
         _matteWidthSlider.Value = settings.Stage.MatteWidthPhysicalPixels;
-        _brightnessSlider.Value = settings.Stage.AmbientBrightness * 100;
-        _saturationSlider.Value = settings.Stage.AmbientSaturation * 100;
-        _blurSlider.Value = settings.Stage.AmbientBlur;
-        SetSwatch(_customColorSwatch, settings.Stage.CustomBackgroundColor);
-        SetSwatch(_matteColorSwatch, settings.Stage.MatteColor);
-        UpdateAmbientValueText(settings.Stage);
+        SetSwatch(_matteColorButton, settings.Stage.MatteColor);
         UpdateMatteWidthText(settings.Stage.MatteWidthPhysicalPixels);
         UpdateShortcutButtons(settings.Shortcuts);
         _enableMarkupOption.IsChecked = settings.Presentation.MarkupToolsEnabled;
@@ -933,17 +817,10 @@ internal sealed partial class SettingsWindow : Window
         _highlightRadiusSlider.Value = settings.Presentation.HighlightRadiusPhysicalPixels;
         _defaultStrokeSlider.Value = settings.Presentation.DefaultMarkupStrokePhysicalPixels;
         _defaultMarkupOpacitySlider.Value = settings.Presentation.DefaultMarkupOpacity * 100;
-        SetSwatch(_highlightColorSwatch, settings.Presentation.HighlightColor);
-        SetSwatch(_defaultMarkupColorSwatch, settings.Presentation.DefaultMarkupColor);
+        SetSwatch(_highlightColorButton, settings.Presentation.HighlightColor);
+        SetSwatch(_defaultMarkupColorButton, settings.Presentation.DefaultMarkupColor);
         UpdatePresentationValueText(settings.Presentation);
         _initializing = false;
-    }
-
-    private void UpdateAmbientValueText(StageSettings stage)
-    {
-        _brightnessValue.Text = $"{stage.AmbientBrightness:P0}";
-        _saturationValue.Text = $"{stage.AmbientSaturation:P0}";
-        _blurValue.Text = stage.AmbientBlur.ToString("0", System.Globalization.CultureInfo.CurrentUICulture);
     }
 
     private void UpdateMatteWidthText(double width) =>
@@ -1059,11 +936,11 @@ internal sealed partial class SettingsWindow : Window
         });
     }
 
-    private static void SetSwatch(Border border, StageColor color) =>
-        border.Background = new SolidColorBrush(Color.FromRgb(color.Red, color.Green, color.Blue));
+    private static void SetSwatch(ColorSwatchButton button, StageColor color) =>
+        button.SwatchBrush = new SolidColorBrush(Color.FromRgb(color.Red, color.Green, color.Blue));
 
-    private static void SetSwatch(Border border, PresentationColor color) =>
-        border.Background = new SolidColorBrush(Color.FromRgb(color.Red, color.Green, color.Blue));
+    private static void SetSwatch(ColorSwatchButton button, PresentationColor color) =>
+        button.SwatchBrush = new SolidColorBrush(Color.FromRgb(color.Red, color.Green, color.Blue));
 
     private void ConfigureColorButton(Button button, string colorPurpose)
     {

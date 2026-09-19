@@ -87,15 +87,15 @@ public sealed class AmbientStageCoordinatorTests
         await coordinator.WaitForIdleAsync();
         using var before = coordinator.AcquirePresentation();
 
-        coordinator.SetStage(initial with { AmbientBrightness = 0.9, AmbientSaturation = 1.2 });
+        coordinator.SetStage(WithAmbient(initial, brightness: 0.9, saturation: 1.2));
         await coordinator.WaitForIdleAsync();
         using var after = coordinator.AcquirePresentation();
 
         Assert.Equal(1, preparer.CallCount);
         Assert.Equal(1, coordinator.GetMetrics().ScheduledWorkCount);
         Assert.Same(before.Ambient!.Image, after.Ambient!.Image);
-        Assert.Equal(0.9, after.Stage.AmbientBrightness);
-        Assert.Equal(1.2, after.Stage.AmbientSaturation);
+        Assert.Equal(0.9, after.Stage.BackgroundAdjustments.Ambient.Brightness);
+        Assert.Equal(1.2, after.Stage.BackgroundAdjustments.Ambient.Saturation);
     }
 
     [Fact]
@@ -111,16 +111,16 @@ public sealed class AmbientStageCoordinatorTests
         await coordinator.WaitForIdleAsync();
         var navigationMetrics = coordinator.GetMetrics();
 
-        coordinator.SetStage(initial with { AmbientBlur = 20 });
-        coordinator.SetStage(initial with { AmbientBlur = 22 });
-        coordinator.SetStage(initial with { AmbientBlur = 24 });
+        coordinator.SetStage(WithAmbient(initial, blur: 20));
+        coordinator.SetStage(WithAmbient(initial, blur: 22));
+        coordinator.SetStage(WithAmbient(initial, blur: 24));
         await coordinator.WaitForIdleAsync();
         using var presentation = coordinator.AcquirePresentation();
 
         Assert.Equal(2, preparer.CallCount);
         Assert.Equal(new[] { 18d, 24d }, preparer.Blurs);
         Assert.Equal(24, presentation.Ambient?.Blur);
-        Assert.Equal(24, presentation.Stage.AmbientBlur);
+        Assert.Equal(24, presentation.Stage.BackgroundAdjustments.Ambient.Blur);
         Assert.Equal(2, coordinator.GetMetrics().PreparedCount);
         Assert.Equal(1, coordinator.GetMetrics().CurrentAmbientPrepareCount);
         Assert.Equal(
@@ -146,7 +146,7 @@ public sealed class AmbientStageCoordinatorTests
             initial);
         SelectAndStart(coordinator, "first", first.Identity);
 
-        coordinator.SetStage(initial with { AmbientBlur = 24 });
+        coordinator.SetStage(WithAmbient(initial, blur: 24));
         using var transitional = coordinator.AcquirePresentation();
         SelectAndStart(coordinator, "second", second.Identity);
         await preparer.TargetStarted.Task;
@@ -434,11 +434,9 @@ public sealed class AmbientStageCoordinatorTests
         await using var coordinator = new AmbientStageCoordinator(
             repository,
             preparer,
-            StageSettings.Default with
-            {
-                BackgroundMode = StageBackgroundMode.Ambient,
-                AmbientBlur = 26,
-            });
+            WithAmbient(
+                StageSettings.Default with { BackgroundMode = StageBackgroundMode.Ambient },
+                blur: 26));
 
         SelectAndStart(coordinator, "current", current.Identity);
         await coordinator.WaitForIdleAsync();
@@ -454,6 +452,27 @@ public sealed class AmbientStageCoordinatorTests
         Assert.All(preparer.Blurs, blur => Assert.Equal(26, blur));
         Assert.True(current.HasAmbientForBlur(26));
         Assert.True(adjacent.HasAmbientForBlur(26));
+    }
+
+    private static StageSettings WithAmbient(
+        StageSettings stage,
+        double? brightness = null,
+        double? saturation = null,
+        double? blur = null)
+    {
+        var ambient = stage.BackgroundAdjustments.Ambient;
+        return stage with
+        {
+            BackgroundAdjustments = stage.BackgroundAdjustments with
+            {
+                Ambient = ambient with
+                {
+                    Brightness = brightness ?? ambient.Brightness,
+                    Saturation = saturation ?? ambient.Saturation,
+                    Blur = blur ?? ambient.Blur,
+                },
+            },
+        };
     }
 
     private static void SelectAndStart(

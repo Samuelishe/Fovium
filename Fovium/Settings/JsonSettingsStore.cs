@@ -81,13 +81,20 @@ internal sealed class JsonSettingsStore(string path) : ISettingsStore
             var settings = document.Deserialize<FoviumSettings>(SerializerOptions)
                            ?? throw new JsonException("The settings document is empty.");
             var homeEvolution = EvolveHomePrivacy(document.RootElement, settings.Home);
-            var normalized = (settings with { Home = homeEvolution.Settings }).Normalize();
+            var stageEvolution = EvolveStageAdjustments(document.RootElement, settings.Stage);
+            var normalized = (settings with
+            {
+                Home = homeEvolution.Settings,
+                Stage = stageEvolution.Settings,
+            }).Normalize();
             var shortcuts = (settings.Shortcuts ?? ShortcutSettings.Default)
                 .NormalizePersistedDefaults(out var evolvedPreviousDefaults);
             return new SettingsLoadResult(
                 normalized with { Shortcuts = shortcuts },
                 null,
-                RequiresSave: evolvedPreviousDefaults || homeEvolution.RequiresSave);
+                RequiresSave: evolvedPreviousDefaults ||
+                              homeEvolution.RequiresSave ||
+                              stageEvolution.RequiresSave);
         }
         catch (FileNotFoundException)
         {
@@ -190,6 +197,52 @@ internal sealed class JsonSettingsStore(string path) : ISettingsStore
             true);
     }
 
+    private static StageAdjustmentEvolution EvolveStageAdjustments(
+        JsonElement root,
+        StageSettings? deserializedStage)
+    {
+        var stage = deserializedStage ?? StageSettings.Default;
+        if (!root.TryGetProperty("stage", out var stageElement) ||
+            stageElement.ValueKind != JsonValueKind.Object ||
+            stageElement.TryGetProperty("backgroundAdjustments", out _))
+        {
+            return new StageAdjustmentEvolution(stage, false);
+        }
+
+        var hasLegacyBrightness = TryReadDouble(stageElement, "ambientBrightness", out var brightness);
+        var hasLegacySaturation = TryReadDouble(stageElement, "ambientSaturation", out var saturation);
+        var hasLegacyBlur = TryReadDouble(stageElement, "ambientBlur", out var blur);
+        var hasLegacyField = stageElement.TryGetProperty("ambientBrightness", out _) ||
+                             stageElement.TryGetProperty("ambientSaturation", out _) ||
+                             stageElement.TryGetProperty("ambientBlur", out _);
+        if (!hasLegacyField)
+        {
+            return new StageAdjustmentEvolution(stage, false);
+        }
+
+        var defaults = stage.BackgroundAdjustments.Ambient;
+        return new StageAdjustmentEvolution(
+            stage with
+            {
+                BackgroundAdjustments = stage.BackgroundAdjustments with
+                {
+                    Ambient = defaults with
+                    {
+                        Brightness = hasLegacyBrightness ? brightness : defaults.Brightness,
+                        Saturation = hasLegacySaturation ? saturation : defaults.Saturation,
+                        Blur = hasLegacyBlur ? blur : defaults.Blur,
+                    },
+                },
+            },
+            true);
+    }
+
+    private static bool TryReadDouble(JsonElement parent, string propertyName, out double value)
+    {
+        value = default;
+        return parent.TryGetProperty(propertyName, out var property) && property.TryGetDouble(out value);
+    }
+
     private static FoviumSettings MigrateV1(LegacyV1Settings legacy)
     {
         var stage = legacy.StageMode switch
@@ -237,4 +290,8 @@ internal sealed class JsonSettingsStore(string path) : ISettingsStore
     }
 
     private readonly record struct HomePrivacyEvolution(HomeSettings Settings, bool RequiresSave);
+
+    private readonly record struct StageAdjustmentEvolution(
+        StageSettings Settings,
+        bool RequiresSave);
 }

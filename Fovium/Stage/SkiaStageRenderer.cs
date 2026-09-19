@@ -39,12 +39,21 @@ internal static class SkiaStageRenderer
             ambientSize,
             logicalViewport,
             renderScaling);
+        var backgroundAdjustment = stage.BackgroundMode.RequiresPhotoStyleAnalysis()
+            ? stage.BackgroundAdjustments.For(stage.BackgroundMode).Normalize()
+            : StageColorAdjustment.Identity;
+        using var backgroundFilter = backgroundAdjustment.IsIdentity
+            ? null
+            : SKColorFilter.CreateColorMatrix(CreateColorMatrix(
+                backgroundAdjustment.Brightness,
+                backgroundAdjustment.Saturation));
         using var backgroundPaint = new SKPaint
         {
             IsAntialias = false,
             Color = ToSkColor(ResolveBackgroundColor(
                 stage,
                 matchingPhotoStyle ? photoStyleAnalysis : null)),
+            ColorFilter = backgroundFilter,
         };
         var drawExpressiveGradient = matchingPhotoStyle &&
                                      photoStyleAnalysis is not null &&
@@ -88,8 +97,8 @@ internal static class SkiaStageRenderer
             {
                 IsAntialias = false,
                 ColorFilter = SKColorFilter.CreateColorMatrix(CreateColorMatrix(
-                    stage.AmbientBrightness,
-                    stage.AmbientSaturation)),
+                    stage.BackgroundAdjustments.Ambient.Brightness,
+                    stage.BackgroundAdjustments.Ambient.Saturation)),
             };
             canvas.DrawImage(
                 ambientImage,
@@ -221,8 +230,8 @@ internal static class SkiaStageRenderer
         const float redLuminance = 0.2126f;
         const float greenLuminance = 0.7152f;
         const float blueLuminance = 0.0722f;
-        var brightnessValue = (float)brightness;
-        var saturationValue = (float)saturation;
+        var brightnessValue = (float)(double.IsFinite(brightness) ? Math.Clamp(brightness, 0, 2) : 1);
+        var saturationValue = (float)(double.IsFinite(saturation) ? Math.Clamp(saturation, 0, 2) : 1);
         var inverseSaturation = 1 - saturationValue;
         return
         [

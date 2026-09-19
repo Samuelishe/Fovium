@@ -2281,7 +2281,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         if (_appliedMarkupColor != color)
         {
             _appliedMarkupColor = color;
-            MarkupColorSwatch.Background = new SolidColorBrush(
+            MarkupColorButton.SwatchBrush = new SolidColorBrush(
                 Color.FromRgb(color.Red, color.Green, color.Blue));
         }
 

@@ -169,6 +169,41 @@ public sealed class SkiaStageRendererTests
     }
 
     [Fact]
+    public void DerivedAdjustmentChangesPresentationWithoutMutatingPhotoAnalysisTruth()
+    {
+        using var surface = SKSurface.Create(new SKImageInfo(20, 20));
+        var average = new StageColor(0x22, 0x88, 0xCC);
+        var analysis = PhotoDerivedStylePolicyTests.CreateAnalysis(
+            average,
+            new StageColor(0xCC, 0x55, 0x22),
+            new StageColor(0x20, 0x20, 0x20));
+        var stage = StageSettings.Default with
+        {
+            BackgroundMode = StageBackgroundMode.Average,
+            BackgroundAdjustments = StageBackgroundAdjustments.Default.With(
+                StageBackgroundMode.Average,
+                new StageColorAdjustment { Brightness = 0.75, Saturation = 0 }),
+        };
+
+        SkiaStageRenderer.Draw(
+            surface.Canvas,
+            new RectD(0, 0, 20, 20),
+            new RectD(5, 5, 10, 10),
+            1,
+            stage,
+            null,
+            null,
+            imageIdentity: 42,
+            photoStyleAnalysis: analysis,
+            photoStyleIdentity: 42);
+        using var result = surface.Snapshot();
+        using var pixels = SKBitmap.FromImage(result);
+
+        Assert.NotEqual(new SKColor(average.Red, average.Green, average.Blue), pixels.GetPixel(0, 0));
+        Assert.Equal(average, analysis.AverageColor);
+    }
+
+    [Fact]
     public void MismatchedDerivedIdentityUsesBlackFallbackInsteadOfStaleStyling()
     {
         using var surface = SKSurface.Create(new SKImageInfo(20, 20));
@@ -490,10 +525,55 @@ public sealed class SkiaStageRendererTests
         Assert.Equal(1, second[18]);
     }
 
+    [Fact]
+    public void NonFiniteColorAdjustmentFallsBackToAlphaPreservingIdentity()
+    {
+        var matrix = SkiaStageRenderer.CreateColorMatrix(double.NaN, double.PositiveInfinity);
+
+        Assert.Equal(
+            new float[]
+            {
+                1, 0, 0, 0, 0,
+                0, 1, 0, 0, 0,
+                0, 0, 1, 0, 0,
+                0, 0, 0, 1, 0,
+            },
+            matrix);
+    }
+
+    [Theory]
+    [InlineData((int)StageBackgroundMode.ColorGradient)]
+    [InlineData((int)StageBackgroundMode.SoftGlow)]
+    public void DerivedRasterAdjustmentChangesOnlyRenderedPresentation(int modeValue)
+    {
+        var mode = (StageBackgroundMode)modeValue;
+        var analysis = PhotoDerivedStylePolicyTests.CreateAnalysis(
+            new StageColor(90, 120, 160),
+            new StageColor(210, 75, 45),
+            new StageColor(25, 45, 80));
+        var average = analysis.AverageColor;
+        using var identity = RenderDerivedGradient(mode, analysis, 1);
+        using var adjusted = RenderDerivedGradient(
+            mode,
+            analysis,
+            1,
+            StageSettings.Default with
+            {
+                BackgroundMode = mode,
+                BackgroundAdjustments = StageBackgroundAdjustments.Default.With(
+                    mode,
+                    new StageColorAdjustment { Brightness = 0.6, Saturation = 1.5 }),
+            });
+
+        Assert.NotEqual(identity.Bytes, adjusted.Bytes);
+        Assert.Equal(average, analysis.AverageColor);
+    }
+
     private static SKBitmap RenderDerivedGradient(
         StageBackgroundMode mode,
         PhotoStyleAnalysis analysis,
-        double renderScaling)
+        double renderScaling,
+        StageSettings? stage = null)
     {
         using var surface = SKSurface.Create(new SKImageInfo(160, 100));
         using var raster = mode == StageBackgroundMode.ColorGradient
@@ -504,7 +584,7 @@ public sealed class SkiaStageRendererTests
             new RectD(0, 0, 160, 100),
             new RectD(40, 25, 80, 50),
             renderScaling,
-            StageSettings.Default with { BackgroundMode = mode },
+            stage ?? StageSettings.Default with { BackgroundMode = mode },
             null,
             null,
             imageIdentity: 73,
