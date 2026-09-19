@@ -68,6 +68,17 @@ public sealed class ViewerCommandExecutorTests
         Assert.Equal(0, target.PhotoPresentationToggleCount);
     }
 
+    [Fact]
+    public async Task ClosePhotoCommandReturnsToHomeWithoutAnApplicationExitAction()
+    {
+        var target = new RecordingTarget();
+
+        await new ViewerCommandExecutor(target).ExecuteAsync(ViewerCommand.ClosePhoto);
+
+        Assert.Equal(1, target.ClosePhotoCount);
+        Assert.Equal(0, target.OpenCount);
+    }
+
     [Theory]
     [InlineData((int)ViewerCommand.ToggleHighlight)]
     [InlineData((int)ViewerCommand.ToggleMarkupTools)]
@@ -153,8 +164,7 @@ public sealed class ViewerCommandExecutorTests
     {
         var executor = new ViewerCommandExecutor(new RecordingTarget());
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => executor.ExecuteAsync((ViewerCommand)commandValue));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => executor.ExecuteAsync((ViewerCommand)commandValue));
     }
 
     private sealed class RecordingTarget : IViewerCommandTarget
@@ -170,6 +180,10 @@ public sealed class ViewerCommandExecutorTests
         public int PhotoPresentationToggleCount { get; private set; }
 
         public int SlideshowToggleCount { get; private set; }
+
+        public int ClosePhotoCount { get; private set; }
+
+        public int OpenCount { get; private set; }
 
         public List<string> MarkupActions { get; } = [];
 
@@ -201,7 +215,17 @@ public sealed class ViewerCommandExecutorTests
         {
         }
 
-        public Task OpenAsync() => Task.CompletedTask;
+        public Task OpenAsync()
+        {
+            OpenCount++;
+            return Task.CompletedTask;
+        }
+
+        public Task ClosePhotoAsync()
+        {
+            ClosePhotoCount++;
+            return Task.CompletedTask;
+        }
 
         public void ShowSettings()
         {

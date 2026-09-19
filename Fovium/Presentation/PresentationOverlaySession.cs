@@ -142,8 +142,8 @@ internal sealed class PresentationOverlaySession
             _draft = null;
             _temporaryHandActive = false;
             change |= PresentationChangeKind.RenderContent |
-                PresentationChangeKind.ToolState |
-                PresentationChangeKind.HistoryState;
+                      PresentationChangeKind.ToolState |
+                      PresentationChangeKind.HistoryState;
         }
 
         RaiseChanged(change);
@@ -199,8 +199,8 @@ internal sealed class PresentationOverlaySession
     public void SelectImage(string? identity)
     {
         if (CurrentImageIdentity is null
-            ? identity is null
-            : identity is not null && _documents.Comparer.Equals(CurrentImageIdentity, identity))
+                ? identity is null
+                : identity is not null && _documents.Comparer.Equals(CurrentImageIdentity, identity))
         {
             return;
         }
@@ -225,6 +225,32 @@ internal sealed class PresentationOverlaySession
             PresentationChangeKind.RenderContent |
             PresentationChangeKind.ToolState |
             PresentationChangeKind.HistoryState);
+    }
+
+    public void DeactivateForHome()
+    {
+        var change = PresentationChangeKind.None;
+        if (HighlightEnabled)
+        {
+            HighlightEnabled = false;
+            change |= PresentationChangeKind.Highlight;
+        }
+
+        if (MarkupToolsVisible)
+        {
+            MarkupToolsVisible = false;
+            change |= PresentationChangeKind.Visibility;
+        }
+
+        _draft = null;
+        _temporaryHandActive = false;
+        CurrentImageIdentity = null;
+        _documents.Clear();
+        _totalCommittedPoints = 0;
+        change |= PresentationChangeKind.RenderContent |
+                  PresentationChangeKind.ToolState |
+                  PresentationChangeKind.HistoryState;
+        RaiseChanged(change);
     }
 
     public void SetActiveTool(MarkupTool tool)
@@ -506,9 +532,9 @@ internal sealed class PresentationOverlaySession
             ? document.ActiveOperations
             : Array.Empty<MarkupOperation>();
         var draft = _draft is { Identity: var identity } &&
-            _documents.Comparer.Equals(identity, presentationIdentity)
-                ? _draft.CreateOperation()
-                : null;
+                    _documents.Comparer.Equals(identity, presentationIdentity)
+            ? _draft.CreateOperation()
+            : null;
         return new MarkupRenderSnapshot(operations, draft);
     }
 
@@ -706,7 +732,7 @@ internal sealed class PresentationOverlaySession
         public MarkupOperation? CreateOperation()
         {
             var constrained = _modifiers.HasFlag(MarkupDrawingModifiers.Constrain) &&
-                _tool != MarkupTool.Eraser;
+                              _tool != MarkupTool.Eraser;
             var endpoint = constrained
                 ? _tool is MarkupTool.Rectangle or MarkupTool.Ellipse
                     ? MarkupConstraintGeometry.SquareEndpoint(_start, _current)

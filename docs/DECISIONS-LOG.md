@@ -948,3 +948,23 @@ and invisible edge/corner resize zones. Interactive descendants never begin a wi
 stays above its Viewer across fullscreen state changes while explicitly remaining non-topmost relative to other
 applications. The design reuses the existing project icon and Avalonia controls, introduces no Settings framework, and
 leaves the normal photograph-first viewport unchanged.
+
+## D-081 — Home is a returnable viewer state with bounded ephemeral previews
+
+Status: Implemented in local HOME-UX-R1-F1; hosted verification pending.
+
+Home is the reusable no-sequence state of the existing Viewer window, not a startup-only splash or a second library
+surface. `Ctrl+W` closes the current photo sequence while keeping Fovium alive; a separate Exit Fovium action retains
+window-close semantics. The transition invalidates publication authority before canceling decode/preload and clears
+slideshow, holds, image presentation, and temporary overlays so Home and Viewer are never simultaneously active.
+
+Recent remains six persisted locations rather than a catalog. Each file previews itself; a folder remembers the last
+successfully presented photo from that activation and never scans for a cover. Home checks availability without
+deleting history and exposes only explicit item/Clear removal. Two background workers prepare oriented `160 px`
+previews into a six-item/2 MiB session-memory LRU. Measurement and product scope did not justify a disk cache, database,
+shell thumbnail dependency, external package, Favorites, search, ratings, or gallery page.
+
+The visible Recent control is one clipped horizontal strip. A deterministic pure motion model owns a `6 DIP` drag
+threshold, horizontal-intent gate, recent `120 ms` velocity window, exponential friction, and a hard `160 px` coast
+bound; the Avalonia adapter owns capture, timer, wheel, focus reveal, and non-interactive edge fades. This separates
+testable gesture correctness from timer feel and prevents wrap, endless fling, or system scrollbar chrome.

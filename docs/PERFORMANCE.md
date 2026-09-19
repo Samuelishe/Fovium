@@ -130,6 +130,25 @@ on first nontransparent sample and has no background worker or network latency.
 
 ## Cache and memory budget
 
+HOME-UX-R1-F1 keeps Home interactive before previews complete. Recent cards and availability labels publish
+immediately; at most two background preview preparations run concurrently. A session-memory LRU retains no more than
+six encoded `160 px` previews and 2 MiB, keyed by normalized path plus source length and last-write time. Missing
+sources
+may reuse an already prepared session preview while remaining visibly unavailable; mutation invalidates the preview.
+UI bitmap instances are disposed when Home hides, inertia stops immediately, and the tiny encoded LRU may remain for a
+warm return to Home. There is no disk cache, recursive folder scan, retained full-resolution Home decode, or startup
+wait for all previews. `FOVIUM_HOME_DIAGNOSTICS=1` reports synchronous Home construction and aggregate preview metrics
+without logging source paths.
+
+A local Windows Release run with six real JPEGs measured synchronous Home construction at `12.06 ms` cold and `4.63
+ms` after Viewer → Home. Six first preparations totaled `421.49 ms` of background worker time (`68.86 ms` last item)
+with two-way concurrency; the warm return produced six memory hits, zero failures/cancellations, and retained `201,364`
+encoded preview bytes. Six maximum-size BGRA UI bitmaps are structurally below `614,400` bytes and are released on
+Viewer entry; the encoded session LRU remained for the warm return. These are single-machine observations, not latency
+or working-set promises.
+
+## Cache and memory budget
+
 Use a bounded cache with explicit cost accounting and eviction. Costs should include all retained managed/native source
 and display representations, color-converted surfaces, and other significant prepared data rather than only encoded
 bytes.

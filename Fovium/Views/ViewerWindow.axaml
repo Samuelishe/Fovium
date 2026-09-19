@@ -63,205 +63,254 @@
             <Setter Property="Background" Value="#24202C" />
         </Style>
         <Style Selector="Button.recent-card">
-            <Setter Property="Width" Value="246" />
-            <Setter Property="Height" Value="76" />
+            <Setter Property="Width" Value="196" />
+            <Setter Property="Height" Value="154" />
             <Setter Property="Padding" Value="0" />
-            <Setter Property="Margin" Value="0,0,10,10" />
+            <Setter Property="Margin" Value="0,0,10,0" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="VerticalContentAlignment" Value="Stretch" />
-            <Setter Property="Background" Value="#211E27" />
-            <Setter Property="BorderBrush" Value="#35303E" />
+            <Setter Property="Background" Value="#B31E1A25" />
+            <Setter Property="BorderBrush" Value="#42394C" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="11" />
+            <Setter Property="CornerRadius" Value="13" />
         </Style>
         <Style Selector="Button.recent-card:pointerover">
-            <Setter Property="Background" Value="#2C2635" />
-            <Setter Property="BorderBrush" Value="#69517E" />
+            <Setter Property="Background" Value="#D1292333" />
+            <Setter Property="BorderBrush" Value="#765993" />
+        </Style>
+        <Style Selector="Button.recent-card.unavailable">
+            <Setter Property="Opacity" Value="0.52" />
+        </Style>
+        <Style Selector="Button.recent-item-action">
+            <Setter Property="Width" Value="28" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="CornerRadius" Value="7" />
+            <Setter Property="Background" Value="#B31B1720" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="FontSize" Value="17" />
+        </Style>
+        <Style Selector="Button.recent-item-action:pointerover">
+            <Setter Property="Background" Value="#E044374F" />
+        </Style>
+        <Style Selector="Border.home-hero.drag-ready">
+            <Setter Property="BorderBrush" Value="#C099FF" />
+            <Setter Property="BorderThickness" Value="1.5" />
+            <Setter Property="Background" Value="#ED252032" />
         </Style>
     </Window.Styles>
     <Grid x:Name="ViewerRoot" Background="Black">
         <viewer:PhotoViewportControl x:Name="PhotoViewport" />
-        <Border x:Name="HomeSurface" ZIndex="3" Background="#131119">
+        <Border x:Name="HomeSurface" ZIndex="3" Background="#121017">
             <Grid ClipToBounds="True">
-                <Canvas IsHitTestVisible="False" Opacity="0.75">
-                    <Ellipse Canvas.Left="-250" Canvas.Top="-330" Width="780" Height="780">
-                        <Ellipse.Fill>
-                            <RadialGradientBrush>
-                                <GradientStop Offset="0" Color="#38305A" />
-                                <GradientStop Offset="0.48" Color="#181528" />
-                                <GradientStop Offset="1" Color="#00131119" />
-                            </RadialGradientBrush>
-                        </Ellipse.Fill>
-                    </Ellipse>
-                    <Ellipse Canvas.Left="850" Canvas.Top="310" Width="680" Height="680">
-                        <Ellipse.Fill>
-                            <RadialGradientBrush>
-                                <GradientStop Offset="0" Color="#33233F" />
-                                <GradientStop Offset="0.52" Color="#1A1421" />
-                                <GradientStop Offset="1" Color="#00131119" />
-                            </RadialGradientBrush>
-                        </Ellipse.Fill>
-                    </Ellipse>
-                </Canvas>
-                <Grid RowDefinitions="68,*">
-                    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="26,15,26,8">
-                        <StackPanel Orientation="Horizontal" Spacing="11" VerticalAlignment="Center">
-                            <Image Width="34" Height="34"
-                                   Source="avares://Fovium/Assets/fovium-app-icon-128.png" />
-                            <TextBlock Text="Fovium"
+                <Ellipse Width="900" Height="760"
+                         HorizontalAlignment="Left" VerticalAlignment="Top"
+                         Margin="-390,-390,0,0" IsHitTestVisible="False">
+                    <Ellipse.Fill>
+                        <RadialGradientBrush>
+                            <GradientStop Offset="0" Color="#45386F" />
+                            <GradientStop Offset="0.5" Color="#1D1830" />
+                            <GradientStop Offset="1" Color="#00121017" />
+                        </RadialGradientBrush>
+                    </Ellipse.Fill>
+                </Ellipse>
+                <Ellipse Width="820" Height="700"
+                         HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                         Margin="0,0,-360,-370" IsHitTestVisible="False">
+                    <Ellipse.Fill>
+                        <RadialGradientBrush>
+                            <GradientStop Offset="0" Color="#402947" />
+                            <GradientStop Offset="0.52" Color="#1B1422" />
+                            <GradientStop Offset="1" Color="#00121017" />
+                        </RadialGradientBrush>
+                    </Ellipse.Fill>
+                </Ellipse>
+                <Button x:Name="HomeSettingsButton"
+                        ZIndex="5"
+                        Classes="home-icon"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Top"
+                        Margin="0,18,24,0" />
+                <Grid x:Name="HomeComposition"
+                      Margin="24,58,24,26"
+                      RowDefinitions="*,Auto,Auto,*">
+                    <Border x:Name="HomeHeroCard"
+                            Grid.Row="1"
+                            Classes="home-hero"
+                            MaxWidth="800"
+                            MinHeight="370"
+                            HorizontalAlignment="Stretch"
+                            Padding="26,22,26,23"
+                            CornerRadius="26"
+                            Background="#D91C1924"
+                            BorderBrush="#53465F"
+                            BorderThickness="1"
+                            BoxShadow="0 18 50 0 #52000000">
+                        <Grid x:Name="HomeHeroLayout"
+                              RowDefinitions="132,Auto,Auto,Auto,Auto"
+                              RowSpacing="9">
+                            <Canvas x:Name="HomeHeroVisual"
+                                    Grid.Row="0"
+                                    Width="270"
+                                    Height="126"
+                                    HorizontalAlignment="Center">
+                                <Ellipse Canvas.Left="63" Canvas.Top="-8"
+                                         Width="144" Height="144"
+                                         Stroke="#433C4E" StrokeThickness="1" />
+                                <Border Canvas.Left="25" Canvas.Top="34"
+                                        Width="92" Height="76"
+                                        CornerRadius="12"
+                                        Background="#242E3F"
+                                        BorderBrush="#44536A"
+                                        BorderThickness="1"
+                                        RenderTransformOrigin="50%,50%">
+                                    <Border.RenderTransform>
+                                        <RotateTransform Angle="-10" />
+                                    </Border.RenderTransform>
+                                    <Grid ClipToBounds="True">
+                                        <Ellipse Width="58" Height="58" Margin="-18,-22,0,0"
+                                                 HorizontalAlignment="Left" VerticalAlignment="Top"
+                                                 Fill="#405974" Opacity="0.8" />
+                                        <Path Data="M0,64 L27,33 L43,48 L61,25 L92,58 L92,76 L0,76 Z"
+                                              Fill="#151B27" />
+                                    </Grid>
+                                </Border>
+                                <Border Canvas.Left="153" Canvas.Top="34"
+                                        Width="92" Height="76"
+                                        CornerRadius="12"
+                                        Background="#3A2B41"
+                                        BorderBrush="#5C4667"
+                                        BorderThickness="1"
+                                        RenderTransformOrigin="50%,50%">
+                                    <Border.RenderTransform>
+                                        <RotateTransform Angle="10" />
+                                    </Border.RenderTransform>
+                                    <Grid ClipToBounds="True">
+                                        <Ellipse Width="68" Height="68" Margin="34,-28,0,0"
+                                                 HorizontalAlignment="Left" VerticalAlignment="Top"
+                                                 Fill="#684067" Opacity="0.75" />
+                                        <Path Data="M0,62 L25,38 L43,50 L65,24 L92,56 L92,76 L0,76 Z"
+                                              Fill="#201823" />
+                                    </Grid>
+                                </Border>
+                                <Border Canvas.Left="87" Canvas.Top="15"
+                                        Width="98" Height="96"
+                                        CornerRadius="14"
+                                        Background="#573985"
+                                        BorderBrush="#A877F1"
+                                        BorderThickness="1.5">
+                                    <Grid ClipToBounds="True">
+                                        <Ellipse Width="76" Height="76" Margin="34,-29,0,0"
+                                                 HorizontalAlignment="Left" VerticalAlignment="Top"
+                                                 Fill="#A35EAE" Opacity="0.75" />
+                                        <Path Data="M0,79 L25,50 L42,61 L64,28 L98,68 L98,96 L0,96 Z"
+                                              Fill="#20172A" />
+                                        <Path Data="M20,75 L45,49 L55,60 L74,43 L92,70"
+                                              Stroke="#D5A5EF" StrokeThickness="2" Opacity="0.55" />
+                                    </Grid>
+                                </Border>
+                            </Canvas>
+                            <TextBlock x:Name="HomeTitleText"
+                                       Grid.Row="1"
+                                       HorizontalAlignment="Center"
+                                       TextAlignment="Center"
+                                       FontSize="35"
+                                       FontWeight="SemiBold"
+                                       Foreground="#F5F1F8" />
+                            <StackPanel Grid.Row="2" Spacing="4">
+                                <TextBlock x:Name="HomeSubtitleText"
+                                           HorizontalAlignment="Center"
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           FontSize="15"
+                                           Foreground="#C0B8C8" />
+                                <TextBlock x:Name="HomeDropHintText"
+                                           HorizontalAlignment="Center"
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           FontSize="13"
+                                           Foreground="#918999" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="3"
+                                        Orientation="Horizontal"
+                                        HorizontalAlignment="Center">
+                                <Button x:Name="HomeOpenFilesButton"
+                                        Classes="home-primary"
+                                        Margin="5" />
+                                <Button x:Name="HomeOpenFolderButton"
+                                        Classes="home-secondary"
+                                        Margin="5" />
+                            </StackPanel>
+                            <StackPanel x:Name="HomeShortcutHint"
+                                        Grid.Row="4"
+                                        Orientation="Horizontal"
+                                        HorizontalAlignment="Center"
+                                        Spacing="7">
+                                <Border Padding="7,3"
+                                        CornerRadius="5"
+                                        Background="#2B2632"
+                                        BorderBrush="#463E4E"
+                                        BorderThickness="1">
+                                    <TextBlock x:Name="HomeShortcutGestureText"
+                                               FontSize="11"
+                                               Foreground="#D9D0E0" />
+                                </Border>
+                                <TextBlock x:Name="HomeShortcutActionText"
+                                           VerticalAlignment="Center"
+                                           FontSize="12"
+                                           Foreground="#827A8B" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                    <Grid x:Name="HomeRecentSection"
+                          Grid.Row="2"
+                          IsVisible="False"
+                          MaxWidth="1240"
+                          Margin="0,20,0,0"
+                          RowDefinitions="Auto,154">
+                        <Grid ColumnDefinitions="*,Auto" Margin="4,0,4,9">
+                            <TextBlock x:Name="HomeRecentTitleText"
                                        FontSize="17"
                                        FontWeight="SemiBold"
                                        VerticalAlignment="Center" />
-                        </StackPanel>
-                        <Button x:Name="HomeSettingsButton"
-                                Grid.Column="2"
-                                Classes="home-icon"
-                                VerticalAlignment="Center" />
-                    </Grid>
-                    <ScrollViewer Grid.Row="1"
-                                  HorizontalScrollBarVisibility="Disabled"
-                                  VerticalScrollBarVisibility="Auto">
-                        <StackPanel Margin="24,12,24,34"
-                                    MaxWidth="1040"
-                                    HorizontalAlignment="Stretch"
-                                    Spacing="0">
-                            <Border x:Name="HomeHeroCard"
-                                    MaxWidth="820"
-                                    MinHeight="382"
-                                    HorizontalAlignment="Stretch"
-                                    Padding="24,22,24,24"
-                                    CornerRadius="24"
-                                    Background="#C91D1A24"
-                                    BorderBrush="#4D443D59"
-                                    BorderThickness="1">
-                                <Grid x:Name="HomeHeroLayout"
-                                      RowDefinitions="138,Auto,Auto,Auto,Auto"
-                                      RowSpacing="10">
-                                    <Canvas x:Name="HomeHeroVisual"
-                                            Grid.Row="0"
-                                            Width="270"
-                                            Height="132"
-                                            HorizontalAlignment="Center">
-                                        <Ellipse Canvas.Left="63" Canvas.Top="-8"
-                                                 Width="144" Height="144"
-                                                 Stroke="#433C4E" StrokeThickness="1" />
-                                        <Border Canvas.Left="25" Canvas.Top="34"
-                                                Width="92" Height="76"
-                                                CornerRadius="12"
-                                                Background="#242E3F"
-                                                BorderBrush="#44536A"
-                                                BorderThickness="1"
-                                                RenderTransformOrigin="50%,50%">
-                                            <Border.RenderTransform>
-                                                <RotateTransform Angle="-10" />
-                                            </Border.RenderTransform>
-                                            <Grid ClipToBounds="True">
-                                                <Ellipse Width="58" Height="58" Margin="-18,-22,0,0"
-                                                         HorizontalAlignment="Left" VerticalAlignment="Top"
-                                                         Fill="#405974" Opacity="0.8" />
-                                                <Path Data="M0,64 L27,33 L43,48 L61,25 L92,58 L92,76 L0,76 Z"
-                                                      Fill="#151B27" />
-                                            </Grid>
-                                        </Border>
-                                        <Border Canvas.Left="153" Canvas.Top="34"
-                                                Width="92" Height="76"
-                                                CornerRadius="12"
-                                                Background="#3A2B41"
-                                                BorderBrush="#5C4667"
-                                                BorderThickness="1"
-                                                RenderTransformOrigin="50%,50%">
-                                            <Border.RenderTransform>
-                                                <RotateTransform Angle="10" />
-                                            </Border.RenderTransform>
-                                            <Grid ClipToBounds="True">
-                                                <Ellipse Width="68" Height="68" Margin="34,-28,0,0"
-                                                         HorizontalAlignment="Left" VerticalAlignment="Top"
-                                                         Fill="#684067" Opacity="0.75" />
-                                                <Path Data="M0,62 L25,38 L43,50 L65,24 L92,56 L92,76 L0,76 Z"
-                                                      Fill="#201823" />
-                                            </Grid>
-                                        </Border>
-                                        <Border Canvas.Left="87" Canvas.Top="15"
-                                                Width="98" Height="96"
-                                                CornerRadius="14"
-                                                Background="#573985"
-                                                BorderBrush="#A877F1"
-                                                BorderThickness="1.5">
-                                            <Grid ClipToBounds="True">
-                                                <Ellipse Width="76" Height="76" Margin="34,-29,0,0"
-                                                         HorizontalAlignment="Left" VerticalAlignment="Top"
-                                                         Fill="#A35EAE" Opacity="0.75" />
-                                                <Path Data="M0,79 L25,50 L42,61 L64,28 L98,68 L98,96 L0,96 Z"
-                                                      Fill="#20172A" />
-                                                <Path Data="M20,75 L45,49 L55,60 L74,43 L92,70"
-                                                      Stroke="#D5A5EF" StrokeThickness="2" Opacity="0.55" />
-                                            </Grid>
-                                        </Border>
-                                    </Canvas>
-                                    <TextBlock x:Name="HomeTitleText"
-                                               Grid.Row="1"
-                                               HorizontalAlignment="Center"
-                                               TextAlignment="Center"
-                                               FontSize="35"
-                                               FontWeight="SemiBold"
-                                               Foreground="#F4F0F7" />
-                                    <StackPanel Grid.Row="2" Spacing="5">
-                                        <TextBlock x:Name="HomeSubtitleText"
-                                                   HorizontalAlignment="Center"
-                                                   TextAlignment="Center"
-                                                   TextWrapping="Wrap"
-                                                   FontSize="15"
-                                                   Foreground="#B8B0C1" />
-                                        <TextBlock x:Name="HomeDropHintText"
-                                                   HorizontalAlignment="Center"
-                                                   TextAlignment="Center"
-                                                   TextWrapping="Wrap"
-                                                   FontSize="13"
-                                                   Foreground="#8F8799" />
-                                    </StackPanel>
-                                    <WrapPanel Grid.Row="3"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center">
-                                        <Button x:Name="HomeOpenFilesButton"
-                                                Classes="home-primary"
-                                                Margin="5" />
-                                        <Button x:Name="HomeOpenFolderButton"
-                                                Classes="home-secondary"
-                                                Margin="5" />
-                                    </WrapPanel>
-                                    <Border x:Name="HomeShortcutBadge"
-                                            Grid.Row="4"
-                                            HorizontalAlignment="Center"
-                                            Padding="12,6"
-                                            CornerRadius="8"
-                                            Background="#241F2B"
-                                            BorderBrush="#393240"
-                                            BorderThickness="1">
-                                        <TextBlock x:Name="HomeShortcutText"
-                                                   FontSize="12"
-                                                   Foreground="#AAA1B4" />
-                                    </Border>
-                                </Grid>
+                            <Button x:Name="HomeClearRecentButton"
+                                    Grid.Column="1"
+                                    Classes="home-link" />
+                        </Grid>
+                        <Grid Grid.Row="1" ClipToBounds="True">
+                            <ScrollViewer x:Name="HomeRecentScroller"
+                                          HorizontalScrollBarVisibility="Hidden"
+                                          VerticalScrollBarVisibility="Disabled">
+                                <StackPanel x:Name="HomeRecentItemsPanel"
+                                            Orientation="Horizontal"
+                                            HorizontalAlignment="Left" />
+                            </ScrollViewer>
+                            <Border x:Name="HomeRecentLeftFade"
+                                    IsVisible="False"
+                                    IsHitTestVisible="False"
+                                    Width="42"
+                                    HorizontalAlignment="Left">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0%,50%" EndPoint="100%,50%">
+                                        <GradientStop Offset="0" Color="#F0121017" />
+                                        <GradientStop Offset="1" Color="#00121017" />
+                                    </LinearGradientBrush>
+                                </Border.Background>
                             </Border>
-                            <Grid x:Name="HomeRecentSection"
-                                  IsVisible="False"
-                                  Margin="4,24,4,0"
-                                  RowDefinitions="Auto,Auto">
-                                <Grid ColumnDefinitions="*,Auto" Margin="4,0,4,10">
-                                    <TextBlock x:Name="HomeRecentTitleText"
-                                               FontSize="18"
-                                               FontWeight="SemiBold"
-                                               VerticalAlignment="Center" />
-                                    <Button x:Name="HomeClearRecentButton"
-                                            Grid.Column="1"
-                                            Classes="home-link" />
-                                </Grid>
-                                <WrapPanel x:Name="HomeRecentItemsPanel"
-                                           Grid.Row="1"
-                                           HorizontalAlignment="Left" />
-                            </Grid>
-                        </StackPanel>
-                    </ScrollViewer>
+                            <Border x:Name="HomeRecentRightFade"
+                                    IsVisible="False"
+                                    IsHitTestVisible="False"
+                                    Width="42"
+                                    HorizontalAlignment="Right">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0%,50%" EndPoint="100%,50%">
+                                        <GradientStop Offset="0" Color="#00121017" />
+                                        <GradientStop Offset="1" Color="#F0121017" />
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                            </Border>
+                        </Grid>
+                    </Grid>
                 </Grid>
             </Grid>
         </Border>

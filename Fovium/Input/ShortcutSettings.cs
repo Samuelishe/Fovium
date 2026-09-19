@@ -21,11 +21,13 @@ internal sealed record ShortcutSettings
         out bool evolvedPreviousDefaults)
     {
         evolvedPreviousDefaults = evolvePreviousDefaults &&
-            Bindings is not null &&
-            Bindings.TryGetValue(ViewerCommands.GetId(ViewerCommand.BlinkCompare), out var blink) &&
-            blink == ShortcutDefaults.PreviousBlinkCompare &&
-            Bindings.TryGetValue(ViewerCommands.GetId(ViewerCommand.ClearMarkup), out var clear) &&
-            clear == ShortcutDefaults.PreviousClearMarkup;
+                                  Bindings is not null &&
+                                  Bindings.TryGetValue(ViewerCommands.GetId(ViewerCommand.BlinkCompare),
+                                      out var blink) &&
+                                  blink == ShortcutDefaults.PreviousBlinkCompare &&
+                                  Bindings.TryGetValue(ViewerCommands.GetId(ViewerCommand.ClearMarkup),
+                                      out var clear) &&
+                                  clear == ShortcutDefaults.PreviousClearMarkup;
         var normalized = ShortcutDefaults.CreateBindings();
         if (Bindings is null)
         {
@@ -40,7 +42,7 @@ internal sealed record ShortcutSettings
             }
 
             normalized[definition.Id] = gesture is { } value &&
-                AvaloniaShortcutGestureAdapter.IsRepresentable(value)
+                                        AvaloniaShortcutGestureAdapter.IsRepresentable(value)
                 ? gesture
                 : null;
         }
@@ -101,6 +103,7 @@ internal static class ShortcutDefaults
         [ViewerCommands.GetId(ViewerCommand.ToggleMatte)] = new("M"),
         [ViewerCommands.GetId(ViewerCommand.Fullscreen)] = new("F11"),
         [ViewerCommands.GetId(ViewerCommand.Open)] = new("O", ShortcutModifiers.Control),
+        [ViewerCommands.GetId(ViewerCommand.ClosePhoto)] = new("W", ShortcutModifiers.Control),
         [ViewerCommands.GetId(ViewerCommand.Settings)] = new("Comma", ShortcutModifiers.Control),
         [ViewerCommands.GetId(ViewerCommand.Peek100)] = new("Z"),
         [ViewerCommands.GetId(ViewerCommand.BlinkCompare)] = CurrentBlinkCompare,

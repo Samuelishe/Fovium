@@ -68,6 +68,11 @@ HOME-UX-R1 applies the current fixed-Dark application surface roles to the no-im
 surfaces, one violet primary action, subdued borders, and project-authored vector geometry. It remains independent of
 the photographic Stage and is removed once a photograph is presented.
 
+HOME-UX-R1-F1 removes the duplicate in-content app masthead, keeps Settings as one restrained top-right action, and
+uses a softly layered hero plus scalable ambient radial fields rather than blur shaders or a fixed wallpaper. Real
+Recent previews sit on darker secondary cards; unavailable state combines reduced opacity with localized text rather
+than color alone. Left/right overflow fades are non-interactive and appear only when content is actually clipped.
+
 R1 fixes the application UI to Dark and uses Avalonia Fluent for its context menus, Settings, and small dialogs/error
 surfaces. R5-F3 retains ordinary themed Button/MenuItem semantics for the movable presenter panel and context menu while
 using centralized project-owned monochrome vector geometry; checked overlay state and disabled history actions remain

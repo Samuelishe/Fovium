@@ -524,6 +524,26 @@ public sealed class PresentationOverlaySessionTests
         Assert.False(session.CanUndo);
     }
 
+    [Fact]
+    public void DeactivateForHomeClearsViewerOnlyPresentationState()
+    {
+        var session = CreateReadySession("A");
+        Assert.True(session.ToggleHighlight());
+        Assert.True(session.MarkupToolsVisible);
+        session.SetActiveTool(MarkupTool.Rectangle);
+        Assert.True(session.BeginTemporaryHand());
+        DrawLine(session);
+
+        session.DeactivateForHome();
+
+        Assert.False(session.HighlightEnabled);
+        Assert.False(session.MarkupToolsVisible);
+        Assert.False(session.TemporaryHandActive);
+        Assert.Null(session.CurrentImageIdentity);
+        Assert.False(session.CanUndo);
+        Assert.Equal(0, session.TotalCommittedPoints);
+    }
+
     [Theory]
     [InlineData((int)MarkupTool.Brush)]
     [InlineData((int)MarkupTool.Eraser)]

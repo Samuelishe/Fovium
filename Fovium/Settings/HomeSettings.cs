@@ -11,6 +11,8 @@ internal sealed record RecentLocation
     public RecentLocationKind Kind { get; init; }
 
     public string Path { get; init; } = string.Empty;
+
+    public string? PreviewPath { get; init; }
 }
 
 internal sealed record HomeSettings
@@ -54,7 +56,22 @@ internal sealed record HomeSettings
                 continue;
             }
 
-            normalized.Add(location with { Path = path });
+            string? previewPath = null;
+            var candidatePreviewPath = location.Kind == RecentLocationKind.File
+                ? path
+                : location.PreviewPath;
+            if (!string.IsNullOrWhiteSpace(candidatePreviewPath))
+            {
+                try
+                {
+                    previewPath = System.IO.Path.GetFullPath(candidatePreviewPath);
+                }
+                catch (Exception exception) when (exception is ArgumentException or NotSupportedException)
+                {
+                }
+            }
+
+            normalized.Add(location with { Path = path, PreviewPath = previewPath });
             if (normalized.Count == MaximumRecentLocations)
             {
                 break;

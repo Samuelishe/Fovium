@@ -14,17 +14,20 @@ internal static class UiStrings
     public const string MenuStage = "menu.stage";
     public const string MenuOverlays = "menu.overlays";
     public const string MenuClose = "menu.close";
+    public const string MenuExitFovium = "menu.exitFovium";
     public const string HomeTitle = "home.title";
     public const string HomeSubtitle = "home.subtitle";
     public const string HomeDropHint = "home.dropHint";
     public const string HomeDropReady = "home.dropReady";
     public const string HomeOpenFiles = "home.openFiles";
     public const string HomeOpenFolder = "home.openFolder";
-    public const string HomeShortcutHint = "home.shortcutHint";
+    public const string HomeShortcutAction = "home.shortcutAction";
     public const string HomeRecent = "home.recent";
     public const string HomeClearRecent = "home.clearRecent";
     public const string HomeRecentFile = "home.recentFile";
     public const string HomeRecentFolder = "home.recentFolder";
+    public const string HomeRecentUnavailable = "home.recentUnavailable";
+    public const string HomeRemoveRecent = "home.removeRecent";
     public const string SettingsTitle = "settings.title";
     public const string SettingsViewing = "settings.viewing";
     public const string SettingsColor = "settings.color";
@@ -84,6 +87,7 @@ internal static class UiStrings
     public const string CommandToggleMatte = "command.toggleMatte";
     public const string CommandFullscreen = "command.fullscreen";
     public const string CommandOpen = "command.open";
+    public const string CommandClosePhoto = "command.closePhoto";
     public const string CommandSettings = "command.settings";
     public const string CommandPeek100 = "command.peek100";
     public const string CommandBlinkCompare = "command.blinkCompare";
@@ -486,6 +490,7 @@ internal static class UiStrings
         ViewerCommand.ToggleMatte => CommandToggleMatte,
         ViewerCommand.Fullscreen => CommandFullscreen,
         ViewerCommand.Open => CommandOpen,
+        ViewerCommand.ClosePhoto => CommandClosePhoto,
         ViewerCommand.Settings => CommandSettings,
         ViewerCommand.Peek100 => CommandPeek100,
         ViewerCommand.BlinkCompare => CommandBlinkCompare,

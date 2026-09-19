@@ -15,6 +15,7 @@ public sealed class ShortcutDefaultsTests
     [InlineData((int)ViewerCommand.ToggleMatte, "M", (int)ShortcutModifiers.None)]
     [InlineData((int)ViewerCommand.Fullscreen, "F11", (int)ShortcutModifiers.None)]
     [InlineData((int)ViewerCommand.Open, "O", (int)ShortcutModifiers.Control)]
+    [InlineData((int)ViewerCommand.ClosePhoto, "W", (int)ShortcutModifiers.Control)]
     [InlineData((int)ViewerCommand.Settings, "Comma", (int)ShortcutModifiers.Control)]
     [InlineData((int)ViewerCommand.Peek100, "Z", (int)ShortcutModifiers.None)]
     [InlineData((int)ViewerCommand.BlinkCompare, "C", (int)ShortcutModifiers.Shift)]
@@ -65,6 +66,7 @@ public sealed class ShortcutDefaultsTests
         Assert.Equal("viewer.toggleMatte", ViewerCommands.GetId(ViewerCommand.ToggleMatte));
         Assert.Equal("viewer.fullscreen", ViewerCommands.GetId(ViewerCommand.Fullscreen));
         Assert.Equal("viewer.open", ViewerCommands.GetId(ViewerCommand.Open));
+        Assert.Equal("viewer.closePhoto", ViewerCommands.GetId(ViewerCommand.ClosePhoto));
         Assert.Equal("viewer.settings", ViewerCommands.GetId(ViewerCommand.Settings));
         Assert.Equal("viewer.peek100", ViewerCommands.GetId(ViewerCommand.Peek100));
         Assert.Equal("viewer.blinkCompare", ViewerCommands.GetId(ViewerCommand.BlinkCompare));

@@ -187,6 +187,24 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
     public bool RefreshCachedCost(string path, T expectedValue) =>
         _cache.RefreshCost(path, expectedValue);
 
+    public Task CloseAsync()
+    {
+        Task cacheClear;
+        lock (_sync)
+        {
+            ThrowIfDisposed();
+            CancelForegroundAndPreload();
+            _sequence = null;
+            _currentIndex = -1;
+            _requestedIndex = -1;
+            _sessionIdentity++;
+            _generation++;
+            cacheClear = _cache.ClearAsync();
+        }
+
+        return cacheClear;
+    }
+
     public bool CancelPendingAndReanchor(int presentedIndex)
     {
         ImageSequence sequence;
@@ -827,7 +845,8 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
                     index,
                     generation,
                     null,
-                    new ImageLoadError(ImageLoadErrorKind.ResourceLimit, "The decoded image did not fit the cache budget."),
+                    new ImageLoadError(ImageLoadErrorKind.ResourceLimit,
+                        "The decoded image did not fit the cache budget."),
                     false,
                     latency);
             }
@@ -842,7 +861,8 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
             sessionIdentity,
             generation,
             preferredDirection);
-        Debug.WriteLine($"Fovium publish {Path.GetFileName(path)} in {latency.TotalMilliseconds:F2} ms; cache {_cache.RetainedBytes} bytes.");
+        Debug.WriteLine(
+            $"Fovium publish {Path.GetFileName(path)} in {latency.TotalMilliseconds:F2} ms; cache {_cache.RetainedBytes} bytes.");
         return new SelectionResult<T>(
             SelectionStatus.Published,
             path,
@@ -1024,7 +1044,7 @@ internal sealed class ViewerSession<T> : IAsyncDisposable
         lock (_sync)
         {
             return !cancellationToken.IsCancellationRequested &&
-                IsInspectionAuthorizedUnsafe(sequence, currentIndex, sessionIdentity, generation);
+                   IsInspectionAuthorizedUnsafe(sequence, currentIndex, sessionIdentity, generation);
         }
     }
 

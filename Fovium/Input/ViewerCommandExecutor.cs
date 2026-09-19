@@ -22,6 +22,8 @@ internal interface IViewerCommandTarget
 
     Task OpenAsync();
 
+    Task ClosePhotoAsync();
+
     void ShowSettings();
 
     void ToggleHighlight();
@@ -83,6 +85,7 @@ internal sealed class ViewerCommandExecutor(IViewerCommandTarget target)
             ViewerCommand.ToggleMatte => target.ToggleMatteAsync(),
             ViewerCommand.Fullscreen => Execute(target.ToggleFullscreen),
             ViewerCommand.Open => target.OpenAsync(),
+            ViewerCommand.ClosePhoto => target.ClosePhotoAsync(),
             ViewerCommand.Settings => Execute(target.ShowSettings),
             ViewerCommand.ToggleHighlight => Execute(target.ToggleHighlight),
             ViewerCommand.ToggleMarkupTools => Execute(target.ToggleMarkupTools),
@@ -92,14 +95,10 @@ internal sealed class ViewerCommandExecutor(IViewerCommandTarget target)
             ViewerCommand.MarkupUndo => Execute(target.UndoMarkup),
             ViewerCommand.MarkupRedo => Execute(target.RedoMarkup),
             ViewerCommand.ClearMarkup => Execute(target.ClearMarkup),
-            ViewerCommand.DecreaseMarkupThickness => Execute(
-                () => target.AdjustMarkupThickness(-1)),
-            ViewerCommand.IncreaseMarkupThickness => Execute(
-                () => target.AdjustMarkupThickness(1)),
-            ViewerCommand.DecreaseMarkupOpacity => Execute(
-                () => target.AdjustMarkupOpacity(-0.05)),
-            ViewerCommand.IncreaseMarkupOpacity => Execute(
-                () => target.AdjustMarkupOpacity(0.05)),
+            ViewerCommand.DecreaseMarkupThickness => Execute(() => target.AdjustMarkupThickness(-1)),
+            ViewerCommand.IncreaseMarkupThickness => Execute(() => target.AdjustMarkupThickness(1)),
+            ViewerCommand.DecreaseMarkupOpacity => Execute(() => target.AdjustMarkupOpacity(-0.05)),
+            ViewerCommand.IncreaseMarkupOpacity => Execute(() => target.AdjustMarkupOpacity(0.05)),
             ViewerCommand.DecreaseHighlightRadius => target.AdjustHighlightRadiusAsync(-4),
             ViewerCommand.IncreaseHighlightRadius => target.AdjustHighlightRadiusAsync(4),
             ViewerCommand.SelectHandTool => Execute(target.SelectHandTool),

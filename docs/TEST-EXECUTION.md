@@ -14,18 +14,24 @@ Run the full suite in the default configuration:
 dotnet test Fovium.sln
 ```
 
-Run the focused HOME-UX-R1 empty-startup, folder activation, recent-settings, and localization contracts:
+Run the focused HOME-UX-R1-F1 lifecycle, Recent, thumbnail, carousel, settings, localization, and structure contracts:
 
 ```powershell
-dotnet test Fovium.Tests/Fovium.Tests.csproj -c Release --no-restore --filter "FullyQualifiedName~ActivationPlanTests|FullyQualifiedName~DirectorySequenceBuilderTests|FullyQualifiedName~HomeSettingsTests|FullyQualifiedName~HomeLocalizationTests"
+dotnet test Fovium.Tests/Fovium.Tests.csproj -c Release --no-restore --filter "FullyQualifiedName~Fovium.Tests.Home|FullyQualifiedName~ActivationPlanTests|FullyQualifiedName~DirectorySequenceBuilderTests|FullyQualifiedName~HomeSettingsTests|FullyQualifiedName~HomeLocalizationTests|FullyQualifiedName~ViewerSessionTests|FullyQualifiedName~ViewerCommandExecutorTests|FullyQualifiedName~ShortcutDefaultsTests|FullyQualifiedName~PresentationOverlaySessionTests"
 ```
 
-Ignored Windows runtime evidence under `artifacts/home-r1/` covers no-picker empty startup, Russian large/medium/compact
-layouts, recent enabled/disabled, a successful real JPEG activation with persisted MRU, and a real top-level folder
-activation. The harness backs up and restores the per-user Settings document. Native picker selection and physical OS
-drag gestures remain manual interaction evidence rather than unit-test claims; deterministic activation/drop routing is
-covered by the focused tests. The final local Windows run passes this 17-test filter and 2,271/2,271 full Release tests;
-the preceding Release solution build completes with zero warnings and errors.
+Ignored Windows runtime evidence under `artifacts/home-r1-f1/` covers RU/EN large, medium, and compact composition;
+Recent enabled/disabled; six real previews; overflow before/after physical mouse drag; ordinary card activation;
+Viewer → `Ctrl+W` → Home; unavailable/recovered state; valid OLE file drag-over; and local performance diagnostics.
+The harness backs up and restores the per-user Settings document. Pure tests own deterministic threshold, intent,
+inertia, clamp, fade,
+cancellation, orientation, cache, and stale-publication semantics; physical precision-touchpad and Linux/macOS feel
+remain separate manual evidence.
+
+The final local HOME-UX-R1-F1 run passes the 205-test focused filter and 2,309/2,309 full Release tests; the preceding
+Release solution build completes with zero warnings and errors. The changed-file formatter, localization parity,
+Markdown-link audit, privacy/path audit, and `git diff --check` also pass. The solution-wide formatter still reports
+pre-existing whitespace findings in unrelated color-performance and metadata-formatting files.
 
 Run the same verification used by CI after a Release build:
 

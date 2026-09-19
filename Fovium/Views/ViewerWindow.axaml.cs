@@ -6,6 +6,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Fovium.Application;
@@ -14,6 +15,7 @@ using Fovium.ColorSemantics;
 using Fovium.ColorManagement;
 using Fovium.Diagnostics;
 using Fovium.Histogram;
+using Fovium.Home;
 using Fovium.Imaging;
 using Fovium.Input;
 using Fovium.Loading;
@@ -61,6 +63,9 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
     private readonly HistogramCoordinator _histogram;
     private readonly ColorPickerSession _colorPicker;
     private readonly SlideshowSession _slideshow;
+    private readonly HomeViewerState _contentState = new();
+    private readonly RecentThumbnailProvider _recentThumbnailProvider = new();
+    private readonly HomeRecentCarousel _recentCarousel;
     private readonly PhotoColorSampler _photoColorSampler;
     private readonly ColorSampleNameResolver _colorSampleNameResolver;
     private readonly PerceptualColorNameResolver _perceptualColorNameResolver;
@@ -94,6 +99,9 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
     private bool _appliedMonitorColorManagementEnabled;
     private SlideshowSettings _appliedSlideshowSettings;
     private int _presentedSequenceIndex = -1;
+    private int _homeDisplayCount;
+    private CancellationTokenSource? _homeRefreshCancellation;
+    private readonly List<Bitmap> _homeThumbnailBitmaps = [];
 
     public ViewerWindow(
         ActivationService activation,
@@ -215,6 +223,10 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         ConfigurePhotoInfo();
         ConfigureHistogram();
         ConfigureColorPicker();
+        _recentCarousel = new HomeRecentCarousel(
+            HomeRecentScroller,
+            HomeRecentLeftFade,
+            HomeRecentRightFade);
         ConfigureHome();
         _previousMenuItem = CreateCommandMenuItem(
             UiStrings.MenuPrevious,
@@ -286,7 +298,6 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         try
         {
             PhotoViewport.Focus();
-            RestartCursorTimer();
             ApplySettings(_settings.Current);
             Screens.Changed += OnDisplayRefreshRequired;
             ScheduleDisplayProfileRefresh(forceProfileRefresh: true);
@@ -294,6 +305,10 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
             if (_startupPaths.Count > 0)
             {
                 await OpenPathsAsync(_startupPaths);
+            }
+            else
+            {
+                EnterHome(refresh: false);
             }
         }
         catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
@@ -322,6 +337,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         _holdController.Cancel();
         _closed = true;
         _cursorTimer.Stop();
+        StopHomeWork();
         _settingsWindow?.Close();
         _lifetimeCancellation.Cancel();
         CompleteAmbientSoakTransition();
@@ -344,6 +360,23 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
 
     private void OnClosed(object? sender, EventArgs e)
     {
+        if (string.Equals(
+                Environment.GetEnvironmentVariable("FOVIUM_HOME_DIAGNOSTICS"),
+                "1",
+                StringComparison.Ordinal))
+        {
+            var metrics = _recentThumbnailProvider.GetMetrics();
+            Console.WriteLine(
+                $"Fovium Home thumbnails: requests={metrics.Requests}, prepared={metrics.Prepared}, " +
+                $"memoryHits={metrics.MemoryCacheHits}, failures={metrics.Failures}, " +
+                $"canceled={metrics.Cancellations}, cacheItems={metrics.CachedItems}, " +
+                $"retainedBytes={metrics.RetainedBytes}, lastMs={metrics.LastDuration.TotalMilliseconds:F2}, " +
+                $"totalPrepareMs={metrics.TotalPreparationDuration.TotalMilliseconds:F2}.");
+        }
+
+        _recentCarousel.Dispose();
+        _recentThumbnailProvider.Dispose();
+        DisposeHomeThumbnailBitmaps();
 #if DEBUG
         var ambientFrames = PhotoViewport.GetAmbientRenderFrameMetrics();
         Console.WriteLine(
@@ -590,10 +623,14 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
                 },
                 new Separator(),
                 CreateCommandMenuItem(
+                    UiStrings.CommandClosePhoto,
+                    ViewerCommand.ClosePhoto,
+                    FoviumIcon.Close),
+                CreateCommandMenuItem(
                     UiStrings.MenuSettings,
                     ViewerCommand.Settings,
                     FoviumIcon.Settings),
-                CreateMenuItem(UiStrings.MenuClose, () =>
+                CreateMenuItem(UiStrings.MenuExitFovium, () =>
                 {
                     Close();
                     return Task.CompletedTask;
@@ -608,6 +645,8 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
             _cursorTimer.Stop();
             _previousMenuItem.IsEnabled = _session.CanNavigate(ViewerNavigationDirection.Previous);
             _nextMenuItem.IsEnabled = _session.CanNavigate(ViewerNavigationDirection.Next);
+            _commandMenuItems[ViewerCommand.ClosePhoto].IsEnabled =
+                _contentState.Mode == ViewerContentMode.Viewer;
             foreach (var (mode, item) in _stageBackgroundMenuItems)
             {
                 item.IsChecked = _settings.Current.Stage.BackgroundMode == mode;
@@ -821,6 +860,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         HomeTitleText.Text = _localizer[UiStrings.HomeTitle];
         HomeSubtitleText.Text = _localizer[UiStrings.HomeSubtitle];
         HomeDropHintText.Text = _localizer[UiStrings.HomeDropHint];
+        HomeShortcutActionText.Text = _localizer[UiStrings.HomeShortcutAction];
         HomeRecentTitleText.Text = _localizer[UiStrings.HomeRecent];
         HomeClearRecentButton.Content = _localizer[UiStrings.HomeClearRecent];
         HomeOpenFilesButton.Content = CreateHomeActionContent(
@@ -853,7 +893,6 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         DragDrop.AddDragOverHandler(ViewerRoot, OnViewerDragOver);
         DragDrop.AddDragLeaveHandler(ViewerRoot, OnViewerDragLeave);
         DragDrop.AddDropHandler(ViewerRoot, OnViewerDrop);
-        ApplyHomeSettings(_settings.Current.Home, _settings.Current.Shortcuts);
     }
 
     private void OnHomeSizeChanged(object? sender, SizeChangedEventArgs e) =>
@@ -863,12 +902,18 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
     {
         var compact = size.Width < 640 || size.Height < 540;
         HomeHeroVisual.IsVisible = !compact;
-        HomeHeroLayout.RowDefinitions[0].Height = new GridLength(compact ? 0 : 138);
-        HomeHeroCard.MinHeight = compact ? 0 : 382;
+        HomeHeroLayout.RowDefinitions[0].Height = new GridLength(compact ? 0 : 132);
+        HomeHeroCard.MinHeight = compact ? 0 : 370;
         HomeHeroCard.Padding = compact
-            ? new Thickness(18, 20, 18, 20)
-            : new Thickness(24, 22, 24, 24);
-        HomeTitleText.FontSize = compact ? 30 : 35;
+            ? new Thickness(16, 16, 16, 16)
+            : new Thickness(26, 22, 26, 23);
+        HomeTitleText.FontSize = compact ? 28 : 35;
+        HomeComposition.Margin = compact
+            ? new Thickness(14, 48, 14, 14)
+            : new Thickness(24, 58, 24, 26);
+        HomeRecentSection.Margin = compact
+            ? new Thickness(0, 12, 0, 0)
+            : new Thickness(0, 20, 0, 0);
     }
 
     private static StackPanel CreateHomeActionContent(FoviumIcon icon, string text)
@@ -890,27 +935,58 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
 
     private void ApplyHomeSettings(HomeSettings home, ShortcutSettings shortcuts)
     {
+        var refreshStarted = Stopwatch.GetTimestamp();
         var openShortcut = shortcuts.Get(ViewerCommand.Open);
-        HomeShortcutBadge.IsVisible = openShortcut is not null;
+        HomeShortcutHint.IsVisible = openShortcut is not null;
         if (openShortcut is not null)
         {
-            HomeShortcutText.Text = string.Format(
-                System.Globalization.CultureInfo.GetCultureInfo(_localizer.Locale),
-                _localizer[UiStrings.HomeShortcutHint],
-                ShortcutGestureFormatter.Format(openShortcut, string.Empty));
+            HomeShortcutGestureText.Text = ShortcutGestureFormatter.Format(openShortcut, string.Empty);
         }
 
+        StopHomeRefresh();
+        DisposeHomeThumbnailBitmaps();
         HomeRecentItemsPanel.Children.Clear();
-        foreach (var location in home.RecentLocations)
+        var showRecent = home.ShowRecentItems && home.RecentLocations.Count > 0;
+        HomeRecentSection.IsVisible = showRecent;
+        if (!showRecent)
         {
-            HomeRecentItemsPanel.Children.Add(CreateRecentLocationButton(location));
+            _recentCarousel.Refresh();
+            TraceHomeDisplay(refreshStarted, 0);
+            return;
         }
 
-        HomeRecentSection.IsVisible =
-            home.ShowRecentItems && home.RecentLocations.Count > 0;
+        var cancellation = CancellationTokenSource.CreateLinkedTokenSource(
+            _lifetimeCancellation.Token);
+        _homeRefreshCancellation = cancellation;
+        var cards = home.RecentLocations
+            .Select(CreateRecentLocationCard)
+            .ToArray();
+        foreach (var card in cards)
+        {
+            HomeRecentItemsPanel.Children.Add(card.Button);
+        }
+
+        _recentCarousel.Refresh();
+        _ = RefreshRecentCardsAsync(cards, cancellation.Token);
+        TraceHomeDisplay(refreshStarted, cards.Length);
     }
 
-    private Button CreateRecentLocationButton(RecentLocation location)
+    private void TraceHomeDisplay(long started, int recentCount)
+    {
+        if (!string.Equals(
+                Environment.GetEnvironmentVariable("FOVIUM_HOME_DIAGNOSTICS"),
+                "1",
+                StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        Console.WriteLine(
+            $"Fovium Home display: ordinal={++_homeDisplayCount}, recent={recentCount}, " +
+            $"syncMs={Stopwatch.GetElapsedTime(started).TotalMilliseconds:F2}.");
+    }
+
+    private RecentCardUi CreateRecentLocationCard(RecentLocation location)
     {
         var fileName = location.Kind == RecentLocationKind.File
             ? Path.GetFileName(location.Path)
@@ -922,55 +998,176 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         var pathText = location.Kind == RecentLocationKind.File
             ? Path.GetDirectoryName(location.Path) ?? location.Path
             : location.Path;
-        var icon = location.Kind == RecentLocationKind.Folder
-            ? FoviumIcon.Folder
-            : FoviumIcon.Photo;
-        var iconHost = new Border
+        var placeholder = new Border
         {
-            Width = 52,
-            Height = 52,
-            Margin = new Thickness(11),
-            CornerRadius = new CornerRadius(9),
-            Background = new SolidColorBrush(Color.Parse(
-                location.Kind == RecentLocationKind.Folder ? "#49375B" : "#33475B")),
-            Child = FoviumIconCatalog.Create(icon, 21),
+            Background = new LinearGradientBrush
+            {
+                StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
+                EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative),
+                GradientStops =
+                {
+                    new GradientStop(Color.Parse("#382C4C"), 0),
+                    new GradientStop(Color.Parse("#1B2533"), 1),
+                },
+            },
+            Child = FoviumIconCatalog.Create(
+                location.Kind == RecentLocationKind.Folder ? FoviumIcon.Folder : FoviumIcon.Photo,
+                26),
         };
-        var text = new StackPanel
+        var image = new Image
         {
-            Spacing = 3,
-            Margin = new Thickness(0, 12, 12, 10),
-            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+            Stretch = Stretch.UniformToFill,
+            IsVisible = false,
         };
-        text.Children.Add(new TextBlock
+        var preview = new Grid
+        {
+            Height = 104,
+            ClipToBounds = true,
+            Children = { placeholder, image },
+        };
+        var titleText = new TextBlock
         {
             Text = title,
+            FontSize = 12,
             FontWeight = FontWeight.SemiBold,
             TextTrimming = TextTrimming.CharacterEllipsis,
-        });
-        text.Children.Add(new TextBlock
+        };
+        var metadata = new TextBlock
         {
             Text = $"{kindText}  ·  {pathText}",
-            FontSize = 11,
+            FontSize = 10,
             Foreground = new SolidColorBrush(Color.Parse("#9D95A7")),
             TextTrimming = TextTrimming.CharacterEllipsis,
-        });
-        var content = new Grid
-        {
-            ColumnDefinitions = new ColumnDefinitions("74,*"),
         };
-        content.Children.Add(iconHost);
-        Grid.SetColumn(text, 1);
-        content.Children.Add(text);
+        var labels = new StackPanel
+        {
+            Spacing = 2,
+            Margin = new Thickness(10, 6, 35, 7),
+            Children = { titleText, metadata },
+        };
+        var action = new Button
+        {
+            Content = "⋯",
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Bottom,
+            Margin = new Thickness(0, 0, 5, 5),
+        };
+        action.Classes.Add("recent-item-action");
+        AutomationProperties.SetName(action, _localizer[UiStrings.HomeRemoveRecent]);
+        var removeMenu = new ContextMenu
+        {
+            ItemsSource = new Control[]
+            {
+                CreateMenuItem(UiStrings.HomeRemoveRecent, () =>
+                    _settings.RemoveRecentLocationAsync(
+                        location.Path,
+                        _lifetimeCancellation.Token), FoviumIcon.Close),
+            },
+        };
+        action.Click += (_, e) =>
+        {
+            e.Handled = true;
+            removeMenu.Open(action);
+        };
+        var details = new Grid { Children = { labels, action } };
+        var content = new Grid { RowDefinitions = new RowDefinitions("104,*") };
+        content.Children.Add(preview);
+        Grid.SetRow(details, 1);
+        content.Children.Add(details);
 
         var button = new Button { Content = content };
         button.Classes.Add("recent-card");
         AutomationProperties.SetName(button, $"{kindText}: {title}");
         ToolTip.SetTip(button, location.Path);
-        button.Click += async (_, _) => await RunBoundaryActionAsync(() =>
-            OpenActivationAsync(location.Kind == RecentLocationKind.Folder
-                ? ActivationPlan.CreateFolder(location.Path)
-                : ActivationPlan.Create([location.Path])));
-        return button;
+        var card = new RecentCardUi(location, button, image, placeholder, metadata);
+        button.Click += async (_, _) => await ActivateRecentCardAsync(card);
+        button.GotFocus += (_, _) => button.BringIntoView();
+        return card;
+    }
+
+    private async Task RefreshRecentCardsAsync(
+        IReadOnlyList<RecentCardUi> cards,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.WhenAll(cards.Select(card =>
+                RefreshRecentCardAsync(card, cancellationToken)));
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+    }
+
+    private async Task RefreshRecentCardAsync(
+        RecentCardUi card,
+        CancellationToken cancellationToken)
+    {
+        var availabilityTask = Task.Run(
+            () => RecentLocationAvailability.Resolve(card.Location, File.Exists, Directory.Exists),
+            cancellationToken);
+        var thumbnailTask = string.IsNullOrWhiteSpace(card.Location.PreviewPath)
+            ? Task.FromResult<RecentThumbnailResult?>(null)
+            : PrepareRecentThumbnailAsync(card.Location.PreviewPath, cancellationToken);
+        var availability = await availabilityTask;
+        cancellationToken.ThrowIfCancellationRequested();
+        var kindText = _localizer[card.Location.Kind == RecentLocationKind.Folder
+            ? UiStrings.HomeRecentFolder
+            : UiStrings.HomeRecentFile];
+        card.Metadata.Text = availability == RecentAvailability.Unavailable
+            ? $"{kindText}  ·  {_localizer[UiStrings.HomeRecentUnavailable]}"
+            : kindText;
+        card.Button.Classes.Set("unavailable", availability == RecentAvailability.Unavailable);
+
+        var thumbnail = await thumbnailTask;
+        cancellationToken.ThrowIfCancellationRequested();
+        if (thumbnail?.Status != RecentThumbnailStatus.Ready || thumbnail.PngBytes is null)
+        {
+            return;
+        }
+
+        using var stream = new MemoryStream(thumbnail.PngBytes, writable: false);
+        var bitmap = new Bitmap(stream);
+        _homeThumbnailBitmaps.Add(bitmap);
+        card.Image.Source = bitmap;
+        card.Image.IsVisible = true;
+        card.Placeholder.IsVisible = false;
+    }
+
+    private async Task<RecentThumbnailResult?> PrepareRecentThumbnailAsync(
+        string path,
+        CancellationToken cancellationToken) =>
+        await _recentThumbnailProvider.PrepareAsync(
+            path,
+            RecentThumbnailProvider.TargetLongEdge,
+            cancellationToken);
+
+    private async Task ActivateRecentCardAsync(RecentCardUi card)
+    {
+        if (_recentCarousel.ConsumeSuppressedActivation())
+        {
+            return;
+        }
+
+        _recentCarousel.Stop();
+        var availability = RecentLocationAvailability.Resolve(
+            card.Location,
+            File.Exists,
+            Directory.Exists);
+        if (availability == RecentAvailability.Unavailable)
+        {
+            card.Button.Classes.Set("unavailable", true);
+            var kindText = _localizer[card.Location.Kind == RecentLocationKind.Folder
+                ? UiStrings.HomeRecentFolder
+                : UiStrings.HomeRecentFile];
+            card.Metadata.Text = $"{kindText}  ·  {_localizer[UiStrings.HomeRecentUnavailable]}";
+            return;
+        }
+
+        await RunBoundaryActionAsync(() => OpenActivationAsync(
+            card.Location.Kind == RecentLocationKind.Folder
+                ? ActivationPlan.CreateFolder(card.Location.Path)
+                : ActivationPlan.Create([card.Location.Path])));
     }
 
     private void OnViewerDragEnter(object? sender, DragEventArgs e) => UpdateDropState(e);
@@ -983,11 +1180,13 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         e.DragEffects = plan is null ? DragDropEffects.None : DragDropEffects.Copy;
         e.Handled = true;
         DropOverlay.IsVisible = plan is not null;
+        HomeHeroCard.Classes.Set("drag-ready", plan is not null && HomeSurface.IsVisible);
     }
 
     private void OnViewerDragLeave(object? sender, DragEventArgs e)
     {
         DropOverlay.IsVisible = false;
+        HomeHeroCard.Classes.Set("drag-ready", false);
         e.Handled = true;
     }
 
@@ -995,6 +1194,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
     {
         var plan = TryCreateDropPlan(e.DataTransfer);
         DropOverlay.IsVisible = false;
+        HomeHeroCard.Classes.Set("drag-ready", false);
         e.Handled = true;
         if (plan is not null)
         {
@@ -1057,6 +1257,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
 
     private async Task OpenActivationAsync(ActivationPlan plan)
     {
+        var ticket = _contentState.BeginOpen();
         _slideshow.Stop();
         _holdController.Cancel();
         CompleteAmbientSoakTransition();
@@ -1073,6 +1274,12 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         }
 
         var result = await _session.OpenAsync(sequence, _lifetimeCancellation.Token);
+        if (result.Status == SelectionStatus.Published && !_contentState.TryPublish(ticket))
+        {
+            result.Image?.Dispose();
+            return;
+        }
+
         _presentation.StartNewSequence();
         _photoInfo.BeginNewSequence();
         _histogram.BeginNewSequence();
@@ -1080,7 +1287,12 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         if (result.Status == SelectionStatus.Published && result.Path is not null)
         {
             var recent = plan.Mode == ActivationMode.Folder
-                ? new RecentLocation { Kind = RecentLocationKind.Folder, Path = plan.Paths[0] }
+                ? new RecentLocation
+                {
+                    Kind = RecentLocationKind.Folder,
+                    Path = plan.Paths[0],
+                    PreviewPath = result.Path,
+                }
                 : new RecentLocation { Kind = RecentLocationKind.File, Path = result.Path };
             await _settings.AddRecentLocationAsync(recent, _lifetimeCancellation.Token);
         }
@@ -1117,8 +1329,10 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         if (result.Status == SelectionStatus.Published && result.Image is not null)
         {
             _holdController.Cancel();
+            StopHomeWork();
             ErrorSurface.IsVisible = false;
             HomeSurface.IsVisible = false;
+            RestartCursorTimer();
             var path = result.Path
                        ?? throw new InvalidOperationException("Published selection has no source path.");
             var identity = result.Image.Value.Identity;
@@ -1143,7 +1357,8 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
 
         PhotoViewport.ClearImage();
         _stageCoordinator.ClearImage();
-        HomeSurface.IsVisible = true;
+        _contentState.ReturnHome();
+        EnterHome();
         ErrorText.Text = LocalizeError(result.Error.Kind);
         ErrorSurface.IsVisible = true;
     }
@@ -1159,6 +1374,90 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
             _ => UiStrings.ErrorDecodeFailed,
         }];
 
+    private async Task ClosePhotoAsync()
+    {
+        if (_contentState.Mode == ViewerContentMode.Home)
+        {
+            return;
+        }
+
+        _contentState.ReturnHome();
+        _slideshow.Stop();
+        _holdController.Cancel();
+        CompleteAmbientSoakTransition();
+        PhotoViewport.CancelPendingPresentation();
+        await _session.CloseAsync();
+        PhotoViewport.ClearImage();
+        PhotoViewport.SetPhotoPresentationViewEnabled(false);
+        _stageCoordinator.ClearImage();
+        _presentation.DeactivateForHome();
+        _photoInfo.SetVisible(false);
+        _photoInfo.BeginNewSequence();
+        _histogram.SetVisible(false);
+        _histogram.BeginNewSequence();
+        _colorPicker.SetVisible(false);
+        _colorPicker.ClearHistory();
+        _presentedSequenceIndex = -1;
+        ErrorSurface.IsVisible = false;
+        DropOverlay.IsVisible = false;
+        HomeHeroCard.Classes.Set("drag-ready", false);
+        EnterHome();
+        HomeOpenFilesButton.Focus();
+    }
+
+    private void EnterHome(bool refresh = true)
+    {
+        HomeSurface.IsVisible = true;
+        ShowCursor();
+        _cursorTimer.Stop();
+        if (refresh)
+        {
+            ApplyHomeSettings(_settings.Current.Home, _settings.Current.Shortcuts);
+        }
+    }
+
+    private void StopHomeWork()
+    {
+        StopHomeRefresh();
+        _recentCarousel.Stop();
+        DisposeHomeThumbnailBitmaps();
+    }
+
+    private void StopHomeRefresh()
+    {
+        _homeRefreshCancellation?.Cancel();
+        _homeRefreshCancellation?.Dispose();
+        _homeRefreshCancellation = null;
+    }
+
+    private void DisposeHomeThumbnailBitmaps()
+    {
+        foreach (var bitmap in _homeThumbnailBitmaps)
+        {
+            bitmap.Dispose();
+        }
+
+        _homeThumbnailBitmaps.Clear();
+    }
+
+    private sealed class RecentCardUi(
+        RecentLocation location,
+        Button button,
+        Image image,
+        Control placeholder,
+        TextBlock metadata)
+    {
+        public RecentLocation Location { get; } = location;
+
+        public Button Button { get; } = button;
+
+        public Image Image { get; } = image;
+
+        public Control Placeholder { get; } = placeholder;
+
+        public TextBlock Metadata { get; } = metadata;
+    }
+
     private void ShowBoundaryError()
     {
         if (_closed)
@@ -1169,7 +1468,8 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         _holdController.Cancel();
         PhotoViewport.ClearImage();
         _stageCoordinator.ClearImage();
-        HomeSurface.IsVisible = true;
+        _contentState.ReturnHome();
+        EnterHome();
         ErrorText.Text = _localizer[UiStrings.ErrorDecodeFailed];
         ErrorSurface.IsVisible = true;
     }
@@ -1243,7 +1543,11 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         _photoInfoFloatingOverlay.SetPlacement(settings.Presentation.PhotoInfoPlacement);
         _histogramFloatingOverlay.SetPlacement(settings.Presentation.HistogramPlacement);
         _colorPickerFloatingOverlay.SetPlacement(settings.Presentation.ColorPickerPlacement);
-        ApplyHomeSettings(settings.Home, settings.Shortcuts);
+        if (_contentState.Mode == ViewerContentMode.Home)
+        {
+            ApplyHomeSettings(settings.Home, settings.Shortcuts);
+        }
+
         if (_appliedMonitorColorManagementEnabled != settings.MonitorColorManagementEnabled)
         {
             _appliedMonitorColorManagementEnabled = settings.MonitorColorManagementEnabled;
@@ -1462,14 +1766,24 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
     {
         _lastPointerActivityTimestamp = Stopwatch.GetTimestamp();
         ShowCursor();
-        EnsureCursorTimerRunning();
+        if (_contentState.Mode == ViewerContentMode.Viewer)
+        {
+            EnsureCursorTimerRunning();
+        }
     }
 
     private void OnCursorTimerTick(object? sender, EventArgs e)
     {
-        if (!_contextMenuOpen &&
-            _lastPointerActivityTimestamp != 0 &&
-            Stopwatch.GetElapsedTime(_lastPointerActivityTimestamp) >= CursorHideDelay)
+        var hasActivity = _lastPointerActivityTimestamp != 0;
+        var idle = hasActivity
+            ? Stopwatch.GetElapsedTime(_lastPointerActivityTimestamp)
+            : TimeSpan.Zero;
+        if (HomeCursorPolicy.ShouldHideViewerCursor(
+                _contentState.Mode,
+                _contextMenuOpen,
+                hasActivity,
+                idle,
+                CursorHideDelay))
         {
             PhotoViewport.SetViewerCursor(_hiddenCursor);
         }
@@ -1479,7 +1793,10 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
 
     private void RestartCursorTimer()
     {
-        if (_lifetimeCancellation.IsCancellationRequested || _contextMenuOpen)
+        if (!HomeCursorPolicy.ShouldRunViewerIdleTimer(
+                _contentState.Mode,
+                _lifetimeCancellation.IsCancellationRequested,
+                _contextMenuOpen))
         {
             return;
         }
@@ -1626,6 +1943,8 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
     void IViewerCommandTarget.ToggleFullscreen() => ToggleFullscreen();
 
     Task IViewerCommandTarget.OpenAsync() => OpenFromPickerAsync();
+
+    Task IViewerCommandTarget.ClosePhotoAsync() => ClosePhotoAsync();
 
     void IViewerCommandTarget.ShowSettings() => ShowSettings();
 

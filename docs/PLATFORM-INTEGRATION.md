@@ -23,6 +23,11 @@ single command-line folder use a non-recursive top-level candidate snapshot in n
 candidate. Dropped files preserve their supplied order and take precedence over a folder included in the same drop;
 Fovium does not merge file selections with directory contents.
 
+HOME-UX-R1-F1 prepares at most six in-app Recent previews through the project imaging path. This is not shell thumbnail
+integration: it has no Explorer/Finder dependency, association side effect, recursive folder scan, persistent database,
+or disk cache. Path availability is refreshed whenever Home becomes active, and one failed existence check never
+deletes history because removable, network, and cloud locations may be temporarily absent.
+
 Inputs may contain Unicode, spaces, long names, platform-specific syntax, and paths supplied by shell activation. Fovium
 must eventually support `fovium <path>` and equivalent native activation. Startup must not assume that a Fovium file
 picker produced the request.

@@ -148,7 +148,8 @@ public sealed class ViewerSessionTests
     [Fact]
     public async Task CurrentLeaseRemainsUsableWhileReplacementIsStillLoading()
     {
-        var nextSource = new TaskCompletionSource<ImageLoadResult<FakeImage>>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var nextSource =
+            new TaskCompletionSource<ImageLoadResult<FakeImage>>(TaskCreationOptions.RunContinuationsAsynchronously);
         var loader = new FakeImageLoader((path, allowance, _) =>
         {
             if (Path.GetFileName(path) == "B.jpg" && !allowance.IsSpeculative)
@@ -218,9 +219,12 @@ public sealed class ViewerSessionTests
     [Fact]
     public async Task DelayedAAndBMayNotPublishAfterFastCAndStaleResourcesAreDisposed()
     {
-        var aSource = new TaskCompletionSource<ImageLoadResult<FakeImage>>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var bSource = new TaskCompletionSource<ImageLoadResult<FakeImage>>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var cSource = new TaskCompletionSource<ImageLoadResult<FakeImage>>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var aSource =
+            new TaskCompletionSource<ImageLoadResult<FakeImage>>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var bSource =
+            new TaskCompletionSource<ImageLoadResult<FakeImage>>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var cSource =
+            new TaskCompletionSource<ImageLoadResult<FakeImage>>(TaskCreationOptions.RunContinuationsAsynchronously);
         var loader = new FakeImageLoader((path, _, _) => Path.GetFileName(path) switch
         {
             "A.jpg" => aSource.Task,
@@ -610,6 +614,59 @@ public sealed class ViewerSessionTests
         Assert.Equal(SelectionStatus.Failed, opened.Status);
         Assert.Equal(ImageLoadErrorKind.ResourceLimit, opened.Error!.Kind);
         Assert.Equal(0, session.GetMetrics().CacheItemCount);
+    }
+
+    [Fact]
+    public async Task CloseClearsSequenceAndSessionCanOpenAgain()
+    {
+        var loader = FakeImageLoader.Immediate(path => FakeLoadResult.Success(path));
+        await using var session = CreateSession(loader);
+        using var opened = (await session.OpenAsync(
+            new ImageSequence(["A.jpg", "B.jpg"], 0))).Image;
+        await session.WaitForAdjacentPreloadAsync(CancellationToken.None);
+
+        await session.CloseAsync();
+        var afterClose = await session.NavigateAsync(NavigationDirection.Next);
+        var indexAfterClose = session.CurrentIndex;
+        using var reopened = (await session.OpenAsync(new ImageSequence(["C.jpg"], 0))).Image;
+
+        Assert.Equal(-1, indexAfterClose);
+        Assert.Equal(SelectionStatus.NoMove, afterClose.Status);
+        Assert.Null(afterClose.Image);
+        Assert.NotNull(reopened);
+        Assert.Equal("C.jpg", reopened.Value.Name);
+        Assert.Equal(0, session.CurrentIndex);
+    }
+
+    [Fact]
+    public async Task CloseRevokesPendingPublicationAndDisposesLateImage()
+    {
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var delayed = new TaskCompletionSource<ImageLoadResult<FakeImage>>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var loader = new FakeImageLoader((_, allowance, _) =>
+        {
+            if (!allowance.IsSpeculative)
+            {
+                started.TrySetResult();
+                return delayed.Task;
+            }
+
+            return Task.FromResult(FakeLoadResult.Failure(ImageLoadErrorKind.ResourceLimit));
+        });
+        await using var session = CreateSession(loader);
+        var pending = session.OpenAsync(new ImageSequence(["late.jpg"], 0));
+        await started.Task;
+
+        await session.CloseAsync();
+        var lateImage = new FakeImage("late.jpg");
+        delayed.SetResult(ImageLoadResult<FakeImage>.Success(lateImage));
+        var result = await pending;
+
+        Assert.Equal(SelectionStatus.Stale, result.Status);
+        Assert.Null(result.Image);
+        Assert.Equal(1, lateImage.DisposeCount);
+        Assert.Equal(-1, session.CurrentIndex);
     }
 
     private static ViewerSession<FakeImage> CreateSession(FakeImageLoader loader)

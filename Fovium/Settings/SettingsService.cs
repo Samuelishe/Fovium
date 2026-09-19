@@ -144,6 +144,37 @@ internal sealed class SettingsService(ISettingsStore store) : IDisposable
                 },
             cancellationToken);
 
+    public Task RemoveRecentLocationAsync(
+        string path,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        string normalizedPath;
+        try
+        {
+            normalizedPath = Path.GetFullPath(path);
+        }
+        catch (Exception exception) when (exception is ArgumentException or NotSupportedException)
+        {
+            return Task.CompletedTask;
+        }
+
+        var comparer = OperatingSystem.IsWindows()
+            ? StringComparer.OrdinalIgnoreCase
+            : StringComparer.Ordinal;
+        return UpdateAsync(
+            settings => settings with
+            {
+                Home = settings.Home with
+                {
+                    RecentLocations = settings.Home.RecentLocations
+                        .Where(item => !comparer.Equals(item.Path, normalizedPath))
+                        .ToArray(),
+                },
+            },
+            cancellationToken);
+    }
+
     public Task SetPhotoPresentationViewAsync(
         PhotoPresentationViewSettings photoPresentationView,
         CancellationToken cancellationToken = default)

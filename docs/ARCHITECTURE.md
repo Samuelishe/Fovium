@@ -52,9 +52,14 @@ custom control or focused code-behind while domain-independent math remains test
   application code.
 - Settings storage owns typed persisted preferences; the viewer coordinator resolves image-change policy into a
   `ViewTransfer`. Renderer and viewport math never query settings.
-- Empty startup is an explicit activation mode rather than an implicit picker request. File, explicit multi-file, and
-  top-level folder activation converge on the existing `ImageSequence`/`ViewerSession` publication boundary; the home
-  view never probes or decodes images. A recent location is recorded only after successful publication.
+- Empty startup and return-to-Home are explicit content states rather than implicit picker requests. A monotonic open
+  ticket prevents an activation completed after Close photo from restoring stale viewer content. Closing a sequence
+  cancels foreground/preload work, clears the session cache, and leaves the reusable window and preferences alive.
+  File, explicit multi-file, and top-level folder activation converge on the existing `ImageSequence`/`ViewerSession`
+  publication boundary. A recent location is recorded only after successful publication.
+- Recent preview preparation is a separate Home concern: two bounded asynchronous workers use reduced Skia decode,
+  canonical orientation drawing, a `160 px` long-edge target, and a six-item/2 MiB session-memory LRU. UI-owned preview
+  bitmaps are released when Home hides; no persistent thumbnail database or folder enumeration is introduced.
 - Photo Presentation View owns only session mode state and one normalized edge-margin preference. The pure
   `PhotoPresentationLayout` receives current viewport/DPI, oriented source size, and edge margin, then returns only
   photograph destination, photograph presentation bounds, and physical scale. Existing `StageGeometry` independently

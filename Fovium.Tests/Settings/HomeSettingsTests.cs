@@ -85,6 +85,64 @@ public sealed class HomeSettingsTests : IDisposable
     }
 
     [Fact]
+    public async Task RemoveRecentIsExplicitAndDoesNotDependOnPathAvailability()
+    {
+        var store = new RecordingSettingsStore();
+        using var service = new SettingsService(store);
+        var retained = Path.Combine(_directory, "retained.jpg");
+        var removed = Path.Combine(_directory, "removed.jpg");
+        await service.AddRecentLocationAsync(new RecentLocation
+        {
+            Kind = RecentLocationKind.File,
+            Path = retained,
+        });
+        await service.AddRecentLocationAsync(new RecentLocation
+        {
+            Kind = RecentLocationKind.File,
+            Path = removed,
+        });
+
+        await service.RemoveRecentLocationAsync(removed);
+        await service.FlushAsync();
+
+        var remaining = Assert.Single(service.Current.Home.RecentLocations);
+        Assert.Equal(Path.GetFullPath(retained), remaining.Path);
+        Assert.False(File.Exists(remaining.Path));
+        Assert.Equal(service.Current.Home.RecentLocations, store.Saved?.Home.RecentLocations);
+    }
+
+    [Fact]
+    public async Task FolderRecentPersistsStableLastPresentedPreview()
+    {
+        var path = Path.Combine(_directory, "settings.json");
+        var locationPath = Path.Combine(_directory, "photos");
+        var previewPath = Path.Combine(locationPath, "last-presented.jpg");
+        var settings = FoviumSettings.Default with
+        {
+            Home = new HomeSettings
+            {
+                RecentLocations =
+                [
+                    new RecentLocation
+                    {
+                        Kind = RecentLocationKind.Folder,
+                        Path = locationPath,
+                        PreviewPath = previewPath,
+                    },
+                ],
+            },
+        };
+        var store = new JsonSettingsStore(path);
+
+        await store.SaveAsync(settings, CancellationToken.None);
+        var result = await store.LoadAsync(CancellationToken.None);
+
+        var recent = Assert.Single(result.Settings.Home.RecentLocations);
+        Assert.Equal(Path.GetFullPath(locationPath), recent.Path);
+        Assert.Equal(Path.GetFullPath(previewPath), recent.PreviewPath);
+    }
+
+    [Fact]
     public async Task HomeSettingsRoundTripThroughSchemaTwoJson()
     {
         var path = Path.Combine(_directory, "settings.json");
@@ -113,6 +171,7 @@ public sealed class HomeSettingsTests : IDisposable
         var recent = Assert.Single(result.Settings.Home.RecentLocations);
         Assert.Equal(RecentLocationKind.Folder, recent.Kind);
         Assert.Equal(Path.GetFullPath(locationPath), recent.Path);
+        Assert.Null(recent.PreviewPath);
         Assert.Null(result.Diagnostic);
     }
 

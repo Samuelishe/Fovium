@@ -173,6 +173,7 @@ never reuse an earlier version. No automatic rollover after BUILD `9999` is defi
 | `0.1.4.0004` | BRAND-R1                              | Project-owned application identity, executable/window icon integration, and public repository landing refinement                |
 | `0.1.5.0000` | SETTINGS-UX-R1                        | Human-first Settings redesign with persisted startup-resolved English, Russian, or system language                              |
 | `0.1.6.0000` | HOME-UX-R1                            | Localized no-image landing state, file/folder/drop entry, and bounded optional recent locations                                 |
+| `0.1.6.0001` | HOME-UX-R1-F1                         | Return-to-Home lifecycle, visual Recent carousel, unavailable state, and responsive startup polish                              |
 
 The `0.0.0.xxxx` line records the completed foundation and early product-construction checkpoints. The explicit
 owner-controlled `0.1.0.0000` transition marks the first substantial usable Fovium alpha; it does not claim feature
@@ -212,6 +213,9 @@ window-chrome redesign rather than a correction within the BRAND-R1 identity lin
 HOME-UX-R1 increments PATCH and resets BUILD to `0.1.6.0000`: the no-image landing state replaces automatic picker
 startup with a new independently useful entry surface and adds folder/drop activation plus bounded optional recent
 locations without changing photograph-viewing chrome.
+HOME-UX-R1-F1 increments BUILD to `0.1.6.0001`: Close photo completes the existing Home lifecycle while previews,
+availability, one-row overflow interaction, and adaptive composition refine the existing Home/Recent surface rather
+than introducing a new library, organizer, or viewing mode.
 
 ## Future code and packaging source
 
@@ -219,9 +223,9 @@ The root `Directory.Build.props` is the canonical source for the current compone
 supplies the production `Fovium` assembly with:
 
 ```text
-InformationalVersion = 0.1.6.0000
-AssemblyVersion      = 0.1.6.0
-FileVersion          = 0.1.6.0
+InformationalVersion = 0.1.6.0001
+AssemblyVersion      = 0.1.6.1
+FileVersion          = 0.1.6.1
 ```
 
 From that source:

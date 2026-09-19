@@ -43,6 +43,11 @@ HOME-UX-R1 adds catalog-owned landing headline/supporting copy, file/folder/drop
 folder-picker title, empty-folder error, and the General recent-items preference. The abstract landing illustration
 contains no text; filenames and paths remain source data, while file/folder kind labels are localized.
 
+HOME-UX-R1-F1 adds catalog-owned Close photo, Exit Fovium, unavailable, Remove from recent, effective-shortcut effect,
+and deliberate drag-over wording. English and Russian use concise natural Home copy; thumbnails and the abstract hero
+contain no baked text. The displayed Open-files gesture comes from the effective assigned binding and disappears when
+unassigned.
+
 R8-A localizes Color Picker command/panel chrome, empty hint, history label, Transparent semantic, Approximate tooltip,
 and RGB (A) format templates in EN/RU. R8-A-F1 keeps the 1,800 reviewed English names as canonical matching/provenance
 data and adds optional embedded display-name catalogs under `resources/color-names/localization/`, keyed by stable color

@@ -33,8 +33,8 @@ internal sealed class SkiaImageDecodeBackend : IImageDecodeBackend
                 return creationResult == SKCodecResult.Unimplemented
                     ? ImageDecodeBackendResult.NotMyFormat()
                     : Failure(
-                    ImageDecodeBackendResultKind.Corrupt,
-                    $"SKCodec probe failed: {creationResult}.");
+                        ImageDecodeBackendResultKind.Corrupt,
+                        $"SKCodec probe failed: {creationResult}.");
             }
 
             if (!ImageFormatCapabilities.TryGetDetected(codec.EncodedFormat, out var detectedCapability) ||
@@ -63,6 +63,7 @@ internal sealed class SkiaImageDecodeBackend : IImageDecodeBackend
                     ImageDecodeBackendResultKind.UnsupportedVariant,
                     $"Animated or multi-frame {formatCapability.DisplayName} is not supported yet.");
             }
+
             using var sourceColorSpace = info.ColorSpace;
             colorState = sourceColorSpace is null
                 ? SourceColorState.AssumedSrgb
@@ -101,7 +102,8 @@ internal sealed class SkiaImageDecodeBackend : IImageDecodeBackend
         using var decodeCodec = SKCodec.Create(decodeStream, out var decodeCreationResult);
         if (decodeCodec is null)
         {
-            return Failure(ImageDecodeBackendResultKind.Corrupt, $"SKCodec decode open failed: {decodeCreationResult}.");
+            return Failure(ImageDecodeBackendResultKind.Corrupt,
+                $"SKCodec decode open failed: {decodeCreationResult}.");
         }
 
         using var decodedColorSpace = decodeCodec.Info.ColorSpace;
@@ -169,7 +171,7 @@ internal sealed class SkiaImageDecodeBackend : IImageDecodeBackend
         Exception? exception = null) =>
         ImageDecodeBackendResult.Failure(kind, detail, exception);
 
-    private static ExifOrientation ToExifOrientation(SKEncodedOrigin origin) =>
+    internal static ExifOrientation ToExifOrientation(SKEncodedOrigin origin) =>
         origin switch
         {
             SKEncodedOrigin.TopLeft => ExifOrientation.Normal,

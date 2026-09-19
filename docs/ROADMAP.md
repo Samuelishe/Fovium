@@ -345,6 +345,15 @@ honestly that a changed language applies after restart. Settings owns one projec
 dragging, invisible edge/corner resize, and Viewer-relative ownership without native titlebar/border chrome or global
 topmost behavior. No theme selector, speculative preference, new framework, or external asset is introduced.
 
+## HOME-UX-R1-F1 — Returnable Home and visual Recent
+
+Locally complete at `0.1.6.0001`: make Home the reusable no-sequence state reached by `Ctrl+W`, with stale-publication
+rejection and cleanup of slideshow, holds, presentation, inspection, and cursor-idle behavior. Refine Recent into one
+responsive horizontal strip with real bounded oriented previews, honest unavailable/recovery state, explicit item
+removal, hidden system scrollbars, mouse grab-scroll, restrained bounded inertia, wheel/keyboard support, and edge
+fades. Empty/hidden Recent centers the polished hero; visible Recent forms a balanced secondary composition. No disk
+thumbnail cache, recursive folder cover scan, navigation rail, Favorites, catalog, or DAM behavior is introduced.
+
 ## Later / separate platform milestones
 
 - file association and Open With integration;
