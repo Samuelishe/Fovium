@@ -24,9 +24,20 @@ internal sealed class Localizer
 
     public static Localizer CreateForCurrentCulture() => Create(CultureInfo.CurrentUICulture);
 
+    public static Localizer Create(UiLanguage language, CultureInfo systemCulture)
+    {
+        var locale = LocaleResolver.Resolve(language, systemCulture);
+        return Create(locale);
+    }
+
     public static Localizer Create(CultureInfo culture)
     {
         var locale = LocaleResolver.Resolve(culture);
+        return Create(locale);
+    }
+
+    private static Localizer Create(string locale)
+    {
         var assembly = typeof(Localizer).Assembly;
         var english = LoadCatalog(assembly, "en");
         var selected = locale == "en" ? english : LoadCatalog(assembly, locale);
@@ -56,8 +67,9 @@ internal sealed class Localizer
     {
         var resourceName = $"Fovium.Localization.{locale}.json";
         using var stream = assembly.GetManifestResourceStream(resourceName)
-            ?? throw new InvalidOperationException($"Embedded localization catalog is missing: {resourceName}");
+                           ?? throw new InvalidOperationException(
+                               $"Embedded localization catalog is missing: {resourceName}");
         return JsonSerializer.Deserialize<Dictionary<string, string>>(stream)
-            ?? throw new InvalidDataException($"Localization catalog is empty: {resourceName}");
+               ?? throw new InvalidDataException($"Localization catalog is empty: {resourceName}");
     }
 }

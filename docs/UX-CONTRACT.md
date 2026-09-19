@@ -225,6 +225,14 @@ Settings expose durable preferences, not ordinary navigation. They open as secon
 expert jargon where a product concept exists. Section ownership, persistence, and reset behavior belong to [
 `SETTINGS.md`](SETTINGS.md); performance policy belongs to [`PERFORMANCE.md`](PERFORMANCE.md).
 
+Settings uses a stable left navigation rail and one bounded, vertically scrollable content column. General owns the
+Language choice; Controls groups shortcuts by task and presents gestures as keys; About carries identity, version, and
+one concise product description. The window has no duplicate native titlebar or visible platform border: one
+project-owned close button occupies the content surface, invisible edge/corner zones retain resize, and dragging begins
+only from non-interactive areas so navigation, sliders, selectors, and shortcut capture remain predictable. Settings is
+owned by its Viewer and must remain above that Viewer through fullscreen transitions, but is never globally topmost over
+other applications. Keyboard focus and scrolling continue to use ordinary Avalonia control semantics.
+
 Dark/Light application theme affects controls and secondary UI, never the photograph or Stage. The separation is owned
 by [`THEMES.md`](THEMES.md).
 

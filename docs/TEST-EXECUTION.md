@@ -22,6 +22,18 @@ dotnet build Fovium.sln -c Release --no-restore
 dotnet test Fovium.sln -c Release --no-build
 ```
 
+Run the focused SETTINGS-UX-R1 language, startup, persistence, section, window-drag, and version contracts:
+
+```powershell
+dotnet test Fovium.Tests/Fovium.Tests.csproj -c Release --no-restore --filter "FullyQualifiedName~SettingsWindowDragOriginTests|FullyQualifiedName~LanguageSelectionTests|FullyQualifiedName~LanguageSettingsTests|FullyQualifiedName~ApplicationStartupTests|FullyQualifiedName~SettingsSectionCatalogTests|FullyQualifiedName~FoviumVersionTests"
+```
+
+The local Windows runtime harness under ignored `artifacts/settings-ux-r1/` uses the production executable and a local
+photograph, backs up/restores the real per-user settings file, and verifies RU/EN presentation, persisted language plus
+restart application, all seven navigation sections, fullscreen Viewer ownership without global topmost, free-surface
+drag, transparent-edge resize to `760×560`, and the project close button. SETTINGS-UX-R1 passes the 21-test focused
+filter and 2,260/2,260 full Release tests; the preceding solution build completes with zero warnings and errors.
+
 Run the focused BRAND-R1 asset, project wiring, window ownership, README local-target, and workflow-badge contracts:
 
 ```powershell

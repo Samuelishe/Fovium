@@ -336,6 +336,15 @@ icon; and replace the internal-heavy root README with a concise public landing p
 source-build instructions, and a real Fovium runtime hero over a deterministic synthetic image. No installer, release
 automation, file association, third-party visual asset, or owner photograph is introduced.
 
+## SETTINGS-UX-R1 — Human-first Settings and explicit UI language
+
+Locally complete at `0.1.5.0000`: replace the sparse horizontal-tab Settings shell with compact vertical navigation,
+bounded scrollable pages, coherent task grouping, scannable shortcut cards, and a useful identity/version About
+surface. Add persisted System default/English/Русский selection, load it before application localization, and state
+honestly that a changed language applies after restart. Settings owns one project close control, free-surface window
+dragging, invisible edge/corner resize, and Viewer-relative ownership without native titlebar/border chrome or global
+topmost behavior. No theme selector, speculative preference, new framework, or external asset is introduced.
+
 ## Later / separate platform milestones
 
 - file association and Open With integration;

@@ -1,9 +1,13 @@
+using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
+using Avalonia.VisualTree;
+using System.Globalization;
 using Fovium.Application;
 using Fovium.Input;
 using Fovium.Localization;
@@ -21,6 +25,12 @@ internal sealed partial class SettingsWindow : Window
     private readonly Localizer _localizer;
     private readonly PhotoPresentationViewSession _photoPresentationView;
     private readonly SlideshowSession _slideshow;
+    private readonly ListBox _settingsNavigation;
+    private readonly Button _closeButton;
+    private readonly IReadOnlyDictionary<SettingsSection, Control> _sectionPages;
+    private readonly ComboBox _languageOption;
+    private readonly Border _languageRestartPanel;
+    private readonly TextBlock _languageRestartHint;
     private readonly RadioButton _keepCurrentScaleOption;
     private readonly RadioButton _fitEachImageOption;
     private readonly CheckBox _photoPresentationEnabledOption;
@@ -95,12 +105,21 @@ internal sealed partial class SettingsWindow : Window
         };
         _windowSizePersistenceTimer.Tick += OnWindowSizePersistenceTimerTick;
 
-        var viewingTab = FindRequired<TabItem>("ViewingTab");
-        var colorTab = FindRequired<TabItem>("ColorTab");
-        var stageTab = FindRequired<TabItem>("StageTab");
-        var presentationTab = FindRequired<TabItem>("PresentationTab");
-        var controlsTab = FindRequired<TabItem>("ControlsTab");
-        var aboutTab = FindRequired<TabItem>("AboutTab");
+        _settingsNavigation = FindRequired<ListBox>("SettingsNavigation");
+        _closeButton = FindRequired<Button>("SettingsCloseButton");
+        _sectionPages = new Dictionary<SettingsSection, Control>
+        {
+            [SettingsSection.General] = FindRequired<ScrollViewer>("GeneralPage"),
+            [SettingsSection.Viewing] = FindRequired<ScrollViewer>("ViewingPage"),
+            [SettingsSection.Color] = FindRequired<ScrollViewer>("ColorPage"),
+            [SettingsSection.Stage] = FindRequired<ScrollViewer>("StagePage"),
+            [SettingsSection.Presentation] = FindRequired<ScrollViewer>("PresentationPage"),
+            [SettingsSection.Controls] = FindRequired<ScrollViewer>("ControlsPage"),
+            [SettingsSection.About] = FindRequired<ScrollViewer>("AboutPage"),
+        };
+        _languageOption = FindRequired<ComboBox>("LanguageOption");
+        _languageRestartPanel = FindRequired<Border>("LanguageRestartPanel");
+        _languageRestartHint = FindRequired<TextBlock>("LanguageRestartHint");
         _keepCurrentScaleOption = FindRequired<RadioButton>("KeepCurrentScaleOption");
         _fitEachImageOption = FindRequired<RadioButton>("FitEachImageOption");
         _photoPresentationEnabledOption =
@@ -152,12 +171,64 @@ internal sealed partial class SettingsWindow : Window
         _defaultMarkupOpacityValue = FindRequired<TextBlock>("DefaultMarkupOpacityValue");
 
         Title = localizer[UiStrings.SettingsTitle];
-        viewingTab.Header = localizer[UiStrings.SettingsViewing];
-        colorTab.Header = localizer[UiStrings.SettingsColor];
-        stageTab.Header = localizer[UiStrings.SettingsStage];
-        presentationTab.Header = localizer[UiStrings.SettingsPresentation];
-        controlsTab.Header = localizer[UiStrings.SettingsControls];
-        aboutTab.Header = localizer[UiStrings.SettingsAbout];
+        _closeButton.Content = FoviumIconCatalog.Create(FoviumIcon.Close, 14);
+        ToolTip.SetTip(_closeButton, localizer[UiStrings.MenuClose]);
+        AutomationProperties.SetName(_closeButton, localizer[UiStrings.MenuClose]);
+        AttachResizeHandle("ResizeNorth", WindowEdge.North);
+        AttachResizeHandle("ResizeSouth", WindowEdge.South);
+        AttachResizeHandle("ResizeWest", WindowEdge.West);
+        AttachResizeHandle("ResizeEast", WindowEdge.East);
+        AttachResizeHandle("ResizeNorthWest", WindowEdge.NorthWest);
+        AttachResizeHandle("ResizeNorthEast", WindowEdge.NorthEast);
+        AttachResizeHandle("ResizeSouthWest", WindowEdge.SouthWest);
+        AttachResizeHandle("ResizeSouthEast", WindowEdge.SouthEast);
+        FindRequired<TextBlock>("SidebarTitle").Text = localizer[UiStrings.SettingsTitle];
+        _settingsNavigation.ItemsSource = SettingsSectionCatalog.Ordered
+            .Select(section =>
+            {
+                var item = new ListBoxItem
+                {
+                    Content = LocalizeSettingsSection(section),
+                    Tag = section,
+                };
+                item.Classes.Add("navigation-item");
+                return item;
+            })
+            .ToArray();
+        _settingsNavigation.SelectedIndex = 0;
+        FindRequired<TextBlock>("GeneralPageTitle").Text = localizer[UiStrings.SettingsGeneral];
+        FindRequired<TextBlock>("GeneralPageDescription").Text =
+            localizer[UiStrings.SettingsGeneralDescription];
+        FindRequired<TextBlock>("ViewingPageTitle").Text = localizer[UiStrings.SettingsViewing];
+        FindRequired<TextBlock>("ViewingPageDescription").Text =
+            localizer[UiStrings.SettingsViewingDescription];
+        FindRequired<TextBlock>("ColorPageTitle").Text = localizer[UiStrings.SettingsColor];
+        FindRequired<TextBlock>("ColorPageDescription").Text =
+            localizer[UiStrings.SettingsColorDescription];
+        FindRequired<TextBlock>("StagePageTitle").Text = localizer[UiStrings.SettingsStage];
+        FindRequired<TextBlock>("StagePageDescription").Text =
+            localizer[UiStrings.SettingsStageDescription];
+        FindRequired<TextBlock>("PresentationPageTitle").Text =
+            localizer[UiStrings.SettingsPresentation];
+        FindRequired<TextBlock>("PresentationPageDescription").Text =
+            localizer[UiStrings.SettingsPresentationDescription];
+        FindRequired<TextBlock>("ControlsPageTitle").Text = localizer[UiStrings.SettingsControls];
+        FindRequired<TextBlock>("ControlsPageDescription").Text =
+            localizer[UiStrings.SettingsControlsDescription];
+        FindRequired<TextBlock>("AboutPageTitle").Text = localizer[UiStrings.SettingsAbout];
+        FindRequired<TextBlock>("AboutPageDescription").Text =
+            localizer[UiStrings.SettingsAboutDescription];
+        FindRequired<TextBlock>("LanguageHeading").Text = localizer[UiStrings.SettingsLanguage];
+        FindRequired<TextBlock>("LanguageDescription").Text =
+            localizer[UiStrings.SettingsLanguageDescription];
+        _languageRestartHint.Text = localizer[UiStrings.SettingsLanguageRestart];
+        _languageOption.ItemsSource = Enum.GetValues<UiLanguage>()
+            .Select(language => new ComboBoxItem
+            {
+                Content = LocalizeLanguage(language),
+                Tag = language,
+            })
+            .ToArray();
         FindRequired<TextBlock>("ScaleHeading").Text = localizer[UiStrings.SettingsScaleOnImageChange];
         FindRequired<TextBlock>("PhotoPresentationHeading").Text =
             localizer[UiStrings.SettingsPhotoPresentationView];
@@ -181,7 +252,10 @@ internal sealed partial class SettingsWindow : Window
             localizer[UiStrings.ColorMonitorManagementExplanation];
         FindRequired<TextBlock>("BackgroundHeading").Text = localizer[UiStrings.StageBackground];
         FindRequired<TextBlock>("MatteHeading").Text = localizer[UiStrings.StageMatte];
-        FindRequired<TextBlock>("ControlsHeading").Text = localizer[UiStrings.SettingsControls];
+        FindRequired<TextBlock>("ControlsHeading").Text =
+            localizer[UiStrings.SettingsKeyboardShortcuts];
+        FindRequired<TextBlock>("ControlsExplanation").Text =
+            localizer[UiStrings.SettingsKeyboardShortcutsDescription];
         _enableMarkupOption.Content = localizer[UiStrings.PresentationEnableMarkup];
         FindRequired<TextBlock>("HighlightHeading").Text = localizer[UiStrings.PresentationHighlight];
         FindRequired<TextBlock>("HighlightColorLabel").Text = localizer[UiStrings.PresentationHighlightColor];
@@ -234,9 +308,11 @@ internal sealed partial class SettingsWindow : Window
             .ToArray();
         FindRequired<Button>("ResetShortcutsButton").Content = localizer[UiStrings.ShortcutReset];
         FindRequired<TextBlock>("VersionText").Text = string.Format(
-            System.Globalization.CultureInfo.CurrentUICulture,
+            CultureInfo.CurrentUICulture,
             localizer[UiStrings.SettingsVersion],
             FoviumVersion.Display);
+        FindRequired<TextBlock>("AboutProductDescription").Text =
+            localizer[UiStrings.SettingsAboutProductDescription];
 
         CreateShortcutRows();
         ApplySettings(settings.Current);
@@ -249,6 +325,11 @@ internal sealed partial class SettingsWindow : Window
         Resized += OnWindowResized;
         Closed += OnClosed;
         KeyDown += OnShortcutCaptureKeyDown;
+        AddHandler(
+            InputElement.PointerPressedEvent,
+            OnWindowPointerPressed,
+            RoutingStrategies.Bubble,
+            handledEventsToo: true);
         _initializing = false;
     }
 
@@ -256,6 +337,9 @@ internal sealed partial class SettingsWindow : Window
 
     private void SubscribeEvents()
     {
+        _closeButton.Click += (_, _) => Close();
+        _settingsNavigation.SelectionChanged += OnSettingsNavigationChanged;
+        _languageOption.SelectionChanged += OnLanguageChanged;
         _keepCurrentScaleOption.IsCheckedChanged += OnKeepCurrentScaleChanged;
         _fitEachImageOption.IsCheckedChanged += OnFitEachImageChanged;
         _photoPresentationEnabledOption.IsCheckedChanged += (_, _) =>
@@ -320,8 +404,6 @@ internal sealed partial class SettingsWindow : Window
         _brightnessSlider.ValueChanged += OnAmbientSliderChanged;
         _saturationSlider.ValueChanged += OnAmbientSliderChanged;
         _blurSlider.ValueChanged += OnAmbientSliderChanged;
-        FindRequired<Button>("EditAmbientButton").Click += (_, _) =>
-            _ambientOptions.IsExpanded = !_ambientOptions.IsExpanded;
         FindRequired<Button>("EditCustomColorButton").Click += async (_, _) =>
             await EditColorAsync(customBackground: true);
         FindRequired<Button>("EditMatteColorButton").Click += async (_, _) =>
@@ -348,6 +430,28 @@ internal sealed partial class SettingsWindow : Window
             await EditPresentationColorAsync(highlight: false);
     }
 
+    private void OnWindowPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed &&
+            SettingsWindowDragOrigin.MayInitiate(e.Source as Visual, this))
+        {
+            BeginMoveDrag(e);
+            e.Handled = true;
+        }
+    }
+
+    private void AttachResizeHandle(string name, WindowEdge edge)
+    {
+        FindRequired<Border>(name).PointerPressed += (_, e) =>
+        {
+            if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+            {
+                BeginResizeDrag(edge, e);
+                e.Handled = true;
+            }
+        };
+    }
+
     private void CreateShortcutRows()
     {
         var list = FindRequired<StackPanel>("ControlsList");
@@ -361,12 +465,12 @@ internal sealed partial class SettingsWindow : Window
                 continue;
             }
 
-            list.Children.Add(new TextBlock
+            var groupContent = new StackPanel { Spacing = 9 };
+            groupContent.Children.Add(new TextBlock
             {
                 Text = _localizer[UiStrings.ForCommandGroup(group)],
-                FontSize = 16,
+                FontSize = 17,
                 FontWeight = FontWeight.SemiBold,
-                Margin = new Avalonia.Thickness(0, 8, 0, 0),
             });
 
             var hintKey = group switch
@@ -377,20 +481,23 @@ internal sealed partial class SettingsWindow : Window
             };
             if (hintKey is not null)
             {
-                list.Children.Add(new TextBlock
+                groupContent.Children.Add(new TextBlock
                 {
                     Text = _localizer[hintKey],
-                    Opacity = 0.65,
+                    Foreground = new SolidColorBrush(Color.Parse("#AAA4B3")),
+                    FontSize = 13,
                     TextWrapping = Avalonia.Media.TextWrapping.Wrap,
                 });
             }
 
+            var rows = new StackPanel { Spacing = 5 };
             foreach (var definition in definitions)
             {
                 var row = new Grid
                 {
                     ColumnDefinitions = new ColumnDefinitions("*,Auto"),
                     ColumnSpacing = 14,
+                    MinHeight = 38,
                 };
                 row.Children.Add(new TextBlock
                 {
@@ -399,16 +506,45 @@ internal sealed partial class SettingsWindow : Window
                 });
                 var button = new Button
                 {
-                    MinWidth = 128,
-                    HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Center,
                     Tag = definition.Command,
                 };
+                button.Classes.Add("shortcut-key");
                 Grid.SetColumn(button, 1);
                 button.Click += OnShortcutButtonClick;
                 row.Children.Add(button);
-                list.Children.Add(row);
+                rows.Children.Add(row);
                 _shortcutButtons.Add(definition.Command, button);
             }
+
+            groupContent.Children.Add(rows);
+            var groupCard = new Border { Child = groupContent };
+            groupCard.Classes.Add("settings-card");
+            list.Children.Add(groupCard);
+        }
+    }
+
+    private void OnSettingsNavigationChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_settingsNavigation.SelectedItem is not ListBoxItem { Tag: SettingsSection selected })
+        {
+            return;
+        }
+
+        foreach (var (section, page) in _sectionPages)
+        {
+            page.IsVisible = section == selected;
+            if (section == selected && page is ScrollViewer scrollViewer)
+            {
+                scrollViewer.ScrollToHome();
+            }
+        }
+    }
+
+    private async void OnLanguageChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (!_initializing && _languageOption.SelectedItem is ComboBoxItem { Tag: UiLanguage language })
+        {
+            await _settings.SetLanguageAsync(language);
         }
     }
 
@@ -695,6 +831,11 @@ internal sealed partial class SettingsWindow : Window
     private void ApplySettings(FoviumSettings settings)
     {
         _initializing = true;
+        _languageOption.SelectedItem = _languageOption.ItemsSource?
+            .OfType<ComboBoxItem>()
+            .Single(item => item.Tag is UiLanguage language && language == settings.Language);
+        _languageRestartPanel.IsVisible =
+            LocaleResolver.Resolve(settings.Language, CultureInfo.CurrentUICulture) != _localizer.Locale;
         _keepCurrentScaleOption.IsChecked =
             settings.ImageChangeViewPolicy == ImageChangeViewPolicy.KeepCurrentScale;
         _fitEachImageOption.IsChecked =
@@ -789,6 +930,26 @@ internal sealed partial class SettingsWindow : Window
         PhotoSeparationMode.None => UiStrings.StageSeparationNone,
         PhotoSeparationMode.HairlineAuto => UiStrings.StageHairlineAuto,
         _ => throw new ArgumentOutOfRangeException(nameof(mode)),
+    }];
+
+    private string LocalizeLanguage(UiLanguage language) => _localizer[language switch
+    {
+        UiLanguage.SystemDefault => UiStrings.SettingsLanguageSystemDefault,
+        UiLanguage.English => UiStrings.SettingsLanguageEnglish,
+        UiLanguage.Russian => UiStrings.SettingsLanguageRussian,
+        _ => throw new ArgumentOutOfRangeException(nameof(language)),
+    }];
+
+    private string LocalizeSettingsSection(SettingsSection section) => _localizer[section switch
+    {
+        SettingsSection.General => UiStrings.SettingsGeneral,
+        SettingsSection.Viewing => UiStrings.SettingsViewing,
+        SettingsSection.Color => UiStrings.SettingsColor,
+        SettingsSection.Stage => UiStrings.SettingsStage,
+        SettingsSection.Presentation => UiStrings.SettingsPresentation,
+        SettingsSection.Controls => UiStrings.SettingsControls,
+        SettingsSection.About => UiStrings.SettingsAbout,
+        _ => throw new ArgumentOutOfRangeException(nameof(section)),
     }];
 
     private void UpdateShortcutButtons(ShortcutSettings shortcuts)
@@ -915,4 +1076,28 @@ internal sealed partial class SettingsWindow : Window
         where T : Control =>
         this.FindControl<T>(name)
         ?? throw new InvalidOperationException($"Settings control is missing: {name}.");
+}
+
+internal static class SettingsWindowDragOrigin
+{
+    public static bool MayInitiate(Visual? origin, Visual window)
+    {
+        ArgumentNullException.ThrowIfNull(window);
+
+        for (var current = origin; current is not null; current = current.GetVisualParent())
+        {
+            if (current is Button or SelectingItemsControl or RangeBase or TextBox or Thumb ||
+                current is Control control && control.Classes.Contains("resize-handle"))
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(current, window))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

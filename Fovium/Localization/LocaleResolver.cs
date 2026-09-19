@@ -8,4 +8,12 @@ internal static class LocaleResolver
         culture.TwoLetterISOLanguageName.Equals("ru", StringComparison.OrdinalIgnoreCase)
             ? "ru"
             : "en";
+
+    public static string Resolve(UiLanguage language, CultureInfo systemCulture) => language switch
+    {
+        UiLanguage.SystemDefault => Resolve(systemCulture),
+        UiLanguage.English => "en",
+        UiLanguage.Russian => "ru",
+        _ => Resolve(systemCulture),
+    };
 }

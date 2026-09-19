@@ -408,6 +408,26 @@ internal static class UiStrings
     public const string ColorPickerNameLightnessHue = "colorPicker.name.lightnessHue";
     public const string ColorPickerNameChromaHue = "colorPicker.name.chromaHue";
     public const string SettingsScaleOnImageChange = "settings.scaleOnImageChange";
+    public const string SettingsGeneral = "settings.general";
+    public const string SettingsGeneralDescription = "settings.generalDescription";
+    public const string SettingsViewingDescription = "settings.viewingDescription";
+    public const string SettingsColorDescription = "settings.colorDescription";
+    public const string SettingsStageDescription = "settings.stageDescription";
+    public const string SettingsPresentationDescription = "settings.presentationDescription";
+    public const string SettingsControlsDescription = "settings.controlsDescription";
+    public const string SettingsAboutDescription = "settings.aboutDescription";
+    public const string SettingsAboutProductDescription = "settings.aboutProductDescription";
+    public const string SettingsLanguage = "settings.language";
+    public const string SettingsLanguageDescription = "settings.languageDescription";
+    public const string SettingsLanguageSystemDefault = "settings.languageSystemDefault";
+    public const string SettingsLanguageEnglish = "settings.languageEnglish";
+    public const string SettingsLanguageRussian = "settings.languageRussian";
+    public const string SettingsLanguageRestart = "settings.languageRestart";
+    public const string SettingsKeyboardShortcuts = "settings.keyboardShortcuts";
+
+    public const string SettingsKeyboardShortcutsDescription =
+        "settings.keyboardShortcutsDescription";
+
     public const string SettingsKeepCurrentScale = "settings.keepCurrentScale";
     public const string SettingsFitEachImage = "settings.fitEachImage";
     public const string SettingsPhotoPresentationView = "settings.photoPresentationView";

@@ -7,11 +7,18 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-BRAND-R1 is locally complete on pushed R11-C baseline `4a1e1af3a74f470ee1d4bace6425b6c6f46b3b9b`. Product version is
-`0.1.4.0004`: Fovium now owns one application identity across the Windows apphost and Avalonia top-level windows, plus
-a human-first public README with live workflow badges and a project-authored runtime hero. The selected Offset Field
-mark retains a canonical SVG, three packaging/README PNGs, and a multi-resolution Windows ICO with 16, 20, 24, 32, 48,
-64, 128, and 256 px PNG frames. No external visual asset or owner photograph was introduced.
+SETTINGS-UX-R1 is locally complete after BRAND-R1. Product version is `0.1.5.0000`: Settings now uses compact vertical
+navigation across General, Viewing, Color, Stage, Presentation, Controls, and About; bounded scrollable cards replace
+the sparse horizontal tabs; shortcut rows are grouped by task; and About carries the project identity, runtime version,
+and a concise product description. General persists System default, English, or Русский and application startup loads
+that choice before localization. A changed resolved language applies after restart with an explicit hint.
+
+The decoration-free Settings window owns one overlay-like close control, free-surface drag, invisible edge/corner
+resize, and Viewer-relative z-order through fullscreen without global topmost behavior. BRAND-R1's Offset Field
+identity,
+canonical SVG/PNGs, multi-resolution Windows ICO, apphost/window wiring, and public README remain unchanged; the
+existing
+128 px asset is reused inside Settings rather than adding another visual asset.
 
 R11-C remains the current Photo Color Profile implementation baseline: Characteristic, unchanged population-ranked
 Frequent shades, and adaptive zero-to-ten Notable colors reuse the bounded `96 px` R10 analysis and exact
@@ -32,18 +39,12 @@ Windows at `RenderScaling = 1.00`.
 
 ## Current focus
 
-BRAND-R1 is ready for owner review/commit and hosted CI. Local Windows evidence covers three icon concepts, every ICO
-size on light/dark/taskbar-like surfaces, Win32 extraction from ordinary build and `win-x64` publish apphosts, the real
-Viewer and Settings titlebars, and two real-runtime README hero compositions over a deterministic synthetic image.
-Focused branding contract tests and the repository-owned verification scripts are green; the full local Windows
-Release suite passes 2,241 tests with zero build warnings/errors. Hosted verification of these unpushed changes remains
-the post-push gate. Linux/macOS application-icon runtime behavior, formal platform packaging, file associations, and
-shell installation remain future work rather than BRAND-R1 claims.
-
-The current Codex/Rider ACP session negotiates no true in-app browser backend. BRAND-R1 used isolated installed Chrome
-only to render an ignored GitHub-API GFM preview of the local README; it is explicitly not an in-app browser backend. A
-true backend still requires a capable host/session or a separately valid MCP registration plus Rider restart outside
-repository code.
+SETTINGS-UX-R1 is ready for owner review/commit and hosted CI. Local Windows production-runtime evidence covers Russian
+and English General, the persisted restart hint and restart application, every navigation section, grouped Controls,
+About at ordinary and `760×560` size, fullscreen ownership, non-topmost extended style, free-surface drag, transparent-
+edge resize, and project close behavior. The focused 21-test contract filter and full 2,260-test Release suite pass;
+the solution build has zero warnings/errors. Hosted verification remains the post-push gate. Linux/macOS Settings
+runtime behavior and real fractional-DPI/multi-monitor visual acceptance remain unclaimed.
 
 ## Implemented application functionality
 
@@ -68,11 +69,13 @@ repository code.
 - Same-directory single-file activation and ordered explicit multi-file activation.
 - Natural filename ordering, failure skipping, adjacent preload, latest-wins publication, and a byte-bounded cache.
 - Fullscreen, cursor auto-hide, `Ctrl+O`, and a basic temporary context menu.
-- English/Russian runtime localization foundation with English fallback.
+- English/Russian runtime localization with English fallback plus a persisted General → Language choice for System
+  default, English, or Русский, resolved before UI construction and applied after restart.
 - Persistent image-change view policy: Keep current scale by default, or Fit each image.
-- Dark Settings window with implemented Viewing, Color, Stage, Presentation, Controls, and About sections; schema-v2
-  JSON autosave; explicit v1 migration; and malformed-file fallback. Monitor Color Management is enabled by default and
-  its single persisted checkbox can restore the exact legacy path.
+- Human-first dark Settings window with implemented General, Viewing, Color, Stage, Presentation, Controls, and About
+  sections; vertical navigation; bounded scrollable cards; grouped shortcut keycaps; project identity/version; owned
+  decoration-free chrome; schema-v2 JSON autosave; explicit v1 migration; and malformed-file fallback. Monitor Color
+  Management is enabled by default and its single persisted checkbox can restore the exact legacy path.
 - Windows ordinary-SDR photograph presentation through the assigned active-monitor RGB ICC and app-local Little CMS
   2.19, with one encoded-size managed source per active source/destination, source/destination latest-wins publication,
   the unchanged canonical spatial renderer for all viewport interaction, explicit fallback state, and no monitor
@@ -182,11 +185,15 @@ repository code.
 - Traversal-excluded local imaging corpus policy plus hardened async session shutdown/cache release.
 
 Markup save/export, text, dedicated Highlighter, edit handles/layers, persistent palettes/color libraries,
-selected-reference A/B comparison, language/theme selection, Advanced Metadata, luminance/clipping histogram modes,
+selected-reference A/B comparison, theme selection, Advanced Metadata, luminance/clipping histogram modes,
 metadata writing, animated WebP/APNG, HEIF/AVIF sequences or HDR/high precision, high-bit-depth/floating/multipage TIFF,
 RAW, file associations/thumbnails, and monitor-aware output outside ordinary Windows SDR are not implemented.
 
 ## Active blockers
+
+- Settings visual/runtime acceptance currently covers Windows at `RenderScaling = 1.00`, including fullscreen owner
+  z-order and a nonideal `760×560` size. Real fractional-DPI/per-monitor transitions and Linux/macOS window-manager
+  ownership, transparent-edge resize, typography, and scrolling remain unvalidated.
 
 - Avalonia's direct-Skia lease used by the accepted initial renderer is explicitly unstable and must remain isolated.
 - Physical-pixel 100% is validated by pure tests at 1.00/1.25/1.50/2.00, but production runtime evidence exists only at

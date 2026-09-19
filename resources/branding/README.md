@@ -35,4 +35,6 @@ gradients. Concept and small-size comparisons are written under ignored `artifac
 
 `Fovium/Fovium.csproj` sets the `.ico` as `ApplicationIcon`, which embeds it in the Windows apphost. Avalonia's
 application-icon bridge is explicitly enabled so the same resource becomes the default icon for every current
-top-level window: Viewer, Settings, Color Editor, and Shortcut Conflict.
+top-level window: Viewer, Settings, Color Editor, and Shortcut Conflict. The existing 128 px project-authored PNG is
+also embedded as an Avalonia resource for the Settings navigation identity and About surface; no new asset or derivative
+is introduced by that reuse.

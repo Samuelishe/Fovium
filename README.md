@@ -32,6 +32,8 @@ inspection and presentation tools appear only when requested. It is an active al
   Slideshow, cursor highlight, and temporary image-bound presenter markup.
 - **Preserve image meaning.** Orientation and source-profile state survive the imaging boundary; Windows ordinary-SDR
   presentation can use the active monitor ICC profile through the app-local Little CMS runtime.
+- **Keep preferences human-readable.** Compact task-based Settings include persistent English, Russian, or system
+  language selection, grouped shortcuts, and a useful product/version About surface.
 
 ## Platforms and formats
 

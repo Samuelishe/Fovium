@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Fovium.Input;
+using Fovium.Localization;
 using Fovium.Presentation;
 using Fovium.Stage;
 
@@ -70,6 +71,15 @@ internal sealed class SettingsService(ISettingsStore store) : IDisposable
             settings => settings.ImageChangeViewPolicy == policy
                 ? settings
                 : settings with { ImageChangeViewPolicy = policy },
+            cancellationToken);
+
+    public Task SetLanguageAsync(
+        UiLanguage language,
+        CancellationToken cancellationToken = default) =>
+        UpdateAsync(
+            settings => settings.Language == language
+                ? settings
+                : settings with { Language = language },
             cancellationToken);
 
     public Task SetMonitorColorManagementEnabledAsync(
@@ -283,6 +293,7 @@ internal sealed class SettingsService(ISettingsStore store) : IDisposable
 
     private static bool AreEqual(FoviumSettings left, FoviumSettings right) =>
         left.SchemaVersion == right.SchemaVersion &&
+        left.Language == right.Language &&
         left.ImageChangeViewPolicy == right.ImageChangeViewPolicy &&
         left.MonitorColorManagementEnabled == right.MonitorColorManagementEnabled &&
         left.PhotoPresentationView == right.PhotoPresentationView &&
@@ -293,8 +304,7 @@ internal sealed class SettingsService(ISettingsStore store) : IDisposable
         SettingsEqual(left.Shortcuts, right.Shortcuts);
 
     private static bool SettingsEqual(ShortcutSettings left, ShortcutSettings right) =>
-        ViewerCommands.Definitions.All(
-            definition => left.Get(definition.Command) == right.Get(definition.Command));
+        ViewerCommands.Definitions.All(definition => left.Get(definition.Command) == right.Get(definition.Command));
 
     private static void TraceDiagnostic(SettingsDiagnostic? diagnostic)
     {

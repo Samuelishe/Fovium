@@ -126,6 +126,12 @@ R11-B replaces only the Photo Info signal labels with Characteristic/Харак�
 then adds Notable colors/Заметные цвета. Stage's persisted/user-visible Dominant identity remains unchanged. Notable
 selection, order, RGB, and semantic identities are locale-independent; localization cannot alter admission or ranking.
 
+SETTINGS-UX-R1 localizes the complete seven-section Settings information architecture, page summaries, Language
+control, restart hint, keyboard-shortcut framing, and product-facing About description. The language choices are shown
+as “System default”, “English”, and “Русский”; their persisted enum identities remain locale-independent. Settings
+loads before localization at process startup, so English and Russian are real application choices rather than capture
+host culture overrides.
+
 ## Locale resolution
 
 Before an explicit user choice:
@@ -138,8 +144,17 @@ unsupported OS locale
 → en
 ```
 
-At minimum, a Russian environment resolves to `ru`; an unsupported environment resolves to `en`. Once the user selects a
-language in Settings → General, preserve that choice until reset or another explicit selection.
+At minimum, a Russian environment resolves to `ru`; an unsupported environment resolves to `en`. The persisted choices
+resolve as follows:
+
+```text
+System default → supported OS locale, otherwise en
+English        → en
+Русский        → ru
+```
+
+Preserve the choice until reset or another explicit selection. A changed resolved locale applies after application
+restart; Settings shows that fact immediately and does not pretend that a partially localized live update occurred.
 
 ## Fallback and failure
 

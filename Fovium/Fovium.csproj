@@ -40,6 +40,8 @@
     </ItemGroup>
 
     <ItemGroup>
+        <AvaloniaResource Include="..\resources\branding\fovium-app-icon-128.png"
+                          Link="Assets\fovium-app-icon-128.png"/>
         <EmbeddedResource Include="..\resources\localization\ui\*.json"
                           Link="Localization\%(Filename)%(Extension)"
                           LogicalName="Fovium.Localization.%(Filename)%(Extension)"/>

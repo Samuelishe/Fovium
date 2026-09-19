@@ -3,202 +3,430 @@
         x:Class="Fovium.Views.SettingsWindow"
         Width="920"
         Height="680"
-        MinWidth="560"
-        MinHeight="440"
+        MinWidth="720"
+        MinHeight="520"
+        Background="#17151C"
+        WindowDecorations="None"
+        ShowInTaskbar="False"
+        Topmost="False"
         WindowStartupLocation="CenterOwner">
-  <TabControl Margin="20">
-    <TabItem x:Name="ViewingTab">
-      <StackPanel Margin="12,18" Spacing="14">
-        <TextBlock x:Name="ScaleHeading" FontSize="18" FontWeight="SemiBold" />
-        <RadioButton x:Name="KeepCurrentScaleOption" GroupName="ImageChangeViewPolicy" />
-        <RadioButton x:Name="FitEachImageOption" GroupName="ImageChangeViewPolicy" />
-        <Separator Margin="0,4" />
-        <TextBlock x:Name="PhotoPresentationHeading" FontSize="18" FontWeight="SemiBold" />
-        <CheckBox x:Name="PhotoPresentationEnabledOption" />
-        <TextBlock x:Name="PhotoPresentationExplanation"
-                   Margin="24,0,0,0"
-                   MaxWidth="500"
-                   Opacity="0.72"
-                   TextWrapping="Wrap" />
-        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-          <TextBlock x:Name="PhotoPresentationMarginLabel" VerticalAlignment="Center" />
-          <Slider x:Name="PhotoPresentationMarginSlider"
-                  Grid.Column="1"
-                  MinWidth="180"
-                  Minimum="0"
-                  Maximum="15"
-                  TickFrequency="0.5"
-                  IsSnapToTickEnabled="True" />
-          <TextBlock x:Name="PhotoPresentationMarginValue"
-                     Grid.Column="2"
-                     Width="48"
-                     TextAlignment="Right"
-                     VerticalAlignment="Center" />
+    <Window.Styles>
+        <Style Selector="Border.settings-card">
+            <Setter Property="Background" Value="#24212B" />
+            <Setter Property="BorderBrush" Value="#37333F" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="18" />
+        </Style>
+        <Style Selector="TextBlock.page-title">
+            <Setter Property="FontSize" Value="28" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="TextBlock.page-description">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Foreground" Value="#B7B0C2" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style Selector="TextBlock.card-title">
+            <Setter Property="FontSize" Value="17" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="TextBlock.supporting">
+            <Setter Property="Foreground" Value="#AAA4B3" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+        <Style Selector="ListBoxItem.navigation-item">
+            <Setter Property="Margin" Value="0,2" />
+            <Setter Property="Padding" Value="14,10" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="CornerRadius" Value="7" />
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="ListBoxItem.navigation-item:pointerover">
+            <Setter Property="Background" Value="#302B39" />
+        </Style>
+        <Style Selector="ListBoxItem.navigation-item:selected">
+            <Setter Property="Background" Value="#46364F" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+        </Style>
+        <Style Selector="Button.icon-button">
+            <Setter Property="Width" Value="34" />
+            <Setter Property="Height" Value="30" />
+            <Setter Property="Padding" Value="6" />
+            <Setter Property="FontSize" Value="16" />
+        </Style>
+        <Style Selector="Button.window-close">
+            <Setter Property="Width" Value="32" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Padding" Value="8" />
+            <Setter Property="Background" Value="#292530" />
+            <Setter Property="BorderBrush" Value="#403A49" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="16" />
+            <Setter Property="Focusable" Value="False" />
+        </Style>
+        <Style Selector="Button.window-close:pointerover">
+            <Setter Property="Background" Value="#55313A" />
+            <Setter Property="BorderBrush" Value="#80505B" />
+        </Style>
+        <Style Selector="Button.shortcut-key">
+            <Setter Property="MinWidth" Value="126" />
+            <Setter Property="MinHeight" Value="32" />
+            <Setter Property="Padding" Value="12,5" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="Background" Value="#332F3A" />
+            <Setter Property="BorderBrush" Value="#4A4552" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+        </Style>
+    </Window.Styles>
+
+    <Grid x:Name="SettingsRoot" ColumnDefinitions="212,*">
+        <Border Background="#201D27" BorderBrush="#34303B" BorderThickness="0,0,1,0">
+            <Grid RowDefinitions="Auto,*" Margin="18,22,14,18">
+                <Grid ColumnDefinitions="36,*" ColumnSpacing="10" Margin="8,0,0,20">
+                    <Image Width="32" Height="32" Source="avares://Fovium/Assets/fovium-app-icon-128.png" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="0">
+                        <TextBlock Text="Fovium" FontSize="17" FontWeight="SemiBold" />
+                        <TextBlock x:Name="SidebarTitle" Foreground="#A9A2B2" FontSize="12" />
+                    </StackPanel>
+                </Grid>
+                <ListBox x:Name="SettingsNavigation"
+                         Grid.Row="1"
+                         Background="Transparent"
+                         BorderThickness="0" />
+            </Grid>
+        </Border>
+
+        <Grid Grid.Column="1">
+            <ScrollViewer x:Name="GeneralPage" HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="34,30,38,40" MaxWidth="720" HorizontalAlignment="Stretch" Spacing="18">
+                    <StackPanel Spacing="4">
+                        <TextBlock x:Name="GeneralPageTitle" Classes="page-title" />
+                        <TextBlock x:Name="GeneralPageDescription" Classes="page-description" />
+                    </StackPanel>
+                    <Border Classes="settings-card">
+                        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,220" ColumnSpacing="22" RowSpacing="8">
+                            <StackPanel Spacing="5" VerticalAlignment="Center">
+                                <TextBlock x:Name="LanguageHeading" Classes="card-title" />
+                                <TextBlock x:Name="LanguageDescription" Classes="supporting" />
+                            </StackPanel>
+                            <ComboBox x:Name="LanguageOption" Grid.Column="1" MinWidth="190" VerticalAlignment="Center" />
+                            <Border x:Name="LanguageRestartPanel" Grid.Row="1" Grid.ColumnSpan="2" Margin="0,8,0,0"
+                                    Padding="12,9"
+                                    Background="#33283A" BorderBrush="#574161" BorderThickness="1" CornerRadius="7">
+                                <TextBlock x:Name="LanguageRestartHint" Foreground="#D7C2E2" FontSize="13"
+                                           TextWrapping="Wrap" />
+                            </Border>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <ScrollViewer x:Name="ViewingPage" IsVisible="False" HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="34,30,38,40" MaxWidth="720" HorizontalAlignment="Stretch" Spacing="18">
+                    <StackPanel Spacing="4">
+                        <TextBlock x:Name="ViewingPageTitle" Classes="page-title" />
+                        <TextBlock x:Name="ViewingPageDescription" Classes="page-description" />
+                    </StackPanel>
+                    <Border Classes="settings-card">
+                        <StackPanel Spacing="13">
+                            <TextBlock x:Name="ScaleHeading" Classes="card-title" />
+                            <RadioButton x:Name="KeepCurrentScaleOption" GroupName="ImageChangeViewPolicy" />
+                            <RadioButton x:Name="FitEachImageOption" GroupName="ImageChangeViewPolicy" />
+                        </StackPanel>
+                    </Border>
+                    <Border Classes="settings-card">
+                        <StackPanel Spacing="13">
+                            <TextBlock x:Name="PhotoPresentationHeading" Classes="card-title" />
+                            <CheckBox x:Name="PhotoPresentationEnabledOption" />
+                            <TextBlock x:Name="PhotoPresentationExplanation" Margin="24,0,0,2" MaxWidth="560"
+                                       Classes="supporting" />
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14" Margin="0,4,0,0">
+                                <TextBlock x:Name="PhotoPresentationMarginLabel" VerticalAlignment="Center" />
+                                <Slider x:Name="PhotoPresentationMarginSlider" Grid.Column="1" MinWidth="180"
+                                        Minimum="0" Maximum="15" TickFrequency="0.5" IsSnapToTickEnabled="True" />
+                                <TextBlock x:Name="PhotoPresentationMarginValue" Grid.Column="2" Width="48"
+                                           TextAlignment="Right" VerticalAlignment="Center" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <ScrollViewer x:Name="ColorPage" IsVisible="False" HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="34,30,38,40" MaxWidth="720" HorizontalAlignment="Stretch" Spacing="18">
+                    <StackPanel Spacing="4">
+                        <TextBlock x:Name="ColorPageTitle" Classes="page-title" />
+                        <TextBlock x:Name="ColorPageDescription" Classes="page-description" />
+                    </StackPanel>
+                    <Border Classes="settings-card">
+                        <StackPanel Spacing="12">
+                            <TextBlock x:Name="MonitorColorManagementHeading" Classes="card-title" />
+                            <CheckBox x:Name="MonitorColorManagementOption" />
+                            <TextBlock x:Name="MonitorColorManagementExplanation" Margin="24,0,0,0" MaxWidth="560"
+                                       Classes="supporting" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <ScrollViewer x:Name="StagePage" IsVisible="False" HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="34,30,38,40" MaxWidth="720" HorizontalAlignment="Stretch" Spacing="18">
+                    <StackPanel Spacing="4">
+                        <TextBlock x:Name="StagePageTitle" Classes="page-title" />
+                        <TextBlock x:Name="StagePageDescription" Classes="page-description" />
+                    </StackPanel>
+                    <Border Classes="settings-card">
+                        <StackPanel Spacing="12">
+                            <TextBlock x:Name="BackgroundHeading" Classes="card-title" />
+                            <WrapPanel ItemWidth="245" ItemHeight="34">
+                                <RadioButton x:Name="BlackStageOption" GroupName="StageBackground" />
+                                <RadioButton x:Name="NeutralStageOption" GroupName="StageBackground" />
+                                <RadioButton x:Name="AverageStageOption" GroupName="StageBackground" />
+                                <RadioButton x:Name="DominantStageOption" GroupName="StageBackground" />
+                                <RadioButton x:Name="ColorWashStageOption" GroupName="StageBackground" />
+                                <RadioButton x:Name="ColorGradientStageOption" GroupName="StageBackground" />
+                                <RadioButton x:Name="SoftGlowStageOption" GroupName="StageBackground" />
+                            </WrapPanel>
+                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+                                <RadioButton x:Name="CustomStageOption" GroupName="StageBackground"
+                                             VerticalAlignment="Center" />
+                                <Border x:Name="CustomColorSwatch" Grid.Column="1" Width="40" Height="24"
+                                        CornerRadius="4"
+                                        BorderBrush="#665F70" BorderThickness="1" />
+                                <Button x:Name="EditCustomColorButton" Grid.Column="2" Classes="icon-button"
+                                        Content="…" />
+                            </Grid>
+                            <Grid>
+                                <RadioButton x:Name="AmbientStageOption" GroupName="StageBackground"
+                                             VerticalAlignment="Center" />
+                            </Grid>
+                            <Expander x:Name="AmbientOptions" Margin="24,0,0,0">
+                                <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto"
+                                      ColumnSpacing="14" RowSpacing="11" Margin="0,10,0,2">
+                                    <TextBlock x:Name="BrightnessLabel" VerticalAlignment="Center" />
+                                    <Slider x:Name="BrightnessSlider" Grid.Column="1" MinWidth="180" Minimum="30"
+                                            Maximum="100" TickFrequency="1" />
+                                    <TextBlock x:Name="BrightnessValue" Grid.Column="2" Width="50"
+                                               TextAlignment="Right" VerticalAlignment="Center" />
+                                    <TextBlock x:Name="SaturationLabel" Grid.Row="1" VerticalAlignment="Center" />
+                                    <Slider x:Name="SaturationSlider" Grid.Row="1" Grid.Column="1" MinWidth="180"
+                                            Minimum="0" Maximum="125" TickFrequency="1" />
+                                    <TextBlock x:Name="SaturationValue" Grid.Row="1" Grid.Column="2" Width="50"
+                                               TextAlignment="Right" VerticalAlignment="Center" />
+                                    <TextBlock x:Name="BlurLabel" Grid.Row="2" VerticalAlignment="Center" />
+                                    <Slider x:Name="BlurSlider" Grid.Row="2" Grid.Column="1" MinWidth="180" Minimum="8"
+                                            Maximum="32" TickFrequency="1" />
+                                    <TextBlock x:Name="BlurValue" Grid.Row="2" Grid.Column="2" Width="50"
+                                               TextAlignment="Right" VerticalAlignment="Center" />
+                                </Grid>
+                            </Expander>
+                        </StackPanel>
+                    </Border>
+                    <Border Classes="settings-card">
+                        <StackPanel Spacing="13">
+                            <TextBlock x:Name="MatteHeading" Classes="card-title" />
+                            <CheckBox x:Name="MatteEnabledOption" />
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="18"
+                                  RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="12" Margin="24,0,0,2">
+                                <TextBlock x:Name="MatteStyleLabel" VerticalAlignment="Center" />
+                                <ComboBox x:Name="MatteStyleOption" Grid.Column="1" MinWidth="190"
+                                          HorizontalAlignment="Left" />
+                                <TextBlock x:Name="MatteSizeLabel" Grid.Row="1" VerticalAlignment="Center" />
+                                <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                    <Slider x:Name="MatteWidthSlider" MinWidth="180" Minimum="4" Maximum="192"
+                                            TickFrequency="1" />
+                                    <TextBlock x:Name="MatteWidthValue" Grid.Column="1" Width="58"
+                                               TextAlignment="Right" VerticalAlignment="Center" />
+                                </Grid>
+                                <TextBlock x:Name="MatteColorSourceLabel" Grid.Row="2" VerticalAlignment="Center" />
+                                <ComboBox x:Name="MatteColorSourceOption" Grid.Row="2" Grid.Column="1" MinWidth="190"
+                                          HorizontalAlignment="Left" />
+                                <TextBlock x:Name="MatteColorLabel" Grid.Row="3" VerticalAlignment="Center" />
+                                <Grid x:Name="MatteCustomColorPanel" Grid.Row="3" Grid.Column="1"
+                                      ColumnDefinitions="Auto,Auto" ColumnSpacing="10" HorizontalAlignment="Left">
+                                    <Border x:Name="MatteColorSwatch" Width="40" Height="24" CornerRadius="4"
+                                            BorderBrush="#665F70" BorderThickness="1" />
+                                    <Button x:Name="EditMatteColorButton" Grid.Column="1" Classes="icon-button"
+                                            Content="…" />
+                                </Grid>
+                                <TextBlock x:Name="PhotoSeparationLabel" Grid.Row="4" VerticalAlignment="Center" />
+                                <ComboBox x:Name="PhotoSeparationOption" Grid.Row="4" Grid.Column="1" MinWidth="190"
+                                          HorizontalAlignment="Left" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <ScrollViewer x:Name="PresentationPage" IsVisible="False" HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="34,30,38,40" MaxWidth="720" HorizontalAlignment="Stretch" Spacing="18">
+                    <StackPanel Spacing="4">
+                        <TextBlock x:Name="PresentationPageTitle" Classes="page-title" />
+                        <TextBlock x:Name="PresentationPageDescription" Classes="page-description" />
+                    </StackPanel>
+                    <Border Classes="settings-card">
+                        <StackPanel Spacing="13">
+                            <TextBlock x:Name="SlideshowHeading" Classes="card-title" />
+                            <CheckBox x:Name="SlideshowEnabledOption" />
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                                <TextBlock x:Name="SlideshowDurationLabel" VerticalAlignment="Center" />
+                                <Slider x:Name="SlideshowDurationSlider" Grid.Column="1" MinWidth="190" Minimum="1"
+                                        Maximum="60"
+                                        TickFrequency="1" IsSnapToTickEnabled="True" />
+                                <TextBlock x:Name="SlideshowDurationValue" Grid.Column="2" MinWidth="72"
+                                           TextAlignment="Right" VerticalAlignment="Center" />
+                            </Grid>
+                            <TextBlock x:Name="SlideshowAtEndLabel" FontWeight="SemiBold" Margin="0,3,0,0" />
+                            <RadioButton x:Name="SlideshowStopAtEndOption" Margin="16,0,0,0"
+                                         GroupName="SlideshowEndBehavior" />
+                            <RadioButton x:Name="SlideshowLoopOption" Margin="16,0,0,0"
+                                         GroupName="SlideshowEndBehavior" />
+                        </StackPanel>
+                    </Border>
+                    <Border Classes="settings-card">
+                        <StackPanel Spacing="14">
+                            <CheckBox x:Name="EnableMarkupOption" />
+                            <Separator />
+                            <TextBlock x:Name="HighlightHeading" Classes="card-title" />
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="18" RowDefinitions="Auto,Auto,Auto"
+                                  RowSpacing="12">
+                                <TextBlock x:Name="HighlightColorLabel" VerticalAlignment="Center" />
+                                <Grid Grid.Column="1" ColumnDefinitions="Auto,Auto" ColumnSpacing="10"
+                                      HorizontalAlignment="Left">
+                                    <Border x:Name="HighlightColorSwatch" Width="40" Height="24" CornerRadius="4"
+                                            BorderBrush="#665F70" BorderThickness="1" />
+                                    <Button x:Name="EditHighlightColorButton" Grid.Column="1" Classes="icon-button"
+                                            Content="…" />
+                                </Grid>
+                                <TextBlock x:Name="HighlightOpacityLabel" Grid.Row="1" VerticalAlignment="Center" />
+                                <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                    <Slider x:Name="HighlightOpacitySlider" MinWidth="190" Minimum="5" Maximum="90"
+                                            TickFrequency="1" />
+                                    <TextBlock x:Name="HighlightOpacityValue" Grid.Column="1" Width="48"
+                                               TextAlignment="Right" VerticalAlignment="Center" />
+                                </Grid>
+                                <TextBlock x:Name="HighlightRadiusLabel" Grid.Row="2" VerticalAlignment="Center" />
+                                <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                    <Slider x:Name="HighlightRadiusSlider" MinWidth="190" Minimum="8" Maximum="256"
+                                            TickFrequency="1" />
+                                    <TextBlock x:Name="HighlightRadiusValue" Grid.Column="1" Width="58"
+                                               TextAlignment="Right" VerticalAlignment="Center" />
+                                </Grid>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                    <Border Classes="settings-card">
+                        <StackPanel Spacing="14">
+                            <TextBlock x:Name="MarkupDefaultsHeading" Classes="card-title" />
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="18" RowDefinitions="Auto,Auto,Auto"
+                                  RowSpacing="12">
+                                <TextBlock x:Name="MarkupColorLabel" VerticalAlignment="Center" />
+                                <Grid Grid.Column="1" ColumnDefinitions="Auto,Auto" ColumnSpacing="10"
+                                      HorizontalAlignment="Left">
+                                    <Border x:Name="DefaultMarkupColorSwatch" Width="40" Height="24" CornerRadius="4"
+                                            BorderBrush="#665F70" BorderThickness="1" />
+                                    <Button x:Name="EditDefaultMarkupColorButton" Grid.Column="1" Classes="icon-button"
+                                            Content="…" />
+                                </Grid>
+                                <TextBlock x:Name="DefaultStrokeLabel" Grid.Row="1" VerticalAlignment="Center" />
+                                <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                    <Slider x:Name="DefaultStrokeSlider" MinWidth="190" Minimum="1" Maximum="128"
+                                            TickFrequency="1" />
+                                    <TextBlock x:Name="DefaultStrokeValue" Grid.Column="1" Width="58"
+                                               TextAlignment="Right" VerticalAlignment="Center" />
+                                </Grid>
+                                <TextBlock x:Name="DefaultMarkupOpacityLabel" Grid.Row="2" VerticalAlignment="Center" />
+                                <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                    <Slider x:Name="DefaultMarkupOpacitySlider" MinWidth="190" Minimum="5"
+                                            Maximum="100" TickFrequency="5" />
+                                    <TextBlock x:Name="DefaultMarkupOpacityValue" Grid.Column="1" Width="48"
+                                               TextAlignment="Right" VerticalAlignment="Center" />
+                                </Grid>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <ScrollViewer x:Name="ControlsPage" IsVisible="False" HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="34,30,38,40" MaxWidth="720" HorizontalAlignment="Stretch" Spacing="18">
+                    <StackPanel Spacing="4">
+                        <TextBlock x:Name="ControlsPageTitle" Classes="page-title" />
+                        <TextBlock x:Name="ControlsPageDescription" Classes="page-description" />
+                    </StackPanel>
+                    <StackPanel Spacing="7">
+                        <TextBlock x:Name="ControlsHeading" Classes="card-title" />
+                        <TextBlock x:Name="ControlsExplanation" Classes="supporting" />
+                    </StackPanel>
+                    <StackPanel x:Name="ControlsList" Spacing="12" />
+                    <TextBlock x:Name="ShortcutValidationText" Foreground="#FFFF8A8A" TextWrapping="Wrap" />
+                    <Button x:Name="ResetShortcutsButton" HorizontalAlignment="Left" />
+                </StackPanel>
+            </ScrollViewer>
+
+            <ScrollViewer x:Name="AboutPage" IsVisible="False" HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="34,30,38,40" MaxWidth="720" HorizontalAlignment="Stretch" Spacing="18">
+                    <StackPanel Spacing="4">
+                        <TextBlock x:Name="AboutPageTitle" Classes="page-title" />
+                        <TextBlock x:Name="AboutPageDescription" Classes="page-description" />
+                    </StackPanel>
+                    <Border Classes="settings-card">
+                        <Grid ColumnDefinitions="96,*" ColumnSpacing="22">
+                            <Border Width="88" Height="88" Background="#121016" CornerRadius="20"
+                                    VerticalAlignment="Top">
+                                <Image Width="72" Height="72" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Source="avares://Fovium/Assets/fovium-app-icon-128.png" />
+                            </Border>
+                            <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
+                                <TextBlock Text="Fovium" FontSize="27" FontWeight="SemiBold" />
+                                <Border HorizontalAlignment="Left" Background="#352B3D" BorderBrush="#574661"
+                                        BorderThickness="1" CornerRadius="12" Padding="10,4">
+                                    <TextBlock x:Name="VersionText" FontSize="13" Foreground="#D8C9E1" />
+                                </Border>
+                                <TextBlock x:Name="AboutProductDescription" MaxWidth="520" Classes="supporting"
+                                           FontSize="14" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
         </Grid>
-      </StackPanel>
-    </TabItem>
-    <TabItem x:Name="ColorTab">
-      <StackPanel Margin="12,18" Spacing="12">
-        <TextBlock x:Name="MonitorColorManagementHeading" FontSize="18" FontWeight="SemiBold" />
-        <CheckBox x:Name="MonitorColorManagementOption" />
-        <TextBlock x:Name="MonitorColorManagementExplanation"
-                   Margin="24,0,0,0"
-                   MaxWidth="500"
-                   Opacity="0.72"
-                   TextWrapping="Wrap" />
-      </StackPanel>
-    </TabItem>
-    <TabItem x:Name="StageTab">
-      <ScrollViewer>
-        <StackPanel Margin="12,18" Spacing="12">
-          <TextBlock x:Name="BackgroundHeading" FontSize="18" FontWeight="SemiBold" />
-          <RadioButton x:Name="BlackStageOption" GroupName="StageBackground" />
-          <RadioButton x:Name="NeutralStageOption" GroupName="StageBackground" />
-          <RadioButton x:Name="AverageStageOption" GroupName="StageBackground" />
-          <RadioButton x:Name="DominantStageOption" GroupName="StageBackground" />
-          <RadioButton x:Name="ColorWashStageOption" GroupName="StageBackground" />
-          <RadioButton x:Name="ColorGradientStageOption" GroupName="StageBackground" />
-          <RadioButton x:Name="SoftGlowStageOption" GroupName="StageBackground" />
-          <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
-            <RadioButton x:Name="CustomStageOption" GroupName="StageBackground" VerticalAlignment="Center" />
-            <Border x:Name="CustomColorSwatch" Grid.Column="1" Width="30" Height="20" CornerRadius="3" BorderThickness="1" />
-            <Button x:Name="EditCustomColorButton" Grid.Column="2" Width="34" Height="28" Padding="7">
-              <Path Stretch="Uniform" Stroke="{DynamicResource ThemeForegroundBrush}" StrokeThickness="1.5"
-                    Data="M1,4 L15,4 M1,8 L15,8 M1,12 L15,12 M5,2 L5,6 M11,6 L11,10 M7,10 L7,14" />
-            </Button>
-          </Grid>
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-            <RadioButton x:Name="AmbientStageOption" GroupName="StageBackground" VerticalAlignment="Center" />
-            <Button x:Name="EditAmbientButton" Grid.Column="1" Width="34" Height="28" Padding="7">
-              <Path Stretch="Uniform" Stroke="{DynamicResource ThemeForegroundBrush}" StrokeThickness="1.5"
-                    Data="M1,4 L15,4 M1,8 L15,8 M1,12 L15,12 M5,2 L5,6 M11,6 L11,10 M7,10 L7,14" />
-            </Button>
-          </Grid>
-          <Expander x:Name="AmbientOptions" Margin="24,0,0,6">
-            <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" RowSpacing="10" Margin="0,8,0,4">
-              <TextBlock x:Name="BrightnessLabel" VerticalAlignment="Center" />
-              <Slider x:Name="BrightnessSlider" Grid.Column="1" MinWidth="180" Minimum="30" Maximum="100" TickFrequency="1" />
-              <TextBlock x:Name="BrightnessValue" Grid.Column="2" Width="50" TextAlignment="Right" VerticalAlignment="Center" />
-              <TextBlock x:Name="SaturationLabel" Grid.Row="1" VerticalAlignment="Center" />
-              <Slider x:Name="SaturationSlider" Grid.Row="1" Grid.Column="1" MinWidth="180" Minimum="0" Maximum="125" TickFrequency="1" />
-              <TextBlock x:Name="SaturationValue" Grid.Row="1" Grid.Column="2" Width="50" TextAlignment="Right" VerticalAlignment="Center" />
-              <TextBlock x:Name="BlurLabel" Grid.Row="2" VerticalAlignment="Center" />
-              <Slider x:Name="BlurSlider" Grid.Row="2" Grid.Column="1" MinWidth="180" Minimum="8" Maximum="32" TickFrequency="1" />
-              <TextBlock x:Name="BlurValue" Grid.Row="2" Grid.Column="2" Width="50" TextAlignment="Right" VerticalAlignment="Center" />
-            </Grid>
-          </Expander>
-          <Separator Margin="0,4" />
-          <TextBlock x:Name="MatteHeading" FontSize="18" FontWeight="SemiBold" />
-          <CheckBox x:Name="MatteEnabledOption" />
-          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="10" Margin="24,0,0,4">
-            <TextBlock x:Name="MatteStyleLabel" VerticalAlignment="Center" />
-            <ComboBox x:Name="MatteStyleOption" Grid.Column="1" MinWidth="180" HorizontalAlignment="Left" />
-            <TextBlock x:Name="MatteSizeLabel" Grid.Row="1" VerticalAlignment="Center" />
-            <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="12">
-              <Slider x:Name="MatteWidthSlider" MinWidth="180" Minimum="4" Maximum="192" TickFrequency="1" />
-              <TextBlock x:Name="MatteWidthValue" Grid.Column="1" Width="58" TextAlignment="Right" VerticalAlignment="Center" />
-            </Grid>
-            <TextBlock x:Name="MatteColorSourceLabel" Grid.Row="2" VerticalAlignment="Center" />
-            <ComboBox x:Name="MatteColorSourceOption" Grid.Row="2" Grid.Column="1" MinWidth="180" HorizontalAlignment="Left" />
-            <TextBlock x:Name="MatteColorLabel" Grid.Row="3" VerticalAlignment="Center" />
-            <Grid x:Name="MatteCustomColorPanel" Grid.Row="3" Grid.Column="1" ColumnDefinitions="Auto,Auto" ColumnSpacing="10" HorizontalAlignment="Left">
-              <Border x:Name="MatteColorSwatch" Width="40" Height="24" CornerRadius="3" BorderThickness="1" />
-              <Button x:Name="EditMatteColorButton" Grid.Column="1" Width="34" Height="28" Padding="7">
-                <Path Stretch="Uniform" Stroke="{DynamicResource ThemeForegroundBrush}" StrokeThickness="1.5"
-                      Data="M1,4 L15,4 M1,8 L15,8 M1,12 L15,12 M5,2 L5,6 M11,6 L11,10 M7,10 L7,14" />
-              </Button>
-            </Grid>
-            <TextBlock x:Name="PhotoSeparationLabel" Grid.Row="4" VerticalAlignment="Center" />
-            <ComboBox x:Name="PhotoSeparationOption" Grid.Row="4" Grid.Column="1" MinWidth="180" HorizontalAlignment="Left" />
-          </Grid>
-        </StackPanel>
-      </ScrollViewer>
-    </TabItem>
-    <TabItem x:Name="PresentationTab">
-      <ScrollViewer>
-        <StackPanel Margin="12,18" Spacing="12">
-          <TextBlock x:Name="SlideshowHeading" FontSize="18" FontWeight="SemiBold" />
-          <CheckBox x:Name="SlideshowEnabledOption" />
-          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-            <TextBlock x:Name="SlideshowDurationLabel" VerticalAlignment="Center" />
-            <Slider x:Name="SlideshowDurationSlider"
-                    Grid.Column="1"
-                    MinWidth="220"
-                    Minimum="1"
-                    Maximum="60"
-                    TickFrequency="1"
-                    IsSnapToTickEnabled="True" />
-            <TextBlock x:Name="SlideshowDurationValue"
-                       Grid.Column="2"
-                       MinWidth="72"
-                       TextAlignment="Right"
-                       VerticalAlignment="Center" />
-          </Grid>
-          <TextBlock x:Name="SlideshowAtEndLabel" FontWeight="SemiBold" />
-          <RadioButton x:Name="SlideshowStopAtEndOption"
-                       Margin="16,0,0,0"
-                       GroupName="SlideshowEndBehavior" />
-          <RadioButton x:Name="SlideshowLoopOption"
-                       Margin="16,0,0,0"
-                       GroupName="SlideshowEndBehavior" />
-          <Separator Margin="0,4" />
-          <CheckBox x:Name="EnableMarkupOption" />
-          <Separator Margin="0,4" />
-          <TextBlock x:Name="HighlightHeading" FontSize="18" FontWeight="SemiBold" />
-          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14" RowDefinitions="Auto,Auto,Auto" RowSpacing="12">
-            <TextBlock x:Name="HighlightColorLabel" VerticalAlignment="Center" />
-            <Grid Grid.Column="1" ColumnDefinitions="Auto,Auto" ColumnSpacing="10" HorizontalAlignment="Left">
-              <Border x:Name="HighlightColorSwatch" Width="40" Height="24" CornerRadius="3" BorderThickness="1" />
-              <Button x:Name="EditHighlightColorButton" Grid.Column="1" Width="34" Height="28" Content="…" />
-            </Grid>
-            <TextBlock x:Name="HighlightOpacityLabel" Grid.Row="1" VerticalAlignment="Center" />
-            <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="12">
-              <Slider x:Name="HighlightOpacitySlider" MinWidth="220" Minimum="5" Maximum="90" TickFrequency="1" />
-              <TextBlock x:Name="HighlightOpacityValue" Grid.Column="1" Width="48" TextAlignment="Right" VerticalAlignment="Center" />
-            </Grid>
-            <TextBlock x:Name="HighlightRadiusLabel" Grid.Row="2" VerticalAlignment="Center" />
-            <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="12">
-              <Slider x:Name="HighlightRadiusSlider" MinWidth="220" Minimum="8" Maximum="256" TickFrequency="1" />
-              <TextBlock x:Name="HighlightRadiusValue" Grid.Column="1" Width="58" TextAlignment="Right" VerticalAlignment="Center" />
-            </Grid>
-          </Grid>
-          <Separator Margin="0,4" />
-          <TextBlock x:Name="MarkupDefaultsHeading" FontSize="18" FontWeight="SemiBold" />
-          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14" RowDefinitions="Auto,Auto,Auto" RowSpacing="12">
-            <TextBlock x:Name="MarkupColorLabel" VerticalAlignment="Center" />
-            <Grid Grid.Column="1" ColumnDefinitions="Auto,Auto" ColumnSpacing="10" HorizontalAlignment="Left">
-              <Border x:Name="DefaultMarkupColorSwatch" Width="40" Height="24" CornerRadius="3" BorderThickness="1" />
-              <Button x:Name="EditDefaultMarkupColorButton" Grid.Column="1" Width="34" Height="28" Content="…" />
-            </Grid>
-            <TextBlock x:Name="DefaultStrokeLabel" Grid.Row="1" VerticalAlignment="Center" />
-            <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="12">
-              <Slider x:Name="DefaultStrokeSlider" MinWidth="220" Minimum="1" Maximum="128" TickFrequency="1" />
-              <TextBlock x:Name="DefaultStrokeValue" Grid.Column="1" Width="58" TextAlignment="Right" VerticalAlignment="Center" />
-            </Grid>
-            <TextBlock x:Name="DefaultMarkupOpacityLabel" Grid.Row="2" VerticalAlignment="Center" />
-            <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="12">
-              <Slider x:Name="DefaultMarkupOpacitySlider" MinWidth="220" Minimum="5" Maximum="100" TickFrequency="5" />
-              <TextBlock x:Name="DefaultMarkupOpacityValue" Grid.Column="1" Width="48" TextAlignment="Right" VerticalAlignment="Center" />
-            </Grid>
-          </Grid>
-        </StackPanel>
-      </ScrollViewer>
-    </TabItem>
-    <TabItem x:Name="ControlsTab">
-      <ScrollViewer>
-        <StackPanel Margin="12,18" Spacing="14">
-          <TextBlock x:Name="ControlsHeading" FontSize="18" FontWeight="SemiBold" />
-          <StackPanel x:Name="ControlsList" Spacing="8" />
-          <TextBlock x:Name="ShortcutValidationText" Foreground="#FFE57373" TextWrapping="Wrap" />
-          <Button x:Name="ResetShortcutsButton" HorizontalAlignment="Left" Margin="0,8,0,0" />
-        </StackPanel>
-      </ScrollViewer>
-    </TabItem>
-    <TabItem x:Name="AboutTab">
-      <StackPanel Margin="12,22" Spacing="10">
-        <TextBlock Text="Fovium" FontSize="26" FontWeight="SemiBold" />
-        <TextBlock x:Name="VersionText" Opacity="0.72" />
-      </StackPanel>
-    </TabItem>
-  </TabControl>
+        <Button x:Name="SettingsCloseButton"
+                Grid.ColumnSpan="2"
+                ZIndex="30"
+                Classes="window-close"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Top"
+                Margin="0,14,16,0" />
+        <Border x:Name="ResizeNorth" Grid.ColumnSpan="2" ZIndex="20" Height="6"
+                VerticalAlignment="Top" Background="Transparent" Cursor="TopSide" Classes="resize-handle" />
+        <Border x:Name="ResizeSouth" Grid.ColumnSpan="2" ZIndex="20" Height="6"
+                VerticalAlignment="Bottom" Background="Transparent" Cursor="BottomSide" Classes="resize-handle" />
+        <Border x:Name="ResizeWest" Grid.ColumnSpan="2" ZIndex="20" Width="6"
+                HorizontalAlignment="Left" Background="Transparent" Cursor="LeftSide" Classes="resize-handle" />
+        <Border x:Name="ResizeEast" Grid.ColumnSpan="2" ZIndex="20" Width="6"
+                HorizontalAlignment="Right" Background="Transparent" Cursor="RightSide" Classes="resize-handle" />
+        <Border x:Name="ResizeNorthWest" Grid.ColumnSpan="2" ZIndex="21" Width="10" Height="10"
+                HorizontalAlignment="Left" VerticalAlignment="Top" Background="Transparent"
+                Cursor="TopLeftCorner" Classes="resize-handle" />
+        <Border x:Name="ResizeNorthEast" Grid.ColumnSpan="2" ZIndex="21" Width="10" Height="10"
+                HorizontalAlignment="Right" VerticalAlignment="Top" Background="Transparent"
+                Cursor="TopRightCorner" Classes="resize-handle" />
+        <Border x:Name="ResizeSouthWest" Grid.ColumnSpan="2" ZIndex="21" Width="10" Height="10"
+                HorizontalAlignment="Left" VerticalAlignment="Bottom" Background="Transparent"
+                Cursor="BottomLeftCorner" Classes="resize-handle" />
+        <Border x:Name="ResizeSouthEast" Grid.ColumnSpan="2" ZIndex="21" Width="10" Height="10"
+                HorizontalAlignment="Right" VerticalAlignment="Bottom" Background="Transparent"
+                Cursor="BottomRightCorner" Classes="resize-handle" />
+    </Grid>
 </Window>

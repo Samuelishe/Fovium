@@ -926,3 +926,25 @@ Public README imagery must be project-authored and privacy-clean. BRAND-R1 there
 over a deterministic synthetic scene; owner photographs, stock imagery, downloaded icons, and font files remain outside
 tracked branding and README assets. Platform packaging identities remain future consumers of the canonical SVG/PNGs,
 not a packaging claim introduced by this decision.
+
+## D-080 — Settings is a task-oriented shell and language is startup-resolved
+
+Status: Implemented in local SETTINGS-UX-R1; hosted verification pending.
+
+Settings uses a fixed left navigation rail with General, Viewing, Color, Stage, Presentation, Controls, and About,
+plus one bounded scrollable content column. This replaces horizontal feature tabs because task labels remain scannable
+as sections grow and controls can stay spatially attached to concise explanations. Stage retains the established
+photographic-environment meaning instead of introducing an overlapping Background/Appearance owner. Empty future
+Performance, Advanced, and theme pages remain absent.
+
+Language is persisted as the locale-independent identities SystemDefault, English, or Russian in backward-compatible
+schema-v2 JSON. Settings loads before Localizer creation; missing or invalid state follows the existing
+supported-system-
+locale/English fallback. A changed resolved locale applies on restart and receives an explicit hint rather than a
+fragile partial live update.
+
+Settings is one decoration-free desktop surface with a project-owned close control, drag from non-interactive content,
+and invisible edge/corner resize zones. Interactive descendants never begin a window move. It is an owned window that
+stays above its Viewer across fullscreen state changes while explicitly remaining non-topmost relative to other
+applications. The design reuses the existing project icon and Avalonia controls, introduces no Settings framework, and
+leaves the normal photograph-first viewport unchanged.

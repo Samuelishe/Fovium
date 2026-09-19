@@ -36,13 +36,17 @@ internal sealed partial class App : Avalonia.Application
                 cache,
                 memoryPolicy);
             var activation = new ActivationService(new DirectorySequenceBuilder());
-            var localizer = Localizer.CreateForCurrentCulture();
-            var settings = new SettingsService(new JsonSettingsStore(SettingsPathResolver.ResolveCurrent()));
+            var startup = ApplicationStartup.LoadAsync(
+                    new JsonSettingsStore(SettingsPathResolver.ResolveCurrent()),
+                    System.Globalization.CultureInfo.CurrentUICulture,
+                    CancellationToken.None)
+                .GetAwaiter()
+                .GetResult();
             desktop.MainWindow = new ViewerWindow(
                 activation,
                 session,
-                localizer,
-                settings,
+                startup.Localizer,
+                startup.Settings,
                 desktop.Args ?? []);
         }
 

@@ -273,6 +273,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         Activated += OnDisplayRefreshRequired;
         PositionChanged += OnDisplayRefreshTrigger;
         SizeChanged += OnDisplayRefreshTrigger;
+        PropertyChanged += OnViewerPropertyChanged;
         KeyDown += OnWindowKeyDown;
         KeyUp += OnWindowKeyUp;
     }
@@ -283,7 +284,6 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         {
             PhotoViewport.Focus();
             RestartCursorTimer();
-            await _settings.InitializeAsync(_lifetimeCancellation.Token);
             ApplySettings(_settings.Current);
             Screens.Changed += OnDisplayRefreshRequired;
             ScheduleDisplayProfileRefresh(forceProfileRefresh: true);
@@ -463,6 +463,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         _stageCoordinator.PresentationChanged -= OnStagePresentationChanged;
         _ambientSoakTrace.Dispose();
         _settings.Dispose();
+        PropertyChanged -= OnViewerPropertyChanged;
     }
 
     private async void OnWindowKeyDown(object? sender, KeyEventArgs e)
@@ -944,6 +945,15 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
             RestartCursorTimer();
         };
         window.Show(this);
+        window.Activate();
+    }
+
+    private void OnViewerPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Property == WindowStateProperty && _settingsWindow is { } settingsWindow)
+        {
+            Dispatcher.UIThread.Post(settingsWindow.Activate);
+        }
     }
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)

@@ -1,6 +1,7 @@
 namespace Fovium.Settings;
 
 using Fovium.Input;
+using Fovium.Localization;
 using Fovium.Presentation;
 using Fovium.Stage;
 
@@ -15,6 +16,8 @@ internal sealed record FoviumSettings
     public const int CurrentSchemaVersion = 2;
 
     public int SchemaVersion { get; init; } = CurrentSchemaVersion;
+
+    public UiLanguage Language { get; init; } = UiLanguage.SystemDefault;
 
     public ImageChangeViewPolicy ImageChangeViewPolicy { get; init; } =
         ImageChangeViewPolicy.KeepCurrentScale;
@@ -40,6 +43,7 @@ internal sealed record FoviumSettings
     public FoviumSettings Normalize() => this with
     {
         SchemaVersion = CurrentSchemaVersion,
+        Language = Enum.IsDefined(Language) ? Language : UiLanguage.SystemDefault,
         ImageChangeViewPolicy = Enum.IsDefined(ImageChangeViewPolicy)
             ? ImageChangeViewPolicy
             : ImageChangeViewPolicy.KeepCurrentScale,
