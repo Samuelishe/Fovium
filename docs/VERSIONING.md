@@ -170,6 +170,7 @@ never reuse an earlier version. No automatic rollover after BUILD `9999` is defi
 | `0.1.4.0001` | R11-B                                 | Separate bounded Notable colors signal plus truthful Characteristic and Frequent shades Photo Info wording                      |
 | `0.1.4.0002` | R11-B-F1                              | Multi-route Notable color admission, adaptive zero-to-ten output, and compact two-row Color Profile layout                      |
 | `0.1.4.0003` | R11-C                                 | Real-photo-audited coherent neutral and structural-mass refinement of the existing Notable Color Profile                        |
+| `0.1.4.0004` | BRAND-R1                              | Project-owned application identity, executable/window icon integration, and public repository landing refinement                |
 
 The `0.0.0.xxxx` line records the completed foundation and early product-construction checkpoints. The explicit
 owner-controlled `0.1.0.0000` transition marks the first substantial usable Fovium alpha; it does not claim feature
@@ -200,6 +201,9 @@ cleanup tooling alone has no version effect.
 R11-C increments BUILD to `0.1.4.0003`: the real-photo audit changes bounded Notable admission and presentation while
 retaining the existing Photo Info surface, adaptive capacity, one-scan ownership, and R10 styling semantics. The audit
 harness alone would not change the version.
+BRAND-R1 increments BUILD to `0.1.4.0004`: the new executable/window icon is a visible desktop-product identity
+refinement within the current feature line. Its README, verification, and evidence tooling alone would not change the
+product version.
 
 ## Future code and packaging source
 
@@ -207,9 +211,9 @@ The root `Directory.Build.props` is the canonical source for the current compone
 supplies the production `Fovium` assembly with:
 
 ```text
-InformationalVersion = 0.1.4.0002
-AssemblyVersion      = 0.1.4.2
-FileVersion          = 0.1.4.2
+InformationalVersion = 0.1.4.0004
+AssemblyVersion      = 0.1.4.4
+FileVersion          = 0.1.4.4
 ```
 
 From that source:

@@ -912,3 +912,17 @@ admission route, a bounded information floor for coherent structural masses that
 second achromatic slot when lightness separation is at least `0.24`. The final holdout still exposes one substantial
 blue-clothing miss caused by novelty/presentation suppression; it is recorded as a limitation rather than tuned after
 the freeze. Photo Color Profile remains deterministic bounded color/spatial evidence, not subject recognition.
+
+## D-079 — One project-owned application identity spans apphost and windows
+
+Status: Implemented in local BRAND-R1; hosted verification pending.
+
+Fovium's canonical visual identity is the project-authored Offset Field SVG and its deterministic derived rasters. The
+Windows ICO contains explicit small-to-large PNG frames rather than a renamed single raster. `ApplicationIcon` owns the
+Windows apphost resource, and Avalonia's application-icon bridge makes the same asset the default for every top-level
+window instead of duplicating paths across Viewer and dialogs.
+
+Public README imagery must be project-authored and privacy-clean. BRAND-R1 therefore uses a real Fovium runtime capture
+over a deterministic synthetic scene; owner photographs, stock imagery, downloaded icons, and font files remain outside
+tracked branding and README assets. Platform packaging identities remain future consumers of the canonical SVG/PNGs,
+not a packaging claim introduced by this decision.

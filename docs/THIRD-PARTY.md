@@ -103,12 +103,16 @@ in [`IMAGING-PIPELINE.md`](IMAGING-PIPELINE.md), and color in [`COLOR-MANAGEMENT
 
 ## Assets / borrowed material
 
-No third-party photograph, icon, font, logo, or downloaded test corpus is shipped. R8-A's attributed MIT-licensed
-derived color-name catalog is recorded above and beside the resource; R8-A-F1's Russian names are Fovium-authored
-presentation data layered over its stable IDs. R7-C's tracked HEIF/AVIF fixtures contain only project-authored synthetic
-patterns; their source method, one-time official encoder tooling, exact options, hashes, and no-photograph statement are
-recorded beside them. Downloaded public samples and generated performance/malformed/regression material remain ignored
-under `resources/test-images/`. Future shipped or test assets must follow [
+No third-party photograph, icon, font, logo, or downloaded test corpus is shipped. BRAND-R1's application mark,
+derived ICO/PNGs, synthetic README scene, real-runtime capture, and final hero are Fovium-authored; their ownership and
+regeneration notes live beside [`resources/branding/`](../resources/branding/README.md) and
+[`docs/assets/readme/`](assets/readme/README.md). No font file is embedded or redistributed. R8-A's attributed
+MIT-licensed derived color-name catalog is recorded above and beside the resource; R8-A-F1's Russian names are
+Fovium-authored presentation data layered over its stable IDs. R7-C's tracked HEIF/AVIF fixtures contain only
+project-authored synthetic patterns; their source method, one-time official encoder tooling, exact options, hashes, and
+no-photograph statement are recorded beside them. Downloaded public samples and generated
+performance/malformed/regression material remain ignored under `resources/test-images/`. Future shipped or test assets
+must follow [
 `resources/README.md`](../resources/README.md) and record name, author/source, license, purpose, official source,
 modifications, and introduced stage here before commit.
 

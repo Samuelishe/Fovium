@@ -53,6 +53,7 @@ Do not load every document by default. If documents conflict, follow the owner n
 | Settings or preference persistence                                     | [`docs/SETTINGS.md`](docs/SETTINGS.md)                                                                                                 |
 | Localization or language                                               | [`docs/LOCALIZATION.md`](docs/LOCALIZATION.md)                                                                                         |
 | UI theme or UI chrome visual roles                                     | [`docs/THEMES.md`](docs/THEMES.md) + relevant UX owner                                                                                 |
+| Application identity, icon, or README branding                         | [`resources/branding/README.md`](resources/branding/README.md) + [`docs/THIRD-PARTY.md`](docs/THIRD-PARTY.md)                          |
 | Version or About version display                                       | [`docs/VERSIONING.md`](docs/VERSIONING.md)                                                                                             |
 | File activation, associations, thumbnails, or packaging integration    | [`docs/PLATFORM-INTEGRATION.md`](docs/PLATFORM-INTEGRATION.md) + relevant imaging owner                                                |
 | Planning                                                               | [`docs/ROADMAP.md`](docs/ROADMAP.md)                                                                                                   |

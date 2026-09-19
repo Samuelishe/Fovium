@@ -328,6 +328,14 @@ The retained bounded refinement instead adds a guarded coherent-neutral route, p
 against narrow Frequent overlap, and permits two strongly lightness-separated achromatic colors. It remains
 deterministic color/spatial analysis, not subject or object recognition.
 
+## BRAND-R1 — Product identity and public repository experience
+
+Locally complete at `0.1.4.0004`: establish a project-authored Offset Field application mark, canonical SVG and
+multi-resolution Windows ICO; wire the same identity into the Windows apphost and Avalonia's default top-level window
+icon; and replace the internal-heavy root README with a concise public landing page, live workflow badges, verified
+source-build instructions, and a real Fovium runtime hero over a deterministic synthetic image. No installer, release
+automation, file association, third-party visual asset, or owner photograph is introduced.
+
 ## Later / separate platform milestones
 
 - file association and Open With integration;

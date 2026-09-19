@@ -40,3 +40,7 @@ Not authoritative for: The subjects summarized by linked documents.
 
 Operational repository rules live in the root [`AGENTS.md`](../AGENTS.md). The public introduction is [
 `README.md`](../README.md).
+
+Application-mark ownership, derived formats, regeneration, and wiring are documented beside the assets in [
+`resources/branding/README.md`](../resources/branding/README.md). Public README visual provenance is recorded in [
+`docs/assets/readme/README.md`](assets/readme/README.md).

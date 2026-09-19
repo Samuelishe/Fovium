@@ -41,6 +41,7 @@ Each durable subject has one owner. Other documents may summarize and link but m
 | Accepted durable decisions                                                           | [`DECISIONS-LOG.md`](DECISIONS-LOG.md)                                                                     |
 | Open unresolved risks                                                                | [`KNOWN-PROBLEMS.md`](KNOWN-PROBLEMS.md)                                                                   |
 | Dependency, action/service, and asset provenance                                     | [`THIRD-PARTY.md`](THIRD-PARTY.md)                                                                         |
+| Application mark source, derivatives, regeneration, and platform wiring              | [`../resources/branding/README.md`](../resources/branding/README.md)                                       |
 | Documentation navigation                                                             | [`INDEX.md`](INDEX.md)                                                                                     |
 
 ## Selective reading

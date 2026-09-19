@@ -7,15 +7,16 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-R11-C is locally complete on pushed R11-B-F1 baseline `ecd4aa1c86000ef85ed01ded51ce6fab1caaca66`. Product version is
-`0.1.4.0003`: Photo Info retains Characteristic, unchanged population-ranked Frequent shades, and adaptive zero-to-ten
-Notable colors. A guarded coherent-neutral route now admits substantial low-chroma structures; coherent structural
-masses receive bounded protection from narrow Frequent overlap; and a second achromatic result is allowed only across
-strong lightness separation. The deterministic salience projection still reuses the bounded `96 px` R10 analysis and
-exact `DecodedImage` ownership; it adds no second decode, full-image analyzer, production auxiliary thumbnail, CMM pass,
-raster, model, network path, or UI-geometry recomputation. Structural Color Semantics remain primary and creative names
-remain secondary tooltip detail. The existing 45 broad families, 99 Professional
-terms / 104 reachable lobes, and 1,800 creative anchors are unchanged.
+BRAND-R1 is locally complete on pushed R11-C baseline `4a1e1af3a74f470ee1d4bace6425b6c6f46b3b9b`. Product version is
+`0.1.4.0004`: Fovium now owns one application identity across the Windows apphost and Avalonia top-level windows, plus
+a human-first public README with live workflow badges and a project-authored runtime hero. The selected Offset Field
+mark retains a canonical SVG, three packaging/README PNGs, and a multi-resolution Windows ICO with 16, 20, 24, 32, 48,
+64, 128, and 256 px PNG frames. No external visual asset or owner photograph was introduced.
+
+R11-C remains the current Photo Color Profile implementation baseline: Characteristic, unchanged population-ranked
+Frequent shades, and adaptive zero-to-ten Notable colors reuse the bounded `96 px` R10 analysis and exact
+`DecodedImage` ownership. The existing 45 broad families, 99 Professional terms / 104 reachable lobes, and 1,800
+creative anchors are unchanged.
 
 The ignored research corpus now includes pinned UW/LabintheWild and Stanford CoCoLab human-survey numeric evidence plus
 NBS/ISCC source dictionaries from Color-Library. Exact-name ingestion rejects compound homonyms, deduplicates rows, and
@@ -31,24 +32,23 @@ Windows at `RenderScaling = 1.00`.
 
 ## Current focus
 
-R11-C is ready for owner review/commit and hosted CI. Ignored Windows evidence covers 60 deterministic photographs from
-nine owner roots, split before inspection into 25 tuning, 15 validation, and 20 final holdout images. Final engineering
-visual review classified validation as 14 GOOD and 1 EXPECTED LIMITATION; holdout as 15 GOOD, 3 PARTIAL, 1 REAL MISS,
-and 1 EXPECTED LIMITATION. The one real holdout miss is a coherent blue clothing region present in candidates but
-suppressed by incremental novelty; the frozen holdout was not used for further tuning. `96/128/160/192 px` comparison
-found no repeated recovery from extra resolution, while stronger classical/region prototypes overfilled related shades
-and neutrals. Real Windows Avalonia review accepts zero, one-row, and two-row Russian Photo Info layouts. Hosted CI,
-Linux/macOS, and runtime fractional-DPI visual acceptance remain future evidence. The full local Windows Release suite
-passes 2,238 tests after targeted mutation checks of resolution, route, structural novelty, achromatic, and capacity
-contracts. R10-E's whole 250-entry research frontier and Antique White/Linen warning remain unchanged.
+BRAND-R1 is ready for owner review/commit and hosted CI. Local Windows evidence covers three icon concepts, every ICO
+size on light/dark/taskbar-like surfaces, Win32 extraction from ordinary build and `win-x64` publish apphosts, the real
+Viewer and Settings titlebars, and two real-runtime README hero compositions over a deterministic synthetic image.
+Focused branding contract tests and the repository-owned verification scripts are green; the full local Windows
+Release suite passes 2,241 tests with zero build warnings/errors. Hosted verification of these unpushed changes remains
+the post-push gate. Linux/macOS application-icon runtime behavior, formal platform packaging, file associations, and
+shell installation remain future work rather than BRAND-R1 claims.
 
-The current Codex/Rider ACP session negotiates no true in-app browser backend. Browser-plugin discovery returns an empty
-backend list, and the Rider Playwright MCP entry has no command or URL and is absent from the session tool registry.
-Isolated installed Chrome may render ignored evidence, but is explicitly only a fallback. A true backend requires a
-capable host/session or a separately valid MCP registration plus Rider restart outside repository code.
+The current Codex/Rider ACP session negotiates no true in-app browser backend. BRAND-R1 used isolated installed Chrome
+only to render an ignored GitHub-API GFM preview of the local README; it is explicitly not an in-app browser backend. A
+true backend still requires a capable host/session or a separately valid MCP registration plus Rider restart outside
+repository code.
 
 ## Implemented application functionality
 
+- Project-authored Offset Field application identity with canonical SVG, multi-resolution Windows ICO, matching
+  Windows apphost/Avalonia window icons, and a reproducible privacy-clean public README hero.
 - Runnable zero-UI Avalonia desktop viewer with Black, Neutral, Custom, Ambient, Average, Dominant, abstract Color Wash,
   Color Gradient, or Soft Glow Stage backgrounds and an independent optional Matte.
 - Central JPEG/PNG/WebP/TIFF/HEIF/AVIF capability registry: candidate extensions, MIME hints, and picker patterns derive

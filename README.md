@@ -1,134 +1,119 @@
-# Fovium
+<p align="center">
+  <img src="resources/branding/fovium-app-icon-128.png" width="104" height="104" alt="Fovium application icon">
+</p>
 
-<!--
-Role: Public repository landing page.
-Read when: First encountering the repository.
-Authoritative for: A concise project introduction and links to canonical documentation.
-Not authoritative for: Detailed product contracts, implementation decisions, or live project state.
--->
+<h1 align="center">Fovium</h1>
 
-Fovium is a distraction-free, cross-platform photo viewer focused on rendering quality, seamless navigation, and
-photographer-first interaction.
+<p align="center"><strong>A photograph-first desktop viewer for fast, faithful presentation and precise inspection.</strong></p>
 
-## What Fovium is
+<p align="center">
+  <a href="https://github.com/Samuelishe/Fovium/actions/workflows/ci.yml"><img src="https://github.com/Samuelishe/Fovium/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI status"></a>
+  <a href="https://github.com/Samuelishe/Fovium/actions/workflows/native-libheif.yml"><img src="https://github.com/Samuelishe/Fovium/actions/workflows/native-libheif.yml/badge.svg?branch=master" alt="Native libheif runtime status"></a>
+  <a href="https://github.com/Samuelishe/Fovium/actions/workflows/native-lcms2.yml"><img src="https://github.com/Samuelishe/Fovium/actions/workflows/native-lcms2.yml/badge.svg?branch=master" alt="Native Little CMS runtime status"></a>
+</p>
 
-Fovium is an authored desktop viewer for people who care about how photographs are displayed and inspected. Windows is
-the primary target, Linux is a full target, and macOS is intended after real runtime validation.
+<p align="center">
+  <img src="docs/assets/readme/fovium-hero.jpg" width="960" alt="Fovium displaying a project-authored synthetic scene with Photo Info visible">
+</p>
 
-It is not a DAM, catalog, organizer, file manager, RAW editor, or general media suite. The complete product boundary
-lives in the [project vision](docs/PROJECT-VISION.md).
+Fovium keeps the photograph at the center of the experience: normal viewing has no persistent chrome, while focused
+inspection and presentation tools appear only when requested. It is an active alpha project built with C#,
+.NET 10, Avalonia, and Skia.
 
-## Philosophy
+[Read the Project Vision →](docs/PROJECT-VISION.md)
 
-> The main UI component of Fovium is the photograph itself.
+## Highlights
 
-Zero-UI is intentional: normal viewing removes persistent chrome rather than surrounding the image with controls.
-Rendering quality and precise interaction take priority over feature count.
+- **View without distraction.** Fast same-directory navigation, cursor-anchored zoom and pan, physical-pixel
+  photographic 100%, fullscreen, and a deliberate photographic Stage.
+- **Inspect with precision.** Hold-to-view Peek 100% and Blink Compare, source-pixel Color Inspector, RGB Histogram,
+  and compact Photo Info with photographic metadata and semantic Color Profile.
+- **Present photographs cleanly.** Photo Presentation View, optional Matte and photo-derived backgrounds, timed
+  Slideshow, cursor highlight, and temporary image-bound presenter markup.
+- **Preserve image meaning.** Orientation and source-profile state survive the imaging boundary; Windows ordinary-SDR
+  presentation can use the active monitor ICC profile through the app-local Little CMS runtime.
 
-## Core ideas
+## Platforms and formats
 
-- seamless previous/next navigation through viable images in the current directory;
-- cursor-anchored zoom, exact panning, and photographic 100% based on physical display pixels;
-- photographer-oriented inspection with whole-viewport **Peek 100%** and non-navigating **Blink Compare**;
-- session-local presenter tools with image-bound markup, Ellipse, per-stroke opacity, constrained drawing, true partial
-  erasing, per-image Undo/Redo, contextual controls, accurate drawing cursors, and a configurable cursor highlight;
-- a deliberate photographic **Stage** with Black, Neutral, Custom, Ambient, Average, Dominant, abstract Color Wash,
-  Color Gradient, or Soft Glow backgrounds plus an independent custom/auto-colored Matte and optional Hairline Auto
-  separation;
-- a session-local **Photo Presentation View** that independently fits each photograph inside a configurable edge margin
-  while Matte decorates the resolved photo without changing its scale;
-- a session-local **Slideshow** on `F5`, with a persisted 1–60 second interval, stop-at-last or natural-order loop
-  behavior, and one bounded prepared next frame;
-- on-demand movable Photo Info with semantic whole-photo Color Profile, plus decoded-RGB Histogram; both follow the
-  actually presented photograph, including Blink;
-- an offline click-to-sample photographic Color Picker with reference-sRGB HEX/RGB (A), one local OKLab-nearest human
-  name, and ten-click session history;
-- JPEG, PNG, static WebP, bounded static 8-bit TIFF, bounded static 8-bit SDR HEIF/HEIC, and bounded static 8-bit SDR
-  AVIF through one content-detected format-capability foundation;
-- no database, import workflow, or plugin platform.
+| Platform | Current state                                                                          |
+|----------|----------------------------------------------------------------------------------------|
+| Windows  | Primary runtime-tested platform; ordinary-SDR monitor color management is available    |
+| Linux    | Supported build and CI target; broader desktop/runtime acceptance is still in progress |
+| macOS    | Build and CI coverage exists; full runtime acceptance is not yet claimed               |
 
-See the canonical [UX contract](docs/UX-CONTRACT.md), [rendering contract](docs/RENDERING.md),
-and [imaging direction](docs/IMAGING-PIPELINE.md) for details.
+Fovium currently opens JPEG, PNG, static WebP, bounded static 8-bit TIFF, and—when the optional app-local libheif
+runtime is present—bounded static 8-bit SDR HEIF/HEIC and AVIF. Exact codec, alpha, orientation, metadata, and
+limitation
+details live in the [format support matrix](docs/FORMAT-SUPPORT.md).
 
-## Current status
+## Getting started
 
-The current local product version is **`0.1.4.0000`**. Accepted R10-B commit `1beaa64` adds directional Color Gradient
-and restrained Soft Glow; pushed R10-D commit `50f1a49` establishes cross-platform deterministic Color Semantics
-evidence; pushed R10-E commit `fbdd668` adds five independently evidenced Professional names. Locally complete R11-A
-uses the existing photo analysis to add a compact semantic Color Profile to Photo Info without another image pass;
-hosted verification awaits an owner-approved push.
-
-This is an alpha milestone, not a feature-complete or stable release claim. Textured Matte/background materials,
-inner shadows, broad material presets, slideshow transitions/shuffle/music/countdown UI, animated formats, RAW, Advanced
-Metadata, persistent palettes, full monitor-aware ICC, platform associations, markup export/object editing, and
-selected-reference A/B comparison are not implemented. The current matrix
-is [FORMAT-SUPPORT.md](docs/FORMAT-SUPPORT.md), derived styling is specified
-in [PHOTO-DERIVED-STYLING.md](docs/PHOTO-DERIVED-STYLING.md), Slideshow semantics are
-in [SLIDESHOW.md](docs/SLIDESHOW.md), and the canonical handoff is [PROJECT-STATE.md](docs/PROJECT-STATE.md).
-
-English/Russian catalogs and the Dark secondary-UI baseline are implemented; language/theme selection remains future
-work. See [VERSIONING.md](docs/VERSIONING.md) and the [documentation index](docs/INDEX.md) for the canonical owners.
-
-## Technology direction
-
-- C# and .NET 10;
-- Avalonia 12.1.1 as the accepted initial cross-platform UI host;
-- an isolated direct-Skia photographic path with SkiaSharp 3.119.4;
-- one shared bounded decoder dispatcher, with controlled SKCodec for JPEG/PNG/static WebP, focused managed LibTiff.NET
-  for bounded TIFF, and a small direct interop backend over Fovium's app-local libheif runtime for bounded HEIF/AVIF;
-- xUnit for repository, experiment, and production logic tests.
-
-Full monitor-aware ICC, broad codec coverage, and huge/tiled image handling remain future work.
-
-## Repository structure
-
-| Path                               | Purpose                                                                                     |
-|------------------------------------|---------------------------------------------------------------------------------------------|
-| `docs/`                            | Canonical product, technical, planning, and repository contracts                            |
-| `eng/`                             | Small repository verification wrappers                                                      |
-| `resources/`                       | Tracked asset root governed by provenance policy                                            |
-| `Fovium/`                          | First production Core Viewer application                                                    |
-| `Fovium.Tools.ProjectStats/`       | BCL-only repository diagnostics CLI                                                         |
-| `Fovium.Tools.ColorTaxonomyAudit/` | Color Semantics deep audit and deterministic report/Explorer CLI                            |
-| `Fovium.Tests/`                    | Automated tests for repository tooling, retained R0 logic, and production viewer boundaries |
-| `experiments/Fovium.RenderProbe/`  | Disposable R0 rendering/imaging evidence executable; not the viewer                         |
-| `.github/workflows/ci.yml`         | Windows, Linux, and macOS restore/build/test workflow                                       |
-
-## Development / verification
-
-With PowerShell 7 and the .NET 10 SDK:
+Fovium is currently source-built. Install the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) and
+PowerShell 7, then run:
 
 ```powershell
+git clone https://github.com/Samuelishe/Fovium.git
+cd Fovium
 dotnet restore Fovium.sln
-dotnet build Fovium.sln -c Release
-dotnet test Fovium.sln -c Release --no-build
-pwsh eng/repo-baseline.ps1
-pwsh eng/project-stats.ps1
-pwsh eng/color-taxonomy.ps1
-pwsh eng/color-taxonomy.ps1 -Open
+dotnet build Fovium.sln -c Release --no-restore
+dotnet run --project Fovium -c Release --no-build -- "C:\path\to\photo.jpg"
 ```
 
-ProjectStats generates an ignored local `project-stats.md` report. Color Semantics generates an ignored
-`artifacts/reports/color-semantics/` bundle with JSON, text/Markdown, SVG atlases, and a self-contained interactive
-Explorer. Test details are in [TEST-EXECUTION.md](docs/TEST-EXECUTION.md); model/report ownership is in
-[COLOR-SEMANTICS.md](docs/COLOR-SEMANTICS.md).
+Run without a path to open the file picker. Multiple image paths may also be supplied.
 
-Run the viewer with zero or more paths (zero opens the picker):
+<details>
+<summary><strong>Optional native capabilities</strong></summary>
 
-```powershell
-dotnet run --project Fovium -- "C:\path\to\photo.jpg"
-```
+The managed solution builds and runs for JPEG, PNG, WebP, and TIFF without prebuilt native artifacts. HEIF/AVIF decode
+uses Fovium's reproducible app-local libheif bundle; Windows monitor color management uses the app-local Little CMS
+bundle. Neither runtime is downloaded by the application or borrowed from the system.
+
+- [Build the libheif runtime](eng/native/libheif/README.md)
+- [Build the Little CMS runtime](eng/native/lcms2/README.md)
+
+</details>
+
+### Essential controls
+
+| Action                                   | Default input                |
+|------------------------------------------|------------------------------|
+| Open image                               | `Ctrl+O`                     |
+| Previous / next image                    | `Left Arrow` / `Right Arrow` |
+| Zoom / Fit / photographic 100%           | Wheel or `+` / `-`, `0`, `1` |
+| Peek 100%                                | Hold `Z`                     |
+| Blink Compare                            | Hold `Shift+C`               |
+| Photo Info / Histogram / Color Inspector | `I` / `G` / `K`              |
+| Photo Presentation / Slideshow           | `F6` / `F5`                  |
+| Fullscreen                               | `F11`                        |
+
+Bindings other than `Esc` are configurable. The complete interaction contract and shortcut set are documented in
+[User Experience](docs/UX-CONTRACT.md).
 
 ## Documentation
 
-Start with the [documentation index](docs/INDEX.md). Repository agents use [AGENTS.md](AGENTS.md) for selective context
-routing. Durable decisions, plans, risks, and current state deliberately have separate owners.
+- [Project Vision](docs/PROJECT-VISION.md) — product direction and philosophy
+- [User Experience](docs/UX-CONTRACT.md) — interaction and complete controls
+- [Format Support](docs/FORMAT-SUPPORT.md) — precise codec scope and limitations
+- [Rendering](docs/RENDERING.md) and [Color Management](docs/COLOR-MANAGEMENT.md) — display-quality contracts
+- [Project Status](docs/PROJECT-STATE.md) — current implementation truth and open validation boundaries
+- [Documentation Index](docs/INDEX.md) — the full technical documentation map
 
-## Third-party and provenance
+Fovium is under active alpha development. Behavior and internal APIs may change, and there is not yet a packaged
+release or installer.
 
-Introduced test dependencies, CI actions, evaluated technologies, and future asset provenance are tracked
-in [THIRD-PARTY.md](docs/THIRD-PARTY.md). No external image, icon, font, logo, or test-image asset is currently shipped.
+## Development
+
+Run the same managed verification sequence used by CI:
+
+```powershell
+dotnet restore Fovium.sln
+dotnet build Fovium.sln -c Release --no-restore
+dotnet test Fovium.sln -c Release --no-build
+```
+
+See [Test Execution](docs/TEST-EXECUTION.md) for focused suites and native-runtime verification. Third-party dependency
+and asset provenance is recorded in [Third-Party](docs/THIRD-PARTY.md).
 
 ## License
 
-The project license has not been selected yet. Third-party components retain their own licenses and terms.
+A project license has not been selected yet. Third-party components retain their own licenses and terms.

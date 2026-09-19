@@ -1,17 +1,25 @@
 # Platform integration
 
 Role: Contract for external file activation and operating-system integration.
-Read when: Working on command-line/shell activation, Open With, file associations, packaging, document icons, thumbnails, or platform-specific entry points.
-Authoritative for: Activation semantics, multiple-file policy, association behavior, format-capability needs, thumbnail boundaries, and Windows/Linux/macOS integration direction.
-Not authoritative for: Decoder implementation, navigation loading policy, Settings persistence, shipped branding assets, or current platform support claims.
+Read when: Working on command-line/shell activation, Open With, file associations, packaging, document icons,
+thumbnails, or platform-specific entry points.
+Authoritative for: Activation semantics, multiple-file policy, association behavior, format-capability needs, thumbnail
+boundaries, and Windows/Linux/macOS integration direction.
+Not authoritative for: Decoder implementation, navigation loading policy, Settings persistence, shipped branding assets,
+or current platform support claims.
 
 ## Boundary
 
-Platform integration is an edge subsystem. It translates operating-system activation and shell capabilities into project-owned requests and consumes imaging capabilities; it does not belong inside the imaging pipeline and must not spread registry, MIME, bundle, or shell APIs through application code.
+Platform integration is an edge subsystem. It translates operating-system activation and shell capabilities into
+project-owned requests and consumes imaging capabilities; it does not belong inside the imaging pipeline and must not
+spread registry, MIME, bundle, or shell APIs through application code.
 
-R1 startup accepts an ordered collection of command-line paths even when one file is common. The application also maps a native multi-select file-picker result into the same activation plan.
+R1 startup accepts an ordered collection of command-line paths even when one file is common. The application also maps a
+native multi-select file-picker result into the same activation plan.
 
-Inputs may contain Unicode, spaces, long names, platform-specific syntax, and paths supplied by shell activation. Fovium must eventually support `fovium <path>` and equivalent native activation. Startup must not assume that a Fovium file picker produced the request.
+Inputs may contain Unicode, spaces, long names, platform-specific syntax, and paths supplied by shell activation. Fovium
+must eventually support `fovium <path>` and equivalent native activation. Startup must not assume that a Fovium file
+picker produced the request.
 
 ## Single-file activation
 
@@ -27,7 +35,8 @@ make the opened file current
 browse previous/next neighbors
 ```
 
-R1 implements this as a non-recursive background directory snapshot with deterministic natural filename ordering. This creates no import, catalog, database, or live watcher.
+R1 implements this as a non-recursive background directory snapshot with deterministic natural filename ordering. This
+creates no import, catalog, database, or live watcher.
 
 ## Multiple-file activation
 
@@ -39,11 +48,14 @@ Use the first supplied file as the initial item and build navigation from its co
 
 ### Mode B — explicit selection
 
-Use only the supplied files, preserving their supplied order as the navigation sequence. Files may come from multiple directories. Existing viability rules may skip unsupported, corrupt, or unsafe entries without inventing additional directory merging.
+Use only the supplied files, preserving their supplied order as the navigation sequence. Files may come from multiple
+directories. Existing viability rules may skip unsupported, corrupt, or unsafe entries without inventing additional
+directory merging.
 
 **Mode B — explicit selection is the default.**
 
-R1 implements Mode B for multiple command-line paths and picker selections. R2 introduces a minimal Settings foundation, but the Mode A Advanced preference remains unimplemented.
+R1 implements Mode B for multiple command-line paths and picker selections. R2 introduces a minimal Settings foundation,
+but the Mode A Advanced preference remains unimplemented.
 
 The future preference is located at:
 
@@ -62,23 +74,27 @@ Do not add a third implicit merge mode. Preference persistence belongs to [`SETT
 
 ## File associations and Open With
 
-Fovium should eventually register the image types it can actually open. Registration advertises capability; the operating system and user retain ownership of the default-app choice. Fovium must never silently seize or rewrite default associations.
+Fovium should eventually register the image types it can actually open. Registration advertises capability; the
+operating system and user retain ownership of the default-app choice. Fovium must never silently seize or rewrite
+default associations.
 
-Settings may later offer **Open system file association settings** or a platform equivalent. R1 adds no registry, MIME, bundle, or default-app implementation; command-line activation is not a claim of installed shell integration.
+Settings may later offer **Open system file association settings** or a platform equivalent. R1 adds no registry, MIME,
+bundle, or default-app implementation; command-line activation is not a claim of installed shell integration.
 
 Expected directions differ by platform:
 
-| Platform | Direction |
-| --- | --- |
-| Windows | Application and supported-type registration, Open With, system-owned default-app selection, document icon, and a thumbnail provider where useful |
-| Linux | `.desktop` and MIME registration, `mimeapps.list` ecosystem cooperation, and desktop/file-manager-specific thumbnail integration where feasible |
-| macOS | Bundle document types, Launch Services Viewer role, document icon, and Quick Look thumbnail integration where useful |
+| Platform | Direction                                                                                                                                        |
+|----------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| Windows  | Application and supported-type registration, Open With, system-owned default-app selection, document icon, and a thumbnail provider where useful |
+| Linux    | `.desktop` and MIME registration, `mimeapps.list` ecosystem cooperation, and desktop/file-manager-specific thumbnail integration where feasible  |
+| macOS    | Bundle document types, Launch Services Viewer role, document icon, and Quick Look thumbnail integration where useful                             |
 
 Do not claim identical capabilities, APIs, packaging, or thumbnail behavior across these platforms.
 
 ## Format capability model
 
-R7-A establishes a central Fovium-owned capability description for current decode/navigation/picker facts. Future platform work can extend or compose it to answer, per format and where relevant per platform:
+R7-A establishes a central Fovium-owned capability description for current decode/navigation/picker facts. Future
+platform work can extend or compose it to answer, per format and where relevant per platform:
 
 ```text
 CanDecode
@@ -88,7 +104,10 @@ CanGenerateThumbnail
 CanRegisterAssociation
 ```
 
-This prevents shell registration from promising formats the active build cannot safely handle. It is project-owned capability composition, not a plugin system and not a requirement that every format use one decoder. Skia, specialized native codecs, libheif, libavif, libvips, or other backends may contribute behind the imaging contracts owned by [`IMAGING-PIPELINE.md`](IMAGING-PIPELINE.md).
+This prevents shell registration from promising formats the active build cannot safely handle. It is project-owned
+capability composition, not a plugin system and not a requirement that every format use one decoder. Skia, specialized
+native codecs, libheif, libavif, libvips, or other backends may contribute behind the imaging contracts owned by [
+`IMAGING-PIPELINE.md`](IMAGING-PIPELINE.md).
 
 ## Thumbnail policy
 
@@ -107,11 +126,16 @@ thumbnail generation unavailable
 
 Thumbnail support must not depend on Fovium being the default application.
 
-The fallback icon is platform file-type/document-icon registration, not a fake thumbnail painted into every unsupported shell. Branding assets may later live under `resources/branding/` only after real assets and provenance exist; CONTRACTS-R1 creates none.
+The fallback icon is platform file-type/document-icon registration, not a fake thumbnail painted into every unsupported
+shell. BRAND-R1 establishes project-owned application identity under [
+`resources/branding/`](../resources/branding/README.md),
+but it does not register document icons or establish installer/package metadata. A future platform stage may derive
+document identities from that owned source only after the association and packaging contract is implemented.
 
 ## Thumbnail architecture and safety
 
-A thumbnail provider must not launch or compose the full Fovium application UI. It must not require Avalonia Settings, Stage, navigation, ordinary startup, or full viewer composition. Its conceptual inputs and work are bounded to:
+A thumbnail provider must not launch or compose the full Fovium application UI. It must not require Avalonia Settings,
+Stage, navigation, ordinary startup, or full viewer composition. Its conceptual inputs and work are bounded to:
 
 ```text
 input stream/path
@@ -132,12 +156,17 @@ Required policy:
 - embedded preview where appropriate;
 - no unnecessary full-resolution decode for 128, 256, or 512 px output.
 
-For future RAW browsing, prefer a suitable embedded JPEG preview before full RAW processing. Fovium remains a viewer, not a RAW processor.
+For future RAW browsing, prefer a suitable embedded JPEG preview before full RAW processing. Fovium remains a viewer,
+not a RAW processor.
 
-Thumbnail reuse may eventually justify a reusable imaging assembly, but only after production imaging evidence exists. Do not create `Fovium.Imaging` solely for this hypothetical integration.
+Thumbnail reuse may eventually justify a reusable imaging assembly, but only after production imaging evidence exists.
+Do not create `Fovium.Imaging` solely for this hypothetical integration.
 
-Candidate extensions and picker patterns now derive from this authority, including static WebP and bounded TIFF. Explicit command-line/Open With-style activation is content-probed through the shared decoder dispatcher; installed association registration remains future work. Current format truth belongs to [`FORMAT-SUPPORT.md`](FORMAT-SUPPORT.md).
+Candidate extensions and picker patterns now derive from this authority, including static WebP and bounded TIFF.
+Explicit command-line/Open With-style activation is content-probed through the shared decoder dispatcher; installed
+association registration remains future work. Current format truth belongs to [`FORMAT-SUPPORT.md`](FORMAT-SUPPORT.md).
 
 ## Packaging and current status
 
-Association registration, bundle/MIME metadata, document icons, thumbnail providers, and packaging are future platform work. None is implemented in R1, and no platform parity claim follows from command-line/file-picker activation.
+Association registration, bundle/MIME metadata, document icons, thumbnail providers, and packaging are future platform
+work. None is implemented in R1, and no platform parity claim follows from command-line/file-picker activation.

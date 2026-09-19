@@ -22,6 +22,20 @@ dotnet build Fovium.sln -c Release --no-restore
 dotnet test Fovium.sln -c Release --no-build
 ```
 
+Run the focused BRAND-R1 asset, project wiring, window ownership, README local-target, and workflow-badge contracts:
+
+```powershell
+dotnet test Fovium.Tests/Fovium.Tests.csproj -c Release --filter "FullyQualifiedName~Fovium.Tests.Branding"
+pwsh eng/branding/verify-branding.ps1
+```
+
+The PowerShell verifier additionally builds and publishes the Windows apphost, extracts its Win32 icon through the
+shell API, and requires the extracted pixels to match the project ICO. `capture-readme-hero.ps1` is a Windows visual
+acceptance harness: it generates a deterministic synthetic image, opens it in the real Fovium runtime, and records
+ignored zero-UI, Photo Info, and Settings-window evidence before writing the selected privacy-clean README hero.
+The final local BRAND-R1 Windows Release run passes 2,241/2,241 tests; the preceding solution build completes with zero
+warnings and errors. Hosted Windows/Linux/macOS proof follows only after an owner-authorized push.
+
 Generated local evidence and build artifacts under ignored `artifacts/` are project-owned only where the cleanup
 allowlist says so. Preview cleanup before applying it:
 

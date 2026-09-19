@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Fovium application icon</title>
+  <desc id="desc">Two precise offset frame corners define an open photographic field.</desc>
+  <defs>
+    <linearGradient id="surface" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1B1E29"/>
+      <stop offset="1" stop-color="#090B10"/>
+    </linearGradient>
+    <linearGradient id="light" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFF9EB"/>
+      <stop offset="1" stop-color="#DED9D1"/>
+    </linearGradient>
+    <linearGradient id="violet" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9698FF"/>
+      <stop offset="1" stop-color="#5A5FDC"/>
+    </linearGradient>
+    <path id="corner" d="M60 46H162C169 46 174 51 174 58V70C174 77 169 82 162 82H82V162C82 169 77 174 70 174H58C51 174 46 169 46 162V60C46 52 52 46 60 46Z"/>
+  </defs>
+  <rect x="8" y="8" width="240" height="240" rx="54" fill="url(#surface)"/>
+  <use href="#corner" fill="url(#light)"/>
+  <use href="#corner" fill="url(#violet)" transform="rotate(180 130 130)"/>
+</svg>

@@ -1,60 +1,62 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
-    <FoviumNativeRid Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier)</FoviumNativeRid>
-    <FoviumNativeRid Condition="'$(FoviumNativeRid)' == ''">$(NETCoreSdkRuntimeIdentifier)</FoviumNativeRid>
-  </PropertyGroup>
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <ApplicationManifest>app.manifest</ApplicationManifest>
+        <ApplicationIcon>$(MSBuildThisFileDirectory)..\resources\branding\fovium.ico</ApplicationIcon>
+        <AvaloniaIncludeApplicationIconAsWindowIcon>true</AvaloniaIncludeApplicationIconAsWindowIcon>
+        <FoviumNativeRid Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier)</FoviumNativeRid>
+        <FoviumNativeRid Condition="'$(FoviumNativeRid)' == ''">$(NETCoreSdkRuntimeIdentifier)</FoviumNativeRid>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Avalonia" Version="12.1.1" />
-    <PackageReference Include="Avalonia.Desktop" Version="12.1.1" />
-    <PackageReference Include="Avalonia.Skia" Version="12.1.1" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.1" />
-    <PackageReference Include="BitMiracle.LibTiff.NET" Version="2.4.660" />
-    <PackageReference Include="MetadataExtractor" Version="2.9.3" />
-    <PackageReference Include="SkiaSharp" Version="3.119.4" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Avalonia" Version="12.1.1"/>
+        <PackageReference Include="Avalonia.Desktop" Version="12.1.1"/>
+        <PackageReference Include="Avalonia.Skia" Version="12.1.1"/>
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.1"/>
+        <PackageReference Include="BitMiracle.LibTiff.NET" Version="2.4.660"/>
+        <PackageReference Include="MetadataExtractor" Version="2.9.3"/>
+        <PackageReference Include="SkiaSharp" Version="3.119.4"/>
+    </ItemGroup>
 
-  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\artifacts\native\fovium-libheif-$(FoviumNativeRid)\runtimes\$(FoviumNativeRid)\native')">
-    <Content Include="$(MSBuildThisFileDirectory)..\artifacts\native\fovium-libheif-$(FoviumNativeRid)\runtimes\$(FoviumNativeRid)\native\**\*"
-             Link="runtimes\$(FoviumNativeRid)\native\%(RecursiveDir)%(Filename)%(Extension)"
-             CopyToOutputDirectory="PreserveNewest"
-             CopyToPublishDirectory="PreserveNewest" />
-  </ItemGroup>
+    <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\artifacts\native\fovium-libheif-$(FoviumNativeRid)\runtimes\$(FoviumNativeRid)\native')">
+        <Content Include="$(MSBuildThisFileDirectory)..\artifacts\native\fovium-libheif-$(FoviumNativeRid)\runtimes\$(FoviumNativeRid)\native\**\*"
+                 Link="runtimes\$(FoviumNativeRid)\native\%(RecursiveDir)%(Filename)%(Extension)"
+                 CopyToOutputDirectory="PreserveNewest"
+                 CopyToPublishDirectory="PreserveNewest"/>
+    </ItemGroup>
 
-  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\artifacts\native\fovium-lcms2-$(FoviumNativeRid)\runtimes\$(FoviumNativeRid)\native')">
-    <Content Include="$(MSBuildThisFileDirectory)..\artifacts\native\fovium-lcms2-$(FoviumNativeRid)\runtimes\$(FoviumNativeRid)\native\**\*"
-             Link="runtimes\$(FoviumNativeRid)\native\%(RecursiveDir)%(Filename)%(Extension)"
-             CopyToOutputDirectory="PreserveNewest"
-             CopyToPublishDirectory="PreserveNewest" />
-  </ItemGroup>
+    <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\artifacts\native\fovium-lcms2-$(FoviumNativeRid)\runtimes\$(FoviumNativeRid)\native')">
+        <Content Include="$(MSBuildThisFileDirectory)..\artifacts\native\fovium-lcms2-$(FoviumNativeRid)\runtimes\$(FoviumNativeRid)\native\**\*"
+                 Link="runtimes\$(FoviumNativeRid)\native\%(RecursiveDir)%(Filename)%(Extension)"
+                 CopyToOutputDirectory="PreserveNewest"
+                 CopyToPublishDirectory="PreserveNewest"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Include="..\resources\localization\ui\*.json"
-                      Link="Localization\%(Filename)%(Extension)"
-                      LogicalName="Fovium.Localization.%(Filename)%(Extension)" />
-    <EmbeddedResource Include="..\resources\color-names\fovium-color-names.json"
-                      Link="ColorNames\fovium-color-names.json"
-                      LogicalName="Fovium.ColorNames.fovium-color-names.json" />
-    <EmbeddedResource Include="..\resources\color-names\localization\*.json"
-                      Link="ColorNames\Localization\%(Filename)%(Extension)"
-                      LogicalName="Fovium.ColorNames.Localization.%(Filename)%(Extension)" />
-    <EmbeddedResource Include="..\resources\color-names\LICENSE.meodai-color-names.txt"
-                      Link="ColorNames\LICENSE.meodai-color-names.txt"
-                      LogicalName="Fovium.ColorNames.LICENSE.meodai-color-names.txt" />
-  </ItemGroup>
+    <ItemGroup>
+        <EmbeddedResource Include="..\resources\localization\ui\*.json"
+                          Link="Localization\%(Filename)%(Extension)"
+                          LogicalName="Fovium.Localization.%(Filename)%(Extension)"/>
+        <EmbeddedResource Include="..\resources\color-names\fovium-color-names.json"
+                          Link="ColorNames\fovium-color-names.json"
+                          LogicalName="Fovium.ColorNames.fovium-color-names.json"/>
+        <EmbeddedResource Include="..\resources\color-names\localization\*.json"
+                          Link="ColorNames\Localization\%(Filename)%(Extension)"
+                          LogicalName="Fovium.ColorNames.Localization.%(Filename)%(Extension)"/>
+        <EmbeddedResource Include="..\resources\color-names\LICENSE.meodai-color-names.txt"
+                          Link="ColorNames\LICENSE.meodai-color-names.txt"
+                          LogicalName="Fovium.ColorNames.LICENSE.meodai-color-names.txt"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <InternalsVisibleTo Include="Fovium.Tests" />
-    <InternalsVisibleTo Include="Fovium.Tools.ColorTaxonomyAudit" />
-  </ItemGroup>
+    <ItemGroup>
+        <InternalsVisibleTo Include="Fovium.Tests"/>
+        <InternalsVisibleTo Include="Fovium.Tools.ColorTaxonomyAudit"/>
+    </ItemGroup>
 
 </Project>
