@@ -82,3 +82,9 @@ focus, selection, scrolling, and platform resize behavior. These values remain l
 rather than claiming a complete theme-token system. There is no selector or final semantic palette yet. Stage
 background, custom colors, Ambient treatment, and independent Matte do not derive from Dark theme resources. Light
 remains a contracted future option.
+
+SETTINGS-UX-R1-F1 extends that same secondary-window language to the reusable Color Picker and Shortcut Conflict:
+decoration-free owned dark surfaces, rounded boundaries, project close controls, normal keyboard focus, and restrained
+violet selection. The Color Picker's hue field and value preview are data, so their chroma does not redefine application
+accent roles. Settings scroll fades derive from its actual `#17151C` surface, remain non-interactive, and appear only at
+clipped edges; no blur or new theme framework is introduced.

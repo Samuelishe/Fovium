@@ -999,3 +999,20 @@ dav1d 1.5.4 keeps the official VideoLAN release archive as primary and uses the 
 mirror tag archive as fallback. Both provenance records and hashes are owned by `eng/native/libheif/versions.json`.
 Deterministic no-network tests cover primary/fallback, retries, cache validity, hash failure, partial cleanup, and total
 failure. Hosted recovery is not claimed before the next owner push.
+
+## D-084 — Color selection is an owned HSV value dialog, separate from photographic inspection
+
+Status: Implemented in local SETTINGS-UX-R1-F1; hosted verification pending.
+
+Stage and Presentation colors use one project-owned dialog whose primary interaction is a circular Hue/Saturation
+field and vertical Value strip. RGB bytes remain the persisted/rendering truth; HSV is an interaction representation,
+and exact `#RRGGBB` input round-trips through those bytes. Alpha stays outside the dialog because Highlight and Markup
+already own opacity separately. All callers share live preview with exact original-value restoration on Cancel, Esc,
+or close, and Settings swatches are the actions rather than adjacent ellipsis buttons.
+
+The dialog deliberately has no source-photo or desktop eyedropper. Fovium's photographic Color Inspector retains its
+independent source-pixel sampling contract, and no second coordinate mapping, OS capture path, or monitor-framebuffer
+color claim is introduced. Settings pages keep headers outside inset scroll viewports; 30 DIP non-interactive edge
+fades reflect actual overflow and each section retains its offset only for the current window lifetime. General's
+Recent capture policy defaults to explicit opens; successful canonical manual navigation is opt-in, and slideshow,
+inspection, preload, failed, or stale presentation cannot create history.

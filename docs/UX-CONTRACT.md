@@ -40,6 +40,11 @@ a system scrollbar. Small windows keep primary actions visible by collapsing the
 space and the motif without turning Home into a dashboard. With no visible Recent, the hero centers as the complete
 composition; with Recent, hero and strip form one vertically balanced group.
 
+General → Add to recent defaults to Items I open, preserving direct file/folder, external, drag/drop, and Recent
+activation without turning Previous/Next into a viewing log. The opt-in Every photo I view policy adds a manually
+navigated file only after that canonical photograph is actually presented. Prepared, failed, stale, Blink, Peek, and
+slideshow frames never create entries. Remember recent photos remains the absolute gate for both policies.
+
 The viewing context menu groups Open and Close photo as session actions before navigation. Close photo is hidden on
 Home.
 Settings remains an application preference action; Exit Fovium is last and separated from Settings by a divider.
@@ -260,6 +265,13 @@ project-owned close button occupies the content surface, invisible edge/corner z
 only from non-interactive areas so navigation, sliders, selectors, and shortcut capture remain predictable. Settings is
 owned by its Viewer and must remain above that Viewer through fullscreen transitions, but is never globally topmost over
 other applications. Keyboard focus and scrolling continue to use ordinary Avalonia control semantics.
+
+Each page keeps its title and summary stable while only its cards scroll in an inset viewport. A subtle 30 DIP top
+fade appears after leaving the start, and a matching bottom fade appears while content remains below; neither exists
+without overflow or accepts input. Each section keeps its own offset while the Settings instance is open. Color
+swatches are focusable buttons that open the same owned Fovium Color Picker for all Stage and Presentation callers.
+The picker uses circular Hue/Saturation, vertical Value, and synchronized RGB/HSV/HEX input; it has no alpha or
+eyedropper. Live changes preview immediately, while Cancel, Esc, and close restore the exact starting color.
 
 Dark/Light application theme affects controls and secondary UI, never the photograph or Stage. The separation is owned
 by [`THEMES.md`](THEMES.md).

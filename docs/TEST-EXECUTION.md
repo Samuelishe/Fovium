@@ -54,6 +54,26 @@ dotnet build Fovium.sln -c Release --no-restore
 dotnet test Fovium.sln -c Release --no-build
 ```
 
+Run the focused SETTINGS-UX-R1-F1 Recent policy, canonical publication, color model/geometry, scroll edge, structure,
+localization, persistence, and version contracts:
+
+```powershell
+dotnet test Fovium.Tests/Fovium.Tests.csproj -c Release --no-restore --filter "FullyQualifiedName~RecentCapturePolicyTests|FullyQualifiedName~RecentNavigationCaptureTests|FullyQualifiedName~RecentCapturePolicySettingsTests|FullyQualifiedName~ColorSelectionModelTests|FullyQualifiedName~ColorWheelGeometryTests|FullyQualifiedName~SettingsScrollEdgeStateTests|FullyQualifiedName~SettingsEcosystemStructureTests|FullyQualifiedName~JsonSettingsStoreTests|FullyQualifiedName~LocalizationTests|FullyQualifiedName~FoviumVersionTests"
+```
+
+The final local filter passes 138/138 and the full Release suite passes 2,383/2,383; the preceding Release solution
+build has zero warnings and errors. Four representative injected mutations were each killed by the narrow test named
+for its contract: slideshow capture, Cancel returning the edited color, inverted Value-strip direction, and a top fade
+visible at offset zero. The new 33 test methods contain 106 explicit assertions with no assertion-free method.
+
+Ignored Windows evidence under `artifacts/settings-ux-r1-f1/` uses the production UI and a backed-up/restored real
+settings document. It covers RU/EN General, Stage top/middle/bottom, Presentation mid-scroll, `760×560`, per-section
+offset retention, non-overflow General, the HS wheel at red/cyan/warm/near-white/near-black, RGB/HSV/HEX input, marker
+visibility, exact HEX edit, and picker ownership from both Settings and Viewer Markup. The attempted forced 1.25 scale
+launch did not prove that Avalonia used a different RenderScaling. A real conflicting shortcut also opens the redesigned
+owned Fovium dialog and Cancel leaves the existing owner intact. Real fractional-DPI remains unclaimed. No Fovium
+process or changed AppData is left after capture.
+
 Run the focused SETTINGS-UX-R1 language, startup, persistence, section, window-drag, and version contracts:
 
 ```powershell
@@ -402,14 +422,16 @@ largest-intersection/tie behavior, typed fallback precedence, complete transform
 behavior, and source-versus-destination ownership. The final domain-independence test proves that two destination
 transforms differ while R8-A reference-sRGB Picker output and source-domain Histogram bins remain unchanged. Platform
 APIs and real display-profile availability remain probe/manual evidence rather than skipped ordinary unit tests.
-HOME-UX-R1-F2 hardens native source acquisition with deterministic Python unit tests that inject network/cache behavior without
+HOME-UX-R1-F2 hardens native source acquisition with deterministic Python unit tests that inject network/cache behavior
+without
 contacting upstream:
 
 ```powershell
 python -m unittest discover -s eng/native/libheif/tests -p 'test_*.py' -v
 ```
 
-The 13 cases cover primary success, bounded transient recovery, permanent 404, primary exhaustion to fallback, connection
+The 13 cases cover primary success, bounded transient recovery, permanent 404, primary exhaustion to fallback,
+connection
 reset before/after partial output, terminal downloaded hash mismatch, verified cache reuse, invalid-cache replacement,
 stale-part removal, and both sources failing. Pinned URLs/versions/SHA-256 remain owned by `versions.json`; a fresh hash
 mismatch is terminal, and only a validated `.part` is atomically promoted. A clean live smoke acquired the exact dav1d

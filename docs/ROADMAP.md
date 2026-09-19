@@ -363,6 +363,16 @@ an independent cache. Raise previews to the smallest visually clean 320 px Mitch
 glide, regroup session/application menu actions, and keep `Ctrl+W` inert on Home. Native libheif acquisition now has an
 exact-hash official dav1d GitHub fallback; hosted confirmation follows a future owner push.
 
+## SETTINGS-UX-R1-F1 — Settings ecosystem and visual color selection
+
+Locally complete at `0.1.7.0000`: add an explicit Recent capture policy whose conservative default records only direct
+opens while an opt-in mode records successful canonical manual navigation without slideshow churn. Replace the legacy
+native Color Editor with one owned Fovium dialog built around a circular Hue/Saturation field, vertical Value control,
+and synchronized RGB/HSV/HEX input; make the color swatch itself the Settings action and retain exact live-preview
+rollback. Give every Settings section a fixed header, inset viewport, directional edge fades, an inset scrollbar, and a
+session-local scroll position. Align Shortcut Conflict with the same secondary-window language. Eyedropper and screen
+sampling remain future review items rather than part of this stage.
+
 ## Later / separate platform milestones
 
 - file association and Open With integration;

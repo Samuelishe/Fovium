@@ -175,6 +175,7 @@ never reuse an earlier version. No automatic rollover after BUILD `9999` is defi
 | `0.1.6.0000` | HOME-UX-R1                            | Localized no-image landing state, file/folder/drop entry, and bounded optional recent locations                                 |
 | `0.1.6.0001` | HOME-UX-R1-F1                         | Return-to-Home lifecycle, visual Recent carousel, unavailable state, and responsive startup polish                              |
 | `0.1.6.0002` | HOME-UX-R1-F2                         | Privacy-correct Recent memory, longer lazy carousel, higher-fidelity previews, and integration cleanup                          |
+| `0.1.7.0000` | SETTINGS-UX-R1-F1                     | Visual HS/Value color picker, explicit Recent capture policy, and Settings ecosystem/scroll refinement                          |
 
 The `0.0.0.xxxx` line records the completed foundation and early product-construction checkpoints. The explicit
 owner-controlled `0.1.0.0000` transition marks the first substantial usable Fovium alpha; it does not claim feature
@@ -220,6 +221,9 @@ than introducing a new library, organizer, or viewing mode.
 HOME-UX-R1-F2 increments BUILD to `0.1.6.0002`: privacy semantics, longer bounded history, lazy higher-fidelity
 previews, carousel feel, and menu grouping correct and refine that same Home/Recent capability. The native-source
 fallback alone would not change the product version.
+SETTINGS-UX-R1-F1 increments PATCH and resets BUILD to `0.1.7.0000`: the reusable visual color picker is a new
+independently useful color-selection capability, accompanied by an explicit Recent capture preference and coherent
+Settings scrolling/secondary-window refinement rather than a correction limited to the existing Home surface.
 
 ## Future code and packaging source
 
@@ -227,9 +231,9 @@ The root `Directory.Build.props` is the canonical source for the current compone
 supplies the production `Fovium` assembly with:
 
 ```text
-InformationalVersion = 0.1.6.0002
-AssemblyVersion      = 0.1.6.2
-FileVersion          = 0.1.6.2
+InformationalVersion = 0.1.7.0000
+AssemblyVersion      = 0.1.7.0
+FileVersion          = 0.1.7.0
 ```
 
 From that source:

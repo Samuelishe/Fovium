@@ -31,6 +31,9 @@ in several sections. The window uses persistent vertical navigation with one bou
 not a horizontal-tab strip or an edge-to-edge form. Its decoration-free desktop window has project-owned close chrome,
 invisible edge/corner resize zones, and drag from non-interactive surfaces while ordinary controls retain their input
 behavior. It is owned by the Viewer and stays above that Viewer, including fullscreen, without global topmost behavior.
+Each section keeps its title and description outside an inset scroll viewport. Subtle non-interactive 30 DIP fades
+appear only above or below content that remains clipped, and each section retains its own offset until the Settings
+window closes. Reopening begins from normal section defaults; offsets are not persisted.
 
 ## Sections
 
@@ -40,6 +43,11 @@ behavior. It is owned by the Viewer and stays above that Viewer, including fulls
   different resolved language applies after restart and is accompanied by an explicit in-window restart hint;
 - **Remember recent photos** is implemented and defaults on. Turning it off immediately clears the bounded Home MRU and
   its memory-only previews and stops recording newly opened files/folders. Enabling it starts an empty history;
+- **Add to recent** defaults to **Items I open**: direct file/folder activation, external activation, drag/drop, and
+  Recent activation keep their established behavior while ordinary Previous/Next navigation is ignored. **Every photo
+  I view** also records a manually navigated file only after its canonical photograph is actually presented. Preload,
+  failed/stale work, Peek, Blink, and slideshow advance never write history. Remember recent photos overrides either
+  policy;
 - startup and window behavior when a real product need is established;
 - ordinary remembered application preferences.
 
@@ -167,6 +175,19 @@ Copied diagnostics may include only genuinely known values such as Fovium versio
 renderer/backend, `RenderScaling`, and cache budget. About is not a benchmark, hardware inventory, or hardware
 re-detection tool.
 
+## Color value dialog
+
+Stage Custom, Matte Custom, Cursor Highlight, default Markup, and active Viewer Markup use one reusable owned Fovium
+dialog. The swatch itself is the focusable Settings action; there is no adjacent ellipsis command. A circular field
+maps angle to Hue and radius to Saturation, while an adjacent vertical strip maps top to Value 1 and bottom to Value 0.
+The marker uses black and white outlines so it remains legible at the center, rim, and high/low Value positions.
+
+RGB bytes, HSV values, and `#RRGGBB` are synchronized representations of the existing reference-sRGB value. Exact HEX
+input round-trips through bytes; alpha is absent because caller opacity remains an independent setting. Dragging gives
+the caller live preview, OK accepts the current bytes, and Cancel, Esc, or the project close control restores the exact
+original value. The dialog has no source-photo, desktop, or OS eyedropper in this stage. The photographic Color
+Inspector remains the separate sampling client owned by [`COLOR-PICKER.md`](COLOR-PICKER.md).
+
 ## Persistence
 
 Ordinary preferences use platform-appropriate per-user application-data storage. They do not require a database,
@@ -209,6 +230,10 @@ defaults to true. When the new field is absent, a valid legacy `ShowRecentItems`
 is rewritten: true preserves the existing list, while explicit false is treated as privacy intent and deletes any
 history accumulated under the former visibility-only behavior. Missing or malformed legacy values retain the normal
 default. A persisted new false always normalizes the list to empty.
+
+SETTINGS-UX-R1-F1 keeps schema v2 and adds the backward-compatible `Home.CapturePolicy` identity. Missing, malformed,
+or unknown values normalize to `OpenedItemsOnly`; `EveryViewedPhoto` is opt-in. Changing the policy never resurrects or
+clears history by itself, while `RememberRecentPhotos=false` continues to clear and suppress every capture path.
 
 Up to 20 successfully opened file or folder paths persist in most-recent-first order, deduplicated with the platform
 path comparison. A successful revisit moves an entry to the front; a folder updates only its last successfully presented

@@ -6,6 +6,12 @@ internal enum RecentLocationKind
     Folder,
 }
 
+internal enum RecentCapturePolicy
+{
+    OpenedItemsOnly,
+    EveryViewedPhoto,
+}
+
 internal sealed record RecentLocation
 {
     public RecentLocationKind Kind { get; init; }
@@ -21,15 +27,24 @@ internal sealed record HomeSettings
 
     public bool RememberRecentPhotos { get; init; } = true;
 
+    public RecentCapturePolicy CapturePolicy { get; init; } = RecentCapturePolicy.OpenedItemsOnly;
+
     public IReadOnlyList<RecentLocation> RecentLocations { get; init; } = [];
 
     public static HomeSettings Default { get; } = new();
 
     public HomeSettings Normalize()
     {
+        var normalizedPolicy = Enum.IsDefined(CapturePolicy)
+            ? CapturePolicy
+            : RecentCapturePolicy.OpenedItemsOnly;
         if (!RememberRecentPhotos)
         {
-            return this with { RecentLocations = [] };
+            return this with
+            {
+                CapturePolicy = normalizedPolicy,
+                RecentLocations = [],
+            };
         }
 
         var pathComparer = OperatingSystem.IsWindows()
@@ -83,6 +98,10 @@ internal sealed record HomeSettings
             }
         }
 
-        return this with { RecentLocations = normalized };
+        return this with
+        {
+            CapturePolicy = normalizedPolicy,
+            RecentLocations = normalized,
+        };
     }
 }

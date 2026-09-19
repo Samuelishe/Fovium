@@ -27,11 +27,12 @@ internal sealed partial class SettingsWindow : Window
     private readonly SlideshowSession _slideshow;
     private readonly ListBox _settingsNavigation;
     private readonly Button _closeButton;
-    private readonly IReadOnlyDictionary<SettingsSection, Control> _sectionPages;
+    private readonly IReadOnlyDictionary<SettingsSection, SettingsPageView> _sectionPages;
     private readonly ComboBox _languageOption;
     private readonly Border _languageRestartPanel;
     private readonly TextBlock _languageRestartHint;
     private readonly CheckBox _rememberRecentPhotosOption;
+    private readonly ComboBox _recentCaptureOption;
     private readonly RadioButton _keepCurrentScaleOption;
     private readonly RadioButton _fitEachImageOption;
     private readonly CheckBox _photoPresentationEnabledOption;
@@ -72,6 +73,10 @@ internal sealed partial class SettingsWindow : Window
     private readonly CheckBox _enableMarkupOption;
     private readonly Border _highlightColorSwatch;
     private readonly Border _defaultMarkupColorSwatch;
+    private readonly Button _customColorButton;
+    private readonly Button _matteColorButton;
+    private readonly Button _highlightColorButton;
+    private readonly Button _defaultMarkupColorButton;
     private readonly Slider _highlightOpacitySlider;
     private readonly Slider _highlightRadiusSlider;
     private readonly Slider _defaultStrokeSlider;
@@ -108,20 +113,21 @@ internal sealed partial class SettingsWindow : Window
 
         _settingsNavigation = FindRequired<ListBox>("SettingsNavigation");
         _closeButton = FindRequired<Button>("SettingsCloseButton");
-        _sectionPages = new Dictionary<SettingsSection, Control>
+        _sectionPages = new Dictionary<SettingsSection, SettingsPageView>
         {
-            [SettingsSection.General] = FindRequired<ScrollViewer>("GeneralPage"),
-            [SettingsSection.Viewing] = FindRequired<ScrollViewer>("ViewingPage"),
-            [SettingsSection.Color] = FindRequired<ScrollViewer>("ColorPage"),
-            [SettingsSection.Stage] = FindRequired<ScrollViewer>("StagePage"),
-            [SettingsSection.Presentation] = FindRequired<ScrollViewer>("PresentationPage"),
-            [SettingsSection.Controls] = FindRequired<ScrollViewer>("ControlsPage"),
-            [SettingsSection.About] = FindRequired<ScrollViewer>("AboutPage"),
+            [SettingsSection.General] = FindRequired<SettingsPageView>("GeneralPage"),
+            [SettingsSection.Viewing] = FindRequired<SettingsPageView>("ViewingPage"),
+            [SettingsSection.Color] = FindRequired<SettingsPageView>("ColorPage"),
+            [SettingsSection.Stage] = FindRequired<SettingsPageView>("StagePage"),
+            [SettingsSection.Presentation] = FindRequired<SettingsPageView>("PresentationPage"),
+            [SettingsSection.Controls] = FindRequired<SettingsPageView>("ControlsPage"),
+            [SettingsSection.About] = FindRequired<SettingsPageView>("AboutPage"),
         };
         _languageOption = FindRequired<ComboBox>("LanguageOption");
         _languageRestartPanel = FindRequired<Border>("LanguageRestartPanel");
         _languageRestartHint = FindRequired<TextBlock>("LanguageRestartHint");
         _rememberRecentPhotosOption = FindRequired<CheckBox>("RememberRecentPhotosOption");
+        _recentCaptureOption = FindRequired<ComboBox>("RecentCaptureOption");
         _keepCurrentScaleOption = FindRequired<RadioButton>("KeepCurrentScaleOption");
         _fitEachImageOption = FindRequired<RadioButton>("FitEachImageOption");
         _photoPresentationEnabledOption =
@@ -163,6 +169,10 @@ internal sealed partial class SettingsWindow : Window
         _enableMarkupOption = FindRequired<CheckBox>("EnableMarkupOption");
         _highlightColorSwatch = FindRequired<Border>("HighlightColorSwatch");
         _defaultMarkupColorSwatch = FindRequired<Border>("DefaultMarkupColorSwatch");
+        _customColorButton = FindRequired<Button>("CustomColorButton");
+        _matteColorButton = FindRequired<Button>("MatteColorButton");
+        _highlightColorButton = FindRequired<Button>("HighlightColorButton");
+        _defaultMarkupColorButton = FindRequired<Button>("DefaultMarkupColorButton");
         _highlightOpacitySlider = FindRequired<Slider>("HighlightOpacitySlider");
         _highlightRadiusSlider = FindRequired<Slider>("HighlightRadiusSlider");
         _defaultStrokeSlider = FindRequired<Slider>("DefaultStrokeSlider");
@@ -228,6 +238,17 @@ internal sealed partial class SettingsWindow : Window
             localizer[UiStrings.SettingsRememberRecentPhotos];
         FindRequired<TextBlock>("RecentItemsDescription").Text =
             localizer[UiStrings.SettingsRememberRecentPhotosDescription];
+        FindRequired<TextBlock>("RecentCaptureHeading").Text =
+            localizer[UiStrings.SettingsRecentCapture];
+        _recentCaptureOption.ItemsSource = Enum.GetValues<RecentCapturePolicy>()
+            .Select(policy => new ComboBoxItem
+            {
+                Content = localizer[policy == RecentCapturePolicy.OpenedItemsOnly
+                    ? UiStrings.SettingsRecentCaptureOpenedOnly
+                    : UiStrings.SettingsRecentCaptureEveryViewed],
+                Tag = policy,
+            })
+            .ToArray();
         _languageOption.ItemsSource = Enum.GetValues<UiLanguage>()
             .Select(language => new ComboBoxItem
             {
@@ -319,6 +340,10 @@ internal sealed partial class SettingsWindow : Window
             FoviumVersion.Display);
         FindRequired<TextBlock>("AboutProductDescription").Text =
             localizer[UiStrings.SettingsAboutProductDescription];
+        ConfigureColorButton(_customColorButton, localizer[UiStrings.StageCustomColor]);
+        ConfigureColorButton(_matteColorButton, localizer[UiStrings.StageMatteColor]);
+        ConfigureColorButton(_highlightColorButton, localizer[UiStrings.PresentationHighlightColor]);
+        ConfigureColorButton(_defaultMarkupColorButton, localizer[UiStrings.PresentationMarkupColor]);
 
         CreateShortcutRows();
         ApplySettings(settings.Current);
@@ -352,6 +377,14 @@ internal sealed partial class SettingsWindow : Window
             {
                 await _settings.SetRememberRecentPhotosAsync(
                     _rememberRecentPhotosOption.IsChecked == true);
+            }
+        };
+        _recentCaptureOption.SelectionChanged += async (_, _) =>
+        {
+            if (!_initializing &&
+                _recentCaptureOption.SelectedItem is ComboBoxItem { Tag: RecentCapturePolicy policy })
+            {
+                await _settings.SetRecentCapturePolicyAsync(policy);
             }
         };
         _keepCurrentScaleOption.IsCheckedChanged += OnKeepCurrentScaleChanged;
@@ -418,9 +451,9 @@ internal sealed partial class SettingsWindow : Window
         _brightnessSlider.ValueChanged += OnAmbientSliderChanged;
         _saturationSlider.ValueChanged += OnAmbientSliderChanged;
         _blurSlider.ValueChanged += OnAmbientSliderChanged;
-        FindRequired<Button>("EditCustomColorButton").Click += async (_, _) =>
+        _customColorButton.Click += async (_, _) =>
             await EditColorAsync(customBackground: true);
-        FindRequired<Button>("EditMatteColorButton").Click += async (_, _) =>
+        _matteColorButton.Click += async (_, _) =>
             await EditColorAsync(customBackground: false);
         FindRequired<Button>("ResetShortcutsButton").Click += async (_, _) =>
             await _settings.ResetShortcutsAsync();
@@ -438,9 +471,9 @@ internal sealed partial class SettingsWindow : Window
         _highlightRadiusSlider.ValueChanged += OnPresentationSliderChanged;
         _defaultStrokeSlider.ValueChanged += OnPresentationSliderChanged;
         _defaultMarkupOpacitySlider.ValueChanged += OnPresentationSliderChanged;
-        FindRequired<Button>("EditHighlightColorButton").Click += async (_, _) =>
+        _highlightColorButton.Click += async (_, _) =>
             await EditPresentationColorAsync(highlight: true);
-        FindRequired<Button>("EditDefaultMarkupColorButton").Click += async (_, _) =>
+        _defaultMarkupColorButton.Click += async (_, _) =>
             await EditPresentationColorAsync(highlight: false);
     }
 
@@ -547,10 +580,6 @@ internal sealed partial class SettingsWindow : Window
         foreach (var (section, page) in _sectionPages)
         {
             page.IsVisible = section == selected;
-            if (section == selected && page is ScrollViewer scrollViewer)
-            {
-                scrollViewer.ScrollToHome();
-            }
         }
     }
 
@@ -689,7 +718,7 @@ internal sealed partial class SettingsWindow : Window
         var title = _localizer[customBackground
             ? UiStrings.StageCustomColor
             : UiStrings.StageMatteColor];
-        var editor = new ColorEditorWindow(original, _localizer, title);
+        var editor = new ColorPickerWindow(original, _localizer, title);
         editor.ColorChanged += async (_, e) =>
         {
             var stage = _settings.Current.Stage;
@@ -698,13 +727,11 @@ internal sealed partial class SettingsWindow : Window
                 : stage with { MatteColor = e.Color });
         };
         var accepted = await editor.ShowDialog<bool>(this);
-        if (!accepted)
-        {
-            var stage = _settings.Current.Stage;
-            await _settings.SetStageAsync(customBackground
-                ? stage with { CustomBackgroundColor = original }
-                : stage with { MatteColor = original });
-        }
+        var resolved = editor.Resolve(accepted);
+        var finalStage = _settings.Current.Stage;
+        await _settings.SetStageAsync(customBackground
+            ? finalStage with { CustomBackgroundColor = resolved }
+            : finalStage with { MatteColor = resolved });
     }
 
     private void OnShortcutButtonClick(object? sender, RoutedEventArgs e)
@@ -851,6 +878,11 @@ internal sealed partial class SettingsWindow : Window
         _languageRestartPanel.IsVisible =
             LocaleResolver.Resolve(settings.Language, CultureInfo.CurrentUICulture) != _localizer.Locale;
         _rememberRecentPhotosOption.IsChecked = settings.Home.RememberRecentPhotos;
+        _recentCaptureOption.IsEnabled = settings.Home.RememberRecentPhotos;
+        _recentCaptureOption.SelectedItem = _recentCaptureOption.ItemsSource?
+            .OfType<ComboBoxItem>()
+            .Single(item => item.Tag is RecentCapturePolicy policy &&
+                            policy == settings.Home.CapturePolicy);
         _keepCurrentScaleOption.IsChecked =
             settings.ImageChangeViewPolicy == ImageChangeViewPolicy.KeepCurrentScale;
         _fitEachImageOption.IsChecked =
@@ -1033,6 +1065,16 @@ internal sealed partial class SettingsWindow : Window
     private static void SetSwatch(Border border, PresentationColor color) =>
         border.Background = new SolidColorBrush(Color.FromRgb(color.Red, color.Green, color.Blue));
 
+    private void ConfigureColorButton(Button button, string colorPurpose)
+    {
+        var label = string.Format(
+            CultureInfo.CurrentUICulture,
+            _localizer[UiStrings.ColorEdit],
+            colorPurpose);
+        AutomationProperties.SetName(button, label);
+        ToolTip.SetTip(button, label);
+    }
+
     private async void OnPresentationSliderChanged(object? sender, RangeBaseValueChangedEventArgs e)
     {
         if (_initializing)
@@ -1055,7 +1097,7 @@ internal sealed partial class SettingsWindow : Window
     {
         var presentation = _settings.Current.Presentation;
         var original = highlight ? presentation.HighlightColor : presentation.DefaultMarkupColor;
-        var editor = new ColorEditorWindow(
+        var editor = new ColorPickerWindow(
             new StageColor(original.Red, original.Green, original.Blue),
             _localizer,
             _localizer[highlight
@@ -1070,13 +1112,12 @@ internal sealed partial class SettingsWindow : Window
                 : current with { DefaultMarkupColor = color });
         };
         var accepted = await editor.ShowDialog<bool>(this);
-        if (!accepted)
-        {
-            var current = _settings.Current.Presentation;
-            await _settings.SetPresentationAsync(highlight
-                ? current with { HighlightColor = original }
-                : current with { DefaultMarkupColor = original });
-        }
+        var resolved = editor.Resolve(accepted);
+        var resolvedPresentation = new PresentationColor(resolved.Red, resolved.Green, resolved.Blue);
+        var current = _settings.Current.Presentation;
+        await _settings.SetPresentationAsync(highlight
+            ? current with { HighlightColor = resolvedPresentation }
+            : current with { DefaultMarkupColor = resolvedPresentation });
     }
 
     private void UpdatePresentationValueText(PresentationSettings presentation)

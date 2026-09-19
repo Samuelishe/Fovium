@@ -7,7 +7,23 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-HOME-UX-R1-F2 is locally complete after HOME-UX-R1-F1. Product version is `0.1.6.0002`: Remember recent photos is a
+SETTINGS-UX-R1-F1 is locally complete over the HOME-UX-R1-F2 baseline. Product version is `0.1.7.0000`: General now
+offers a conservative `Items I open` Recent capture default and an opt-in `Every photo I view` policy. The latter
+records only successful canonical manual-navigation publications; preload, failed/stale publication, Peek, Blink, and
+slideshow advance do not add entries, and Remember recent photos remains the absolute recording gate.
+
+The legacy RGB-slider Color Editor is replaced by one reusable, owned, decoration-free Fovium Color Picker for Stage,
+Matte, Cursor Highlight, default Markup, and active Viewer Markup color. Its circular Hue/Saturation field, vertical
+Value strip, double-outline marker, and bidirectional RGB/HSV/HEX inputs edit the existing reference-sRGB bytes without
+alpha or semantic-color coupling. Settings color swatches are the focusable buttons. Live preview remains reversible:
+OK accepts while Cancel, Esc, and close restore the exact original caller value.
+
+Settings pages now keep their title/description in a stable header above an inset scroll viewport. Dynamic 30 DIP
+surface-colored edge fades indicate only the directions with hidden content, overlays never accept input, scrollbars
+are inset, and each section keeps its own offset for the lifetime of the window. Shortcut Conflict uses matching owned
+Fovium chrome. No eyedropper or screen/source-photo sampling flow is part of this stage.
+
+HOME-UX-R1-F2 remains the Recent privacy foundation: Remember recent photos is a
 privacy contract rather than a visibility toggle. Turning it off atomically clears persisted history, cancels Recent
 preview work, clears its session-memory cache, hides the strip, and suppresses future history writes until it is enabled
 again. An explicit legacy `ShowRecentItems=false` migrates as the same privacy intent and cannot reveal previously
@@ -16,7 +32,7 @@ history. The bounded MRU now holds 20 locations while previews load only for the
 card into an independent eight-item/4 MiB LRU. Cards use 320 px Mitchell-filtered previews, and the grab strip has a
 clearer but still capped glide. The viewer remains photograph-first rather than adding gallery or catalog semantics.
 
-SETTINGS-UX-R1 remains the Settings baseline after BRAND-R1: Settings uses compact vertical
+SETTINGS-UX-R1 remains the Settings architecture baseline after BRAND-R1: Settings uses compact vertical
 navigation across General, Viewing, Color, Stage, Presentation, Controls, and About; bounded scrollable cards replace
 the sparse horizontal tabs; shortcut rows are grouped by task; and About carries the project identity, runtime version,
 and a concise product description. General persists System default, English, or Русский and application startup loads
@@ -48,7 +64,16 @@ Windows at `RenderScaling = 1.00`.
 
 ## Current focus
 
-HOME-UX-R1-F2 is ready for owner review/commit. Local evidence covers privacy migration and suppression, 20-entry MRU
+SETTINGS-UX-R1-F1 is ready for owner review/commit. Focused tests cover Recent capture policy, canonical-presentation
+gating, HSV/RGB/HEX conversion and geometry, reversible color-edit transactions, scroll-edge state, swatch structure,
+and secondary-window ownership. Windows runtime evidence covers RU/EN, `760×560`, fixed headers, top/middle/bottom
+fades, section-local scroll retention, all color representations, deterministic reference colors, marker visibility,
+and picker entry from both Settings and Viewer Markup. The focused Release filter passes 138/138, the full Release
+suite passes 2,383/2,383, and the solution build completes with zero warnings/errors. A forced scale-factor launch did
+not establish a different Avalonia RenderScaling, so real fractional-DPI and Linux/macOS window interaction remain
+manual follow-up surfaces.
+
+HOME-UX-R1-F2 local evidence covers privacy migration and suppression, 20-entry MRU
 normalization, viewport-first preview scheduling, independent cache bounds, deterministic carousel motion, context-menu
 grouping, and official dav1d fallback acquisition. Rider/CLI investigation found no `PhotoColorProfileTests` source
 error: Release and Debug project builds and the targeted tests are clean, while the earlier isolated design-time build
@@ -94,10 +119,14 @@ runtime behavior and real fractional-DPI/multi-monitor visual acceptance remain 
   remain secondary to the primary Open actions. `Ctrl+W` on Home is a no-op.
 - English/Russian runtime localization with English fallback plus a persisted General → Language choice for System
   default, English, or Русский, resolved before UI construction and applied after restart.
+- General → Recent capture policy defaults to explicit opens and can opt into successful manually navigated canonical
+  photographs; slideshow, inspection, preload, and failed/stale work never churn the bounded MRU.
 - Persistent image-change view policy: Keep current scale by default, or Fit each image.
 - Human-first dark Settings window with implemented General, Viewing, Color, Stage, Presentation, Controls, and About
-  sections; vertical navigation; bounded scrollable cards; grouped shortcut keycaps; project identity/version; owned
-  decoration-free chrome; schema-v2 JSON autosave; explicit v1 migration; and malformed-file fallback. Monitor Color
+  sections; vertical navigation; fixed page headers; inset scrollable cards with dynamic edge fades; grouped shortcut
+  keycaps; project identity/version; owned decoration-free chrome; schema-v2 JSON autosave; explicit v1 migration; and
+  malformed-file fallback. One reusable project-owned HS-wheel/Value color dialog edits Stage and Presentation colors
+  through synchronized RGB/HSV/HEX values and exact Cancel restoration. Monitor Color
   Management is enabled by default and its single persisted checkbox can restore the exact legacy path.
 - Windows ordinary-SDR photograph presentation through the assigned active-monitor RGB ICC and app-local Little CMS
   2.19, with one encoded-size managed source per active source/destination, source/destination latest-wins publication,

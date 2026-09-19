@@ -14,6 +14,11 @@ its normalized position is persisted. Its horizontal presentation keeps a
 bounded selectable recent list at left and stable color detail at right; it is
 an inspector, not a color editor or a permanent palette.
 
+The project also has an owned color-value dialog for Stage and Presentation preferences. That dialog edits an existing
+reference-sRGB value through Hue/Saturation/Value, RGB, and HEX and does not sample the photograph or screen. It has no
+eyedropper in SETTINGS-UX-R1-F1. This document continues to own only the photographic Inspector's source-pixel sampling
+contract; the value dialog belongs to [`SETTINGS.md`](SETTINGS.md).
+
 Pointer motion never commits or replaces a sample. An explicit primary click
 inside the presented photograph commits exactly one sample. Stage, Matte,
 markup, pointer feedback, and overlay UI are not sampled. While the picker is

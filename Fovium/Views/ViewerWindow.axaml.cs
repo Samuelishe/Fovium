@@ -100,6 +100,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
     private bool _appliedMonitorColorManagementEnabled;
     private SlideshowSettings _appliedSlideshowSettings;
     private int _presentedSequenceIndex = -1;
+    private readonly RecentNavigationCapture _recentNavigationCapture = new();
     private int _homeDisplayCount;
     private CancellationTokenSource? _homeRefreshCancellation;
     private readonly List<Bitmap> _homeThumbnailBitmaps = [];
@@ -1383,7 +1384,11 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         _photoInfo.BeginNewSequence();
         _histogram.BeginNewSequence();
         ApplySelection(result, ImageChangeViewPolicyResolver.ForNewSequence(), showFailure: true);
-        if (result.Status == SelectionStatus.Published && result.Path is not null)
+        if (result.Status == SelectionStatus.Published &&
+            result.Path is not null &&
+            RecentCapturePolicyResolver.ShouldCapture(
+                _settings.Current.Home,
+                RecentCaptureTrigger.ExplicitOpen))
         {
             var recent = plan.Mode == ActivationMode.Folder
                 ? new RecentLocation
@@ -1406,6 +1411,19 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         var transfer = ImageChangeViewPolicyResolver.ForNavigation(
             _settings.Current.ImageChangeViewPolicy,
             PhotoViewport.CaptureViewTransfer());
+        if (result.Status == SelectionStatus.Published &&
+            result.Path is { } publishedPath &&
+            RecentCapturePolicyResolver.ShouldCapture(
+                _settings.Current.Home,
+                RecentCaptureTrigger.ManualNavigation))
+        {
+            _recentNavigationCapture.Arm(publishedPath);
+        }
+        else
+        {
+            _recentNavigationCapture.Cancel();
+        }
+
         ApplySelection(result, transfer, showFailure: false);
         if (result.Status != SelectionStatus.Published)
         {
@@ -1496,6 +1514,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         _colorPicker.SetVisible(false);
         _colorPicker.ClearHistory();
         _presentedSequenceIndex = -1;
+        _recentNavigationCapture.Cancel();
         ErrorSurface.IsVisible = false;
         DropOverlay.IsVisible = false;
         HomeHeroCard.Classes.Set("drag-ready", false);
@@ -1693,9 +1712,37 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
     private void OnSlideshowPresentedImageChanged(object? sender, EventArgs e)
     {
         _presentedSequenceIndex = _session.CurrentIndex;
+        if (_recentNavigationCapture.TryConsume(
+                PhotoViewport.PresentedImageIdentity,
+                PhotoViewport.InspectionMode != InspectionMode.None,
+                out var recentPath))
+        {
+            _ = RecordPresentedNavigationRecentAsync(recentPath);
+        }
+
         if (((ISlideshowNavigator)this).PresentedSlide is { } presented)
         {
             _slideshow.NotifyPresented(presented);
+        }
+    }
+
+    private async Task RecordPresentedNavigationRecentAsync(string path)
+    {
+        if (!RecentCapturePolicyResolver.ShouldCapture(
+                _settings.Current.Home,
+                RecentCaptureTrigger.ManualNavigation))
+        {
+            return;
+        }
+
+        try
+        {
+            await _settings.AddRecentLocationAsync(
+                new RecentLocation { Kind = RecentLocationKind.File, Path = path },
+                _lifetimeCancellation.Token);
+        }
+        catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
+        {
         }
     }
 
@@ -2200,17 +2247,15 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
     private async Task EditMarkupColorAsync()
     {
         var original = _presentation.ActiveColor;
-        var editor = new ColorEditorWindow(
+        var editor = new ColorPickerWindow(
             new StageColor(original.Red, original.Green, original.Blue),
             _localizer,
             _localizer[UiStrings.PresentationMarkupColor]);
         editor.ColorChanged += (_, args) => _presentation.SetActiveColor(
             new PresentationColor(args.Color.Red, args.Color.Green, args.Color.Blue));
         var accepted = await editor.ShowDialog<bool>(this);
-        if (!accepted)
-        {
-            _presentation.SetActiveColor(original);
-        }
+        var resolved = editor.Resolve(accepted);
+        _presentation.SetActiveColor(new PresentationColor(resolved.Red, resolved.Green, resolved.Blue));
     }
 
     private void ApplyMarkupToolsUi()

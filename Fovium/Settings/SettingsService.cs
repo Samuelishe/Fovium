@@ -108,6 +108,23 @@ internal sealed class SettingsService(ISettingsStore store) : IDisposable
                 },
             cancellationToken);
 
+    public Task SetRecentCapturePolicyAsync(
+        RecentCapturePolicy policy,
+        CancellationToken cancellationToken = default)
+    {
+        var normalized = Enum.IsDefined(policy)
+            ? policy
+            : RecentCapturePolicy.OpenedItemsOnly;
+        return UpdateAsync(
+            settings => settings.Home.CapturePolicy == normalized
+                ? settings
+                : settings with
+                {
+                    Home = settings.Home with { CapturePolicy = normalized },
+                },
+            cancellationToken);
+    }
+
     public Task AddRecentLocationAsync(
         RecentLocation location,
         CancellationToken cancellationToken = default)
@@ -400,6 +417,7 @@ internal sealed class SettingsService(ISettingsStore store) : IDisposable
 
     private static bool HomeSettingsEqual(HomeSettings left, HomeSettings right) =>
         left.RememberRecentPhotos == right.RememberRecentPhotos &&
+        left.CapturePolicy == right.CapturePolicy &&
         left.RecentLocations.SequenceEqual(right.RecentLocations);
 
     private static bool SettingsEqual(ShortcutSettings left, ShortcutSettings right) =>

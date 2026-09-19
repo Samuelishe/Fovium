@@ -76,8 +76,15 @@ internal static class UiStrings
     public const string ShortcutInvalid = "shortcut.invalid";
     public const string CommonCancel = "common.cancel";
     public const string CommonOk = "common.ok";
+    public const string CommonClose = "common.close";
     public const string ColorHex = "color.hex";
     public const string ColorInvalid = "color.invalid";
+    public const string ColorPickerDialogDescription = "color.dialogDescription";
+    public const string ColorOriginal = "color.original";
+    public const string ColorCurrent = "color.current";
+    public const string ColorWheelAutomation = "color.wheelAutomation";
+    public const string ColorValueAutomation = "color.valueAutomation";
+    public const string ColorEdit = "color.edit";
     public const string CommandPrevious = "command.previous";
     public const string CommandNext = "command.next";
     public const string CommandZoomIn = "command.zoomIn";
@@ -444,6 +451,10 @@ internal static class UiStrings
 
     public const string SettingsRememberRecentPhotosDescription =
         "settings.rememberRecentPhotosDescription";
+
+    public const string SettingsRecentCapture = "settings.recentCapture";
+    public const string SettingsRecentCaptureOpenedOnly = "settings.recentCaptureOpenedOnly";
+    public const string SettingsRecentCaptureEveryViewed = "settings.recentCaptureEveryViewed";
 
     public const string SettingsKeyboardShortcuts = "settings.keyboardShortcuts";
 

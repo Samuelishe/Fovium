@@ -143,7 +143,14 @@ host culture overrides.
 
 HOME-UX-R1-F2 replaces visibility-only Recent wording with the privacy-correct paired label Remember recent photos /
 Запоминать недавние фотографии. Its EN/RU descriptions both state that disabling clears history. Per-card actions and
-the compact became-unavailable state are also paired; persisted property names and diagnostics remain locale-independent.
+the compact became-unavailable state are also paired; persisted property names and diagnostics remain
+locale-independent.
+
+SETTINGS-UX-R1-F1 adds paired Recent capture choices Items I open / Только открытые вручную and Every photo I view /
+Все просмотренные фотографии. The Fovium color-value dialog localizes its title supplied by each caller, concise
+description, original/new labels, validation, close, Cancel, and accessibility names; RGB, HSV, HEX, channel letters,
+and numeric values remain conventional locale-independent notation. No eyedropper wording is present because that
+interaction is outside this stage.
 
 ## Locale resolution
 
