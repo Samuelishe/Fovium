@@ -50,4 +50,47 @@ internal sealed class DirectorySequenceBuilder
         var initialIndex = candidates.FindIndex(path => pathComparison.Equals(path, fullSelectedPath));
         return new ImageSequence(candidates, initialIndex);
     }
+
+    public Task<ImageSequence?> BuildFolderAsync(
+        string folderPath,
+        CancellationToken cancellationToken) =>
+        Task.Run(() => BuildFolder(folderPath, cancellationToken), cancellationToken);
+
+    internal ImageSequence? BuildFolder(string folderPath, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(folderPath);
+        var fullFolderPath = Path.GetFullPath(folderPath);
+        if (!Directory.Exists(fullFolderPath))
+        {
+            return null;
+        }
+
+        var candidates = new List<string>();
+        try
+        {
+            foreach (var path in Directory.EnumerateFiles(
+                         fullFolderPath,
+                         "*",
+                         SearchOption.TopDirectoryOnly))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (ImageFormatCapabilities.IsCandidateExtension(Path.GetExtension(path)))
+                {
+                    candidates.Add(Path.GetFullPath(path));
+                }
+            }
+        }
+        catch (Exception exception) when (exception is UnauthorizedAccessException or IOException)
+        {
+            return null;
+        }
+
+        if (candidates.Count == 0)
+        {
+            return null;
+        }
+
+        candidates.Sort(NaturalPathComparer.Instance);
+        return new ImageSequence(candidates, 0);
+    }
 }

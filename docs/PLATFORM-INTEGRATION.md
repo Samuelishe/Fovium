@@ -17,6 +17,12 @@ spread registry, MIME, bundle, or shell APIs through application code.
 R1 startup accepts an ordered collection of command-line paths even when one file is common. The application also maps a
 native multi-select file-picker result into the same activation plan.
 
+HOME-UX-R1 makes an empty startup a real in-app landing state rather than a request to open the native file picker.
+Open files still maps native multi-selection to explicit-selection mode. Open folder, a single dropped folder, and a
+single command-line folder use a non-recursive top-level candidate snapshot in natural order and begin at its first
+candidate. Dropped files preserve their supplied order and take precedence over a folder included in the same drop;
+Fovium does not merge file selections with directory contents.
+
 Inputs may contain Unicode, spaces, long names, platform-specific syntax, and paths supplied by shell activation. Fovium
 must eventually support `fovium <path>` and equivalent native activation. Startup must not assume that a Fovium file
 picker produced the request.

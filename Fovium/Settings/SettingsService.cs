@@ -91,6 +91,59 @@ internal sealed class SettingsService(ISettingsStore store) : IDisposable
                 : settings with { MonitorColorManagementEnabled = enabled },
             cancellationToken);
 
+    public Task SetShowRecentItemsAsync(
+        bool show,
+        CancellationToken cancellationToken = default) =>
+        UpdateAsync(
+            settings => settings.Home.ShowRecentItems == show
+                ? settings
+                : settings with { Home = settings.Home with { ShowRecentItems = show } },
+            cancellationToken);
+
+    public Task AddRecentLocationAsync(
+        RecentLocation location,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(location);
+        var normalized = (HomeSettings.Default with { RecentLocations = [location] })
+            .Normalize()
+            .RecentLocations
+            .SingleOrDefault();
+        if (normalized is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        var comparer = OperatingSystem.IsWindows()
+            ? StringComparer.OrdinalIgnoreCase
+            : StringComparer.Ordinal;
+        return UpdateAsync(
+            settings => settings with
+            {
+                Home = settings.Home with
+                {
+                    RecentLocations =
+                    [
+                        normalized,
+                        .. settings.Home.RecentLocations
+                            .Where(item => !comparer.Equals(item.Path, normalized.Path))
+                            .Take(HomeSettings.MaximumRecentLocations - 1),
+                    ],
+                },
+            },
+            cancellationToken);
+    }
+
+    public Task ClearRecentLocationsAsync(CancellationToken cancellationToken = default) =>
+        UpdateAsync(
+            settings => settings.Home.RecentLocations.Count == 0
+                ? settings
+                : settings with
+                {
+                    Home = settings.Home with { RecentLocations = [] },
+                },
+            cancellationToken);
+
     public Task SetPhotoPresentationViewAsync(
         PhotoPresentationViewSettings photoPresentationView,
         CancellationToken cancellationToken = default)
@@ -296,12 +349,17 @@ internal sealed class SettingsService(ISettingsStore store) : IDisposable
         left.Language == right.Language &&
         left.ImageChangeViewPolicy == right.ImageChangeViewPolicy &&
         left.MonitorColorManagementEnabled == right.MonitorColorManagementEnabled &&
+        HomeSettingsEqual(left.Home, right.Home) &&
         left.PhotoPresentationView == right.PhotoPresentationView &&
         left.Slideshow == right.Slideshow &&
         left.SettingsWindowSize == right.SettingsWindowSize &&
         left.Stage == right.Stage &&
         left.Presentation == right.Presentation &&
         SettingsEqual(left.Shortcuts, right.Shortcuts);
+
+    private static bool HomeSettingsEqual(HomeSettings left, HomeSettings right) =>
+        left.ShowRecentItems == right.ShowRecentItems &&
+        left.RecentLocations.SequenceEqual(right.RecentLocations);
 
     private static bool SettingsEqual(ShortcutSettings left, ShortcutSettings right) =>
         ViewerCommands.Definitions.All(definition => left.Get(definition.Command) == right.Get(definition.Command));

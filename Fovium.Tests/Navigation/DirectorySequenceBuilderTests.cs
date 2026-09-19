@@ -5,6 +5,52 @@ namespace Fovium.Tests.Navigation;
 public sealed class DirectorySequenceBuilderTests
 {
     [Fact]
+    public void FolderSnapshotStartsAtFirstNaturallySortedCandidate()
+    {
+        var directory = Directory.CreateTempSubdirectory("Fovium.FolderSequence.Tests.");
+        try
+        {
+            foreach (var name in new[] { "photo10.jpg", "notes.txt", "photo2.png", "photo1.webp" })
+            {
+                File.WriteAllText(Path.Combine(directory.FullName, name), "fixture");
+            }
+
+            var sequence = new DirectorySequenceBuilder().BuildFolder(
+                directory.FullName,
+                CancellationToken.None);
+
+            Assert.NotNull(sequence);
+            Assert.Equal(["photo1.webp", "photo2.png", "photo10.jpg"],
+                sequence.Paths.Select(Path.GetFileName));
+            Assert.Equal(0, sequence.InitialIndex);
+        }
+        finally
+        {
+            directory.Delete(true);
+        }
+    }
+
+    [Fact]
+    public void FolderWithoutCandidateImagesReturnsNoSequence()
+    {
+        var directory = Directory.CreateTempSubdirectory("Fovium.EmptyFolderSequence.Tests.");
+        try
+        {
+            File.WriteAllText(Path.Combine(directory.FullName, "notes.txt"), "fixture");
+
+            var sequence = new DirectorySequenceBuilder().BuildFolder(
+                directory.FullName,
+                CancellationToken.None);
+
+            Assert.Null(sequence);
+        }
+        finally
+        {
+            directory.Delete(true);
+        }
+    }
+
+    [Fact]
     public void DirectorySnapshotIncludesMixedSupportedCandidatesAndNaturalSortsThem()
     {
         var directory = Directory.CreateTempSubdirectory("Fovium.DirectorySequence.Tests.");

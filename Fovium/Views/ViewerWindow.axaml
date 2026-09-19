@@ -8,8 +8,263 @@
         WindowState="Maximized"
         MinWidth="480"
         MinHeight="320">
+    <Window.Styles>
+        <Style Selector="Button.home-primary">
+            <Setter Property="MinWidth" Value="168" />
+            <Setter Property="Height" Value="48" />
+            <Setter Property="Padding" Value="22,10" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Background" Value="#8354E8" />
+            <Setter Property="BorderBrush" Value="#A982FF" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style Selector="Button.home-primary:pointerover">
+            <Setter Property="Background" Value="#9466F0" />
+            <Setter Property="BorderBrush" Value="#C0A3FF" />
+        </Style>
+        <Style Selector="Button.home-secondary">
+            <Setter Property="MinWidth" Value="168" />
+            <Setter Property="Height" Value="48" />
+            <Setter Property="Padding" Value="22,10" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Background" Value="#2B2734" />
+            <Setter Property="BorderBrush" Value="#494252" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style Selector="Button.home-secondary:pointerover">
+            <Setter Property="Background" Value="#393242" />
+            <Setter Property="BorderBrush" Value="#665B73" />
+        </Style>
+        <Style Selector="Button.home-icon">
+            <Setter Property="Width" Value="38" />
+            <Setter Property="Height" Value="38" />
+            <Setter Property="Padding" Value="9" />
+            <Setter Property="CornerRadius" Value="19" />
+            <Setter Property="Background" Value="#25212C" />
+            <Setter Property="BorderBrush" Value="#3C3645" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style Selector="Button.home-icon:pointerover">
+            <Setter Property="Background" Value="#362E41" />
+            <Setter Property="BorderBrush" Value="#6D5687" />
+        </Style>
+        <Style Selector="Button.home-link">
+            <Setter Property="Padding" Value="10,5" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Foreground" Value="#C8A8F4" />
+        </Style>
+        <Style Selector="Button.home-link:pointerover">
+            <Setter Property="Foreground" Value="#E7D7FF" />
+            <Setter Property="Background" Value="#24202C" />
+        </Style>
+        <Style Selector="Button.recent-card">
+            <Setter Property="Width" Value="246" />
+            <Setter Property="Height" Value="76" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0,0,10,10" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Stretch" />
+            <Setter Property="Background" Value="#211E27" />
+            <Setter Property="BorderBrush" Value="#35303E" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="11" />
+        </Style>
+        <Style Selector="Button.recent-card:pointerover">
+            <Setter Property="Background" Value="#2C2635" />
+            <Setter Property="BorderBrush" Value="#69517E" />
+        </Style>
+    </Window.Styles>
     <Grid x:Name="ViewerRoot" Background="Black">
         <viewer:PhotoViewportControl x:Name="PhotoViewport" />
+        <Border x:Name="HomeSurface" ZIndex="3" Background="#131119">
+            <Grid ClipToBounds="True">
+                <Canvas IsHitTestVisible="False" Opacity="0.75">
+                    <Ellipse Canvas.Left="-250" Canvas.Top="-330" Width="780" Height="780">
+                        <Ellipse.Fill>
+                            <RadialGradientBrush>
+                                <GradientStop Offset="0" Color="#38305A" />
+                                <GradientStop Offset="0.48" Color="#181528" />
+                                <GradientStop Offset="1" Color="#00131119" />
+                            </RadialGradientBrush>
+                        </Ellipse.Fill>
+                    </Ellipse>
+                    <Ellipse Canvas.Left="850" Canvas.Top="310" Width="680" Height="680">
+                        <Ellipse.Fill>
+                            <RadialGradientBrush>
+                                <GradientStop Offset="0" Color="#33233F" />
+                                <GradientStop Offset="0.52" Color="#1A1421" />
+                                <GradientStop Offset="1" Color="#00131119" />
+                            </RadialGradientBrush>
+                        </Ellipse.Fill>
+                    </Ellipse>
+                </Canvas>
+                <Grid RowDefinitions="68,*">
+                    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="26,15,26,8">
+                        <StackPanel Orientation="Horizontal" Spacing="11" VerticalAlignment="Center">
+                            <Image Width="34" Height="34"
+                                   Source="avares://Fovium/Assets/fovium-app-icon-128.png" />
+                            <TextBlock Text="Fovium"
+                                       FontSize="17"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                        <Button x:Name="HomeSettingsButton"
+                                Grid.Column="2"
+                                Classes="home-icon"
+                                VerticalAlignment="Center" />
+                    </Grid>
+                    <ScrollViewer Grid.Row="1"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="24,12,24,34"
+                                    MaxWidth="1040"
+                                    HorizontalAlignment="Stretch"
+                                    Spacing="0">
+                            <Border x:Name="HomeHeroCard"
+                                    MaxWidth="820"
+                                    MinHeight="382"
+                                    HorizontalAlignment="Stretch"
+                                    Padding="24,22,24,24"
+                                    CornerRadius="24"
+                                    Background="#C91D1A24"
+                                    BorderBrush="#4D443D59"
+                                    BorderThickness="1">
+                                <Grid x:Name="HomeHeroLayout"
+                                      RowDefinitions="138,Auto,Auto,Auto,Auto"
+                                      RowSpacing="10">
+                                    <Canvas x:Name="HomeHeroVisual"
+                                            Grid.Row="0"
+                                            Width="270"
+                                            Height="132"
+                                            HorizontalAlignment="Center">
+                                        <Ellipse Canvas.Left="63" Canvas.Top="-8"
+                                                 Width="144" Height="144"
+                                                 Stroke="#433C4E" StrokeThickness="1" />
+                                        <Border Canvas.Left="25" Canvas.Top="34"
+                                                Width="92" Height="76"
+                                                CornerRadius="12"
+                                                Background="#242E3F"
+                                                BorderBrush="#44536A"
+                                                BorderThickness="1"
+                                                RenderTransformOrigin="50%,50%">
+                                            <Border.RenderTransform>
+                                                <RotateTransform Angle="-10" />
+                                            </Border.RenderTransform>
+                                            <Grid ClipToBounds="True">
+                                                <Ellipse Width="58" Height="58" Margin="-18,-22,0,0"
+                                                         HorizontalAlignment="Left" VerticalAlignment="Top"
+                                                         Fill="#405974" Opacity="0.8" />
+                                                <Path Data="M0,64 L27,33 L43,48 L61,25 L92,58 L92,76 L0,76 Z"
+                                                      Fill="#151B27" />
+                                            </Grid>
+                                        </Border>
+                                        <Border Canvas.Left="153" Canvas.Top="34"
+                                                Width="92" Height="76"
+                                                CornerRadius="12"
+                                                Background="#3A2B41"
+                                                BorderBrush="#5C4667"
+                                                BorderThickness="1"
+                                                RenderTransformOrigin="50%,50%">
+                                            <Border.RenderTransform>
+                                                <RotateTransform Angle="10" />
+                                            </Border.RenderTransform>
+                                            <Grid ClipToBounds="True">
+                                                <Ellipse Width="68" Height="68" Margin="34,-28,0,0"
+                                                         HorizontalAlignment="Left" VerticalAlignment="Top"
+                                                         Fill="#684067" Opacity="0.75" />
+                                                <Path Data="M0,62 L25,38 L43,50 L65,24 L92,56 L92,76 L0,76 Z"
+                                                      Fill="#201823" />
+                                            </Grid>
+                                        </Border>
+                                        <Border Canvas.Left="87" Canvas.Top="15"
+                                                Width="98" Height="96"
+                                                CornerRadius="14"
+                                                Background="#573985"
+                                                BorderBrush="#A877F1"
+                                                BorderThickness="1.5">
+                                            <Grid ClipToBounds="True">
+                                                <Ellipse Width="76" Height="76" Margin="34,-29,0,0"
+                                                         HorizontalAlignment="Left" VerticalAlignment="Top"
+                                                         Fill="#A35EAE" Opacity="0.75" />
+                                                <Path Data="M0,79 L25,50 L42,61 L64,28 L98,68 L98,96 L0,96 Z"
+                                                      Fill="#20172A" />
+                                                <Path Data="M20,75 L45,49 L55,60 L74,43 L92,70"
+                                                      Stroke="#D5A5EF" StrokeThickness="2" Opacity="0.55" />
+                                            </Grid>
+                                        </Border>
+                                    </Canvas>
+                                    <TextBlock x:Name="HomeTitleText"
+                                               Grid.Row="1"
+                                               HorizontalAlignment="Center"
+                                               TextAlignment="Center"
+                                               FontSize="35"
+                                               FontWeight="SemiBold"
+                                               Foreground="#F4F0F7" />
+                                    <StackPanel Grid.Row="2" Spacing="5">
+                                        <TextBlock x:Name="HomeSubtitleText"
+                                                   HorizontalAlignment="Center"
+                                                   TextAlignment="Center"
+                                                   TextWrapping="Wrap"
+                                                   FontSize="15"
+                                                   Foreground="#B8B0C1" />
+                                        <TextBlock x:Name="HomeDropHintText"
+                                                   HorizontalAlignment="Center"
+                                                   TextAlignment="Center"
+                                                   TextWrapping="Wrap"
+                                                   FontSize="13"
+                                                   Foreground="#8F8799" />
+                                    </StackPanel>
+                                    <WrapPanel Grid.Row="3"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center">
+                                        <Button x:Name="HomeOpenFilesButton"
+                                                Classes="home-primary"
+                                                Margin="5" />
+                                        <Button x:Name="HomeOpenFolderButton"
+                                                Classes="home-secondary"
+                                                Margin="5" />
+                                    </WrapPanel>
+                                    <Border x:Name="HomeShortcutBadge"
+                                            Grid.Row="4"
+                                            HorizontalAlignment="Center"
+                                            Padding="12,6"
+                                            CornerRadius="8"
+                                            Background="#241F2B"
+                                            BorderBrush="#393240"
+                                            BorderThickness="1">
+                                        <TextBlock x:Name="HomeShortcutText"
+                                                   FontSize="12"
+                                                   Foreground="#AAA1B4" />
+                                    </Border>
+                                </Grid>
+                            </Border>
+                            <Grid x:Name="HomeRecentSection"
+                                  IsVisible="False"
+                                  Margin="4,24,4,0"
+                                  RowDefinitions="Auto,Auto">
+                                <Grid ColumnDefinitions="*,Auto" Margin="4,0,4,10">
+                                    <TextBlock x:Name="HomeRecentTitleText"
+                                               FontSize="18"
+                                               FontWeight="SemiBold"
+                                               VerticalAlignment="Center" />
+                                    <Button x:Name="HomeClearRecentButton"
+                                            Grid.Column="1"
+                                            Classes="home-link" />
+                                </Grid>
+                                <WrapPanel x:Name="HomeRecentItemsPanel"
+                                           Grid.Row="1"
+                                           HorizontalAlignment="Left" />
+                            </Grid>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Grid>
+        </Border>
         <viewer:MarkupOverlayControl x:Name="MarkupOverlay" />
         <viewer:PointerFeedbackOverlayControl x:Name="PointerFeedbackOverlay" />
         <Border x:Name="MarkupToolsPanel"
@@ -279,7 +534,42 @@
                 </Grid>
             </StackPanel>
         </Border>
+        <Border x:Name="DropOverlay"
+                ZIndex="50"
+                IsVisible="False"
+                IsHitTestVisible="False"
+                Background="#E6131119">
+            <Border HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    MaxWidth="560"
+                    Margin="24"
+                    Padding="40,32"
+                    CornerRadius="22"
+                    Background="#F025212D"
+                    BorderBrush="#A17CD7"
+                    BorderThickness="2">
+                <StackPanel Spacing="12">
+                    <Border Width="58" Height="58" CornerRadius="29"
+                            HorizontalAlignment="Center"
+                            Background="#513A68">
+                        <Path x:Name="DropOverlayIcon"
+                              Width="26" Height="26"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              Stretch="Uniform"
+                              Fill="#EEE7F7" />
+                    </Border>
+                    <TextBlock x:Name="DropOverlayText"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"
+                               TextWrapping="Wrap"
+                               FontSize="22"
+                               FontWeight="SemiBold" />
+                </StackPanel>
+            </Border>
+        </Border>
         <Border x:Name="ErrorSurface"
+                ZIndex="60"
                 IsVisible="False"
                 IsHitTestVisible="False"
                 HorizontalAlignment="Center"

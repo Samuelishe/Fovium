@@ -14,6 +14,19 @@ Run the full suite in the default configuration:
 dotnet test Fovium.sln
 ```
 
+Run the focused HOME-UX-R1 empty-startup, folder activation, recent-settings, and localization contracts:
+
+```powershell
+dotnet test Fovium.Tests/Fovium.Tests.csproj -c Release --no-restore --filter "FullyQualifiedName~ActivationPlanTests|FullyQualifiedName~DirectorySequenceBuilderTests|FullyQualifiedName~HomeSettingsTests|FullyQualifiedName~HomeLocalizationTests"
+```
+
+Ignored Windows runtime evidence under `artifacts/home-r1/` covers no-picker empty startup, Russian large/medium/compact
+layouts, recent enabled/disabled, a successful real JPEG activation with persisted MRU, and a real top-level folder
+activation. The harness backs up and restores the per-user Settings document. Native picker selection and physical OS
+drag gestures remain manual interaction evidence rather than unit-test claims; deterministic activation/drop routing is
+covered by the focused tests. The final local Windows run passes this 17-test filter and 2,271/2,271 full Release tests;
+the preceding Release solution build completes with zero warnings and errors.
+
 Run the same verification used by CI after a Release build:
 
 ```powershell

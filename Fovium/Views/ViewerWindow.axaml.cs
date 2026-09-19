@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -214,6 +215,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         ConfigurePhotoInfo();
         ConfigureHistogram();
         ConfigureColorPicker();
+        ConfigureHome();
         _previousMenuItem = CreateCommandMenuItem(
             UiStrings.MenuPrevious,
             ViewerCommand.PreviousImage,
@@ -273,6 +275,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         Activated += OnDisplayRefreshRequired;
         PositionChanged += OnDisplayRefreshTrigger;
         SizeChanged += OnDisplayRefreshTrigger;
+        SizeChanged += OnHomeSizeChanged;
         PropertyChanged += OnViewerPropertyChanged;
         KeyDown += OnWindowKeyDown;
         KeyUp += OnWindowKeyUp;
@@ -287,20 +290,11 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
             ApplySettings(_settings.Current);
             Screens.Changed += OnDisplayRefreshRequired;
             ScheduleDisplayProfileRefresh(forceProfileRefresh: true);
-            if (_startupPaths.Count == 0)
+            ApplyHomeResponsiveLayout(ClientSize);
+            if (_startupPaths.Count > 0)
             {
-                var selected = await PickFilesAsync();
-                if (selected.Count == 0)
-                {
-                    Close();
-                    return;
-                }
-
-                await OpenPathsAsync(selected);
-                return;
+                await OpenPathsAsync(_startupPaths);
             }
-
-            await OpenPathsAsync(_startupPaths);
         }
         catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
         {
@@ -776,6 +770,20 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         }
     }
 
+    private async Task OpenFolderFromPickerAsync()
+    {
+        if (_closed)
+        {
+            return;
+        }
+
+        var selected = await PickFolderAsync();
+        if (selected is not null)
+        {
+            await OpenActivationAsync(ActivationPlan.CreateFolder(selected));
+        }
+    }
+
     private async Task<IReadOnlyList<string>> PickFilesAsync()
     {
         ShowCursor();
@@ -808,15 +816,259 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         }
     }
 
-    private async Task OpenPathsAsync(IReadOnlyList<string> paths)
+    private void ConfigureHome()
+    {
+        HomeTitleText.Text = _localizer[UiStrings.HomeTitle];
+        HomeSubtitleText.Text = _localizer[UiStrings.HomeSubtitle];
+        HomeDropHintText.Text = _localizer[UiStrings.HomeDropHint];
+        HomeRecentTitleText.Text = _localizer[UiStrings.HomeRecent];
+        HomeClearRecentButton.Content = _localizer[UiStrings.HomeClearRecent];
+        HomeOpenFilesButton.Content = CreateHomeActionContent(
+            FoviumIcon.Photo,
+            _localizer[UiStrings.HomeOpenFiles]);
+        HomeOpenFolderButton.Content = CreateHomeActionContent(
+            FoviumIcon.Folder,
+            _localizer[UiStrings.HomeOpenFolder]);
+        HomeSettingsButton.Content = FoviumIconCatalog.Create(FoviumIcon.Settings, 17);
+        ToolTip.SetTip(HomeSettingsButton, _localizer[UiStrings.MenuSettings]);
+        AutomationProperties.SetName(HomeOpenFilesButton, _localizer[UiStrings.HomeOpenFiles]);
+        AutomationProperties.SetName(HomeOpenFolderButton, _localizer[UiStrings.HomeOpenFolder]);
+        AutomationProperties.SetName(HomeSettingsButton, _localizer[UiStrings.MenuSettings]);
+        AutomationProperties.SetName(HomeClearRecentButton, _localizer[UiStrings.HomeClearRecent]);
+        DropOverlayText.Text = _localizer[UiStrings.HomeDropReady];
+        DropOverlayIcon.Data = StreamGeometry.Parse(
+            "M8,1 L8,10 M4,6 L8,10 L12,6 M2,12 L2,15 L14,15 L14,12");
+
+        HomeOpenFilesButton.Click += async (_, _) =>
+            await RunBoundaryActionAsync(OpenFromPickerAsync);
+        HomeOpenFolderButton.Click += async (_, _) =>
+            await RunBoundaryActionAsync(OpenFolderFromPickerAsync);
+        HomeSettingsButton.Click += (_, _) => ShowSettings();
+        HomeClearRecentButton.Click += async (_, _) =>
+            await RunBoundaryActionAsync(() =>
+                _settings.ClearRecentLocationsAsync(_lifetimeCancellation.Token));
+
+        DragDrop.SetAllowDrop(ViewerRoot, true);
+        DragDrop.AddDragEnterHandler(ViewerRoot, OnViewerDragEnter);
+        DragDrop.AddDragOverHandler(ViewerRoot, OnViewerDragOver);
+        DragDrop.AddDragLeaveHandler(ViewerRoot, OnViewerDragLeave);
+        DragDrop.AddDropHandler(ViewerRoot, OnViewerDrop);
+        ApplyHomeSettings(_settings.Current.Home, _settings.Current.Shortcuts);
+    }
+
+    private void OnHomeSizeChanged(object? sender, SizeChangedEventArgs e) =>
+        ApplyHomeResponsiveLayout(e.NewSize);
+
+    private void ApplyHomeResponsiveLayout(Size size)
+    {
+        var compact = size.Width < 640 || size.Height < 540;
+        HomeHeroVisual.IsVisible = !compact;
+        HomeHeroLayout.RowDefinitions[0].Height = new GridLength(compact ? 0 : 138);
+        HomeHeroCard.MinHeight = compact ? 0 : 382;
+        HomeHeroCard.Padding = compact
+            ? new Thickness(18, 20, 18, 20)
+            : new Thickness(24, 22, 24, 24);
+        HomeTitleText.FontSize = compact ? 30 : 35;
+    }
+
+    private static StackPanel CreateHomeActionContent(FoviumIcon icon, string text)
+    {
+        var content = new StackPanel
+        {
+            Orientation = Avalonia.Layout.Orientation.Horizontal,
+            Spacing = 9,
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+        };
+        content.Children.Add(FoviumIconCatalog.Create(icon, 18));
+        content.Children.Add(new TextBlock
+        {
+            Text = text,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+        });
+        return content;
+    }
+
+    private void ApplyHomeSettings(HomeSettings home, ShortcutSettings shortcuts)
+    {
+        var openShortcut = shortcuts.Get(ViewerCommand.Open);
+        HomeShortcutBadge.IsVisible = openShortcut is not null;
+        if (openShortcut is not null)
+        {
+            HomeShortcutText.Text = string.Format(
+                System.Globalization.CultureInfo.GetCultureInfo(_localizer.Locale),
+                _localizer[UiStrings.HomeShortcutHint],
+                ShortcutGestureFormatter.Format(openShortcut, string.Empty));
+        }
+
+        HomeRecentItemsPanel.Children.Clear();
+        foreach (var location in home.RecentLocations)
+        {
+            HomeRecentItemsPanel.Children.Add(CreateRecentLocationButton(location));
+        }
+
+        HomeRecentSection.IsVisible =
+            home.ShowRecentItems && home.RecentLocations.Count > 0;
+    }
+
+    private Button CreateRecentLocationButton(RecentLocation location)
+    {
+        var fileName = location.Kind == RecentLocationKind.File
+            ? Path.GetFileName(location.Path)
+            : new DirectoryInfo(location.Path).Name;
+        var title = string.IsNullOrWhiteSpace(fileName) ? location.Path : fileName;
+        var kindText = _localizer[location.Kind == RecentLocationKind.Folder
+            ? UiStrings.HomeRecentFolder
+            : UiStrings.HomeRecentFile];
+        var pathText = location.Kind == RecentLocationKind.File
+            ? Path.GetDirectoryName(location.Path) ?? location.Path
+            : location.Path;
+        var icon = location.Kind == RecentLocationKind.Folder
+            ? FoviumIcon.Folder
+            : FoviumIcon.Photo;
+        var iconHost = new Border
+        {
+            Width = 52,
+            Height = 52,
+            Margin = new Thickness(11),
+            CornerRadius = new CornerRadius(9),
+            Background = new SolidColorBrush(Color.Parse(
+                location.Kind == RecentLocationKind.Folder ? "#49375B" : "#33475B")),
+            Child = FoviumIconCatalog.Create(icon, 21),
+        };
+        var text = new StackPanel
+        {
+            Spacing = 3,
+            Margin = new Thickness(0, 12, 12, 10),
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+        };
+        text.Children.Add(new TextBlock
+        {
+            Text = title,
+            FontWeight = FontWeight.SemiBold,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+        });
+        text.Children.Add(new TextBlock
+        {
+            Text = $"{kindText}  ·  {pathText}",
+            FontSize = 11,
+            Foreground = new SolidColorBrush(Color.Parse("#9D95A7")),
+            TextTrimming = TextTrimming.CharacterEllipsis,
+        });
+        var content = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("74,*"),
+        };
+        content.Children.Add(iconHost);
+        Grid.SetColumn(text, 1);
+        content.Children.Add(text);
+
+        var button = new Button { Content = content };
+        button.Classes.Add("recent-card");
+        AutomationProperties.SetName(button, $"{kindText}: {title}");
+        ToolTip.SetTip(button, location.Path);
+        button.Click += async (_, _) => await RunBoundaryActionAsync(() =>
+            OpenActivationAsync(location.Kind == RecentLocationKind.Folder
+                ? ActivationPlan.CreateFolder(location.Path)
+                : ActivationPlan.Create([location.Path])));
+        return button;
+    }
+
+    private void OnViewerDragEnter(object? sender, DragEventArgs e) => UpdateDropState(e);
+
+    private void OnViewerDragOver(object? sender, DragEventArgs e) => UpdateDropState(e);
+
+    private void UpdateDropState(DragEventArgs e)
+    {
+        var plan = TryCreateDropPlan(e.DataTransfer);
+        e.DragEffects = plan is null ? DragDropEffects.None : DragDropEffects.Copy;
+        e.Handled = true;
+        DropOverlay.IsVisible = plan is not null;
+    }
+
+    private void OnViewerDragLeave(object? sender, DragEventArgs e)
+    {
+        DropOverlay.IsVisible = false;
+        e.Handled = true;
+    }
+
+    private async void OnViewerDrop(object? sender, DragEventArgs e)
+    {
+        var plan = TryCreateDropPlan(e.DataTransfer);
+        DropOverlay.IsVisible = false;
+        e.Handled = true;
+        if (plan is not null)
+        {
+            await RunBoundaryActionAsync(() => OpenActivationAsync(plan));
+        }
+    }
+
+    private static ActivationPlan? TryCreateDropPlan(IDataTransfer dataTransfer)
+    {
+        var paths = dataTransfer.TryGetFiles()?
+            .Select(item => item.TryGetLocalPath())
+            .Where(path => !string.IsNullOrWhiteSpace(path))
+            .Cast<string>()
+            .ToArray() ?? [];
+        return ActivationPlan.CreateDrop(paths);
+    }
+
+    private async Task RunBoundaryActionAsync(Func<Task> action)
+    {
+        try
+        {
+            await action();
+        }
+        catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception) when (IsRecoverableBoundaryException(exception))
+        {
+            ShowBoundaryError();
+        }
+    }
+
+    private void ShowHomeError(string key)
+    {
+        ErrorText.Text = _localizer[key];
+        ErrorSurface.IsVisible = true;
+    }
+
+    private async Task<string?> PickFolderAsync()
+    {
+        ShowCursor();
+        _cursorTimer.Stop();
+        try
+        {
+            var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+            {
+                Title = _localizer[UiStrings.PickerFolderTitle],
+                AllowMultiple = false,
+            });
+            return folders.FirstOrDefault()?.TryGetLocalPath();
+        }
+        finally
+        {
+            RestartCursorTimer();
+        }
+    }
+
+    private Task OpenPathsAsync(IReadOnlyList<string> paths) =>
+        OpenActivationAsync(ActivationPlan.Create(paths));
+
+    private async Task OpenActivationAsync(ActivationPlan plan)
     {
         _slideshow.Stop();
         _holdController.Cancel();
         CompleteAmbientSoakTransition();
-        var plan = ActivationPlan.Create(paths);
+        ErrorSurface.IsVisible = false;
         var sequence = await _activation.ResolveAsync(plan, _lifetimeCancellation.Token);
         if (sequence is null)
         {
+            if (plan.Mode == ActivationMode.Folder)
+            {
+                ShowHomeError(UiStrings.ErrorFolderEmpty);
+            }
+
             return;
         }
 
@@ -825,6 +1077,13 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         _photoInfo.BeginNewSequence();
         _histogram.BeginNewSequence();
         ApplySelection(result, ImageChangeViewPolicyResolver.ForNewSequence(), showFailure: true);
+        if (result.Status == SelectionStatus.Published && result.Path is not null)
+        {
+            var recent = plan.Mode == ActivationMode.Folder
+                ? new RecentLocation { Kind = RecentLocationKind.Folder, Path = plan.Paths[0] }
+                : new RecentLocation { Kind = RecentLocationKind.File, Path = result.Path };
+            await _settings.AddRecentLocationAsync(recent, _lifetimeCancellation.Token);
+        }
     }
 
     private async Task NavigateAsync(ViewerNavigationDirection direction)
@@ -859,6 +1118,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         {
             _holdController.Cancel();
             ErrorSurface.IsVisible = false;
+            HomeSurface.IsVisible = false;
             var path = result.Path
                        ?? throw new InvalidOperationException("Published selection has no source path.");
             var identity = result.Image.Value.Identity;
@@ -883,6 +1143,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
 
         PhotoViewport.ClearImage();
         _stageCoordinator.ClearImage();
+        HomeSurface.IsVisible = true;
         ErrorText.Text = LocalizeError(result.Error.Kind);
         ErrorSurface.IsVisible = true;
     }
@@ -908,6 +1169,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         _holdController.Cancel();
         PhotoViewport.ClearImage();
         _stageCoordinator.ClearImage();
+        HomeSurface.IsVisible = true;
         ErrorText.Text = _localizer[UiStrings.ErrorDecodeFailed];
         ErrorSurface.IsVisible = true;
     }
@@ -981,6 +1243,7 @@ internal sealed partial class ViewerWindow : Window, IViewerCommandTarget, ISlid
         _photoInfoFloatingOverlay.SetPlacement(settings.Presentation.PhotoInfoPlacement);
         _histogramFloatingOverlay.SetPlacement(settings.Presentation.HistogramPlacement);
         _colorPickerFloatingOverlay.SetPlacement(settings.Presentation.ColorPickerPlacement);
+        ApplyHomeSettings(settings.Home, settings.Shortcuts);
         if (_appliedMonitorColorManagementEnabled != settings.MonitorColorManagementEnabled)
         {
             _appliedMonitorColorManagementEnabled = settings.MonitorColorManagementEnabled;

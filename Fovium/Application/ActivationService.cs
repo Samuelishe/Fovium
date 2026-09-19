@@ -11,8 +11,11 @@ internal sealed class ActivationService(DirectorySequenceBuilder directorySequen
         ArgumentNullException.ThrowIfNull(plan);
         return plan.Mode switch
         {
-            ActivationMode.FilePicker => null,
+            ActivationMode.Home => null,
             ActivationMode.Directory => await directorySequenceBuilder.BuildAsync(
+                plan.Paths[0],
+                cancellationToken),
+            ActivationMode.Folder => await directorySequenceBuilder.BuildFolderAsync(
                 plan.Paths[0],
                 cancellationToken),
             ActivationMode.ExplicitSelection => new ImageSequence(plan.Paths, 0),

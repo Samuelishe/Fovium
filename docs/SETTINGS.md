@@ -38,6 +38,8 @@ behavior. It is owned by the Viewer and stays above that Viewer, including fulls
 
 - **Language** is implemented as System default, English, or Русский. The locale-independent choice autosaves; a
   different resolved language applies after restart and is accompanied by an explicit in-window restart hint;
+- **Show recent items on the home screen** is implemented and defaults on. Turning it off hides the secondary home MRU
+  without deleting it; Clear recent is the explicit history-removal action;
 - startup and window behavior when a real product need is established;
 - ordinary remembered application preferences.
 
@@ -201,6 +203,11 @@ invalid values normalize to `SystemDefault`, so existing files preserve OS-cultu
 before constructing the localizer; an explicit locale therefore applies to the complete UI on the next launch without
 capture hosts or process-culture tricks. The choice is ordinary autosaved preference state, not localized serialized
 text.
+
+HOME-UX-R1 keeps schema v2 and adds backward-compatible `Home` state. `ShowRecentItems` defaults to true. Up to six
+successfully opened file or folder paths persist in most-recent-first order, deduplicated with the platform path
+comparison; no thumbnail cache, directory contents, catalog, or navigation history is serialized. Hiding recent items
+preserves the bounded list, while Clear recent empties it explicitly.
 
 Settings normally autosave after a valid non-destructive preference change. Do not require Save or Apply buttons without
 evidence that deferred application is necessary. Destructive or system-owned actions remain explicit.

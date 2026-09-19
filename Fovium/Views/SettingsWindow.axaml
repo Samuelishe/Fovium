@@ -122,6 +122,17 @@
                             </Border>
                         </Grid>
                     </Border>
+                    <Border Classes="settings-card">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="22">
+                            <StackPanel Spacing="5" VerticalAlignment="Center">
+                                <TextBlock x:Name="RecentItemsHeading" Classes="card-title" />
+                                <TextBlock x:Name="RecentItemsDescription" Classes="supporting" />
+                            </StackPanel>
+                            <CheckBox x:Name="ShowRecentItemsOption"
+                                      Grid.Column="1"
+                                      VerticalAlignment="Center" />
+                        </Grid>
+                    </Border>
                 </StackPanel>
             </ScrollViewer>
 

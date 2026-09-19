@@ -39,6 +39,10 @@ fully opaque. Persisted command, scope/group, Matte-style, markup-tool, placemen
 identities are never localized. Photo Info dates use the active locale while camera/lens/filename strings remain source
 data and unspecified EXIF clock time is never timezone-converted.
 
+HOME-UX-R1 adds catalog-owned landing headline/supporting copy, file/folder/drop actions, recent labels and Clear,
+folder-picker title, empty-folder error, and the General recent-items preference. The abstract landing illustration
+contains no text; filenames and paths remain source data, while file/folder kind labels are localized.
+
 R8-A localizes Color Picker command/panel chrome, empty hint, history label, Transparent semantic, Approximate tooltip,
 and RGB (A) format templates in EN/RU. R8-A-F1 keeps the 1,800 reviewed English names as canonical matching/provenance
 data and adds optional embedded display-name catalogs under `resources/color-names/localization/`, keyed by stable color

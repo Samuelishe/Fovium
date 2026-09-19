@@ -7,7 +7,13 @@ Not authoritative for: Durable decisions, future plans, detailed contracts, or G
 
 ## Current checkpoint
 
-SETTINGS-UX-R1 is locally complete after BRAND-R1. Product version is `0.1.5.0000`: Settings now uses compact vertical
+HOME-UX-R1 is locally complete after SETTINGS-UX-R1. Product version is `0.1.6.0000`: an empty startup now remains in
+Fovium on a localized, responsive landing state instead of opening a native picker. Open files, Open folder,
+whole-window
+file/folder drop, the effective Open shortcut, and a bounded optional recent-locations row provide direct entry without
+adding viewing chrome, a catalog, or organizer semantics. General owns the persisted recent-items visibility choice.
+
+SETTINGS-UX-R1 remains the Settings baseline after BRAND-R1: Settings uses compact vertical
 navigation across General, Viewing, Color, Stage, Presentation, Controls, and About; bounded scrollable cards replace
 the sparse horizontal tabs; shortcut rows are grouped by task; and About carries the project identity, runtime version,
 and a concise product description. General persists System default, English, or Русский and application startup loads
@@ -39,9 +45,15 @@ Windows at `RenderScaling = 1.00`.
 
 ## Current focus
 
-SETTINGS-UX-R1 is ready for owner review/commit and hosted CI. Local Windows production-runtime evidence covers Russian
-and English General, the persisted restart hint and restart application, every navigation section, grouped Controls,
-About at ordinary and `760×560` size, fullscreen ownership, non-topmost extended style, free-surface drag, transparent-
+HOME-UX-R1 is ready for owner review/commit and hosted CI. Local Windows production-runtime evidence covers Russian
+empty startup without a picker at `1440×900`, `920×640`, and compact `560×420`; recent enabled/disabled; successful
+real-JPEG publication and MRU persistence; and top-level folder activation. The 17-test focused HOME contract filter and
+full 2,271-test Release suite pass; the solution build has zero warnings/errors. Native picker completion, physical OS
+drag gesture, real fractional DPI, and Linux/macOS landing interaction remain owner/manual follow-up surfaces.
+
+SETTINGS-UX-R1 evidence covers Russian and English General, the persisted restart hint and restart application, every
+navigation section, grouped Controls, About at ordinary and `760×560` size, fullscreen ownership, non-topmost extended
+style, free-surface drag, transparent-
 edge resize, and project close behavior. The focused 21-test contract filter and full 2,260-test Release suite pass;
 the solution build has zero warnings/errors. Hosted verification remains the post-push gate. Linux/macOS Settings
 runtime behavior and real fractional-DPI/multi-monitor visual acceptance remain unclaimed.
@@ -69,6 +81,9 @@ runtime behavior and real fractional-DPI/multi-monitor visual acceptance remain 
 - Same-directory single-file activation and ordered explicit multi-file activation.
 - Natural filename ordering, failure skipping, adjacent preload, latest-wins publication, and a byte-bounded cache.
 - Fullscreen, cursor auto-hide, `Ctrl+O`, and a basic temporary context menu.
+- Localized responsive no-image landing state with no automatic startup picker, project-authored abstract hero,
+  file/folder actions, whole-window file/folder drop routing, effective Open shortcut, bounded six-location MRU,
+  explicit Clear recent, and a persisted General visibility preference.
 - English/Russian runtime localization with English fallback plus a persisted General → Language choice for System
   default, English, or Русский, resolved before UI construction and applied after restart.
 - Persistent image-change view policy: Keep current scale by default, or Fit each image.

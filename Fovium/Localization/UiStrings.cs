@@ -14,6 +14,17 @@ internal static class UiStrings
     public const string MenuStage = "menu.stage";
     public const string MenuOverlays = "menu.overlays";
     public const string MenuClose = "menu.close";
+    public const string HomeTitle = "home.title";
+    public const string HomeSubtitle = "home.subtitle";
+    public const string HomeDropHint = "home.dropHint";
+    public const string HomeDropReady = "home.dropReady";
+    public const string HomeOpenFiles = "home.openFiles";
+    public const string HomeOpenFolder = "home.openFolder";
+    public const string HomeShortcutHint = "home.shortcutHint";
+    public const string HomeRecent = "home.recent";
+    public const string HomeClearRecent = "home.clearRecent";
+    public const string HomeRecentFile = "home.recentFile";
+    public const string HomeRecentFolder = "home.recentFolder";
     public const string SettingsTitle = "settings.title";
     public const string SettingsViewing = "settings.viewing";
     public const string SettingsColor = "settings.color";
@@ -423,6 +434,8 @@ internal static class UiStrings
     public const string SettingsLanguageEnglish = "settings.languageEnglish";
     public const string SettingsLanguageRussian = "settings.languageRussian";
     public const string SettingsLanguageRestart = "settings.languageRestart";
+    public const string SettingsShowRecentItems = "settings.showRecentItems";
+    public const string SettingsShowRecentItemsDescription = "settings.showRecentItemsDescription";
     public const string SettingsKeyboardShortcuts = "settings.keyboardShortcuts";
 
     public const string SettingsKeyboardShortcutsDescription =
@@ -451,12 +464,14 @@ internal static class UiStrings
     public const string SlideshowStartAgain = "slideshow.startAgain";
     public const string SettingsVersion = "settings.version";
     public const string PickerTitle = "picker.title";
+    public const string PickerFolderTitle = "picker.folderTitle";
     public const string PickerImageType = "picker.imageType";
     public const string ErrorMissing = "error.missing";
     public const string ErrorUnsupported = "error.unsupported";
     public const string ErrorCorrupt = "error.corrupt";
     public const string ErrorResourceLimit = "error.resourceLimit";
     public const string ErrorDecodeFailed = "error.decodeFailed";
+    public const string ErrorFolderEmpty = "error.folderEmpty";
 
     public static string ForCommand(ViewerCommand command) => command switch
     {

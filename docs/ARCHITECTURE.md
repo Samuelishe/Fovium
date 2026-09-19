@@ -31,6 +31,7 @@ Logical responsibilities remain distinct even if physically colocated:
 - viewport math;
 - cache and loading coordination;
 - settings;
+- startup activation and bounded recent-location state;
 - common color semantics and human-readable naming;
 - platform integration;
 - UI and view-specific interaction.
@@ -51,6 +52,9 @@ custom control or focused code-behind while domain-independent math remains test
   application code.
 - Settings storage owns typed persisted preferences; the viewer coordinator resolves image-change policy into a
   `ViewTransfer`. Renderer and viewport math never query settings.
+- Empty startup is an explicit activation mode rather than an implicit picker request. File, explicit multi-file, and
+  top-level folder activation converge on the existing `ImageSequence`/`ViewerSession` publication boundary; the home
+  view never probes or decodes images. A recent location is recorded only after successful publication.
 - Photo Presentation View owns only session mode state and one normalized edge-margin preference. The pure
   `PhotoPresentationLayout` receives current viewport/DPI, oriented source size, and edge margin, then returns only
   photograph destination, photograph presentation bounds, and physical scale. Existing `StageGeometry` independently

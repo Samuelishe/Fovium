@@ -24,6 +24,8 @@ internal sealed record FoviumSettings
 
     public bool MonitorColorManagementEnabled { get; init; } = true;
 
+    public HomeSettings Home { get; init; } = HomeSettings.Default;
+
     public PhotoPresentationViewSettings PhotoPresentationView { get; init; } =
         PhotoPresentationViewSettings.Default;
 
@@ -47,6 +49,7 @@ internal sealed record FoviumSettings
         ImageChangeViewPolicy = Enum.IsDefined(ImageChangeViewPolicy)
             ? ImageChangeViewPolicy
             : ImageChangeViewPolicy.KeepCurrentScale,
+        Home = (Home ?? HomeSettings.Default).Normalize(),
         PhotoPresentationView = (PhotoPresentationView ?? PhotoPresentationViewSettings.Default).Normalize(),
         Slideshow = (Slideshow ?? SlideshowSettings.Default).Normalize(),
         SettingsWindowSize = (SettingsWindowSize ?? SettingsWindowSizeSettings.Default).Normalize(),

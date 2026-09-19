@@ -1,8 +1,10 @@
 # Application themes
 
 Role: Contract for application UI theme semantics and future visual-system structure.
-Read when: Styling Settings, menus, overlays, dialogs, metadata UI, error surfaces, temporary controls, or window chrome.
-Authoritative for: Supported application themes, default theme, semantic visual roles, and separation from photographic Stage.
+Read when: Styling Settings, menus, overlays, dialogs, metadata UI, error surfaces, temporary controls, or window
+chrome.
+Authoritative for: Supported application themes, default theme, semantic visual roles, and separation from photographic
+Stage.
 Not authoritative for: Stage appearance, photograph rendering, exact palette values, or product input.
 
 ## Initial themes
@@ -16,7 +18,8 @@ Light
 
 Dark is the default.
 
-Application theme applies only to application UI, including Settings, context menus, requested overlays, dialogs, metadata surfaces, errors, temporary controls, and future window chrome where applicable.
+Application theme applies only to application UI, including Settings, context menus, requested overlays, dialogs,
+metadata surfaces, errors, temporary controls, and future window chrome where applicable.
 
 ## Theme and Stage are independent
 
@@ -37,11 +40,14 @@ MatteEnabled
     false / true
 ```
 
-Changing application theme must not silently change Stage mode, Matte color/width, or Matte outer style. Changing Stage must not change Settings, menus, or dialogs. Neither system may modify the original photograph. Stage product semantics remain owned by [`PROJECT-VISION.md`](PROJECT-VISION.md).
+Changing application theme must not silently change Stage mode, Matte color/width, or Matte outer style. Changing Stage
+must not change Settings, menus, or dialogs. Neither system may modify the original photograph. Stage product semantics
+remain owned by [`PROJECT-VISION.md`](PROJECT-VISION.md).
 
 ## Visual-system direction
 
-Future implementation should centralize semantic roles rather than scatter raw brushes or color constants through views. Expected roles include:
+Future implementation should centralize semantic roles rather than scatter raw brushes or color constants through views.
+Expected roles include:
 
 ```text
 Surface
@@ -55,6 +61,19 @@ Accent
 Error
 ```
 
-Exact colors, contrast values, platform chrome treatment, and theme resource mechanics wait for implementation evidence. Fovium should remain visually quiet and purpose-built rather than becoming a generic framework-theme demonstration.
+Exact colors, contrast values, platform chrome treatment, and theme resource mechanics wait for implementation evidence.
+Fovium should remain visually quiet and purpose-built rather than becoming a generic framework-theme demonstration.
 
-R1 fixes the application UI to Dark and uses Avalonia Fluent for its context menus, Settings, and small dialogs/error surfaces. R5-F3 retains ordinary themed Button/MenuItem semantics for the movable presenter panel and context menu while using centralized project-owned monochrome vector geometry; checked overlay state and disabled history actions remain semantic control states rather than icon color alone. SETTINGS-UX-R1 gives Settings a restrained dark surface/elevated-card/selected-accent hierarchy and project-owned circular close button while retaining normal hover, focus, selection, scrolling, and platform resize behavior. These values remain local to the current fixed-Dark surface rather than claiming a complete theme-token system. There is no selector or final semantic palette yet. Stage background, custom colors, Ambient treatment, and independent Matte do not derive from Dark theme resources. Light remains a contracted future option.
+HOME-UX-R1 applies the current fixed-Dark application surface roles to the no-image landing state: restrained layered
+surfaces, one violet primary action, subdued borders, and project-authored vector geometry. It remains independent of
+the photographic Stage and is removed once a photograph is presented.
+
+R1 fixes the application UI to Dark and uses Avalonia Fluent for its context menus, Settings, and small dialogs/error
+surfaces. R5-F3 retains ordinary themed Button/MenuItem semantics for the movable presenter panel and context menu while
+using centralized project-owned monochrome vector geometry; checked overlay state and disabled history actions remain
+semantic control states rather than icon color alone. SETTINGS-UX-R1 gives Settings a restrained dark
+surface/elevated-card/selected-accent hierarchy and project-owned circular close button while retaining normal hover,
+focus, selection, scrolling, and platform resize behavior. These values remain local to the current fixed-Dark surface
+rather than claiming a complete theme-token system. There is no selector or final semantic palette yet. Stage
+background, custom colors, Ambient treatment, and independent Matte do not derive from Dark theme resources. Light
+remains a contracted future option.

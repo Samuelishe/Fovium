@@ -17,6 +17,19 @@ Temporary overlays are acceptable only in response to a direct action and should
 hide after inactivity when it would otherwise distract from the photograph, then return on pointer movement or relevant
 interaction; exact timing awaits runtime validation.
 
+## No-image start state
+
+When startup has no external activation, Fovium stays open on a localized landing state instead of opening a file picker
+automatically. This state is not normal viewing chrome: it disappears completely after a photograph is published and
+does not overlay a photograph. Its primary path is Open files, with Open folder and whole-window file/folder drag and
+drop as equal direct inputs; the effective Open shortcut remains visible when assigned.
+
+The landing composition is one calm central entry surface with a project-authored abstract image motif. It has no side
+navigation, Favorites, catalog, or organizer semantics. A bounded MRU list of successfully opened photos or folders may
+appear below as secondary convenience, can be cleared explicitly, and is hidden when General → Show recent items on the
+home screen is off. Small windows keep the actions visible by collapsing the decorative motif before introducing
+scrolling; larger windows add space and the motif without turning the surface into a dashboard.
+
 ## Baseline input
 
 | Input                                   | Behavior                                                                                                                                  |
